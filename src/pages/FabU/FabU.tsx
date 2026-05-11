@@ -137,6 +137,13 @@ const gearItems = [
   },
 ];
 
+const bondItems = [
+  { title: 'Jelena', subtitle: 'Loyalty · Affection' },
+  { title: 'Yoru', subtitle: 'Affection' },
+  { title: 'Granada', subtitle: 'Admiration' },
+  { title: 'Juice', subtitle: 'Loyalty' },
+] as const;
+
 const backstoryPrompts = [
   {
     question: 'What drove me and my parents out of Infinita?',
@@ -261,15 +268,7 @@ function FabU() {
           ]}
         />
 
-        <DetailListCard
-          label="Bonds"
-          items={[
-            { title: 'Jelena', subtitle: 'Loyalty · Affection' },
-            { title: 'Yoru', subtitle: 'Affection' },
-            { title: 'Granada', subtitle: 'Admiration' },
-            { title: 'Juice', subtitle: 'Loyalty' },
-          ]}
-        />
+        <DetailListCard label="Bonds" items={[...bondItems]} />
 
         <SummaryStrip
           metrics={[
@@ -295,22 +294,7 @@ function FabU() {
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <DetailListCard
-              label="Bonds"
-              title="Live combat levers"
-              items={[
-                {
-                  title: 'Mina',
-                  subtitle: 'Spend 1 Fabula to intercept a hit meant for her.',
-                  trailing: 'Reactive',
-                },
-                {
-                  title: 'Aster',
-                  subtitle: 'Gain advantage when coordinating ranged attacks.',
-                  trailing: 'Synergy',
-                },
-              ]}
-            />
+            <DetailListCard label="Bonds" items={[...bondItems]} />
 
             <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>
