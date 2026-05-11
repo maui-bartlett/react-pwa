@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -18,6 +17,7 @@ import {
   SegmentedTabs,
   SkillsTable,
   SpellsTable,
+  StatusEffectsDiagram,
   SummaryStrip,
   SurfaceCard,
   TabOption,
@@ -46,12 +46,13 @@ const overviewAttributeRows = [
 ] as const;
 
 const combatResources = [
-  { label: 'HP', value: '58 / 58', helperText: 'Guarded', tone: 'danger' as const },
-  { label: 'MP', value: '42 / 42', helperText: 'Ready to cast', tone: 'accent' as const },
-  { label: 'IP', value: '6', helperText: 'Inventory points', tone: 'warning' as const },
-  { label: 'DEF', value: '13', helperText: 'Armor + guard', tone: 'success' as const },
-  { label: 'M.DEF', value: '11', helperText: 'Arcane ward', tone: 'accent' as const },
-  { label: 'Init', value: '+2', helperText: 'Reaction bonus', tone: 'neutral' as const },
+  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
+  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
+  { label: 'Defense', value: '8 (12)', tone: 'success' as const },
+  { label: 'M. Def.', value: '8 (12)', tone: 'success' as const },
+  { label: 'Initiative', value: '0', tone: 'neutral' as const },
+  { label: 'FP', value: '4', tone: 'neutral' as const },
+  { label: 'IP', value: '8', tone: 'warning' as const },
 ] as const;
 
 const overviewResources = [
@@ -288,28 +289,7 @@ function FabU() {
           attributes={[...combatAttributeRows]}
           resources={[...combatResources]}
         />
-
-        <SurfaceCard label="Status" title="Status Effects">
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Guarded', 'Fast', 'Charged', 'Inspired'].map((status, index) => (
-              <Chip
-                key={status}
-                label={status}
-                sx={{
-                  border: `1px solid ${fabUTokens.color.border}`,
-                  borderRadius: '8px',
-                  bgcolor:
-                    index % 2 === 0
-                      ? fabUTokens.color.brandSoft
-                      : `${fabUTokens.color.surfaceMuted}`,
-                  color: fabUTokens.color.textPrimary,
-                  fontWeight: 700,
-                  fontSize: '0.72rem',
-                }}
-              />
-            ))}
-          </Stack>
-        </SurfaceCard>
+        <StatusEffectsDiagram />
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 

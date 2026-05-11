@@ -24,6 +24,7 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
             label={attribute.label}
             value={attribute.score}
             helperText={attribute.modifier || undefined}
+            layout="stacked"
             tone={
               attribute.category === 'power'
                 ? 'danger'
@@ -40,12 +41,13 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gridTemplateColumns:
+            resources.length > 4 ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))',
           gap: 0.85,
         }}
       >
         {resources.map((resource) => (
-          <StatPill key={resource.label} {...resource} />
+          <StatPill key={resource.label} {...resource} layout="inline" />
         ))}
       </Box>
     </SurfaceCard>

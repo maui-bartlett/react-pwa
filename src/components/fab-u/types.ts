@@ -19,6 +19,7 @@ export type StatPillData = {
   value: string;
   helperText?: string;
   tone?: Tone;
+  layout?: 'stacked' | 'inline';
 };
 
 export type AttributeRow = {

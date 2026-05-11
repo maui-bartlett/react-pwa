@@ -1,45 +1,64 @@
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
 
 import { getToneStyles } from '../tokens';
 import { StatPillData } from '../types';
 
-function StatPill({ label, value, helperText, tone = 'neutral' }: StatPillData) {
+function StatPill({
+  label,
+  value,
+  helperText,
+  tone = 'neutral',
+  layout = 'stacked',
+}: StatPillData) {
   const toneStyles = getToneStyles(tone);
+  const inline = layout === 'inline';
 
   return (
     <Box
       sx={{
         border: `1px solid ${toneStyles.borderColor}`,
         borderRadius: '10px',
-        background: `linear-gradient(180deg, ${alpha(toneStyles.color, 0.11)} 0%, rgba(255,255,255,0.98) 45%)`,
-        boxShadow: `inset 0 2px 0 ${alpha(toneStyles.color, 0.7)}`,
+        backgroundColor: '#fff',
         px: 1.1,
-        py: 0.95,
+        py: inline ? 0.75 : 0.95,
         minWidth: 0,
       }}
     >
-      <Stack spacing={0.22}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: toneStyles.color,
-            fontWeight: 700,
-            fontSize: '0.6rem',
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-          }}
+      <Stack spacing={inline ? 0.18 : 0.22}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems={inline ? 'center' : 'flex-start'}
+          gap={1}
         >
-          {label}
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{ color: '#1f2a26', fontWeight: 700, fontSize: '1.08rem', lineHeight: 1.08 }}
-        >
-          {value}
-        </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: toneStyles.color,
+              fontWeight: 700,
+              fontSize: '0.6rem',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              lineHeight: 1.2,
+            }}
+          >
+            {label}
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#1f2a26',
+              fontWeight: 700,
+              fontSize: inline ? '0.96rem' : '1.08rem',
+              lineHeight: 1.08,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {value}
+          </Typography>
+        </Stack>
         {helperText ? (
           <Typography
             variant="caption"
