@@ -30,21 +30,36 @@ function SurfaceCard({
     <Paper
       elevation={0}
       sx={{
+        position: 'relative',
         border: `1px solid ${fabUTokens.color.border}`,
         borderRadius: `${fabUTokens.radius.md}px`,
         bgcolor: fabUTokens.color.surface,
         boxShadow: fabUTokens.shadow.soft,
         p: 1.75,
+        pt: label ? 2.4 : 1.75,
         backgroundImage: `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.55)} 0%, ${fabUTokens.color.surface} 22%)`,
         ...sx,
       }}
       {...props}
     >
+      {label ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 14,
+            transform: 'translateY(-50%)',
+            px: 0.35,
+            bgcolor: fabUTokens.color.canvas,
+          }}
+        >
+          <SectionLabel label={label} />
+        </Box>
+      ) : null}
       <Stack spacing={1.25}>
         {(label || title || subtitle || actions) && (
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
             <Stack spacing={0.75}>
-              {label ? <SectionLabel label={label} /> : null}
               {title ? (
                 <Typography
                   variant="h6"

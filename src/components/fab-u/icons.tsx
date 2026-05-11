@@ -8,4 +8,20 @@ function SwordIcon(props: SvgIconProps) {
   );
 }
 
-export { SwordIcon };
+function DiamondIcon(props: SvgIconProps) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24">
+      <path d="M12 4.5 18.5 11 12 19.5 5.5 11 12 4.5Zm0 2.12L8.03 11 12 16.19 15.97 11 12 6.62Z" />
+    </SvgIcon>
+  );
+}
+
+function NotesLinesIcon(props: SvgIconProps) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24">
+      <path d="M5 7.25a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Zm0 4.75a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Zm1 3.75a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H6Z" />
+    </SvgIcon>
+  );
+}
+
+export { DiamondIcon, NotesLinesIcon, SwordIcon };

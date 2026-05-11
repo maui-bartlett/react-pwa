@@ -3,15 +3,13 @@ import { ComponentType } from 'react';
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import BackpackOutlinedIcon from '@mui/icons-material/BackpackOutlined';
 import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
-import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
-import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
 import { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { SwordIcon } from '../icons';
+import { DiamondIcon, NotesLinesIcon, SwordIcon } from '../icons';
 import { fabUTokens } from '../tokens';
 import { FabUTab } from '../types';
 
@@ -23,10 +21,10 @@ type PrimaryNavBarProps = {
 const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIconProps> }> = [
   { label: 'Overview', value: 'overview', icon: GridViewOutlinedIcon },
   { label: 'Combat', value: 'combat', icon: SwordIcon },
-  { label: 'Skills', value: 'skills', icon: PsychologyAltOutlinedIcon },
+  { label: 'Skills', value: 'skills', icon: DiamondIcon },
   { label: 'Spells', value: 'spells', icon: AutoAwesomeOutlinedIcon },
   { label: 'Gear', value: 'gear', icon: BackpackOutlinedIcon },
-  { label: 'Notes', value: 'notes', icon: MenuBookOutlinedIcon },
+  { label: 'Notes', value: 'notes', icon: NotesLinesIcon },
 ];
 
 function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
