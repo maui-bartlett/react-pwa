@@ -139,8 +139,12 @@ function FabU() {
           subtitle="Transfer student · Origin: Infinita · Political refugee"
           actions={<StatPill label="Level" value="13" tone="accent" />}
         >
-          <Typography variant="body2" sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.7 }}>
-            The overview layout pairs a strong profile card with compact stat clusters, making it easy to scan identity, resources, and narrative hooks at a glance.
+          <Typography
+            variant="body2"
+            sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.7 }}
+          >
+            The overview layout pairs a strong profile card with compact stat clusters, making it
+            easy to scan identity, resources, and narrative hooks at a glance.
           </Typography>
         </SurfaceCard>
 
@@ -152,10 +156,16 @@ function FabU() {
               ['Origin', 'Raised in a city where magic and politics are the same weapon.'],
             ].map(([label, value]) => (
               <Stack key={label} direction="row" justifyContent="space-between" gap={2}>
-                <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary, minWidth: 72 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: fabUTokens.color.textSecondary, minWidth: 72 }}
+                >
                   {label}
                 </Typography>
-                <Typography variant="body2" sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}
+                >
                   {value}
                 </Typography>
               </Stack>
@@ -169,9 +179,21 @@ function FabU() {
           label="Classes"
           title="Current build"
           items={[
-            { title: 'Sharpshooter', subtitle: 'Precision shots and battlefield control.', trailing: 'Lvl 6' },
-            { title: 'Entropist', subtitle: 'Aggressive spellcraft and disruption.', trailing: 'Lvl 4' },
-            { title: 'Tinkerer', subtitle: 'Gadgets, traps, and field repairs.', trailing: 'Lvl 3' },
+            {
+              title: 'Sharpshooter',
+              subtitle: 'Precision shots and battlefield control.',
+              trailing: 'Lvl 6',
+            },
+            {
+              title: 'Entropist',
+              subtitle: 'Aggressive spellcraft and disruption.',
+              trailing: 'Lvl 4',
+            },
+            {
+              title: 'Tinkerer',
+              subtitle: 'Gadgets, traps, and field repairs.',
+              trailing: 'Lvl 3',
+            },
           ]}
         />
 
@@ -210,7 +232,9 @@ function FabU() {
                 sx={{
                   borderRadius: `${fabUTokens.radius.pill}px`,
                   bgcolor:
-                    index % 2 === 0 ? fabUTokens.color.brandSoft : `${fabUTokens.color.surfaceMuted}`,
+                    index % 2 === 0
+                      ? fabUTokens.color.brandSoft
+                      : `${fabUTokens.color.surfaceMuted}`,
                   color: fabUTokens.color.textPrimary,
                   fontWeight: 700,
                 }}
@@ -228,8 +252,16 @@ function FabU() {
               title="Live combat levers"
               subtitle="The combat overview mockup mixes relationship context with tactical quick actions."
               items={[
-                { title: 'Mina', subtitle: 'Spend 1 Fabula to intercept a hit meant for her.', trailing: 'Reactive' },
-                { title: 'Aster', subtitle: 'Gain advantage when coordinating ranged attacks.', trailing: 'Synergy' },
+                {
+                  title: 'Mina',
+                  subtitle: 'Spend 1 Fabula to intercept a hit meant for her.',
+                  trailing: 'Reactive',
+                },
+                {
+                  title: 'Aster',
+                  subtitle: 'Gain advantage when coordinating ranged attacks.',
+                  trailing: 'Synergy',
+                },
               ]}
             />
 
@@ -272,9 +304,13 @@ function FabU() {
           </>
         ) : null}
 
-        {activeCombatTab === 'spells' ? <SpellsTable rows={spellRows} title="Combat casting loadout" /> : null}
+        {activeCombatTab === 'spells' ? (
+          <SpellsTable rows={spellRows} title="Combat casting loadout" />
+        ) : null}
 
-        {activeCombatTab === 'gear' ? <EquipmentCard items={gearItems} title="Combat-ready kit" /> : null}
+        {activeCombatTab === 'gear' ? (
+          <EquipmentCard items={gearItems} title="Combat-ready kit" />
+        ) : null}
       </>
     );
   }
@@ -329,9 +365,21 @@ function FabU() {
           label="Inventory"
           title="Backpack"
           items={[
-            { title: 'Aether cartridges', subtitle: 'Consumable ammo for elemental shots.', trailing: 'x4' },
-            { title: 'Field medkit', subtitle: 'Restore HP during downtime or emergencies.', trailing: 'x2' },
-            { title: 'Signal flare', subtitle: 'Creates cover and a visual beacon.', trailing: 'x1' },
+            {
+              title: 'Aether cartridges',
+              subtitle: 'Consumable ammo for elemental shots.',
+              trailing: 'x4',
+            },
+            {
+              title: 'Field medkit',
+              subtitle: 'Restore HP during downtime or emergencies.',
+              trailing: 'x2',
+            },
+            {
+              title: 'Signal flare',
+              subtitle: 'Creates cover and a visual beacon.',
+              trailing: 'x1',
+            },
           ]}
         />
       </>
@@ -345,8 +393,12 @@ function FabU() {
           <NoteCard key={note.title} note={note} />
         ))}
         <SurfaceCard label="Notes" title="Campaign hooks">
-          <Typography variant="body2" sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.8 }}>
-            Rad still owes the academy archivist a favor, and the next combat scene should expose whether that debt is a leash or a lifeline.
+          <Typography
+            variant="body2"
+            sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.8 }}
+          >
+            Rad still owes the academy archivist a favor, and the next combat scene should expose
+            whether that debt is a leash or a lifeline.
           </Typography>
         </SurfaceCard>
       </>
@@ -371,7 +423,9 @@ function FabU() {
         eyebrow="Design system"
         title={activeTab === 'overview' ? 'Character Overview' : `Character ${activeTab}`}
         subtitle="Large hero header variant derived from the standalone tab screens."
-        actionLabel={activeTab === 'overview' ? 'Combat' : activeTab[0].toUpperCase() + activeTab.slice(1)}
+        actionLabel={
+          activeTab === 'overview' ? 'Combat' : activeTab[0].toUpperCase() + activeTab.slice(1)
+        }
       />
     );
   })();
@@ -398,18 +452,25 @@ function FabU() {
   return (
     <>
       <meta name="title" content="Fab-u Design System" />
-      <Stack spacing={3} sx={{ height: '100%', overflow: 'auto', bgcolor: '#fafafa', p: { xs: 2, md: 3 } }}>
+      <Stack
+        spacing={3}
+        sx={{ height: '100%', overflow: 'auto', bgcolor: '#fafafa', p: { xs: 2, md: 3 } }}
+      >
         <Stack spacing={0.75}>
           <Typography variant="h4" sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}>
             Fab-u design system
           </Typography>
           <Typography variant="body1" sx={{ color: fabUTokens.color.textSecondary, maxWidth: 760 }}>
-            This page turns the image set in <code>src/fab-u-designs</code> into reusable React building blocks and a mobile-first showcase screen that can recreate the core layouts.
+            This page turns the image set in <code>src/fab-u-designs</code> into reusable React
+            building blocks and a mobile-first showcase screen that can recreate the core layouts.
           </Typography>
         </Stack>
 
         <Stack direction={{ xs: 'column', xl: 'row' }} spacing={3} alignItems="flex-start">
-          <MobileScreen header={header} footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}>
+          <MobileScreen
+            header={header}
+            footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+          >
             {content}
           </MobileScreen>
 
@@ -425,7 +486,11 @@ function FabU() {
                   'Molecules: HeaderBar, SegmentedTabs, AttributesStatsCard, SkillsTable, SpellsTable, EquipmentCard, NoteCard',
                   'Organisms: MobileScreen, PrimaryNavBar, DetailListCard, SummaryStrip',
                 ].map((line) => (
-                  <Typography key={line} variant="body2" sx={{ color: fabUTokens.color.textSecondary }}>
+                  <Typography
+                    key={line}
+                    variant="body2"
+                    sx={{ color: fabUTokens.color.textSecondary }}
+                  >
                     {line}
                   </Typography>
                 ))}
@@ -443,7 +508,11 @@ function FabU() {
                   'Combat reuses the stat card, status chips, sub-tabs, and either bonds, skills, spells, or gear content.',
                   'Standalone Skills, Spells, Gear, and Notes tabs swap the compact combat header for the larger hero header without changing the card vocabulary.',
                 ].map((line) => (
-                  <Typography key={line} variant="body2" sx={{ color: fabUTokens.color.textSecondary }}>
+                  <Typography
+                    key={line}
+                    variant="body2"
+                    sx={{ color: fabUTokens.color.textSecondary }}
+                  >
                     {line}
                   </Typography>
                 ))}

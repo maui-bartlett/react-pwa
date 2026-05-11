@@ -2,8 +2,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
-import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
 import SportsMmaOutlinedIcon from '@mui/icons-material/SportsMmaOutlined';
+import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -54,7 +54,10 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
             }}
           >
             <Stack alignItems="center" spacing={0.4}>
-              <Icon sx={{ color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary }} fontSize="small" />
+              <Icon
+                sx={{ color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary }}
+                fontSize="small"
+              />
               <Typography
                 variant="caption"
                 sx={{

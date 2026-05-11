@@ -35,11 +35,18 @@ function SummaryStrip({ metrics }: SummaryStripProps) {
           >
             <Typography
               variant="caption"
-              sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, textTransform: 'uppercase' }}
+              sx={{
+                color: fabUTokens.color.textSecondary,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+              }}
             >
               {metric.label}
             </Typography>
-            <Typography variant="body1" sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}>
+            <Typography
+              variant="body1"
+              sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+            >
               {metric.value}
             </Typography>
           </Box>

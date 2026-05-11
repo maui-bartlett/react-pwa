@@ -16,7 +16,15 @@ type SurfaceCardProps = PaperProps &
     actions?: ReactNode;
   }>;
 
-function SurfaceCard({ label, title, subtitle, actions, children, sx, ...props }: SurfaceCardProps) {
+function SurfaceCard({
+  label,
+  title,
+  subtitle,
+  actions,
+  children,
+  sx,
+  ...props
+}: SurfaceCardProps) {
   return (
     <Paper
       elevation={0}
@@ -36,7 +44,10 @@ function SurfaceCard({ label, title, subtitle, actions, children, sx, ...props }
             <Stack spacing={0.75}>
               {label ? <SectionLabel label={label} /> : null}
               {title ? (
-                <Typography variant="h6" sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+                >
                   {title}
                 </Typography>
               ) : null}

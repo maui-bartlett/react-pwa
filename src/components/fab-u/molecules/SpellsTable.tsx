@@ -18,7 +18,11 @@ type SpellsTableProps = {
 
 function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
   return (
-    <SurfaceCard label="Spells" title={title} subtitle="Rows are action oriented, matching the spell-focused screens.">
+    <SurfaceCard
+      label="Spells"
+      title={title}
+      subtitle="Rows are action oriented, matching the spell-focused screens."
+    >
       <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '14px' }}>
         <Table size="small" sx={{ minWidth: 520 }}>
           <TableHead sx={{ bgcolor: fabUTokens.color.surfaceMuted }}>
@@ -35,7 +39,10 @@ function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
             {rows.map((row) => (
               <TableRow key={row.name}>
                 <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
+                  >
                     {row.name}
                   </Typography>
                 </TableCell>

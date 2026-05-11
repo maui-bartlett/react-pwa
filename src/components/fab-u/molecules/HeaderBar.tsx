@@ -12,13 +12,7 @@ type HeaderBarProps = {
   variant?: 'compact' | 'hero';
 };
 
-function HeaderBar({
-  eyebrow,
-  title,
-  subtitle,
-  actionLabel,
-  variant = 'hero',
-}: HeaderBarProps) {
+function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: HeaderBarProps) {
   const compact = variant === 'compact';
 
   return (
@@ -39,7 +33,12 @@ function HeaderBar({
         {eyebrow ? (
           <Typography
             variant="caption"
-            sx={{ color: 'rgba(255,255,255,0.82)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+            sx={{
+              color: 'rgba(255,255,255,0.82)',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
           >
             {eyebrow}
           </Typography>

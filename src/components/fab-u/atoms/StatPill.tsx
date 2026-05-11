@@ -22,7 +22,12 @@ function StatPill({ label, value, helperText, tone = 'neutral' }: StatPillData) 
       <Stack spacing={0.35}>
         <Typography
           variant="caption"
-          sx={{ color: toneStyles.color, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+          sx={{
+            color: toneStyles.color,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
         >
           {label}
         </Typography>

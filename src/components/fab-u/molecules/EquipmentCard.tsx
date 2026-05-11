@@ -13,9 +13,17 @@ type EquipmentCardProps = {
   emptyLabel?: string;
 };
 
-function EquipmentCard({ title = 'Equipped gear', items, emptyLabel = 'Open accessory slot' }: EquipmentCardProps) {
+function EquipmentCard({
+  title = 'Equipped gear',
+  items,
+  emptyLabel = 'Open accessory slot',
+}: EquipmentCardProps) {
   return (
-    <SurfaceCard label="Gear" title={title} subtitle="Equipment slots and inventory rows share the same bordered card grammar.">
+    <SurfaceCard
+      label="Gear"
+      title={title}
+      subtitle="Equipment slots and inventory rows share the same bordered card grammar."
+    >
       <Stack spacing={1.25}>
         {items.map((item) => (
           <Box
@@ -30,10 +38,16 @@ function EquipmentCard({ title = 'Equipped gear', items, emptyLabel = 'Open acce
           >
             <Stack direction="row" justifyContent="space-between" gap={2}>
               <Stack spacing={0.35}>
-                <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary, textTransform: 'uppercase' }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: fabUTokens.color.textSecondary, textTransform: 'uppercase' }}
+                >
                   {item.slot}
                 </Typography>
-                <Typography variant="body1" sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}>
+                <Typography
+                  variant="body1"
+                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+                >
                   {item.name}
                 </Typography>
                 <Typography variant="body2" sx={{ color: fabUTokens.color.textSecondary }}>
@@ -41,7 +55,10 @@ function EquipmentCard({ title = 'Equipped gear', items, emptyLabel = 'Open acce
                 </Typography>
               </Stack>
               <Stack alignItems="flex-end" spacing={0.5}>
-                <Typography variant="caption" sx={{ color: fabUTokens.color.warning, fontWeight: 700 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: fabUTokens.color.warning, fontWeight: 700 }}
+                >
                   {item.weight ?? '0 wt'}
                 </Typography>
                 <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary }}>

@@ -133,22 +133,22 @@ These are implementation-oriented approximations derived from the mockups.
 
 ### Color
 
-| Token | Value | Purpose |
-| --- | --- | --- |
-| `canvas` | `#f4f1ea` | Page background |
-| `surface` | `#ffffff` | Primary cards |
-| `surfaceMuted` | `#f8f7f3` | Nested panels, tables, rows |
-| `border` | `#d7ddd5` | Card and table borders |
-| `textPrimary` | `#1f2a26` | Headings and key values |
-| `textSecondary` | `#51605a` | Supporting copy |
-| `brand` | `#285346` | Headers, active tabs, emphasis |
-| `brandStrong` | `#1f4338` | Hover/pressed brand state |
-| `brandSoft` | `#e5efe9` | Soft green highlights |
-| `hp` | `#c25d52` | Health and high-risk values |
-| `mp` | `#4f7fd3` | Magic/action emphasis |
-| `warning` | `#d49037` | Inventory, dexterity, economy |
-| `success` | `#6d9b6c` | Positive/supportive stats |
-| `neutral` | `#8d938d` | Neutral metadata |
+| Token           | Value     | Purpose                        |
+| --------------- | --------- | ------------------------------ |
+| `canvas`        | `#f4f1ea` | Page background                |
+| `surface`       | `#ffffff` | Primary cards                  |
+| `surfaceMuted`  | `#f8f7f3` | Nested panels, tables, rows    |
+| `border`        | `#d7ddd5` | Card and table borders         |
+| `textPrimary`   | `#1f2a26` | Headings and key values        |
+| `textSecondary` | `#51605a` | Supporting copy                |
+| `brand`         | `#285346` | Headers, active tabs, emphasis |
+| `brandStrong`   | `#1f4338` | Hover/pressed brand state      |
+| `brandSoft`     | `#e5efe9` | Soft green highlights          |
+| `hp`            | `#c25d52` | Health and high-risk values    |
+| `mp`            | `#4f7fd3` | Magic/action emphasis          |
+| `warning`       | `#d49037` | Inventory, dexterity, economy  |
+| `success`       | `#6d9b6c` | Positive/supportive stats      |
+| `neutral`       | `#8d938d` | Neutral metadata               |
 
 ### Typography
 

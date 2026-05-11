@@ -11,7 +11,10 @@ type AttributesStatsCardProps = {
 
 function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps) {
   return (
-    <SurfaceCard label="Attributes & Stats" subtitle="Color-coded pills reflect the recurring visual language in the mockups.">
+    <SurfaceCard
+      label="Attributes & Stats"
+      subtitle="Color-coded pills reflect the recurring visual language in the mockups."
+    >
       <Box
         sx={{
           display: 'grid',
@@ -51,7 +54,8 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
       </Box>
 
       <Typography variant="caption" sx={{ color: '#51605a' }}>
-        Designed for mobile-first layouts: the grid collapses into compact stat pills instead of verbose form fields.
+        Designed for mobile-first layouts: the grid collapses into compact stat pills instead of
+        verbose form fields.
       </Typography>
     </SurfaceCard>
   );

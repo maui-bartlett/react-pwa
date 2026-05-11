@@ -36,7 +36,10 @@ function DetailListCard({ label, title, items, subtitle }: DetailListCardProps) 
             }}
           >
             <Stack spacing={0.35}>
-              <Typography variant="body2" sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}>
+              <Typography
+                variant="body2"
+                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+              >
                 {item.title}
               </Typography>
               <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary }}>

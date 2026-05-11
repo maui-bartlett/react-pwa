@@ -34,7 +34,10 @@ function SkillsTable({ title, rows, subtitle }: SkillsTableProps) {
             {rows.map((row) => (
               <TableRow key={row.name}>
                 <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
+                  >
                     {row.name}
                   </Typography>
                 </TableCell>
