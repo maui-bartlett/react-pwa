@@ -27,8 +27,9 @@ function SummaryStrip({ metrics }: SummaryStripProps) {
           <Box
             key={metric.label}
             sx={{
-              borderRadius: '14px',
-              bgcolor: fabUTokens.color.brandSoft,
+              border: `1px solid ${fabUTokens.color.border}`,
+              borderRadius: '10px',
+              bgcolor: fabUTokens.color.surface,
               px: 1.25,
               py: 1,
             }}
@@ -38,6 +39,8 @@ function SummaryStrip({ metrics }: SummaryStripProps) {
               sx={{
                 color: fabUTokens.color.textSecondary,
                 fontWeight: 700,
+                fontSize: '0.64rem',
+                letterSpacing: '0.06em',
                 textTransform: 'uppercase',
               }}
             >

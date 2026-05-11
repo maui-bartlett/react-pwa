@@ -23,8 +23,24 @@ function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
       title={title}
       subtitle="Rows are action oriented, matching the spell-focused screens."
     >
-      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '14px' }}>
-        <Table size="small" sx={{ minWidth: 520 }}>
+      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '10px' }}>
+        <Table
+          size="small"
+          sx={{
+            minWidth: 520,
+            '& .MuiTableCell-root': {
+              borderColor: fabUTokens.color.border,
+              py: 1.1,
+            },
+            '& .MuiTableCell-head': {
+              color: fabUTokens.color.textSecondary,
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+            },
+          }}
+        >
           <TableHead sx={{ bgcolor: fabUTokens.color.surfaceMuted }}>
             <TableRow>
               <TableCell>Spell</TableCell>
@@ -55,7 +71,7 @@ function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
                     size="small"
                     variant="contained"
                     sx={{
-                      borderRadius: `${fabUTokens.radius.pill}px`,
+                      borderRadius: '10px',
                       textTransform: 'none',
                       fontWeight: 700,
                       bgcolor: fabUTokens.color.mp,

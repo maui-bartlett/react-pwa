@@ -19,7 +19,7 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
         sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: 1.25,
+          gap: 1,
         }}
       >
         {attributes.map((attribute) => (
@@ -45,7 +45,7 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
         sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-          gap: 1.25,
+          gap: 1,
         }}
       >
         {resources.map((resource) => (

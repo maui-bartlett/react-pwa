@@ -4,15 +4,15 @@ import { Tone } from './types';
 
 const fabUTokens = {
   color: {
-    canvas: '#f4f1ea',
+    canvas: '#f1ede4',
     surface: '#ffffff',
-    surfaceMuted: '#f8f7f3',
-    border: '#d7ddd5',
+    surfaceMuted: '#f7f4ed',
+    border: '#ccd4ca',
     textPrimary: '#1f2a26',
     textSecondary: '#51605a',
-    brand: '#285346',
-    brandStrong: '#1f4338',
-    brandSoft: '#e5efe9',
+    brand: '#2b5747',
+    brandStrong: '#23483b',
+    brandSoft: '#dfe9e0',
     hp: '#c25d52',
     mp: '#4f7fd3',
     warning: '#d49037',
@@ -22,12 +22,12 @@ const fabUTokens = {
   },
   radius: {
     pill: 999,
-    sm: 12,
-    md: 18,
-    lg: 24,
+    sm: 10,
+    md: 14,
+    lg: 18,
   },
   shadow: {
-    soft: '0 10px 30px rgba(31, 42, 38, 0.08)',
+    soft: '0 6px 18px rgba(31, 42, 38, 0.05)',
   },
 };
 

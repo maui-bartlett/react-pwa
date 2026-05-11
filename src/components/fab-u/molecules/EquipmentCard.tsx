@@ -30,17 +30,23 @@ function EquipmentCard({
             key={`${item.slot}-${item.name}`}
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '14px',
+              borderRadius: '10px',
               px: 1.5,
-              py: 1.25,
-              bgcolor: fabUTokens.color.surfaceMuted,
+              py: 1.1,
+              bgcolor: fabUTokens.color.surface,
+              boxShadow: 'inset 4px 0 0 rgba(43, 87, 71, 0.14)',
             }}
           >
             <Stack direction="row" justifyContent="space-between" gap={2}>
               <Stack spacing={0.35}>
                 <Typography
                   variant="caption"
-                  sx={{ color: fabUTokens.color.textSecondary, textTransform: 'uppercase' }}
+                  sx={{
+                    color: fabUTokens.color.textSecondary,
+                    textTransform: 'uppercase',
+                    fontSize: '0.64rem',
+                    letterSpacing: '0.06em',
+                  }}
                 >
                   {item.slot}
                 </Typography>
@@ -72,13 +78,14 @@ function EquipmentCard({
         <Box
           sx={{
             border: `1px dashed ${fabUTokens.color.border}`,
-            borderRadius: '14px',
+            borderRadius: '10px',
             px: 1.5,
             py: 1.75,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
             color: fabUTokens.color.textSecondary,
+            bgcolor: fabUTokens.color.surfaceMuted,
           }}
         >
           <AddIcon fontSize="small" />

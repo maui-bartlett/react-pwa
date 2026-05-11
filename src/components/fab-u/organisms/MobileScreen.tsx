@@ -17,18 +17,18 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
         width: '100%',
         maxWidth: 390,
         minHeight: 780,
-        borderRadius: '32px',
+        borderRadius: '28px',
         border: `1px solid ${fabUTokens.color.border}`,
         bgcolor: fabUTokens.color.canvas,
-        boxShadow: '0 20px 60px rgba(31, 42, 38, 0.12)',
-        p: 1,
+        boxShadow: '0 16px 42px rgba(31, 42, 38, 0.1)',
+        p: 0.8,
       }}
     >
       <Stack
         spacing={1.5}
         sx={{
           height: '100%',
-          borderRadius: '28px',
+          borderRadius: '22px',
           overflow: 'hidden',
           bgcolor: fabUTokens.color.canvas,
         }}

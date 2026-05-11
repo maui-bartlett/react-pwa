@@ -13,10 +13,10 @@ function SectionLabel({ label }: SectionLabelProps) {
       sx={{
         display: 'inline-flex',
         alignSelf: 'flex-start',
-        borderRadius: `${fabUTokens.radius.pill}px`,
+        borderRadius: '8px',
         bgcolor: fabUTokens.color.brand,
-        px: 1.5,
-        py: 0.5,
+        px: 1.2,
+        py: 0.45,
       }}
     >
       <Typography
@@ -24,7 +24,8 @@ function SectionLabel({ label }: SectionLabelProps) {
         sx={{
           color: '#fff',
           fontWeight: 700,
-          letterSpacing: '0.08em',
+          fontSize: '0.64rem',
+          letterSpacing: '0.06em',
           textTransform: 'uppercase',
         }}
       >
