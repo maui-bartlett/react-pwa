@@ -4,21 +4,42 @@ import { StatPill, SurfaceCard } from '../atoms';
 import { AttributeRow, StatPillData } from '../types';
 
 type AttributesStatsCardProps = {
-  attributes: AttributeRow[];
-  resources: StatPillData[];
+  topRow?: StatPillData[];
+  middleRow?: StatPillData[];
+  bottomRow: AttributeRow[];
 };
 
-function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps) {
-  return (
-    <SurfaceCard label="Attributes & Stats">
+function AttributesStatsCard({ topRow = [], middleRow = [], bottomRow }: AttributesStatsCardProps) {
+  function renderStatRow(items: StatPillData[]) {
+    return (
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
           gap: 0.85,
         }}
       >
-        {attributes.map((attribute) => (
+        {items.map((item) => (
+          <StatPill key={item.label} {...item} layout="inline" />
+        ))}
+      </Box>
+    );
+  }
+
+  return (
+    <SurfaceCard label="Attributes & Stats">
+      {topRow.length ? renderStatRow(topRow) : null}
+
+      {middleRow.length ? renderStatRow(middleRow) : null}
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${bottomRow.length}, minmax(0, 1fr))`,
+          gap: 0.85,
+        }}
+      >
+        {bottomRow.map((attribute) => (
           <StatPill
             key={attribute.label}
             label={attribute.label}
@@ -35,19 +56,6 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
                     : 'success'
             }
           />
-        ))}
-      </Box>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns:
-            resources.length > 4 ? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))',
-          gap: 0.85,
-        }}
-      >
-        {resources.map((resource) => (
-          <StatPill key={resource.label} {...resource} layout="inline" />
         ))}
       </Box>
     </SurfaceCard>

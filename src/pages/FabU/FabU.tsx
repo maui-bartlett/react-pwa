@@ -32,10 +32,10 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 ];
 
 const combatAttributeRows = [
-  { label: 'Might', score: 'd10', modifier: '+3 modifier', category: 'power' },
-  { label: 'Dexterity', score: 'd8', modifier: '+2 modifier', category: 'speed' },
-  { label: 'Willpower', score: 'd8', modifier: '+2 modifier', category: 'focus' },
-  { label: 'Insight', score: 'd10', modifier: '+3 modifier', category: 'support' },
+  { label: 'Dexterity', score: 'd8', modifier: '', category: 'speed' },
+  { label: 'Insight', score: 'd10', modifier: '', category: 'support' },
+  { label: 'Might', score: 'd8', modifier: '', category: 'power' },
+  { label: 'Willpower', score: 'd8 + 1', modifier: '', category: 'focus' },
 ] as const;
 
 const overviewAttributeRows = [
@@ -46,13 +46,13 @@ const overviewAttributeRows = [
 ] as const;
 
 const combatResources = [
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
-  { label: 'Defense', value: '8 (12)', tone: 'success' as const },
-  { label: 'M. Def.', value: '8 (12)', tone: 'success' as const },
   { label: 'Initiative', value: '0', tone: 'neutral' as const },
+  { label: 'Defense', value: '8 (12)', tone: 'success' as const },
+  { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
   { label: 'FP', value: '4', tone: 'neutral' as const },
   { label: 'IP', value: '8', tone: 'warning' as const },
+  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
+  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
 ] as const;
 
 const overviewResources = [
@@ -243,8 +243,8 @@ function FabU() {
         </SurfaceCard>
 
         <AttributesStatsCard
-          attributes={[...overviewAttributeRows]}
-          resources={[...overviewResources]}
+          middleRow={[...overviewResources]}
+          bottomRow={[...overviewAttributeRows]}
         />
 
         <DetailListCard
@@ -285,8 +285,14 @@ function FabU() {
     return (
       <>
         <AttributesStatsCard
-          attributes={[...combatAttributeRows]}
-          resources={[...combatResources]}
+          topRow={[combatResources[0], combatResources[1], combatResources[2]]}
+          middleRow={[
+            combatResources[3],
+            combatResources[4],
+            combatResources[5],
+            combatResources[6],
+          ]}
+          bottomRow={[...combatAttributeRows]}
         />
         <StatusEffectsDiagram />
 
