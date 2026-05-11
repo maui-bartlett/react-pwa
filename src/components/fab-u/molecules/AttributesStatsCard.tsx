@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 
 import { StatPill, SurfaceCard } from '../atoms';
 import { AttributeRow, StatPillData } from '../types';
@@ -11,10 +10,7 @@ type AttributesStatsCardProps = {
 
 function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps) {
   return (
-    <SurfaceCard
-      label="Attributes & Stats"
-      subtitle="Color-coded pills reflect the recurring visual language in the mockups."
-    >
+    <SurfaceCard label="Attributes & Stats">
       <Box
         sx={{
           display: 'grid',
@@ -52,11 +48,6 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
           <StatPill key={resource.label} {...resource} />
         ))}
       </Box>
-
-      <Typography variant="caption" sx={{ color: '#51605a' }}>
-        Designed for mobile-first layouts: the grid collapses into compact stat pills instead of
-        verbose form fields.
-      </Typography>
     </SurfaceCard>
   );
 }

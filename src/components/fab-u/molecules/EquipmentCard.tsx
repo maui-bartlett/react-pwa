@@ -19,11 +19,7 @@ function EquipmentCard({
   emptyLabel = 'Open accessory slot',
 }: EquipmentCardProps) {
   return (
-    <SurfaceCard
-      label="Gear"
-      title={title}
-      subtitle="Equipment slots and inventory rows share the same bordered card grammar."
-    >
+    <SurfaceCard label="Gear" title={title}>
       <Stack spacing={1.25}>
         {items.map((item) => (
           <Box

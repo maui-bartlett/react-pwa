@@ -122,6 +122,37 @@ const notes = [
   },
 ];
 
+const screenMeta: Record<
+  Exclude<FabUTab, 'combat'>,
+  { title: string; subtitle: string; actionLabel: string }
+> = {
+  overview: {
+    title: 'Character Overview',
+    subtitle: 'Transfer student · Origin: Infinita',
+    actionLabel: 'Overview',
+  },
+  skills: {
+    title: 'Skills & Growth',
+    subtitle: 'Class techniques, ranks, and progression',
+    actionLabel: 'Skills',
+  },
+  spells: {
+    title: 'Spells & Arcana',
+    subtitle: 'Prepared magic and casting options',
+    actionLabel: 'Spells',
+  },
+  gear: {
+    title: 'Gear & Inventory',
+    subtitle: 'Equipped kit, weight, and backpack',
+    actionLabel: 'Gear',
+  },
+  notes: {
+    title: 'Character Notes',
+    subtitle: 'Backstory prompts and campaign hooks',
+    actionLabel: 'Notes',
+  },
+};
+
 function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
@@ -143,8 +174,7 @@ function FabU() {
             variant="body2"
             sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.7 }}
           >
-            The overview layout pairs a strong profile card with compact stat clusters, making it
-            easy to scan identity, resources, and narrative hooks at a glance.
+            Arcane sharpshooter balancing precise ranged pressure with volatile entropy magic.
           </Typography>
         </SurfaceCard>
 
@@ -223,20 +253,22 @@ function FabU() {
       <>
         <AttributesStatsCard attributes={[...attributeRows]} resources={[...combatResources]} />
 
-        <SurfaceCard label="Status" title="Conditions & tempo">
+        <SurfaceCard label="Status" title="Status Effects">
           <Stack direction="row" flexWrap="wrap" gap={1}>
             {['Guarded', 'Fast', 'Charged', 'Inspired'].map((status, index) => (
               <Chip
                 key={status}
                 label={status}
                 sx={{
-                  borderRadius: `${fabUTokens.radius.pill}px`,
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: '8px',
                   bgcolor:
                     index % 2 === 0
                       ? fabUTokens.color.brandSoft
                       : `${fabUTokens.color.surfaceMuted}`,
                   color: fabUTokens.color.textPrimary,
                   fontWeight: 700,
+                  fontSize: '0.72rem',
                 }}
               />
             ))}
@@ -250,7 +282,6 @@ function FabU() {
             <DetailListCard
               label="Bonds"
               title="Live combat levers"
-              subtitle="The combat overview mockup mixes relationship context with tactical quick actions."
               items={[
                 {
                   title: 'Mina',
@@ -265,7 +296,7 @@ function FabU() {
               ]}
             />
 
-            <SurfaceCard label="Quick Actions" title="Round-ready actions">
+            <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>
                 {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
                   <Button
@@ -274,9 +305,11 @@ function FabU() {
                     sx={{
                       flexGrow: 1,
                       minWidth: 120,
-                      borderRadius: `${fabUTokens.radius.pill}px`,
+                      minHeight: 38,
+                      borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 700,
+                      fontSize: '0.78rem',
                       bgcolor: fabUTokens.color.brand,
                       boxShadow: 'none',
                       '&:hover': {
@@ -295,11 +328,7 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
-            <SkillsTable
-              title="Sharpshooter skills"
-              subtitle="Grouped, horizontally scrollable tables preserve a familiar mobile-first card shell."
-              rows={sharpshooterSkills}
-            />
+            <SkillsTable title="Sharpshooter skills" rows={sharpshooterSkills} />
             <SkillsTable title="Entropist skills" rows={entropistSkills} />
           </>
         ) : null}
@@ -325,11 +354,7 @@ function FabU() {
             { label: 'Growth', value: 'Ready' },
           ]}
         />
-        <SkillsTable
-          title="Sharpshooter skills"
-          subtitle="Standalone tab retains the same reusable table while switching to the hero header shell."
-          rows={sharpshooterSkills}
-        />
+        <SkillsTable title="Sharpshooter skills" rows={sharpshooterSkills} />
         <SkillsTable title="Entropist skills" rows={entropistSkills} />
       </>
     );
@@ -412,20 +437,20 @@ function FabU() {
           variant="compact"
           eyebrow="RAD · LVL 13"
           title="Fabula Ultima"
-          subtitle="Combat shell with shared stats and tactical sub-tabs."
+          subtitle="Active encounter"
           actionLabel={combatTabLabel}
         />
       );
     }
 
+    const meta = screenMeta[activeTab];
+
     return (
       <HeaderBar
-        eyebrow="Design system"
-        title={activeTab === 'overview' ? 'Character Overview' : `Character ${activeTab}`}
-        subtitle="Large hero header variant derived from the standalone tab screens."
-        actionLabel={
-          activeTab === 'overview' ? 'Combat' : activeTab[0].toUpperCase() + activeTab.slice(1)
-        }
+        eyebrow="Rad Walker · Lvl 13"
+        title={meta.title}
+        subtitle={meta.subtitle}
+        actionLabel={meta.actionLabel}
       />
     );
   })();
@@ -451,75 +476,49 @@ function FabU() {
 
   return (
     <>
-      <meta name="title" content="Fab-u Design System" />
+      <meta name="title" content="Fab-u Preview" />
       <Stack
-        spacing={3}
-        sx={{ height: '100%', overflow: 'auto', bgcolor: '#fafafa', p: { xs: 2, md: 3 } }}
+        alignItems="center"
+        spacing={1.5}
+        sx={{
+          minHeight: '100%',
+          overflow: 'auto',
+          bgcolor: fabUTokens.color.canvas,
+          py: { xs: 2.5, md: 3.5 },
+          px: 2,
+        }}
       >
-        <Stack spacing={0.75}>
-          <Typography variant="h4" sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}>
-            Fab-u design system
-          </Typography>
-          <Typography variant="body1" sx={{ color: fabUTokens.color.textSecondary, maxWidth: 760 }}>
-            This page turns the image set in <code>src/fab-u-designs</code> into reusable React
-            building blocks and a mobile-first showcase screen that can recreate the core layouts.
-          </Typography>
-        </Stack>
-
-        <Stack direction={{ xs: 'column', xl: 'row' }} spacing={3} alignItems="flex-start">
-          <MobileScreen
-            header={header}
-            footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+        <Stack spacing={0.35} alignItems="center" sx={{ textAlign: 'center', maxWidth: 420 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: fabUTokens.color.textSecondary,
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
           >
-            {content}
-          </MobileScreen>
-
-          <Stack spacing={2} sx={{ flex: 1, width: '100%', maxWidth: 680 }}>
-            <SurfaceCard
-              label="Component inventory"
-              title="Reusable React modules"
-              subtitle="The folder structure is intentionally layered so future screens can compose primitives instead of cloning layouts."
-            >
-              <Stack spacing={1.5}>
-                {[
-                  'Atoms: SurfaceCard, SectionLabel, StatPill',
-                  'Molecules: HeaderBar, SegmentedTabs, AttributesStatsCard, SkillsTable, SpellsTable, EquipmentCard, NoteCard',
-                  'Organisms: MobileScreen, PrimaryNavBar, DetailListCard, SummaryStrip',
-                ].map((line) => (
-                  <Typography
-                    key={line}
-                    variant="body2"
-                    sx={{ color: fabUTokens.color.textSecondary }}
-                  >
-                    {line}
-                  </Typography>
-                ))}
-              </Stack>
-            </SurfaceCard>
-
-            <SurfaceCard
-              label="Screen coverage"
-              title="How the mockups map to reusable parts"
-              subtitle="The same cards and nav patterns reappear across Overview, Combat, Skills, Spells, Gear, and Notes."
-            >
-              <Stack spacing={1}>
-                {[
-                  'Overview combines identity cards, traits, stat pills, bond lists, and progress summaries.',
-                  'Combat reuses the stat card, status chips, sub-tabs, and either bonds, skills, spells, or gear content.',
-                  'Standalone Skills, Spells, Gear, and Notes tabs swap the compact combat header for the larger hero header without changing the card vocabulary.',
-                ].map((line) => (
-                  <Typography
-                    key={line}
-                    variant="body2"
-                    sx={{ color: fabUTokens.color.textSecondary }}
-                  >
-                    {line}
-                  </Typography>
-                ))}
-              </Stack>
-            </SurfaceCard>
-          </Stack>
+            Fab-u preview
+          </Typography>
+          <Typography variant="body2" sx={{ color: fabUTokens.color.textSecondary }}>
+            Derived from the source screens in <code>src/fab-u-designs</code>.
+          </Typography>
         </Stack>
+
+        <MobileScreen
+          header={header}
+          footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+        >
+          {content}
+        </MobileScreen>
+
+        <Typography
+          variant="caption"
+          sx={{ color: fabUTokens.color.textSecondary, maxWidth: 390, textAlign: 'center' }}
+        >
+          Built from shared atoms, molecules, and organisms instead of one-off screen copies.
+        </Typography>
       </Stack>
     </>
   );

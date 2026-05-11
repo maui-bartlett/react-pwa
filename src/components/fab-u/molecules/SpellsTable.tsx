@@ -18,11 +18,7 @@ type SpellsTableProps = {
 
 function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
   return (
-    <SurfaceCard
-      label="Spells"
-      title={title}
-      subtitle="Rows are action oriented, matching the spell-focused screens."
-    >
+    <SurfaceCard label="Spells" title={title}>
       <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '10px' }}>
         <Table
           size="small"

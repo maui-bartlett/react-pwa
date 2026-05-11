@@ -1,9 +1,9 @@
 import { ComponentType } from 'react';
 
-import AutoAwesomeMotionOutlinedIcon from '@mui/icons-material/AutoAwesomeMotionOutlined';
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import BackpackOutlinedIcon from '@mui/icons-material/BackpackOutlined';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
@@ -21,12 +21,12 @@ type PrimaryNavBarProps = {
 };
 
 const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIconProps> }> = [
-  { label: 'Overview', value: 'overview', icon: AutoAwesomeMotionOutlinedIcon },
+  { label: 'Overview', value: 'overview', icon: GridViewOutlinedIcon },
   { label: 'Combat', value: 'combat', icon: SwordIcon },
   { label: 'Skills', value: 'skills', icon: PsychologyAltOutlinedIcon },
   { label: 'Spells', value: 'spells', icon: AutoAwesomeOutlinedIcon },
   { label: 'Gear', value: 'gear', icon: BackpackOutlinedIcon },
-  { label: 'Notes', value: 'notes', icon: DescriptionOutlinedIcon },
+  { label: 'Notes', value: 'notes', icon: MenuBookOutlinedIcon },
 ];
 
 function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
@@ -36,10 +36,10 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
       justifyContent="space-between"
       sx={{
         border: `1px solid ${fabUTokens.color.border}`,
-        borderRadius: '14px',
+        borderRadius: '10px',
         bgcolor: fabUTokens.color.surface,
-        px: 0.35,
-        py: 0.45,
+        px: 0.25,
+        py: 0.3,
       }}
     >
       {options.map((option) => {
@@ -52,9 +52,9 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
             onClick={() => onChange(option.value)}
             sx={{
               flex: 1,
-              borderRadius: '10px',
-              px: 0.5,
-              py: 0.85,
+              borderRadius: '8px',
+              px: 0.3,
+              py: 0.75,
               backgroundColor: active ? alpha(fabUTokens.color.brandSoft, 0.9) : 'transparent',
             }}
           >
@@ -62,7 +62,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
               <Icon
                 sx={{
                   color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
-                  fontSize: 18,
+                  fontSize: 17,
                 }}
                 fontSize="small"
               />
@@ -71,7 +71,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
                 sx={{
                   color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
                   fontWeight: active ? 700 : 500,
-                  fontSize: '0.68rem',
+                  fontSize: '0.65rem',
                 }}
               >
                 {option.label}
