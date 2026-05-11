@@ -23,7 +23,7 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
             key={attribute.label}
             label={attribute.label}
             value={attribute.score}
-            helperText={`${attribute.modifier} modifier`}
+            helperText={attribute.modifier || undefined}
             tone={
               attribute.category === 'power'
                 ? 'danger'

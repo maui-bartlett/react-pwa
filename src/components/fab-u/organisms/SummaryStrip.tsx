@@ -11,11 +11,12 @@ type SummaryMetric = {
 
 type SummaryStripProps = {
   metrics: SummaryMetric[];
+  label?: string;
 };
 
-function SummaryStrip({ metrics }: SummaryStripProps) {
+function SummaryStrip({ metrics, label }: SummaryStripProps) {
   return (
-    <SurfaceCard label="Progress">
+    <SurfaceCard label={label}>
       <Box
         sx={{
           display: 'grid',

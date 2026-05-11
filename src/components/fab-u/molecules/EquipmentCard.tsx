@@ -11,15 +11,17 @@ type EquipmentCardProps = {
   title?: string;
   items: EquipmentItem[];
   emptyLabel?: string;
+  label?: string;
 };
 
 function EquipmentCard({
   title = 'Equipped gear',
   items,
   emptyLabel = 'Open accessory slot',
+  label = 'Gear',
 }: EquipmentCardProps) {
   return (
-    <SurfaceCard label="Gear" title={title}>
+    <SurfaceCard label={label} title={title || undefined}>
       <Stack spacing={1.25}>
         {items.map((item) => (
           <Box
@@ -33,8 +35,14 @@ function EquipmentCard({
               boxShadow: 'inset 4px 0 0 rgba(43, 87, 71, 0.14)',
             }}
           >
-            <Stack direction="row" justifyContent="space-between" gap={2}>
-              <Stack spacing={0.35}>
+            <Stack spacing={0.45}>
+              <Stack direction="row" justifyContent="space-between" gap={2} alignItems="flex-start">
+                <Typography
+                  variant="body1"
+                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+                >
+                  {item.name}
+                </Typography>
                 <Typography
                   variant="caption"
                   sx={{
@@ -42,31 +50,28 @@ function EquipmentCard({
                     textTransform: 'uppercase',
                     fontSize: '0.64rem',
                     letterSpacing: '0.06em',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {item.slot}
                 </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
-                >
-                  {item.name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: fabUTokens.color.textSecondary }}>
-                  {item.description}
-                </Typography>
               </Stack>
-              <Stack alignItems="flex-end" spacing={0.5}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: fabUTokens.color.warning, fontWeight: 700 }}
-                >
-                  {item.weight ?? '0 wt'}
-                </Typography>
-                <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary }}>
-                  {item.tags.join(' · ')}
-                </Typography>
-              </Stack>
+              <Typography variant="body2" sx={{ color: fabUTokens.color.textSecondary }}>
+                {item.description}
+              </Typography>
+              {item.weight || item.tags?.length ? (
+                <Stack direction="row" justifyContent="space-between" gap={2}>
+                  <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary }}>
+                    {item.tags?.join(' · ')}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: fabUTokens.color.warning, fontWeight: 700, whiteSpace: 'nowrap' }}
+                  >
+                    {item.weight}
+                  </Typography>
+                </Stack>
+              ) : null}
             </Stack>
           </Box>
         ))}

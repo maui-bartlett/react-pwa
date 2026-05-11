@@ -12,7 +12,7 @@ type DetailListItem = {
 
 type DetailListCardProps = {
   label: string;
-  title: string;
+  title?: string;
   items: DetailListItem[];
   subtitle?: string;
 };

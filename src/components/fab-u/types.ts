@@ -30,24 +30,21 @@ export type AttributeRow = {
 
 export type SkillRow = {
   name: string;
-  attribute: string;
-  rank: string;
-  modifier: string;
-  focus?: string;
+  level?: string;
+  effect: string;
 };
 
 export type SpellRow = {
   name: string;
-  discipline: string;
   cost: string;
-  range: string;
+  target: string;
   effect: string;
 };
 
 export type EquipmentItem = {
   name: string;
   slot: string;
-  tags: string[];
+  tags?: string[];
   description: string;
   weight?: string;
 };

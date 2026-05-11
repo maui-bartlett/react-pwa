@@ -14,11 +14,13 @@ type SkillsTableProps = {
   title: string;
   rows: SkillRow[];
   subtitle?: string;
+  label?: string;
+  showTitle?: boolean;
 };
 
-function SkillsTable({ title, rows, subtitle }: SkillsTableProps) {
+function SkillsTable({ title, rows, subtitle, label, showTitle = false }: SkillsTableProps) {
   return (
-    <SurfaceCard label="Skills" title={title} subtitle={subtitle}>
+    <SurfaceCard label={label ?? title} title={showTitle ? title : undefined} subtitle={subtitle}>
       <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '10px' }}>
         <Table
           size="small"
@@ -40,10 +42,8 @@ function SkillsTable({ title, rows, subtitle }: SkillsTableProps) {
           <TableHead sx={{ bgcolor: fabUTokens.color.surfaceMuted }}>
             <TableRow>
               <TableCell>Skill</TableCell>
-              <TableCell>Attribute</TableCell>
-              <TableCell>Rank</TableCell>
-              <TableCell>Mod</TableCell>
-              <TableCell>Focus</TableCell>
+              <TableCell>LV</TableCell>
+              <TableCell>Effect</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -57,10 +57,8 @@ function SkillsTable({ title, rows, subtitle }: SkillsTableProps) {
                     {row.name}
                   </Typography>
                 </TableCell>
-                <TableCell>{row.attribute}</TableCell>
-                <TableCell>{row.rank}</TableCell>
-                <TableCell>{row.modifier}</TableCell>
-                <TableCell>{row.focus ?? '—'}</TableCell>
+                <TableCell>{row.level ?? '—'}</TableCell>
+                <TableCell sx={{ minWidth: 220 }}>{row.effect}</TableCell>
               </TableRow>
             ))}
           </TableBody>

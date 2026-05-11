@@ -14,11 +14,18 @@ import { SpellRow } from '../types';
 type SpellsTableProps = {
   rows: SpellRow[];
   title?: string;
+  label?: string;
+  showTitle?: boolean;
 };
 
-function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
+function SpellsTable({
+  rows,
+  title = 'Prepared spells',
+  label,
+  showTitle = false,
+}: SpellsTableProps) {
   return (
-    <SurfaceCard label="Spells" title={title}>
+    <SurfaceCard label={label ?? title} title={showTitle ? title : undefined}>
       <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '10px' }}>
         <Table
           size="small"
@@ -40,9 +47,8 @@ function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
           <TableHead sx={{ bgcolor: fabUTokens.color.surfaceMuted }}>
             <TableRow>
               <TableCell>Spell</TableCell>
-              <TableCell>Discipline</TableCell>
-              <TableCell>Cost</TableCell>
-              <TableCell>Range</TableCell>
+              <TableCell>MP</TableCell>
+              <TableCell>Target</TableCell>
               <TableCell>Effect</TableCell>
               <TableCell align="right">Action</TableCell>
             </TableRow>
@@ -58,9 +64,8 @@ function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
                     {row.name}
                   </Typography>
                 </TableCell>
-                <TableCell>{row.discipline}</TableCell>
                 <TableCell>{row.cost}</TableCell>
-                <TableCell>{row.range}</TableCell>
+                <TableCell>{row.target}</TableCell>
                 <TableCell sx={{ minWidth: 180 }}>{row.effect}</TableCell>
                 <TableCell align="right">
                   <Button
