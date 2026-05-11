@@ -7,15 +7,25 @@ type AttributesStatsCardProps = {
   topRow?: StatPillData[];
   middleRow?: StatPillData[];
   bottomRow: AttributeRow[];
+  topRowTemplate?: string;
+  middleRowTemplate?: string;
+  bottomRowTemplate?: string;
 };
 
-function AttributesStatsCard({ topRow = [], middleRow = [], bottomRow }: AttributesStatsCardProps) {
-  function renderStatRow(items: StatPillData[]) {
+function AttributesStatsCard({
+  topRow = [],
+  middleRow = [],
+  bottomRow,
+  topRowTemplate,
+  middleRowTemplate,
+  bottomRowTemplate,
+}: AttributesStatsCardProps) {
+  function renderStatRow(items: StatPillData[], template?: string) {
     return (
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+          gridTemplateColumns: template ?? `repeat(${items.length}, minmax(0, 1fr))`,
           gap: 0.85,
         }}
       >
@@ -28,14 +38,14 @@ function AttributesStatsCard({ topRow = [], middleRow = [], bottomRow }: Attribu
 
   return (
     <SurfaceCard label="Attributes & Stats">
-      {topRow.length ? renderStatRow(topRow) : null}
+      {topRow.length ? renderStatRow(topRow, topRowTemplate) : null}
 
-      {middleRow.length ? renderStatRow(middleRow) : null}
+      {middleRow.length ? renderStatRow(middleRow, middleRowTemplate) : null}
 
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${bottomRow.length}, minmax(0, 1fr))`,
+          gridTemplateColumns: bottomRowTemplate ?? `repeat(${bottomRow.length}, minmax(0, 1fr))`,
           gap: 0.85,
         }}
       >

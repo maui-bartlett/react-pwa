@@ -11,6 +11,7 @@ function StatPill({
   helperText,
   tone = 'neutral',
   layout = 'stacked',
+  minHeight,
 }: StatPillData) {
   const toneStyles = getToneStyles(tone);
   const inline = layout === 'inline';
@@ -24,11 +25,12 @@ function StatPill({
         px: 1.1,
         py: inline ? 0.75 : 0.95,
         minWidth: 0,
+        minHeight: minHeight ?? (inline ? undefined : 84),
       }}
     >
       <Stack spacing={inline ? 0.18 : 0.22}>
         <Stack
-          direction="row"
+          direction={inline ? 'row' : 'column'}
           justifyContent="space-between"
           alignItems={inline ? 'center' : 'flex-start'}
           gap={1}
@@ -54,6 +56,7 @@ function StatPill({
               fontSize: inline ? '0.96rem' : '1.08rem',
               lineHeight: 1.08,
               whiteSpace: 'nowrap',
+              textAlign: inline ? 'right' : 'left',
             }}
           >
             {value}

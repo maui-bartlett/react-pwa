@@ -49,10 +49,10 @@ const combatResources = [
   { label: 'Initiative', value: '0', tone: 'neutral' as const },
   { label: 'Defense', value: '8 (12)', tone: 'success' as const },
   { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
-  { label: 'FP', value: '4', tone: 'neutral' as const },
-  { label: 'IP', value: '8', tone: 'warning' as const },
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
+  { label: 'FP', value: '4', tone: 'neutral' as const, minHeight: 44 },
+  { label: 'IP', value: '8', tone: 'warning' as const, minHeight: 44 },
+  { label: 'HP', value: '58 / 58', tone: 'danger' as const, minHeight: 44 },
+  { label: 'MP', value: '58 / 58', tone: 'accent' as const, minHeight: 44 },
 ] as const;
 
 const overviewResources = [
@@ -292,7 +292,10 @@ function FabU() {
             combatResources[5],
             combatResources[6],
           ]}
+          topRowTemplate="repeat(3, minmax(0, 1fr))"
+          middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
           bottomRow={[...combatAttributeRows]}
+          bottomRowTemplate="repeat(4, minmax(0, 1fr))"
         />
         <StatusEffectsDiagram />
 
