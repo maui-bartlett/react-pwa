@@ -1,4 +1,5 @@
 import AddTaskIcon from '@mui/icons-material/AddTask';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import HomeIcon from '@mui/icons-material/Home';
@@ -14,6 +15,12 @@ const routes: Routes = [
     path: '/',
     title: 'Welcome',
     icon: HomeIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/FabU')),
+    path: '/fab-u',
+    title: 'Fab-u',
+    icon: AutoAwesomeIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/Page1')),
