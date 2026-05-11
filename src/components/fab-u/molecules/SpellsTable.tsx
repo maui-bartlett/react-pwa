@@ -51,6 +51,7 @@ function SpellsTable({
               <TableCell>Spell</TableCell>
               <TableCell>MP</TableCell>
               <TableCell>Target</TableCell>
+              <TableCell>Duration</TableCell>
               <TableCell>Effect</TableCell>
               <TableCell align="right">Action</TableCell>
             </TableRow>
@@ -68,6 +69,7 @@ function SpellsTable({
                 </TableCell>
                 <TableCell>{row.cost}</TableCell>
                 <TableCell>{row.target}</TableCell>
+                <TableCell>{row.duration}</TableCell>
                 <TableCell sx={{ minWidth: 180 }}>{row.effect}</TableCell>
                 <TableCell align="right">
                   <Button

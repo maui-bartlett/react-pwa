@@ -97,24 +97,28 @@ const spellRows = [
     name: 'Accelerate',
     cost: '20 MP',
     target: '1',
+    duration: 'Scene' as const,
     effect: 'Target takes one extra action on their turn.',
   },
   {
     name: 'Drain Spirit',
     cost: '5 MP',
     target: '1',
+    duration: 'Instant' as const,
     effect: 'HR + 15 MP; recover half as MP.',
   },
   {
     name: 'Stop',
     cost: '10 MP',
     target: '1',
+    duration: 'Scene' as const,
     effect: 'Target performs fewer actions.',
   },
   {
     name: 'Mirror',
     cost: '10 MP',
     target: '1',
+    duration: 'Instant' as const,
     effect: 'Redirect a spell to protect the chosen target.',
   },
 ];

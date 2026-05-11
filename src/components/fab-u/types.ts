@@ -38,6 +38,7 @@ export type SpellRow = {
   name: string;
   cost: string;
   target: string;
+  duration: 'Instant' | 'Scene';
   effect: string;
 };
 
