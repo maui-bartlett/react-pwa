@@ -34,10 +34,10 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
       justifyContent="space-between"
       sx={{
         border: `1px solid ${fabUTokens.color.border}`,
-        borderRadius: '10px',
+        borderRadius: '9px',
         bgcolor: fabUTokens.color.surface,
-        px: 0.25,
-        py: 0.3,
+        px: 0.18,
+        py: 0.22,
       }}
     >
       {options.map((option) => {
@@ -50,17 +50,17 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
             onClick={() => onChange(option.value)}
             sx={{
               flex: 1,
-              borderRadius: '8px',
-              px: 0.3,
-              py: 0.75,
-              backgroundColor: active ? alpha(fabUTokens.color.brandSoft, 0.9) : 'transparent',
+              borderRadius: '7px',
+              px: 0.22,
+              py: 0.68,
+              backgroundColor: active ? alpha(fabUTokens.color.brandSoft, 0.95) : 'transparent',
             }}
           >
-            <Stack alignItems="center" spacing={0.4}>
+            <Stack alignItems="center" spacing={0.32}>
               <Icon
                 sx={{
                   color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
-                  fontSize: 17,
+                  fontSize: 16,
                 }}
                 fontSize="small"
               />
@@ -69,7 +69,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
                 sx={{
                   color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
                   fontWeight: active ? 700 : 500,
-                  fontSize: '0.65rem',
+                  fontSize: '0.62rem',
                 }}
               >
                 {option.label}

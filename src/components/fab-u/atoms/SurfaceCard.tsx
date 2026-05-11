@@ -35,9 +35,9 @@ function SurfaceCard({
         borderRadius: `${fabUTokens.radius.md}px`,
         bgcolor: fabUTokens.color.surface,
         boxShadow: fabUTokens.shadow.soft,
-        p: 1.75,
-        pt: label ? 2.4 : 1.75,
-        backgroundImage: `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.55)} 0%, ${fabUTokens.color.surface} 22%)`,
+        p: 1.65,
+        pt: label ? 2.3 : 1.65,
+        backgroundImage: `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.62)} 0%, ${fabUTokens.color.surface} 24%)`,
         ...sx,
       }}
       {...props}
@@ -47,23 +47,23 @@ function SurfaceCard({
           sx={{
             position: 'absolute',
             top: 0,
-            left: 14,
+            left: 12,
             transform: 'translateY(-50%)',
-            px: 0.35,
+            px: 0.28,
             bgcolor: fabUTokens.color.canvas,
           }}
         >
           <SectionLabel label={label} />
         </Box>
       ) : null}
-      <Stack spacing={1.25}>
+      <Stack spacing={1.15}>
         {(label || title || subtitle || actions) && (
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
-            <Stack spacing={0.75}>
+            <Stack spacing={0.55}>
               {title ? (
                 <Typography
                   variant="h6"
-                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '1.05rem' }}
+                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '1rem' }}
                 >
                   {title}
                 </Typography>
@@ -73,8 +73,8 @@ function SurfaceCard({
                   variant="body2"
                   sx={{
                     color: fabUTokens.color.textSecondary,
-                    fontSize: '0.84rem',
-                    lineHeight: 1.5,
+                    fontSize: '0.8rem',
+                    lineHeight: 1.45,
                   }}
                 >
                   {subtitle}

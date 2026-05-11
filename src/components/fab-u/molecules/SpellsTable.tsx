@@ -26,20 +26,22 @@ function SpellsTable({
 }: SpellsTableProps) {
   return (
     <SurfaceCard label={label ?? title} title={showTitle ? title : undefined}>
-      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '10px' }}>
+      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '9px' }}>
         <Table
           size="small"
           sx={{
             minWidth: 520,
             '& .MuiTableCell-root': {
               borderColor: fabUTokens.color.border,
-              py: 1.1,
+              py: 0.95,
+              px: 1.2,
+              fontSize: '0.74rem',
             },
             '& .MuiTableCell-head': {
               color: fabUTokens.color.textSecondary,
-              fontSize: '0.68rem',
+              fontSize: '0.62rem',
               fontWeight: 700,
-              letterSpacing: '0.05em',
+              letterSpacing: '0.045em',
               textTransform: 'uppercase',
             },
           }}
@@ -72,9 +74,11 @@ function SpellsTable({
                     size="small"
                     variant="contained"
                     sx={{
-                      borderRadius: '10px',
+                      minHeight: 28,
+                      borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 700,
+                      fontSize: '0.68rem',
                       bgcolor: fabUTokens.color.mp,
                       boxShadow: 'none',
                       '&:hover': {

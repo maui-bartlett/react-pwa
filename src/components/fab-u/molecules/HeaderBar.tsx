@@ -24,21 +24,22 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       spacing={2}
       sx={{
         bgcolor: fabUTokens.color.brand,
-        border: `1px solid ${alpha('#ffffff', 0.14)}`,
-        borderRadius: compact ? '10px' : '12px',
+        border: `1px solid ${alpha('#ffffff', 0.12)}`,
+        borderRadius: compact ? '9px' : '11px',
         color: '#fff',
-        px: compact ? 1.75 : 2,
-        py: compact ? 1.25 : 1.8,
+        px: compact ? 1.6 : 1.95,
+        py: compact ? 1.15 : 2.05,
+        boxShadow: '0 6px 14px rgba(30, 49, 40, 0.08)',
       }}
     >
-      <Stack spacing={compact ? 0.2 : 0.35}>
+      <Stack spacing={compact ? 0.16 : 0.3}>
         {eyebrow ? (
           <Typography
             variant="caption"
             sx={{
-              color: 'rgba(255,255,255,0.82)',
+              color: 'rgba(255,255,255,0.78)',
               fontWeight: 700,
-              fontSize: compact ? '0.62rem' : '0.66rem',
+              fontSize: compact ? '0.58rem' : '0.63rem',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
             }}
@@ -51,8 +52,8 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
           sx={{
             fontWeight: 700,
             lineHeight: 1.1,
-            fontSize: compact ? '1.02rem' : '1.35rem',
-            letterSpacing: compact ? '0.08em' : '0.01em',
+            fontSize: compact ? '0.98rem' : '1.28rem',
+            letterSpacing: compact ? '0.07em' : '0.005em',
             textTransform: compact ? 'uppercase' : 'none',
           }}
         >
@@ -62,10 +63,10 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
           <Typography
             variant="body2"
             sx={{
-              color: 'rgba(255,255,255,0.84)',
-              maxWidth: 240,
-              fontSize: compact ? '0.72rem' : '0.82rem',
-              lineHeight: 1.35,
+              color: 'rgba(255,255,255,0.8)',
+              maxWidth: compact ? 140 : 230,
+              fontSize: compact ? '0.69rem' : '0.78rem',
+              lineHeight: 1.32,
             }}
           >
             {subtitle}
@@ -78,15 +79,16 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
           size="small"
           sx={{
             alignSelf: compact ? 'center' : 'flex-start',
-            minWidth: compact ? 86 : 92,
-            borderRadius: '8px',
-            bgcolor: alpha('#ffffff', 0.95),
+            minWidth: compact ? 78 : 88,
+            minHeight: compact ? 30 : 32,
+            borderRadius: '7px',
+            bgcolor: alpha('#ffffff', 0.96),
             color: fabUTokens.color.brandStrong,
-            px: 1.25,
+            px: 1.15,
             boxShadow: 'none',
             textTransform: 'none',
             fontWeight: 700,
-            fontSize: '0.75rem',
+            fontSize: compact ? '0.72rem' : '0.74rem',
             '&:hover': {
               bgcolor: '#fff',
               boxShadow: 'none',

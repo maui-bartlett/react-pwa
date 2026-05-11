@@ -18,10 +18,10 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
         width: '100%',
         maxWidth: 390,
         minHeight: 780,
-        borderRadius: '18px',
+        borderRadius: '14px',
         border: `1px solid ${fabUTokens.color.border}`,
         bgcolor: fabUTokens.color.canvas,
-        boxShadow: '0 10px 28px rgba(31, 42, 38, 0.08)',
+        boxShadow: '0 5px 18px rgba(31, 42, 38, 0.05)',
         overflow: 'hidden',
       }}
     >
@@ -31,16 +31,16 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           bgcolor: fabUTokens.color.canvas,
         }}
       >
-        <Box sx={{ px: 1.1, pt: 1.1, pb: 0.9 }}>{header}</Box>
-        <Stack spacing={1.25} sx={{ px: 1.1, pb: 1, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <Box sx={{ px: 1, pt: 1, pb: 0.75 }}>{header}</Box>
+        <Stack spacing={1.1} sx={{ px: 1, pb: 0.9, flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {children}
         </Stack>
         <Box
           sx={{
-            px: 1.1,
-            py: 1,
+            px: 1,
+            py: 0.85,
             borderTop: `1px solid ${fabUTokens.color.border}`,
-            bgcolor: alpha(fabUTokens.color.surface, 0.9),
+            bgcolor: alpha(fabUTokens.color.surface, 0.94),
           }}
         >
           {footer}

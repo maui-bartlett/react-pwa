@@ -29,23 +29,23 @@ function DetailListCard({ label, title, items, subtitle }: DetailListCardProps) 
             gap={2}
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '10px',
-              px: 1.5,
-              py: 1.1,
+              borderRadius: '9px',
+              px: 1.25,
+              py: 1,
               bgcolor: fabUTokens.color.surface,
-              boxShadow: 'inset 4px 0 0 rgba(43, 87, 71, 0.14)',
+              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
             }}
           >
             <Stack spacing={0.35}>
               <Typography
                 variant="body2"
-                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.95rem' }}
+                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
               >
                 {item.title}
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.45 }}
+                sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.68rem', lineHeight: 1.4 }}
               >
                 {item.subtitle}
               </Typography>
@@ -53,7 +53,12 @@ function DetailListCard({ label, title, items, subtitle }: DetailListCardProps) 
             {item.trailing ? (
               <Typography
                 variant="caption"
-                sx={{ color: fabUTokens.color.brand, fontWeight: 700, whiteSpace: 'nowrap' }}
+                sx={{
+                  color: fabUTokens.color.brand,
+                  fontWeight: 700,
+                  fontSize: '0.68rem',
+                  whiteSpace: 'nowrap',
+                }}
               >
                 {item.trailing}
               </Typography>

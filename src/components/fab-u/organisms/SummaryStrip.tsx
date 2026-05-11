@@ -29,10 +29,10 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
             key={metric.label}
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '10px',
+              borderRadius: '9px',
               bgcolor: fabUTokens.color.surface,
-              px: 1.25,
-              py: 1,
+              px: 1.05,
+              py: 0.9,
             }}
           >
             <Typography
@@ -40,8 +40,8 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
               sx={{
                 color: fabUTokens.color.textSecondary,
                 fontWeight: 700,
-                fontSize: '0.64rem',
-                letterSpacing: '0.06em',
+                fontSize: '0.6rem',
+                letterSpacing: '0.05em',
                 textTransform: 'uppercase',
               }}
             >
@@ -49,7 +49,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
             </Typography>
             <Typography
               variant="body1"
-              sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+              sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.96rem' }}
             >
               {metric.value}
             </Typography>
