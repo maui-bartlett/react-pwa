@@ -1,6 +1,7 @@
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { fabUTokens } from '../tokens';
 
@@ -23,7 +24,8 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       spacing={2}
       sx={{
         bgcolor: fabUTokens.color.brand,
-        borderRadius: compact ? `${fabUTokens.radius.md}px` : `${fabUTokens.radius.lg}px`,
+        border: `1px solid ${alpha('#ffffff', 0.14)}`,
+        borderRadius: compact ? '10px' : '12px',
         color: '#fff',
         px: compact ? 2 : 2.5,
         py: compact ? 1.5 : 2.25,
@@ -58,8 +60,8 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
           size="small"
           sx={{
             alignSelf: compact ? 'center' : 'flex-start',
-            borderRadius: `${fabUTokens.radius.pill}px`,
-            bgcolor: '#fff',
+            borderRadius: '10px',
+            bgcolor: alpha('#ffffff', 0.95),
             color: fabUTokens.color.brandStrong,
             px: 1.75,
             boxShadow: 'none',
