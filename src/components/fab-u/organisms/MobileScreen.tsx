@@ -32,7 +32,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
         }}
       >
         <Box sx={{ px: 1, pt: 1, pb: 0.75 }}>{header}</Box>
-        <Stack spacing={1.65} sx={{ px: 1, pb: 0.9, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <Stack spacing={2.15} sx={{ px: 1, pb: 0.9, flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {children}
         </Stack>
         <Box
