@@ -25,3 +25,7 @@ See `package.json` scripts section. Key commands:
 - Only Chromium is installed for Playwright by default in the cloud environment. To run all three browsers, install Firefox/WebKit with `npx playwright install --with-deps firefox webkit`.
 - The `prepare` script runs `husky install` and copies `env/.shared` to `.env`. This runs automatically on `npm install`.
 - ESLint is configured with `--max-warnings=0`, so any warning will cause a non-zero exit code.
+
+### PR guidelines
+
+- Always include a demo video (and/or screenshots) of major changes in every PR description. Use `RecordScreen` and/or the `computerUse` subagent to capture working demos before creating or updating the PR.
