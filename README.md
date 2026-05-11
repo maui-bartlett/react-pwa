@@ -42,6 +42,36 @@ Building a modern web application requires a robust setup, including routing, UI
 - **Git Hooks**: Husky with lint-staged for pre-commit quality enforcement
 - **Local HTTPS**: Built-in support for local HTTPS development
 
+## ▲ Vercel CI/CD
+
+This repo now includes Vercel deployment workflows:
+
+- `.github/workflows/vercel-preview.yml`
+  - deploys a Vercel preview for pull requests
+  - posts the preview URL back to the PR as a sticky comment
+- `.github/workflows/vercel-production.yml`
+  - deploys production when changes land on `main` or `master`
+
+### One-time setup
+
+1. Import this GitHub repository into Vercel.
+2. In the GitHub repository settings, add:
+   - repository secret: `VERCEL_TOKEN`
+   - repository variable: `VERCEL_ORG_ID`
+   - repository variable: `VERCEL_PROJECT_ID`
+3. You can get the org/project IDs by linking the repo once with the Vercel CLI:
+
+```bash
+npx vercel link
+cat .vercel/project.json
+```
+
+Or copy them from the Vercel project settings.
+
+### Routing
+
+`vercel.json` is configured for this Vite + React Router SPA and rewrites all app routes to `index.html`, so direct visits to client-side routes like `/fab-u` work correctly on Vercel.
+
 ## 🚀 Getting Started
 
 ### Quick Start
