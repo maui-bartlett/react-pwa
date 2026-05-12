@@ -22,13 +22,15 @@ function StatPill({
         border: `1px solid ${toneStyles.borderColor}`,
         borderRadius: '10px',
         backgroundColor: '#fff',
+        display: 'flex',
+        alignItems: 'center',
         px: 1.1,
         py: inline ? 0.75 : 0.6,
         minWidth: 0,
         minHeight,
       }}
     >
-      <Stack spacing={inline ? 0.18 : 0.08}>
+      <Stack spacing={inline ? 0.18 : 0.08} sx={{ width: '100%', justifyContent: 'center' }}>
         <Stack
           direction={inline ? 'row' : 'column'}
           justifyContent="space-between"
