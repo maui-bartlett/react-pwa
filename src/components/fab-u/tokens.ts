@@ -34,7 +34,7 @@ const fabUTokens = {
 function getToneStyles(tone: Tone = 'neutral') {
   const styles = {
     neutral: fabUTokens.color.neutral,
-    accent: fabUTokens.color.brand,
+    accent: '#7292d4',
     success: fabUTokens.color.success,
     warning: fabUTokens.color.warning,
     danger: fabUTokens.color.danger,
