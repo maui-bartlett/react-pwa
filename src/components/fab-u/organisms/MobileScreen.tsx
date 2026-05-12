@@ -26,13 +26,6 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
     }
 
     function updateBottomSpacer() {
-      if (!scrollViewportRef.current || !contentRef.current || !footerRef.current) {
-        return;
-      }
-
-      const scrollViewport = scrollViewportRef.current;
-      const content = contentRef.current;
-      const footerElement = footerRef.current;
       const desiredScrollAllowance = footerElement.offsetHeight + 12;
       const naturalOverflow = content.offsetHeight - scrollViewport.clientHeight;
       const nextSpacerHeight = Math.max(0, desiredScrollAllowance - naturalOverflow);
