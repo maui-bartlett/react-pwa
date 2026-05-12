@@ -34,4 +34,6 @@ The Vercel plugin is pre-installed via the update script (`npx plugins add verce
 
 - Always include a demo video (and/or screenshots) of major changes in every PR description. Use `RecordScreen` and/or the `computerUse` subagent to capture working demos before creating or updating the PR.
 - After pushing changes to a PR branch, always check the PR comments and/or the `vercel preview` workflow output for the latest Vercel preview deployment URL and include that URL in the final user-facing response when available.
+- Prefer the `github-actions[bot]` sticky PR comment (`<!-- vercel-preview-comment -->`) as the default preview link to share with users.
+- If that sticky comment is unavailable, then fall back to the official Vercel bot `Preview` URL in the PR comments.
 - If a Vercel preview URL is not available yet, say that explicitly and explain whether the preview workflow is still running or misconfigured.
