@@ -26,6 +26,10 @@ See `package.json` scripts section. Key commands:
 - The `prepare` script runs `husky install` and copies `env/.shared` to `.env`. This runs automatically on `npm install`.
 - ESLint is configured with `--max-warnings=0`, so any warning will cause a non-zero exit code.
 
+### Vercel plugin
+
+The Vercel plugin is pre-installed via the update script (`npx plugins add vercel/vercel-plugin --target cursor`). It provides 26 skills, 3 specialist agents, and 5 slash commands for the Vercel/Next.js ecosystem. The plugin requires Bun (also installed by the update script). No manual setup is needed — it activates automatically for Vercel/Next.js projects.
+
 ### PR guidelines
 
 - Always include a demo video (and/or screenshots) of major changes in every PR description. Use `RecordScreen` and/or the `computerUse` subagent to capture working demos before creating or updating the PR.
