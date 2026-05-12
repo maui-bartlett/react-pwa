@@ -1,4 +1,4 @@
-import { PropsWithChildren, ReactNode } from 'react';
+import { PropsWithChildren, ReactNode, useEffect, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -11,6 +11,40 @@ type MobileScreenProps = PropsWithChildren<{
 }>;
 
 function MobileScreen({ header, footer, children }: MobileScreenProps) {
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const [bottomSpacerHeight, setBottomSpacerHeight] = useState(0);
+
+  useEffect(() => {
+    const scrollViewport = scrollViewportRef.current;
+    const content = contentRef.current;
+    const footerElement = footerRef.current;
+
+    if (!scrollViewport || !content || !footerElement) {
+      return undefined;
+    }
+
+    function updateBottomSpacer() {
+      const desiredScrollAllowance = footerElement.offsetHeight + 12;
+      const naturalOverflow = content.offsetHeight - scrollViewport.clientHeight;
+      const nextSpacerHeight = Math.max(0, desiredScrollAllowance - naturalOverflow);
+
+      setBottomSpacerHeight(nextSpacerHeight);
+    }
+
+    updateBottomSpacer();
+
+    const resizeObserver = new ResizeObserver(updateBottomSpacer);
+    resizeObserver.observe(scrollViewport);
+    resizeObserver.observe(content);
+    resizeObserver.observe(footerElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [children, footer]);
+
   return (
     <Box
       sx={{
@@ -45,27 +79,24 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           {header}
         </Box>
         <Box
+          ref={scrollViewportRef}
           sx={{
             px: 1,
             pt: 1,
-            pb: 10,
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
             overscrollBehavior: 'contain',
           }}
         >
-          <Stack
-            spacing={2.15}
-            sx={{
-              minHeight: 'calc(100% + 88px)',
-            }}
-          >
+          <Stack ref={contentRef} spacing={2.15} sx={{ minHeight: '100%' }}>
             {children}
           </Stack>
+          <Box sx={{ height: bottomSpacerHeight, flexShrink: 0 }} />
         </Box>
       </Stack>
       <Box
+        ref={footerRef}
         sx={{
           position: 'absolute',
           right: 0,
