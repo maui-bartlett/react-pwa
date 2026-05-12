@@ -44,8 +44,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
         >
           {header}
         </Box>
-        <Stack
-          spacing={2.15}
+        <Box
           sx={{
             px: 1,
             pt: 1,
@@ -56,8 +55,15 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
             overscrollBehavior: 'contain',
           }}
         >
-          {children}
-        </Stack>
+          <Stack
+            spacing={2.15}
+            sx={{
+              minHeight: 'calc(100% + 88px)',
+            }}
+          >
+            {children}
+          </Stack>
+        </Box>
       </Stack>
       <Box
         sx={{
