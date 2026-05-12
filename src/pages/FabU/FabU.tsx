@@ -568,7 +568,8 @@ function FabU() {
           height: '100dvh',
           overflow: 'hidden',
           bgcolor: fabUTokens.color.canvas,
-          py: { xs: 2, md: 3 },
+          pt: { xs: 'max(20px, calc(env(safe-area-inset-top) + 12px))', md: 3 },
+          pb: { xs: 2, md: 3 },
           px: 1.5,
           boxSizing: 'border-box',
         }}
