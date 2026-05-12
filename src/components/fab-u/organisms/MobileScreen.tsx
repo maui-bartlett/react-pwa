@@ -49,6 +49,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           spacing={2.15}
           sx={{
             px: 1,
+            pt: 1,
             pb: 10,
             flex: 1,
             minHeight: 0,
