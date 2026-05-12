@@ -277,10 +277,10 @@ function FabU() {
         <AttributesStatsCard
           topRow={[combatResources[0], combatResources[1], combatResources[2]]}
           middleRow={[
-            combatResources[5],
-            combatResources[6],
             combatResources[3],
             combatResources[4],
+            combatResources[5],
+            combatResources[6],
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
           middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
