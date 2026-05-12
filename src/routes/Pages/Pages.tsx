@@ -7,7 +7,7 @@ import { getPageHeight, renderRoutes } from './utils';
 
 function Pages() {
   return (
-    <Box sx={{ height: (theme) => getPageHeight(theme) }}>
+    <Box sx={{ height: getPageHeight() }}>
       <Routes>{renderRoutes(routes)}</Routes>
     </Box>
   );

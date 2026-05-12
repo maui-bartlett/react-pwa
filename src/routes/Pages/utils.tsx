@@ -1,15 +1,11 @@
 import { Route } from 'react-router';
 
-import type { Theme } from '@mui/material';
-
 import { objectInsertIf } from '@/utils/insertIf';
 
 import { Routes } from '../types';
 
-function getPageHeight(theme: Theme) {
-  const topSpacing = Number(theme.mixins.toolbar.minHeight) + parseInt(theme.spacing(1));
-
-  return `calc(100vh - ${topSpacing}px)`;
+function getPageHeight() {
+  return '100dvh';
 }
 
 function renderRoutes(routes: Routes) {

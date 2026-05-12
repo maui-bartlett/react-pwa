@@ -27,7 +27,7 @@ function Sidebar() {
       swipeAreaWidth={30}
       data-pw="sidebar"
     >
-      <List sx={{ width: 250, pt: (theme) => `${theme.mixins.toolbar.minHeight}px` }}>
+      <List sx={{ width: 250, pt: 1 }}>
         {routes
           .filter((route) => route.title)
           .map(({ path, title, icon: Icon }) => (
