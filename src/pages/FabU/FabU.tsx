@@ -204,16 +204,6 @@ function FabU() {
     return combatTabs.find((option) => option.value === activeCombatTab)?.label ?? 'Bonds';
   }, [activeCombatTab]);
 
-  function renderSectionTabs(value: CombatSubTab) {
-    return (
-      <SegmentedTabs
-        options={combatTabs}
-        value={value}
-        onChange={(nextValue) => setActiveTab(nextValue === 'bonds' ? 'overview' : nextValue)}
-      />
-    );
-  }
-
   function renderOverview() {
     return (
       <>
@@ -369,7 +359,6 @@ function FabU() {
             { label: 'IP', value: '8' },
           ]}
         />
-        {renderSectionTabs('skills')}
         <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
         <SkillsTable
           label="Sharpshooter Skills"
@@ -402,7 +391,6 @@ function FabU() {
             { label: 'IP', value: '8' },
           ]}
         />
-        {renderSectionTabs('spells')}
         <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
       </>
     );
