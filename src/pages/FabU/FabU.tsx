@@ -49,10 +49,10 @@ const combatResources = [
   { label: 'Initiative', value: '0', tone: 'neutral' as const },
   { label: 'Defense', value: '8 (12)', tone: 'success' as const },
   { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
-  { label: 'FP', value: '4', tone: 'neutral' as const, minHeight: 44 },
-  { label: 'IP', value: '8', tone: 'warning' as const, minHeight: 44 },
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const, minHeight: 44 },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const, minHeight: 44 },
+  { label: 'FP', value: '4', tone: 'neutral' as const },
+  { label: 'IP', value: '8', tone: 'warning' as const },
+  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
+  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
 ] as const;
 
 const overviewResources = [
@@ -203,16 +203,6 @@ function FabU() {
   const combatTabLabel = useMemo(() => {
     return combatTabs.find((option) => option.value === activeCombatTab)?.label ?? 'Bonds';
   }, [activeCombatTab]);
-
-  function renderSectionTabs(value: CombatSubTab) {
-    return (
-      <SegmentedTabs
-        options={combatTabs}
-        value={value}
-        onChange={(nextValue) => setActiveTab(nextValue === 'bonds' ? 'overview' : nextValue)}
-      />
-    );
-  }
 
   function renderOverview() {
     return (
@@ -369,7 +359,6 @@ function FabU() {
             { label: 'IP', value: '8' },
           ]}
         />
-        {renderSectionTabs('skills')}
         <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
         <SkillsTable
           label="Sharpshooter Skills"
@@ -402,7 +391,6 @@ function FabU() {
             { label: 'IP', value: '8' },
           ]}
         />
-        {renderSectionTabs('spells')}
         <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
       </>
     );
@@ -411,7 +399,6 @@ function FabU() {
   function renderGear() {
     return (
       <>
-        {renderSectionTabs('gear')}
         <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
         <SummaryStrip
           label="Inventory Points"
@@ -568,7 +555,8 @@ function FabU() {
           height: '100dvh',
           overflow: 'hidden',
           bgcolor: fabUTokens.color.canvas,
-          py: { xs: 2, md: 3 },
+          pt: { xs: 'max(20px, calc(env(safe-area-inset-top) + 12px))', md: 3 },
+          pb: { xs: 2, md: 3 },
           px: 1.5,
           boxSizing: 'border-box',
         }}

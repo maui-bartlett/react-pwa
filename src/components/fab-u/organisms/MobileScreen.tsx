@@ -1,8 +1,7 @@
-import { PropsWithChildren, ReactNode } from 'react';
+import { PropsWithChildren, ReactNode, useEffect, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import { alpha } from '@mui/material/styles';
 
 import { fabUTokens } from '../tokens';
 
@@ -12,6 +11,47 @@ type MobileScreenProps = PropsWithChildren<{
 }>;
 
 function MobileScreen({ header, footer, children }: MobileScreenProps) {
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const [bottomSpacerHeight, setBottomSpacerHeight] = useState(0);
+
+  useEffect(() => {
+    const scrollViewport = scrollViewportRef.current;
+    const content = contentRef.current;
+    const footerElement = footerRef.current;
+
+    if (!scrollViewport || !content || !footerElement) {
+      return undefined;
+    }
+
+    function updateBottomSpacer() {
+      if (!scrollViewportRef.current || !contentRef.current || !footerRef.current) {
+        return;
+      }
+
+      const scrollViewport = scrollViewportRef.current;
+      const content = contentRef.current;
+      const footerElement = footerRef.current;
+      const desiredScrollAllowance = footerElement.offsetHeight + 12;
+      const viewportFillRequirement = scrollViewport.clientHeight - content.offsetHeight;
+      const nextSpacerHeight = Math.max(desiredScrollAllowance, viewportFillRequirement, 0);
+
+      setBottomSpacerHeight(nextSpacerHeight);
+    }
+
+    updateBottomSpacer();
+
+    const resizeObserver = new ResizeObserver(updateBottomSpacer);
+    resizeObserver.observe(scrollViewport);
+    resizeObserver.observe(content);
+    resizeObserver.observe(footerElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [children, footer]);
+
   return (
     <Box
       sx={{
@@ -35,22 +75,35 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           bgcolor: fabUTokens.color.canvas,
         }}
       >
-        <Box sx={{ px: 1, pt: 1, pb: 1.25, flexShrink: 0 }}>{header}</Box>
-        <Stack
-          spacing={2.15}
+        <Box
           sx={{
             px: 1,
-            pb: 10,
+            pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
+            pb: 1.5,
+            flexShrink: 0,
+          }}
+        >
+          {header}
+        </Box>
+        <Box
+          ref={scrollViewportRef}
+          sx={{
+            px: 1,
+            pt: 1,
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
             overscrollBehavior: 'contain',
           }}
         >
-          {children}
-        </Stack>
+          <Stack ref={contentRef} spacing={2.15}>
+            {children}
+          </Stack>
+          <Box sx={{ height: bottomSpacerHeight, flexShrink: 0 }} />
+        </Box>
       </Stack>
       <Box
+        ref={footerRef}
         sx={{
           position: 'absolute',
           right: 0,
@@ -59,8 +112,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           px: 1,
           py: 0.85,
           borderTop: `1px solid ${fabUTokens.color.border}`,
-          bgcolor: alpha(fabUTokens.color.surface, 0.94),
-          backdropFilter: 'blur(8px)',
+          bgcolor: fabUTokens.color.surface,
         }}
       >
         {footer}
