@@ -11,16 +11,20 @@ import { Routes } from './types';
 
 const routes: Routes = [
   {
-    component: asyncComponentLoader(() => import('@/pages/Welcome')),
+    component: asyncComponentLoader(() => import('@/pages/FabU')),
     path: '/',
+    title: 'Fab-u',
+    icon: AutoAwesomeIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/Welcome')),
+    path: '/welcome',
     title: 'Welcome',
     icon: HomeIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/FabU')),
     path: '/fab-u',
-    title: 'Fab-u',
-    icon: AutoAwesomeIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/Page1')),
