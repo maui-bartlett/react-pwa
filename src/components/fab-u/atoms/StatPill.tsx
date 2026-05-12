@@ -23,17 +23,17 @@ function StatPill({
         borderRadius: '10px',
         backgroundColor: '#fff',
         px: 1.1,
-        py: inline ? 0.75 : 0.52,
+        py: inline ? 0.75 : 0.6,
         minWidth: 0,
         minHeight,
       }}
     >
-      <Stack spacing={inline ? 0.18 : 0.04}>
+      <Stack spacing={inline ? 0.18 : 0.08}>
         <Stack
           direction={inline ? 'row' : 'column'}
           justifyContent="space-between"
           alignItems={inline ? 'center' : 'flex-start'}
-          gap={inline ? 1 : 0.08}
+          gap={inline ? 1 : 0.12}
         >
           <Typography
             variant="caption"
