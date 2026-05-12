@@ -34,8 +34,8 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
       const content = contentRef.current;
       const footerElement = footerRef.current;
       const desiredScrollAllowance = footerElement.offsetHeight + 12;
-      const naturalOverflow = content.offsetHeight - scrollViewport.clientHeight;
-      const nextSpacerHeight = Math.max(0, desiredScrollAllowance - naturalOverflow);
+      const viewportFillRequirement = scrollViewport.clientHeight - content.offsetHeight;
+      const nextSpacerHeight = Math.max(desiredScrollAllowance, viewportFillRequirement, 0);
 
       setBottomSpacerHeight(nextSpacerHeight);
     }
@@ -96,7 +96,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
             overscrollBehavior: 'contain',
           }}
         >
-          <Stack ref={contentRef} spacing={2.15} sx={{ minHeight: '100%' }}>
+          <Stack ref={contentRef} spacing={2.15}>
             {children}
           </Stack>
           <Box sx={{ height: bottomSpacerHeight, flexShrink: 0 }} />
