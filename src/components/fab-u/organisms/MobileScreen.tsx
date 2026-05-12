@@ -35,7 +35,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           bgcolor: fabUTokens.color.canvas,
         }}
       >
-        <Box sx={{ px: 1, pt: 1, pb: 1.25, flexShrink: 0 }}>{header}</Box>
+        <Box sx={{ px: 1, pt: 1, pb: 1.5, flexShrink: 0 }}>{header}</Box>
         <Stack
           spacing={2.15}
           sx={{
