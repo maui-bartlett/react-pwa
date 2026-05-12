@@ -2,7 +2,6 @@ import { PropsWithChildren, ReactNode } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import { alpha } from '@mui/material/styles';
 
 import { fabUTokens } from '../tokens';
 
@@ -69,8 +68,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           px: 1,
           py: 0.85,
           borderTop: `1px solid ${fabUTokens.color.border}`,
-          bgcolor: alpha(fabUTokens.color.surface, 0.94),
-          backdropFilter: 'blur(8px)',
+          bgcolor: fabUTokens.color.surface,
         }}
       >
         {footer}
