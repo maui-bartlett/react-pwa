@@ -2,6 +2,7 @@ import { PropsWithChildren, ReactNode } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import { alpha } from '@mui/material/styles';
 
 import { fabUTokens } from '../tokens';
 
@@ -17,27 +18,33 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
         width: '100%',
         maxWidth: 390,
         minHeight: 780,
-        borderRadius: '32px',
+        borderRadius: '14px',
         border: `1px solid ${fabUTokens.color.border}`,
         bgcolor: fabUTokens.color.canvas,
-        boxShadow: '0 20px 60px rgba(31, 42, 38, 0.12)',
-        p: 1,
+        boxShadow: '0 5px 18px rgba(31, 42, 38, 0.05)',
+        overflow: 'hidden',
       }}
     >
       <Stack
-        spacing={1.5}
         sx={{
           height: '100%',
-          borderRadius: '28px',
-          overflow: 'hidden',
           bgcolor: fabUTokens.color.canvas,
         }}
       >
-        <Box sx={{ px: 1.25, pt: 1.25 }}>{header}</Box>
-        <Stack spacing={1.5} sx={{ px: 1.25, pb: 1, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <Box sx={{ px: 1, pt: 1, pb: 0.75 }}>{header}</Box>
+        <Stack spacing={2.15} sx={{ px: 1, pb: 0.9, flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {children}
         </Stack>
-        <Box sx={{ px: 1.25, pb: 1.25 }}>{footer}</Box>
+        <Box
+          sx={{
+            px: 1,
+            py: 0.85,
+            borderTop: `1px solid ${fabUTokens.color.border}`,
+            bgcolor: alpha(fabUTokens.color.surface, 0.94),
+          }}
+        >
+          {footer}
+        </Box>
       </Stack>
     </Box>
   );

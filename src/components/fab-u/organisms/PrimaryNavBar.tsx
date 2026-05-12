@@ -1,13 +1,15 @@
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import PsychologyAltOutlinedIcon from '@mui/icons-material/PsychologyAltOutlined';
-import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
-import SportsMmaOutlinedIcon from '@mui/icons-material/SportsMmaOutlined';
-import TipsAndUpdatesOutlinedIcon from '@mui/icons-material/TipsAndUpdatesOutlined';
+import { ComponentType } from 'react';
+
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
+import BackpackOutlinedIcon from '@mui/icons-material/BackpackOutlined';
+import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
+import { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
+import { DiamondIcon, NotesLinesIcon, SwordIcon } from '../icons';
 import { fabUTokens } from '../tokens';
 import { FabUTab } from '../types';
 
@@ -16,13 +18,13 @@ type PrimaryNavBarProps = {
   onChange: (value: FabUTab) => void;
 };
 
-const options: Array<{ label: string; value: FabUTab; icon: typeof AutoAwesomeIcon }> = [
-  { label: 'Overview', value: 'overview', icon: AutoAwesomeIcon },
-  { label: 'Combat', value: 'combat', icon: SportsMmaOutlinedIcon },
-  { label: 'Skills', value: 'skills', icon: PsychologyAltOutlinedIcon },
-  { label: 'Spells', value: 'spells', icon: TipsAndUpdatesOutlinedIcon },
-  { label: 'Gear', value: 'gear', icon: ShieldOutlinedIcon },
-  { label: 'Notes', value: 'notes', icon: DescriptionOutlinedIcon },
+const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIconProps> }> = [
+  { label: 'Overview', value: 'overview', icon: GridViewOutlinedIcon },
+  { label: 'Combat', value: 'combat', icon: SwordIcon },
+  { label: 'Skills', value: 'skills', icon: DiamondIcon },
+  { label: 'Spells', value: 'spells', icon: AutoAwesomeOutlinedIcon },
+  { label: 'Gear', value: 'gear', icon: BackpackOutlinedIcon },
+  { label: 'Notes', value: 'notes', icon: NotesLinesIcon },
 ];
 
 function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
@@ -32,10 +34,10 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
       justifyContent="space-between"
       sx={{
         border: `1px solid ${fabUTokens.color.border}`,
-        borderRadius: '20px',
+        borderRadius: '9px',
         bgcolor: fabUTokens.color.surface,
-        px: 0.5,
-        py: 0.75,
+        px: 0.18,
+        py: 0.22,
       }}
     >
       {options.map((option) => {
@@ -48,14 +50,18 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
             onClick={() => onChange(option.value)}
             sx={{
               flex: 1,
-              borderRadius: '14px',
-              px: 0.5,
-              py: 0.75,
+              borderRadius: '7px',
+              px: 0.22,
+              py: 0.68,
+              backgroundColor: active ? alpha(fabUTokens.color.brandSoft, 0.95) : 'transparent',
             }}
           >
-            <Stack alignItems="center" spacing={0.4}>
+            <Stack alignItems="center" spacing={0.32}>
               <Icon
-                sx={{ color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary }}
+                sx={{
+                  color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
+                  fontSize: 16,
+                }}
                 fontSize="small"
               />
               <Typography
@@ -63,6 +69,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
                 sx={{
                   color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
                   fontWeight: active ? 700 : 500,
+                  fontSize: '0.62rem',
                 }}
               >
                 {option.label}

@@ -19,6 +19,8 @@ export type StatPillData = {
   value: string;
   helperText?: string;
   tone?: Tone;
+  layout?: 'stacked' | 'inline';
+  minHeight?: number | string;
 };
 
 export type AttributeRow = {
@@ -30,24 +32,22 @@ export type AttributeRow = {
 
 export type SkillRow = {
   name: string;
-  attribute: string;
-  rank: string;
-  modifier: string;
-  focus?: string;
+  level?: string;
+  effect: string;
 };
 
 export type SpellRow = {
   name: string;
-  discipline: string;
   cost: string;
-  range: string;
+  target: string;
+  duration: 'Instant' | 'Scene';
   effect: string;
 };
 
 export type EquipmentItem = {
   name: string;
   slot: string;
-  tags: string[];
+  tags?: string[];
   description: string;
   weight?: string;
 };

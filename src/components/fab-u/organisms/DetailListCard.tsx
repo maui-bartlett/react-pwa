@@ -12,7 +12,7 @@ type DetailListItem = {
 
 type DetailListCardProps = {
   label: string;
-  title: string;
+  title?: string;
   items: DetailListItem[];
   subtitle?: string;
 };
@@ -29,25 +29,37 @@ function DetailListCard({ label, title, items, subtitle }: DetailListCardProps) 
             gap={2}
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '14px',
-              px: 1.5,
-              py: 1.25,
-              bgcolor: fabUTokens.color.surfaceMuted,
+              borderRadius: '9px',
+              px: 1.25,
+              py: 1,
+              bgcolor: fabUTokens.color.surface,
+              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
             }}
           >
             <Stack spacing={0.35}>
               <Typography
                 variant="body2"
-                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
               >
                 {item.title}
               </Typography>
-              <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary }}>
+              <Typography
+                variant="caption"
+                sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.68rem', lineHeight: 1.4 }}
+              >
                 {item.subtitle}
               </Typography>
             </Stack>
             {item.trailing ? (
-              <Typography variant="caption" sx={{ color: fabUTokens.color.brand, fontWeight: 700 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: fabUTokens.color.brand,
+                  fontWeight: 700,
+                  fontSize: '0.68rem',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {item.trailing}
               </Typography>
             ) : null}

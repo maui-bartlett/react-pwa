@@ -14,20 +14,38 @@ type SkillsTableProps = {
   title: string;
   rows: SkillRow[];
   subtitle?: string;
+  label?: string;
+  showTitle?: boolean;
 };
 
-function SkillsTable({ title, rows, subtitle }: SkillsTableProps) {
+function SkillsTable({ title, rows, subtitle, label, showTitle = false }: SkillsTableProps) {
   return (
-    <SurfaceCard label="Skills" title={title} subtitle={subtitle}>
-      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '14px' }}>
-        <Table size="small" sx={{ minWidth: 420 }}>
+    <SurfaceCard label={label ?? title} title={showTitle ? title : undefined} subtitle={subtitle}>
+      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '9px' }}>
+        <Table
+          size="small"
+          sx={{
+            minWidth: 420,
+            '& .MuiTableCell-root': {
+              borderColor: fabUTokens.color.border,
+              py: 0.95,
+              px: 1.2,
+              fontSize: '0.74rem',
+            },
+            '& .MuiTableCell-head': {
+              color: fabUTokens.color.textSecondary,
+              fontSize: '0.62rem',
+              fontWeight: 700,
+              letterSpacing: '0.045em',
+              textTransform: 'uppercase',
+            },
+          }}
+        >
           <TableHead sx={{ bgcolor: fabUTokens.color.surfaceMuted }}>
             <TableRow>
               <TableCell>Skill</TableCell>
-              <TableCell>Attribute</TableCell>
-              <TableCell>Rank</TableCell>
-              <TableCell>Mod</TableCell>
-              <TableCell>Focus</TableCell>
+              <TableCell>LV</TableCell>
+              <TableCell>Effect</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -41,10 +59,8 @@ function SkillsTable({ title, rows, subtitle }: SkillsTableProps) {
                     {row.name}
                   </Typography>
                 </TableCell>
-                <TableCell>{row.attribute}</TableCell>
-                <TableCell>{row.rank}</TableCell>
-                <TableCell>{row.modifier}</TableCell>
-                <TableCell>{row.focus ?? '—'}</TableCell>
+                <TableCell>{row.level ?? '—'}</TableCell>
+                <TableCell sx={{ minWidth: 220 }}>{row.effect}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -11,11 +11,12 @@ type SummaryMetric = {
 
 type SummaryStripProps = {
   metrics: SummaryMetric[];
+  label?: string;
 };
 
-function SummaryStrip({ metrics }: SummaryStripProps) {
+function SummaryStrip({ metrics, label }: SummaryStripProps) {
   return (
-    <SurfaceCard label="Progress">
+    <SurfaceCard label={label}>
       <Box
         sx={{
           display: 'grid',
@@ -27,10 +28,11 @@ function SummaryStrip({ metrics }: SummaryStripProps) {
           <Box
             key={metric.label}
             sx={{
-              borderRadius: '14px',
-              bgcolor: fabUTokens.color.brandSoft,
-              px: 1.25,
-              py: 1,
+              border: `1px solid ${fabUTokens.color.border}`,
+              borderRadius: '9px',
+              bgcolor: fabUTokens.color.surface,
+              px: 1.05,
+              py: 0.9,
             }}
           >
             <Typography
@@ -38,6 +40,8 @@ function SummaryStrip({ metrics }: SummaryStripProps) {
               sx={{
                 color: fabUTokens.color.textSecondary,
                 fontWeight: 700,
+                fontSize: '0.6rem',
+                letterSpacing: '0.05em',
                 textTransform: 'uppercase',
               }}
             >
@@ -45,7 +49,7 @@ function SummaryStrip({ metrics }: SummaryStripProps) {
             </Typography>
             <Typography
               variant="body1"
-              sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+              sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.96rem' }}
             >
               {metric.value}
             </Typography>

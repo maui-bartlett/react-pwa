@@ -14,23 +14,44 @@ import { SpellRow } from '../types';
 type SpellsTableProps = {
   rows: SpellRow[];
   title?: string;
+  label?: string;
+  showTitle?: boolean;
 };
 
-function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
+function SpellsTable({
+  rows,
+  title = 'Prepared spells',
+  label,
+  showTitle = false,
+}: SpellsTableProps) {
   return (
-    <SurfaceCard
-      label="Spells"
-      title={title}
-      subtitle="Rows are action oriented, matching the spell-focused screens."
-    >
-      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '14px' }}>
-        <Table size="small" sx={{ minWidth: 520 }}>
+    <SurfaceCard label={label ?? title} title={showTitle ? title : undefined}>
+      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '9px' }}>
+        <Table
+          size="small"
+          sx={{
+            minWidth: 520,
+            '& .MuiTableCell-root': {
+              borderColor: fabUTokens.color.border,
+              py: 0.95,
+              px: 1.2,
+              fontSize: '0.74rem',
+            },
+            '& .MuiTableCell-head': {
+              color: fabUTokens.color.textSecondary,
+              fontSize: '0.62rem',
+              fontWeight: 700,
+              letterSpacing: '0.045em',
+              textTransform: 'uppercase',
+            },
+          }}
+        >
           <TableHead sx={{ bgcolor: fabUTokens.color.surfaceMuted }}>
             <TableRow>
               <TableCell>Spell</TableCell>
-              <TableCell>Discipline</TableCell>
-              <TableCell>Cost</TableCell>
-              <TableCell>Range</TableCell>
+              <TableCell>MP</TableCell>
+              <TableCell>Target</TableCell>
+              <TableCell>Duration</TableCell>
               <TableCell>Effect</TableCell>
               <TableCell align="right">Action</TableCell>
             </TableRow>
@@ -46,18 +67,20 @@ function SpellsTable({ rows, title = 'Prepared spells' }: SpellsTableProps) {
                     {row.name}
                   </Typography>
                 </TableCell>
-                <TableCell>{row.discipline}</TableCell>
                 <TableCell>{row.cost}</TableCell>
-                <TableCell>{row.range}</TableCell>
+                <TableCell>{row.target}</TableCell>
+                <TableCell>{row.duration}</TableCell>
                 <TableCell sx={{ minWidth: 180 }}>{row.effect}</TableCell>
                 <TableCell align="right">
                   <Button
                     size="small"
                     variant="contained"
                     sx={{
-                      borderRadius: `${fabUTokens.radius.pill}px`,
+                      minHeight: 28,
+                      borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 700,
+                      fontSize: '0.68rem',
                       bgcolor: fabUTokens.color.mp,
                       boxShadow: 'none',
                       '&:hover': {

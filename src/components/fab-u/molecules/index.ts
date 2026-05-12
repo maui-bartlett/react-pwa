@@ -5,3 +5,4 @@ export { default as NoteCard } from './NoteCard';
 export { default as SegmentedTabs } from './SegmentedTabs';
 export { default as SkillsTable } from './SkillsTable';
 export { default as SpellsTable } from './SpellsTable';
+export { default as StatusEffectsDiagram } from './StatusEffectsDiagram';

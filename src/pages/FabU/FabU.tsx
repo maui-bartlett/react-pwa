@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -13,12 +13,11 @@ import {
   FabUTab,
   HeaderBar,
   MobileScreen,
-  NoteCard,
   PrimaryNavBar,
   SegmentedTabs,
   SkillsTable,
   SpellsTable,
-  StatPill,
+  StatusEffectsDiagram,
   SummaryStrip,
   SurfaceCard,
   TabOption,
@@ -32,95 +31,170 @@ const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Gear', value: 'gear' },
 ];
 
-const attributeRows = [
-  { label: 'Might', score: 'd10', modifier: '+3', category: 'power' },
-  { label: 'Dexterity', score: 'd8', modifier: '+2', category: 'speed' },
-  { label: 'Willpower', score: 'd8', modifier: '+2', category: 'focus' },
-  { label: 'Insight', score: 'd10', modifier: '+3', category: 'support' },
+const combatAttributeRows = [
+  { label: 'Dexterity', score: 'd8', modifier: '', category: 'speed' },
+  { label: 'Insight', score: 'd10', modifier: '', category: 'support' },
+  { label: 'Might', score: 'd8', modifier: '', category: 'power' },
+  { label: 'Willpower', score: 'd8 + 1', modifier: '', category: 'focus' },
+] as const;
+
+const overviewAttributeRows = [
+  { label: 'Dexterity', score: 'd8', modifier: '', category: 'speed' },
+  { label: 'Insight', score: 'd10', modifier: '', category: 'support' },
+  { label: 'Might', score: 'd8', modifier: '', category: 'power' },
+  { label: 'Willpower', score: 'd8 + 1', modifier: '', category: 'focus' },
 ] as const;
 
 const combatResources = [
-  { label: 'HP', value: '58 / 58', helperText: 'Guarded', tone: 'danger' as const },
-  { label: 'MP', value: '42 / 42', helperText: 'Ready to cast', tone: 'accent' as const },
-  { label: 'IP', value: '6', helperText: 'Inventory points', tone: 'warning' as const },
-  { label: 'DEF', value: '13', helperText: 'Armor + guard', tone: 'success' as const },
-  { label: 'M.DEF', value: '11', helperText: 'Arcane ward', tone: 'accent' as const },
-  { label: 'Init', value: '+2', helperText: 'Reaction bonus', tone: 'neutral' as const },
-];
-
-const overviewResources = [
-  { label: 'HP', value: '58 / 58', helperText: 'Current vitality', tone: 'danger' as const },
-  { label: 'MP', value: '42 / 42', helperText: 'Spell reserve', tone: 'accent' as const },
-  { label: 'Fabula', value: '3', helperText: 'Session points', tone: 'success' as const },
+  { label: 'Initiative', value: '0', tone: 'neutral' as const },
+  { label: 'Defense', value: '8 (12)', tone: 'success' as const },
+  { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
+  { label: 'FP', value: '4', tone: 'neutral' as const, minHeight: 44 },
+  { label: 'IP', value: '8', tone: 'warning' as const, minHeight: 44 },
+  { label: 'HP', value: '58 / 58', tone: 'danger' as const, minHeight: 44 },
+  { label: 'MP', value: '58 / 58', tone: 'accent' as const, minHeight: 44 },
 ] as const;
 
-const sharpshooterSkills = [
-  { name: 'Deadeye', attribute: 'Dexterity', rank: '2', modifier: '+4', focus: 'Ranged' },
-  { name: 'Suppressive Fire', attribute: 'Insight', rank: '1', modifier: '+3', focus: 'Control' },
-  { name: 'Mobile Reload', attribute: 'Dexterity', rank: '1', modifier: '+2', focus: 'Movement' },
-];
+const overviewResources = [
+  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
+  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
+  { label: 'IP', value: '8', tone: 'warning' as const },
+] as const;
 
 const entropistSkills = [
-  { name: 'Arcane Flow', attribute: 'Willpower', rank: '2', modifier: '+4', focus: 'Casting' },
-  { name: 'Rift Sense', attribute: 'Insight', rank: '2', modifier: '+5', focus: 'Awareness' },
-  { name: 'Hex Breaker', attribute: 'Willpower', rank: '1', modifier: '+3', focus: 'Dispel' },
+  { name: 'Entropic Magic', level: '7', effect: 'Alter fate, time, decay, or probability.' },
+  { name: 'Absorb MP', level: '1', effect: 'Recover MP when magic is turned aside.' },
+  { name: 'Stolen Time', level: '1', effect: 'Read time, weather, and celestial signs.' },
+];
+
+const sharpshooterSkills = [
+  {
+    name: 'Ranged Weapon Mastery',
+    level: '1',
+    effect: 'Improve attacks and damage with ranged weapons.',
+  },
+  {
+    name: 'Crossfire',
+    level: '1',
+    effect: 'Create an opening or apply pressure with ranged attacks.',
+  },
+];
+
+const tinkererSkills = [
+  {
+    name: 'Emergency Item',
+    level: '1',
+    effect: 'Once per conflict, create a useful item or tool.',
+  },
+  {
+    name: 'Improvisation',
+    level: '—',
+    effect: 'Spend IP to solve a practical problem in the scene.',
+  },
 ];
 
 const spellRows = [
   {
-    name: 'Thunder Sigil',
-    discipline: 'Arcana',
+    name: 'Accelerate',
+    cost: '20 MP',
+    target: '1',
+    duration: 'Scene' as const,
+    effect: 'Target takes one extra action on their turn.',
+  },
+  {
+    name: 'Drain Spirit',
+    cost: '5 MP',
+    target: '1',
+    duration: 'Instant' as const,
+    effect: 'HR + 15 MP; recover half as MP.',
+  },
+  {
+    name: 'Stop',
     cost: '10 MP',
-    range: 'Near',
-    effect: 'Deal lightning damage and mark the target until your next turn.',
+    target: '1',
+    duration: 'Scene' as const,
+    effect: 'Target performs fewer actions.',
   },
   {
-    name: 'Aurora Weave',
-    discipline: 'Support',
-    cost: '8 MP',
-    range: 'Self',
-    effect: 'Restore HP to one ally and remove a fragile condition.',
-  },
-  {
-    name: 'Gravity Knot',
-    discipline: 'Control',
-    cost: '12 MP',
-    range: 'Far',
-    effect: 'Reduce enemy movement and apply Slow on a hit.',
+    name: 'Mirror',
+    cost: '10 MP',
+    target: '1',
+    duration: 'Instant' as const,
+    effect: 'Redirect a spell to protect the chosen target.',
   },
 ];
 
 const gearItems = [
   {
-    name: 'Aether Repeater',
-    slot: 'Main hand',
-    tags: ['Ranged', 'Two-handed'],
-    description: 'Inflicts elemental rounds and adds +1 to initiative tests.',
-    weight: '3 wt',
+    name: 'Pistol',
+    slot: 'Main Hand',
+    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
   },
   {
-    name: 'Wardcoat',
-    slot: 'Armor',
-    tags: ['Light armor', 'Defensive'],
-    description: 'Stitched with silver sigils that reinforce magical defense.',
-    weight: '2 wt',
+    name: 'Pistol',
+    slot: 'Off Hand',
+    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
   },
 ];
 
-const notes = [
+const bondItems = [
+  { title: 'Jelena', subtitle: 'Loyalty · Affection' },
+  { title: 'Yoru', subtitle: 'Affection' },
+  { title: 'Granada', subtitle: 'Admiration' },
+  { title: 'Juice', subtitle: 'Loyalty' },
+] as const;
+
+const backstoryPrompts = [
   {
-    title: 'Why did Rad leave Infinita?',
-    body: 'Rad fled after a failed coup against the court artificers. The move to the academy was half exile, half rescue mission.',
-    updatedAt: 'today',
-    tag: 'Backstory',
+    question: 'What drove me and my parents out of Infinita?',
+    answer:
+      'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
   },
   {
-    title: 'What keeps the party together?',
-    body: 'Every bond is rooted in shared survival. Combat scenes should reinforce that the team trusts Rad to keep pressure off the front line.',
-    updatedAt: '2 hours ago',
-    tag: 'Theme',
+    question: 'How do I feel about being in Efowyn?',
+    answer:
+      'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
   },
-];
+  {
+    question: 'How do I feel about the castle in the sky?',
+    answer:
+      "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
+  },
+] as const;
+
+const notesBody =
+  'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.';
+
+const screenMeta: Record<
+  Exclude<FabUTab, 'combat'>,
+  { title: string; subtitle: string; actionLabel: string }
+> = {
+  overview: {
+    title: 'Radovan "Rad" Milinic',
+    subtitle: 'Transfer Student to UoE · Political refugee · Origin: Infinita',
+    actionLabel: 'LV 13',
+  },
+  skills: {
+    title: 'Skills & Growth',
+    subtitle: 'Class skill tables, levels, and effects',
+    actionLabel: 'Skills',
+  },
+  spells: {
+    title: 'Spells & Arcana',
+    subtitle: 'Entropist magic, rituals, cast actions, and spell tables',
+    actionLabel: 'Spells',
+  },
+  gear: {
+    title: 'Gear & Inventory',
+    subtitle: 'Equipment, inventory points, backpack, and zenit',
+    actionLabel: 'Gear',
+  },
+  notes: {
+    title: 'Character Notes',
+    subtitle: 'Backstory prompts and campaign-facing notes',
+    actionLabel: 'Notes',
+  },
+};
 
 function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
@@ -130,35 +204,30 @@ function FabU() {
     return combatTabs.find((option) => option.value === activeCombatTab)?.label ?? 'Bonds';
   }, [activeCombatTab]);
 
+  function renderSectionTabs(value: CombatSubTab) {
+    return (
+      <SegmentedTabs
+        options={combatTabs}
+        value={value}
+        onChange={(nextValue) => setActiveTab(nextValue === 'bonds' ? 'overview' : nextValue)}
+      />
+    );
+  }
+
   function renderOverview() {
     return (
       <>
-        <SurfaceCard
-          label="Character"
-          title="Rad Walker"
-          subtitle="Transfer student · Origin: Infinita · Political refugee"
-          actions={<StatPill label="Level" value="13" tone="accent" />}
-        >
-          <Typography
-            variant="body2"
-            sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.7 }}
-          >
-            The overview layout pairs a strong profile card with compact stat clusters, making it
-            easy to scan identity, resources, and narrative hooks at a glance.
-          </Typography>
-        </SurfaceCard>
-
-        <SurfaceCard label="Traits" title="Identity, Theme & Origin">
+        <SurfaceCard label="Traits">
           <Stack spacing={1}>
             {[
-              ['Identity', 'Arcane sharpshooter who solves problems before they cross the room.'],
-              ['Theme', 'Every risky spell is a bid for freedom.'],
-              ['Origin', 'Raised in a city where magic and politics are the same weapon.'],
+              ['IDENTITY', 'Transfer Student to UoE'],
+              ['THEME', 'Belonging'],
+              ['ORIGIN', 'Infinita'],
             ].map(([label, value]) => (
               <Stack key={label} direction="row" justifyContent="space-between" gap={2}>
                 <Typography
                   variant="caption"
-                  sx={{ color: fabUTokens.color.textSecondary, minWidth: 72 }}
+                  sx={{ color: fabUTokens.color.textSecondary, minWidth: 76 }}
                 >
                   {label}
                 </Typography>
@@ -173,45 +242,39 @@ function FabU() {
           </Stack>
         </SurfaceCard>
 
-        <AttributesStatsCard attributes={[...attributeRows]} resources={[...overviewResources]} />
+        <AttributesStatsCard
+          middleRow={[...overviewResources]}
+          bottomRow={[...overviewAttributeRows]}
+        />
 
         <DetailListCard
           label="Classes"
-          title="Current build"
           items={[
             {
-              title: 'Sharpshooter',
-              subtitle: 'Precision shots and battlefield control.',
-              trailing: 'Lvl 6',
+              title: 'Entropist',
+              subtitle: 'Entropic Magic · Absorb MP · Stolen Time',
+              trailing: 'LV 10',
             },
             {
-              title: 'Entropist',
-              subtitle: 'Aggressive spellcraft and disruption.',
-              trailing: 'Lvl 4',
+              title: 'Sharpshooter',
+              subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP',
+              trailing: 'LV 2',
             },
             {
               title: 'Tinkerer',
-              subtitle: 'Gadgets, traps, and field repairs.',
-              trailing: 'Lvl 3',
+              subtitle: 'Emergency Item · improvised gear in conflict',
+              trailing: 'LV 1',
             },
           ]}
         />
 
-        <DetailListCard
-          label="Bonds"
-          title="Narrative anchors"
-          items={[
-            { title: 'Mina', subtitle: 'Affection · Trust · Shared guilt', trailing: '+1' },
-            { title: 'Professor Hale', subtitle: 'Respect · Debt · Mentorship', trailing: '+2' },
-            { title: 'Aster', subtitle: 'Rivalry · Curiosity · Mutual ambition', trailing: '+1' },
-          ]}
-        />
+        <DetailListCard label="Bonds" items={[...bondItems]} />
 
         <SummaryStrip
           metrics={[
-            { label: 'Fabula', value: '3' },
-            { label: 'XP', value: '18 / 40' },
-            { label: 'Zenit', value: '580' },
+            { label: 'Fabula Points', value: '4' },
+            { label: 'Experience Points', value: '7 / 10' },
+            { label: 'Level', value: '13' },
           ]}
         />
       </>
@@ -221,51 +284,28 @@ function FabU() {
   function renderCombat() {
     return (
       <>
-        <AttributesStatsCard attributes={[...attributeRows]} resources={[...combatResources]} />
-
-        <SurfaceCard label="Status" title="Conditions & tempo">
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Guarded', 'Fast', 'Charged', 'Inspired'].map((status, index) => (
-              <Chip
-                key={status}
-                label={status}
-                sx={{
-                  borderRadius: `${fabUTokens.radius.pill}px`,
-                  bgcolor:
-                    index % 2 === 0
-                      ? fabUTokens.color.brandSoft
-                      : `${fabUTokens.color.surfaceMuted}`,
-                  color: fabUTokens.color.textPrimary,
-                  fontWeight: 700,
-                }}
-              />
-            ))}
-          </Stack>
-        </SurfaceCard>
+        <AttributesStatsCard
+          topRow={[combatResources[0], combatResources[1], combatResources[2]]}
+          middleRow={[
+            combatResources[3],
+            combatResources[4],
+            combatResources[5],
+            combatResources[6],
+          ]}
+          topRowTemplate="repeat(3, minmax(0, 1fr))"
+          middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
+          bottomRow={[...combatAttributeRows]}
+          bottomRowTemplate="repeat(4, minmax(0, 1fr))"
+        />
+        <StatusEffectsDiagram />
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <DetailListCard
-              label="Bonds"
-              title="Live combat levers"
-              subtitle="The combat overview mockup mixes relationship context with tactical quick actions."
-              items={[
-                {
-                  title: 'Mina',
-                  subtitle: 'Spend 1 Fabula to intercept a hit meant for her.',
-                  trailing: 'Reactive',
-                },
-                {
-                  title: 'Aster',
-                  subtitle: 'Gain advantage when coordinating ranged attacks.',
-                  trailing: 'Synergy',
-                },
-              ]}
-            />
+            <DetailListCard label="Bonds" items={[...bondItems]} />
 
-            <SurfaceCard label="Quick Actions" title="Round-ready actions">
+            <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>
                 {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
                   <Button
@@ -274,9 +314,11 @@ function FabU() {
                     sx={{
                       flexGrow: 1,
                       minWidth: 120,
-                      borderRadius: `${fabUTokens.radius.pill}px`,
+                      minHeight: 38,
+                      borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 700,
+                      fontSize: '0.78rem',
                       bgcolor: fabUTokens.color.brand,
                       boxShadow: 'none',
                       '&:hover': {
@@ -295,21 +337,21 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
+            <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
             <SkillsTable
-              title="Sharpshooter skills"
-              subtitle="Grouped, horizontally scrollable tables preserve a familiar mobile-first card shell."
+              label="Sharpshooter Skills"
+              title="Sharpshooter Skills"
               rows={sharpshooterSkills}
             />
-            <SkillsTable title="Entropist skills" rows={entropistSkills} />
           </>
         ) : null}
 
         {activeCombatTab === 'spells' ? (
-          <SpellsTable rows={spellRows} title="Combat casting loadout" />
+          <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
         ) : null}
 
         {activeCombatTab === 'gear' ? (
-          <EquipmentCard items={gearItems} title="Combat-ready kit" />
+          <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
         ) : null}
       </>
     );
@@ -319,18 +361,31 @@ function FabU() {
     return (
       <>
         <SummaryStrip
+          label="Progress"
           metrics={[
-            { label: 'Skill points', value: '4' },
-            { label: 'Class slots', value: '13' },
-            { label: 'Growth', value: 'Ready' },
+            { label: 'LV', value: '13' },
+            { label: 'XP', value: '7 / 10' },
+            { label: 'FP', value: '4' },
+            { label: 'IP', value: '8' },
           ]}
         />
+        {renderSectionTabs('skills')}
+        <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
         <SkillsTable
-          title="Sharpshooter skills"
-          subtitle="Standalone tab retains the same reusable table while switching to the hero header shell."
+          label="Sharpshooter Skills"
+          title="Sharpshooter Skills"
           rows={sharpshooterSkills}
         />
-        <SkillsTable title="Entropist skills" rows={entropistSkills} />
+        <SkillsTable label="Tinkerer Skills" title="Tinkerer Skills" rows={tinkererSkills} />
+        <SurfaceCard label="Class Summary">
+          <Typography
+            variant="body2"
+            sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
+          >
+            Entropist 10 · Sharpshooter 2 · Tinkerer 1. XP is capped at 10; level up when it reaches
+            10.
+          </Typography>
+        </SurfaceCard>
       </>
     );
   }
@@ -339,13 +394,16 @@ function FabU() {
     return (
       <>
         <SummaryStrip
+          label="Resources"
           metrics={[
-            { label: 'Arcana', value: '5' },
-            { label: 'Prepared', value: '3' },
-            { label: 'Reserve MP', value: '42' },
+            { label: 'FP', value: '4' },
+            { label: 'HP', value: '58 / 58' },
+            { label: 'MP', value: '58 / 58' },
+            { label: 'IP', value: '8' },
           ]}
         />
-        <SpellsTable rows={spellRows} />
+        {renderSectionTabs('spells')}
+        <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
       </>
     );
   }
@@ -353,32 +411,25 @@ function FabU() {
   function renderGear() {
     return (
       <>
+        {renderSectionTabs('gear')}
+        <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
         <SummaryStrip
+          label="Inventory Points"
           metrics={[
-            { label: 'IP', value: '6' },
-            { label: 'Zenit', value: '580' },
-            { label: 'Weight', value: '5 / 8' },
+            { label: 'IP', value: '8' },
+            { label: 'ZENIT', value: '30' },
           ]}
         />
-        <EquipmentCard items={gearItems} />
         <DetailListCard
-          label="Inventory"
-          title="Backpack"
+          label="Backpack"
           items={[
             {
-              title: 'Aether cartridges',
-              subtitle: 'Consumable ammo for elemental shots.',
-              trailing: 'x4',
+              title: 'Green Crystal',
+              subtitle: 'a crystal that acts as a compass, guiding us toward our goal.',
             },
             {
-              title: 'Field medkit',
-              subtitle: 'Restore HP during downtime or emergencies.',
-              trailing: 'x2',
-            },
-            {
-              title: 'Signal flare',
-              subtitle: 'Creates cover and a visual beacon.',
-              trailing: 'x1',
+              title: 'Grimoire',
+              subtitle: 'a magical book named Noir. Origins unknown.',
             },
           ]}
         />
@@ -389,17 +440,75 @@ function FabU() {
   function renderNotes() {
     return (
       <>
-        {notes.map((note) => (
-          <NoteCard key={note.title} note={note} />
-        ))}
-        <SurfaceCard label="Notes" title="Campaign hooks">
-          <Typography
-            variant="body2"
-            sx={{ color: fabUTokens.color.textSecondary, lineHeight: 1.8 }}
+        <SurfaceCard
+          label="Backstory"
+          sx={{
+            backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
+          }}
+        >
+          <Stack spacing={1.5}>
+            {backstoryPrompts.map((prompt) => (
+              <Stack key={prompt.question} spacing={0.75}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: fabUTokens.color.brand,
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {prompt.question}
+                </Typography>
+                <Box
+                  sx={{
+                    border: `1px solid ${fabUTokens.color.border}`,
+                    borderRadius: '10px',
+                    bgcolor: fabUTokens.color.surface,
+                    boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+                    px: 1.2,
+                    py: 1.05,
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: fabUTokens.color.textSecondary,
+                      fontSize: '0.84rem',
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    {prompt.answer}
+                  </Typography>
+                </Box>
+              </Stack>
+            ))}
+          </Stack>
+        </SurfaceCard>
+
+        <SurfaceCard
+          label="Notes"
+          sx={{
+            backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
+          }}
+        >
+          <Box
+            sx={{
+              border: `1px solid ${fabUTokens.color.border}`,
+              borderRadius: '10px',
+              bgcolor: fabUTokens.color.surface,
+              boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+              px: 1.2,
+              py: 1.05,
+            }}
           >
-            Rad still owes the academy archivist a favor, and the next combat scene should expose
-            whether that debt is a leash or a lifeline.
-          </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
+            >
+              {notesBody}
+            </Typography>
+          </Box>
         </SurfaceCard>
       </>
     );
@@ -412,20 +521,20 @@ function FabU() {
           variant="compact"
           eyebrow="RAD · LVL 13"
           title="Fabula Ultima"
-          subtitle="Combat shell with shared stats and tactical sub-tabs."
+          subtitle="Active encounter"
           actionLabel={combatTabLabel}
         />
       );
     }
 
+    const meta = screenMeta[activeTab];
+
     return (
       <HeaderBar
-        eyebrow="Design system"
-        title={activeTab === 'overview' ? 'Character Overview' : `Character ${activeTab}`}
-        subtitle="Large hero header variant derived from the standalone tab screens."
-        actionLabel={
-          activeTab === 'overview' ? 'Combat' : activeTab[0].toUpperCase() + activeTab.slice(1)
-        }
+        eyebrow="FABULA + ULTIMA"
+        title={meta.title}
+        subtitle={meta.subtitle}
+        actionLabel={meta.actionLabel}
       />
     );
   })();
@@ -451,75 +560,23 @@ function FabU() {
 
   return (
     <>
-      <meta name="title" content="Fab-u Design System" />
+      <meta name="title" content="Fab-u Preview" />
       <Stack
-        spacing={3}
-        sx={{ height: '100%', overflow: 'auto', bgcolor: '#fafafa', p: { xs: 2, md: 3 } }}
+        alignItems="center"
+        sx={{
+          minHeight: '100%',
+          overflow: 'auto',
+          bgcolor: fabUTokens.color.canvas,
+          py: { xs: 2, md: 3 },
+          px: 1.5,
+        }}
       >
-        <Stack spacing={0.75}>
-          <Typography variant="h4" sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}>
-            Fab-u design system
-          </Typography>
-          <Typography variant="body1" sx={{ color: fabUTokens.color.textSecondary, maxWidth: 760 }}>
-            This page turns the image set in <code>src/fab-u-designs</code> into reusable React
-            building blocks and a mobile-first showcase screen that can recreate the core layouts.
-          </Typography>
-        </Stack>
-
-        <Stack direction={{ xs: 'column', xl: 'row' }} spacing={3} alignItems="flex-start">
-          <MobileScreen
-            header={header}
-            footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
-          >
-            {content}
-          </MobileScreen>
-
-          <Stack spacing={2} sx={{ flex: 1, width: '100%', maxWidth: 680 }}>
-            <SurfaceCard
-              label="Component inventory"
-              title="Reusable React modules"
-              subtitle="The folder structure is intentionally layered so future screens can compose primitives instead of cloning layouts."
-            >
-              <Stack spacing={1.5}>
-                {[
-                  'Atoms: SurfaceCard, SectionLabel, StatPill',
-                  'Molecules: HeaderBar, SegmentedTabs, AttributesStatsCard, SkillsTable, SpellsTable, EquipmentCard, NoteCard',
-                  'Organisms: MobileScreen, PrimaryNavBar, DetailListCard, SummaryStrip',
-                ].map((line) => (
-                  <Typography
-                    key={line}
-                    variant="body2"
-                    sx={{ color: fabUTokens.color.textSecondary }}
-                  >
-                    {line}
-                  </Typography>
-                ))}
-              </Stack>
-            </SurfaceCard>
-
-            <SurfaceCard
-              label="Screen coverage"
-              title="How the mockups map to reusable parts"
-              subtitle="The same cards and nav patterns reappear across Overview, Combat, Skills, Spells, Gear, and Notes."
-            >
-              <Stack spacing={1}>
-                {[
-                  'Overview combines identity cards, traits, stat pills, bond lists, and progress summaries.',
-                  'Combat reuses the stat card, status chips, sub-tabs, and either bonds, skills, spells, or gear content.',
-                  'Standalone Skills, Spells, Gear, and Notes tabs swap the compact combat header for the larger hero header without changing the card vocabulary.',
-                ].map((line) => (
-                  <Typography
-                    key={line}
-                    variant="body2"
-                    sx={{ color: fabUTokens.color.textSecondary }}
-                  >
-                    {line}
-                  </Typography>
-                ))}
-              </Stack>
-            </SurfaceCard>
-          </Stack>
-        </Stack>
+        <MobileScreen
+          header={header}
+          footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+        >
+          {content}
+        </MobileScreen>
       </Stack>
     </>
   );

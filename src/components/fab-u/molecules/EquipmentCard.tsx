@@ -11,60 +11,82 @@ type EquipmentCardProps = {
   title?: string;
   items: EquipmentItem[];
   emptyLabel?: string;
+  label?: string;
 };
 
 function EquipmentCard({
   title = 'Equipped gear',
   items,
   emptyLabel = 'Open accessory slot',
+  label = 'Gear',
 }: EquipmentCardProps) {
   return (
-    <SurfaceCard
-      label="Gear"
-      title={title}
-      subtitle="Equipment slots and inventory rows share the same bordered card grammar."
-    >
-      <Stack spacing={1.25}>
+    <SurfaceCard label={label} title={title || undefined}>
+      <Stack spacing={1.05}>
         {items.map((item) => (
           <Box
             key={`${item.slot}-${item.name}`}
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '14px',
-              px: 1.5,
-              py: 1.25,
-              bgcolor: fabUTokens.color.surfaceMuted,
+              borderRadius: '9px',
+              px: 1.3,
+              py: 0.95,
+              bgcolor: fabUTokens.color.surface,
+              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
             }}
           >
-            <Stack direction="row" justifyContent="space-between" gap={2}>
-              <Stack spacing={0.35}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: fabUTokens.color.textSecondary, textTransform: 'uppercase' }}
-                >
-                  {item.slot}
-                </Typography>
+            <Stack spacing={0.45}>
+              <Stack direction="row" justifyContent="space-between" gap={2} alignItems="flex-start">
                 <Typography
                   variant="body1"
-                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700 }}
+                  sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
                 >
                   {item.name}
                 </Typography>
-                <Typography variant="body2" sx={{ color: fabUTokens.color.textSecondary }}>
-                  {item.description}
-                </Typography>
-              </Stack>
-              <Stack alignItems="flex-end" spacing={0.5}>
                 <Typography
                   variant="caption"
-                  sx={{ color: fabUTokens.color.warning, fontWeight: 700 }}
+                  sx={{
+                    color: fabUTokens.color.textSecondary,
+                    textTransform: 'uppercase',
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
-                  {item.weight ?? '0 wt'}
-                </Typography>
-                <Typography variant="caption" sx={{ color: fabUTokens.color.textSecondary }}>
-                  {item.tags.join(' · ')}
+                  {item.slot}
                 </Typography>
               </Stack>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: fabUTokens.color.textSecondary,
+                  fontSize: '0.78rem',
+                  lineHeight: 1.45,
+                }}
+              >
+                {item.description}
+              </Typography>
+              {item.weight || item.tags?.length ? (
+                <Stack direction="row" justifyContent="space-between" gap={2}>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.66rem' }}
+                  >
+                    {item.tags?.join(' · ')}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: fabUTokens.color.warning,
+                      fontWeight: 700,
+                      fontSize: '0.66rem',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.weight}
+                  </Typography>
+                </Stack>
+              ) : null}
             </Stack>
           </Box>
         ))}
@@ -72,17 +94,20 @@ function EquipmentCard({
         <Box
           sx={{
             border: `1px dashed ${fabUTokens.color.border}`,
-            borderRadius: '14px',
-            px: 1.5,
-            py: 1.75,
+            borderRadius: '9px',
+            px: 1.3,
+            py: 1.45,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
             color: fabUTokens.color.textSecondary,
+            bgcolor: fabUTokens.color.surfaceMuted,
           }}
         >
           <AddIcon fontSize="small" />
-          <Typography variant="body2">{emptyLabel}</Typography>
+          <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+            {emptyLabel}
+          </Typography>
         </Box>
       </Stack>
     </SurfaceCard>

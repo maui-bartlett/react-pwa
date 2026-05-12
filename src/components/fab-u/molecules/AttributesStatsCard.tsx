@@ -1,33 +1,61 @@
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 
 import { StatPill, SurfaceCard } from '../atoms';
 import { AttributeRow, StatPillData } from '../types';
 
 type AttributesStatsCardProps = {
-  attributes: AttributeRow[];
-  resources: StatPillData[];
+  topRow?: StatPillData[];
+  middleRow?: StatPillData[];
+  bottomRow: AttributeRow[];
+  topRowTemplate?: string;
+  middleRowTemplate?: string;
+  bottomRowTemplate?: string;
 };
 
-function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps) {
-  return (
-    <SurfaceCard
-      label="Attributes & Stats"
-      subtitle="Color-coded pills reflect the recurring visual language in the mockups."
-    >
+function AttributesStatsCard({
+  topRow = [],
+  middleRow = [],
+  bottomRow,
+  topRowTemplate,
+  middleRowTemplate,
+  bottomRowTemplate,
+}: AttributesStatsCardProps) {
+  function renderStatRow(items: StatPillData[], template?: string) {
+    return (
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          gap: 1.25,
+          gridTemplateColumns: template ?? `repeat(${items.length}, minmax(0, 1fr))`,
+          gap: 0.85,
         }}
       >
-        {attributes.map((attribute) => (
+        {items.map((item) => (
+          <StatPill key={item.label} {...item} layout="inline" />
+        ))}
+      </Box>
+    );
+  }
+
+  return (
+    <SurfaceCard label="Attributes & Stats">
+      {topRow.length ? renderStatRow(topRow, topRowTemplate) : null}
+
+      {middleRow.length ? renderStatRow(middleRow, middleRowTemplate) : null}
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: bottomRowTemplate ?? `repeat(${bottomRow.length}, minmax(0, 1fr))`,
+          gap: 0.85,
+        }}
+      >
+        {bottomRow.map((attribute) => (
           <StatPill
             key={attribute.label}
             label={attribute.label}
             value={attribute.score}
-            helperText={`${attribute.modifier} modifier`}
+            helperText={attribute.modifier || undefined}
+            layout="stacked"
             tone={
               attribute.category === 'power'
                 ? 'danger'
@@ -40,23 +68,6 @@ function AttributesStatsCard({ attributes, resources }: AttributesStatsCardProps
           />
         ))}
       </Box>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-          gap: 1.25,
-        }}
-      >
-        {resources.map((resource) => (
-          <StatPill key={resource.label} {...resource} />
-        ))}
-      </Box>
-
-      <Typography variant="caption" sx={{ color: '#51605a' }}>
-        Designed for mobile-first layouts: the grid collapses into compact stat pills instead of
-        verbose form fields.
-      </Typography>
     </SurfaceCard>
   );
 }

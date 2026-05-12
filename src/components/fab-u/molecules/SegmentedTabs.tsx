@@ -32,12 +32,16 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
             variant={active ? 'contained' : 'outlined'}
             size="small"
             sx={{
-              borderRadius: `${fabUTokens.radius.pill}px`,
+              borderRadius: '10px',
               borderColor: active ? fabUTokens.color.brand : fabUTokens.color.border,
-              bgcolor: active ? fabUTokens.color.brand : fabUTokens.color.surface,
+              bgcolor: active ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
               color: active ? '#fff' : fabUTokens.color.textSecondary,
               textTransform: 'none',
               fontWeight: 700,
+              fontSize: '0.76rem',
+              letterSpacing: '0.02em',
+              minHeight: 34,
+              px: 1.25,
               whiteSpace: 'nowrap',
               boxShadow: 'none',
               '&:hover': {
