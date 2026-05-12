@@ -49,10 +49,10 @@ const combatResources = [
   { label: 'Initiative', value: '0', tone: 'neutral' as const },
   { label: 'Defense', value: '8 (12)', tone: 'success' as const },
   { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
-  { label: 'FP', value: '4', tone: 'neutral' as const, minHeight: 44 },
-  { label: 'IP', value: '8', tone: 'warning' as const, minHeight: 44 },
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const, minHeight: 44 },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const, minHeight: 44 },
+  { label: 'FP', value: '4', tone: 'neutral' as const },
+  { label: 'IP', value: '8', tone: 'warning' as const },
+  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
+  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
 ] as const;
 
 const overviewResources = [

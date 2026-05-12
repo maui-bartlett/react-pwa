@@ -23,17 +23,17 @@ function StatPill({
         borderRadius: '10px',
         backgroundColor: '#fff',
         px: 1.1,
-        py: inline ? 0.75 : 0.62,
+        py: inline ? 0.75 : 0.52,
         minWidth: 0,
-        minHeight: minHeight ?? (inline ? undefined : 62),
+        minHeight,
       }}
     >
-      <Stack spacing={inline ? 0.18 : 0.08}>
+      <Stack spacing={inline ? 0.18 : 0.04}>
         <Stack
           direction={inline ? 'row' : 'column'}
           justifyContent="space-between"
           alignItems={inline ? 'center' : 'flex-start'}
-          gap={inline ? 1 : 0.12}
+          gap={inline ? 1 : 0.08}
         >
           <Typography
             variant="caption"
@@ -53,8 +53,8 @@ function StatPill({
             sx={{
               color: '#1f2a26',
               fontWeight: 700,
-              fontSize: inline ? '0.96rem' : '1rem',
-              lineHeight: 1.08,
+              fontSize: inline ? '0.96rem' : '0.98rem',
+              lineHeight: 1.04,
               whiteSpace: 'nowrap',
               textAlign: inline ? 'right' : 'left',
             }}
