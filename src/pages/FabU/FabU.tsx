@@ -564,11 +564,13 @@ function FabU() {
       <Stack
         alignItems="center"
         sx={{
-          minHeight: '100%',
-          overflow: 'auto',
+          minHeight: '100dvh',
+          height: '100dvh',
+          overflow: 'hidden',
           bgcolor: fabUTokens.color.canvas,
           py: { xs: 2, md: 3 },
           px: 1.5,
+          boxSizing: 'border-box',
         }}
       >
         <MobileScreen
