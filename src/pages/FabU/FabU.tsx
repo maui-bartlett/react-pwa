@@ -411,7 +411,6 @@ function FabU() {
   function renderGear() {
     return (
       <>
-        {renderSectionTabs('gear')}
         <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
         <SummaryStrip
           label="Inventory Points"
