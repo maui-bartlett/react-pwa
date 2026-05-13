@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "allow": ["Bash(*)"],
-    "ask": ["Bash(rm*)", "Bash(rm *)", "Bash(*rm *)"]
+    "allow": ["Bash"],
+    "deny": ["Bash(rm:*)", "Bash(sudo rm:*)", "Bash(git rm:*)"]
   }
 }
