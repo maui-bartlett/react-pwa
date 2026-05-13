@@ -26,7 +26,13 @@ function SpellsTable({
 }: SpellsTableProps) {
   return (
     <SurfaceCard label={label ?? title} title={showTitle ? title : undefined}>
-      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '9px' }}>
+      <TableContainer
+        sx={{
+          border: `1px solid ${fabUTokens.color.border}`,
+          borderRadius: '9px',
+          overflowX: 'auto',
+        }}
+      >
         <Table
           size="small"
           sx={{
@@ -50,7 +56,6 @@ function SpellsTable({
               <TableCell>Spell</TableCell>
               <TableCell>MP</TableCell>
               <TableCell>Target</TableCell>
-              <TableCell>Duration</TableCell>
               <TableCell>Effect</TableCell>
               <TableCell align="right">Action</TableCell>
             </TableRow>
@@ -68,7 +73,6 @@ function SpellsTable({
                 </TableCell>
                 <TableCell>{row.cost}</TableCell>
                 <TableCell>{row.target}</TableCell>
-                <TableCell>{row.duration}</TableCell>
                 <TableCell>{row.effect}</TableCell>
                 <TableCell align="right">
                   <Button
