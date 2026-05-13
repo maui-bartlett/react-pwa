@@ -41,6 +41,7 @@ function SpellsTable({
               py: 0.95,
               px: 1.2,
               fontSize: '0.74rem',
+              color: fabUTokens.color.textPrimary,
             },
             '& .MuiTableCell-head': {
               color: fabUTokens.color.textSecondary,
