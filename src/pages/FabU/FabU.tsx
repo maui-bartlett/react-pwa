@@ -474,9 +474,8 @@ function FabU() {
     if (activeTab === 'combat') {
       return (
         <HeaderBar
-          variant="compact"
-          eyebrow="RAD · LVL 13"
-          title="Fabula Ultima"
+          eyebrow="FABULA + ULTIMA"
+          title="Combat"
           subtitle="Active encounter"
           actionLabel="Combat"
         />

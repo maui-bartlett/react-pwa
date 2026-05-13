@@ -18,6 +18,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
 
   return (
     <Stack
+      data-pw="header-bar"
       direction="row"
       alignItems={compact ? 'center' : 'flex-start'}
       justifyContent="space-between"
@@ -48,6 +49,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
           </Typography>
         ) : null}
         <Typography
+          data-pw="header-title"
           variant={compact ? 'h6' : 'h5'}
           sx={{
             fontWeight: 700,
@@ -75,6 +77,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       </Stack>
       {actionLabel ? (
         <Button
+          data-pw="header-action"
           variant="contained"
           size="small"
           sx={{
