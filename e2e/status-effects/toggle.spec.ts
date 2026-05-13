@@ -24,19 +24,45 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
     }
   });
 
-  test('clicking a pill fills it with a tinted background', async ({ page }) => {
+  test('clicking a pill fills it darker than its border color', async ({ page }) => {
     const pill = page.locator('[data-pw="status-pill-slow"]');
     await pill.click();
-    // toHaveCSS retries until the transition settles (default 5s timeout)
-    await expect(pill).not.toHaveCSS('background-color', RESTING_BG);
 
-    // Verify the settled tint is darker than white
-    const bg = await pill.evaluate((el) => getComputedStyle(el).backgroundColor);
+    // Wait until the fill has fully settled darker than the border (handles 150ms CSS transition)
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-pw="status-pill-slow"]') as HTMLElement | null;
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      const avg = (s: string) => {
+        const m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        return m ? (parseInt(m[1]) + parseInt(m[2]) + parseInt(m[3])) / 3 : 255;
+      };
+      return avg(cs.backgroundColor) < avg(cs.borderColor);
+    });
+
+    const { bg, border } = await pill.evaluate((el) => ({
+      bg: getComputedStyle(el).backgroundColor,
+      border: getComputedStyle(el).borderColor,
+    }));
     const avgRgb = (s: string) => {
       const m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
       return m ? (parseInt(m[1]) + parseInt(m[2]) + parseInt(m[3])) / 3 : 255;
     };
-    expect(avgRgb(bg)).toBeLessThan(255);
+    console.log('Fill avg:', avgRgb(bg), '| Border avg:', avgRgb(border));
+    expect(avgRgb(bg)).toBeLessThan(avgRgb(border));
+  });
+
+  test('text is white when selected and restores on deselect', async ({ page }) => {
+    const pill = page.locator('[data-pw="status-pill-slow"]');
+    const text = pill.locator('.MuiTypography-root');
+
+    await pill.click();
+    await expect(pill).not.toHaveCSS('background-color', RESTING_BG);
+    await expect(text).toHaveCSS('color', 'rgb(255, 255, 255)');
+
+    await pill.click();
+    await expect(pill).toHaveCSS('background-color', RESTING_BG);
+    await expect(text).not.toHaveCSS('color', 'rgb(255, 255, 255)');
   });
 
   test('clicking a selected pill returns it to resting', async ({ page }) => {

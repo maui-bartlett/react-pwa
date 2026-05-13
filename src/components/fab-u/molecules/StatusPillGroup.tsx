@@ -28,12 +28,13 @@ const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 46
 // Container height 94, lower pill top = 94 - PILL_H = 58. Stem: H_TOP(46) → 58 = 12px.
 const STEM_H = 12;
 
-// Blend a hex color with white at the given alpha (0–1) to produce a solid fill color.
-function blendWithWhite(hex: string, alpha: number): string {
+// Darken a hex color by blending it toward black at the given alpha (0–1).
+function blendWithBlack(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  return `rgb(${Math.round(r * alpha + 255 * (1 - alpha))}, ${Math.round(g * alpha + 255 * (1 - alpha))}, ${Math.round(b * alpha + 255 * (1 - alpha))})`;
+  const scale = 1 - alpha;
+  return `rgb(${Math.round(r * scale)}, ${Math.round(g * scale)}, ${Math.round(b * scale)})`;
 }
 
 function StatusPill({
@@ -52,7 +53,7 @@ function StatusPill({
         minWidth: result ? 84 : 72,
         border: `1px solid ${color}`,
         borderRadius: '8px',
-        bgcolor: selected ? blendWithWhite(color, 0.2) : fabUTokens.color.surface,
+        bgcolor: selected ? blendWithBlack(color, 0.25) : fabUTokens.color.surface,
         px: 1.05,
         py: 0.62,
         textAlign: 'center',
@@ -65,7 +66,11 @@ function StatusPill({
       <Typography
         variant="caption"
         sx={{
-          color: result ? fabUTokens.color.textSecondary : fabUTokens.color.textPrimary,
+          color: selected
+            ? '#ffffff'
+            : result
+              ? fabUTokens.color.textSecondary
+              : fabUTokens.color.textPrimary,
           fontWeight: 500,
           fontSize: '0.7rem',
           letterSpacing: 0,
