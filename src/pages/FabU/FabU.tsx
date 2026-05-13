@@ -24,6 +24,9 @@ import {
   fabUTokens,
 } from '@/components/fab-u';
 
+import { skillGroups } from './skills';
+import { spellGroups } from './spells';
+
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Bonds', value: 'bonds' },
   { label: 'Skills', value: 'skills' },
@@ -60,69 +63,6 @@ const overviewResources = [
   { label: 'MP', value: '58 / 58', tone: 'accent' as const },
   { label: 'IP', value: '8', tone: 'warning' as const },
 ] as const;
-
-const entropistSkills = [
-  { name: 'Entropic Magic', level: '7', effect: 'Alter fate, time, decay, or probability.' },
-  { name: 'Absorb MP', level: '1', effect: 'Recover MP when magic is turned aside.' },
-  { name: 'Stolen Time', level: '1', effect: 'Read time, weather, and celestial signs.' },
-];
-
-const sharpshooterSkills = [
-  {
-    name: 'Ranged Weapon Mastery',
-    level: '1',
-    effect: 'Improve attacks and damage with ranged weapons.',
-  },
-  {
-    name: 'Crossfire',
-    level: '1',
-    effect: 'Create an opening or apply pressure with ranged attacks.',
-  },
-];
-
-const tinkererSkills = [
-  {
-    name: 'Emergency Item',
-    level: '1',
-    effect: 'Once per conflict, create a useful item or tool.',
-  },
-  {
-    name: 'Improvisation',
-    level: '—',
-    effect: 'Spend IP to solve a practical problem in the scene.',
-  },
-];
-
-const spellRows = [
-  {
-    name: 'Accelerate',
-    cost: '20 MP',
-    target: '1',
-    duration: 'Scene' as const,
-    effect: 'Target takes one extra action on their turn.',
-  },
-  {
-    name: 'Drain Spirit',
-    cost: '5 MP',
-    target: '1',
-    duration: 'Instant' as const,
-    effect: 'HR + 15 MP; recover half as MP.',
-  },
-  {
-    name: 'Stop',
-    cost: '10 MP',
-    target: '1',
-    duration: 'Scene' as const,
-    effect: 'Target performs fewer actions.',
-  },
-  {
-    name: 'Mirror',
-    cost: '10 MP',
-    target: '1',
-    duration: 'Instant' as const,
-    effect: 'Redirect a spell to protect the chosen target.',
-  },
-];
 
 const gearItems = [
   {
@@ -324,17 +264,28 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
-            <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
-            <SkillsTable
-              label="Sharpshooter Skills"
-              title="Sharpshooter Skills"
-              rows={sharpshooterSkills}
-            />
+            {skillGroups.map((group) => (
+              <SkillsTable
+                key={group.className}
+                label={`${group.className} Skills`}
+                title={`${group.className} Skills`}
+                rows={group.skills}
+              />
+            ))}
           </>
         ) : null}
 
         {activeCombatTab === 'spells' ? (
-          <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
+          <>
+            {spellGroups.map((group) => (
+              <SpellsTable
+                key={group.className}
+                label={`${group.className} Spells`}
+                title={`${group.className} Spells`}
+                rows={group.spells}
+              />
+            ))}
+          </>
         ) : null}
 
         {activeCombatTab === 'gear' ? (
@@ -356,13 +307,14 @@ function FabU() {
             { label: 'IP', value: '8' },
           ]}
         />
-        <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
-        <SkillsTable
-          label="Sharpshooter Skills"
-          title="Sharpshooter Skills"
-          rows={sharpshooterSkills}
-        />
-        <SkillsTable label="Tinkerer Skills" title="Tinkerer Skills" rows={tinkererSkills} />
+        {skillGroups.map((group) => (
+          <SkillsTable
+            key={group.className}
+            label={`${group.className} Skills`}
+            title={`${group.className} Skills`}
+            rows={group.skills}
+          />
+        ))}
         <SurfaceCard label="Class Summary">
           <Typography
             variant="body2"
@@ -388,7 +340,14 @@ function FabU() {
             { label: 'IP', value: '8' },
           ]}
         />
-        <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
+        {spellGroups.map((group) => (
+          <SpellsTable
+            key={group.className}
+            label={`${group.className} Spells`}
+            title={`${group.className} Spells`}
+            rows={group.spells}
+          />
+        ))}
       </>
     );
   }
