@@ -175,6 +175,7 @@ function FabU() {
 
         <DetailListCard
           label="Classes"
+          addLabel="Class"
           items={[
             {
               title: 'Entropist',
@@ -194,7 +195,7 @@ function FabU() {
           ]}
         />
 
-        <DetailListCard label="Bonds" items={[...bondItems]} />
+        <DetailListCard label="Bonds" addLabel="Bond" items={[...bondItems]} />
 
         <SummaryStrip
           metrics={[
@@ -229,7 +230,7 @@ function FabU() {
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <DetailListCard label="Bonds" items={[...bondItems]} />
+            <DetailListCard label="Bonds" addLabel="Bond" items={[...bondItems]} />
 
             <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>
