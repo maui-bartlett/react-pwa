@@ -1,10 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(grep *)",
-      "Bash(find *)",
-      "Bash(git push*)",
-      "Bash(gh api *)"
-    ]
+    "allow": ["Bash(*)"],
+    "ask": ["Bash(rm*)", "Bash(rm *)", "Bash(*rm *)"]
   }
 }
