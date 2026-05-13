@@ -1,4 +1,9 @@
-import Button from '@mui/material/Button';
+import { useState } from 'react';
+
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import Box from '@mui/material/Box';
+import Collapse from '@mui/material/Collapse';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -24,6 +29,12 @@ function SpellsTable({
   label,
   showTitle = false,
 }: SpellsTableProps) {
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  const toggleRow = (name: string) => {
+    setExpandedRow((prev) => (prev === name ? null : name));
+  };
+
   return (
     <SurfaceCard label={label ?? title} title={showTitle ? title : undefined}>
       <TableContainer
@@ -57,47 +68,75 @@ function SpellsTable({
               <TableCell>Spell</TableCell>
               <TableCell>MP</TableCell>
               <TableCell>Target</TableCell>
-              <TableCell>Effect</TableCell>
-              <TableCell align="right">Action</TableCell>
+              <TableCell>Duration</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.name}>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
-                  >
-                    {row.name}
-                  </Typography>
-                </TableCell>
-                <TableCell>{row.cost}</TableCell>
-                <TableCell>{row.target}</TableCell>
-                <TableCell>{row.effect}</TableCell>
-                <TableCell align="right">
-                  <Button
-                    size="small"
-                    variant="contained"
+            {rows.map((row) => {
+              const isOpen = expandedRow === row.name;
+              return (
+                <>
+                  <TableRow
+                    key={row.name}
+                    onClick={() => toggleRow(row.name)}
                     sx={{
-                      minHeight: 28,
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      fontWeight: 700,
-                      fontSize: '0.68rem',
-                      bgcolor: fabUTokens.color.mp,
-                      boxShadow: 'none',
-                      '&:hover': {
-                        bgcolor: '#4169b0',
-                        boxShadow: 'none',
-                      },
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: fabUTokens.color.surfaceMuted },
                     }}
                   >
-                    Cast
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {isOpen ? (
+                          <KeyboardArrowUpIcon
+                            fontSize="small"
+                            sx={{ color: fabUTokens.color.textSecondary, flexShrink: 0 }}
+                          />
+                        ) : (
+                          <KeyboardArrowDownIcon
+                            fontSize="small"
+                            sx={{ color: fabUTokens.color.textSecondary, flexShrink: 0 }}
+                          />
+                        )}
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
+                        >
+                          {row.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>{row.cost}</TableCell>
+                    <TableCell>{row.target}</TableCell>
+                    <TableCell>{row.duration}</TableCell>
+                  </TableRow>
+                  <TableRow key={`${row.name}-detail`}>
+                    <TableCell
+                      colSpan={4}
+                      sx={{ py: 0, borderBottom: isOpen ? undefined : 'none' }}
+                    >
+                      <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                        <Box
+                          sx={{
+                            py: 1.25,
+                            px: 1.5,
+                            bgcolor: fabUTokens.color.brandSoft,
+                            borderRadius: '6px',
+                            my: 0.75,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: '0.72rem', color: fabUTokens.color.textPrimary }}
+                          >
+                            {row.effect}
+                          </Typography>
+                        </Box>
+                      </Collapse>
+                    </TableCell>
+                  </TableRow>
+                </>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
