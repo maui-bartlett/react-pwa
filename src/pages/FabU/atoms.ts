@@ -1,3 +1,4 @@
+import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
 const backstoryAnswersState = atomWithStorage<string[]>('fab-u-backstory-answers', [
@@ -11,13 +12,26 @@ const characterNotesState = atomWithStorage<string>(
   'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
 );
 
+// Only user-toggleable effects are stored; enraged/poisoned are derived.
 const statusEffectsState = atomWithStorage<Record<string, boolean>>('fab-u-status-effects', {
   slow: false,
   dazed: false,
-  enraged: false,
   weak: false,
   shaken: false,
-  poisoned: false,
 });
 
-export { backstoryAnswersState, characterNotesState, statusEffectsState };
+const derivedStatusEffectsState = atom((get) => {
+  const e = get(statusEffectsState);
+  return {
+    ...e,
+    enraged: !!(e.slow && e.dazed),
+    poisoned: !!(e.weak && e.shaken),
+  };
+});
+
+export {
+  backstoryAnswersState,
+  characterNotesState,
+  derivedStatusEffectsState,
+  statusEffectsState,
+};

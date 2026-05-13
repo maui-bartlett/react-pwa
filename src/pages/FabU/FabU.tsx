@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 
 import {
   AttributesStatsCard,
@@ -26,7 +26,12 @@ import {
   fabUTokens,
 } from '@/components/fab-u';
 
-import { backstoryAnswersState, characterNotesState, statusEffectsState } from './atoms';
+import {
+  backstoryAnswersState,
+  characterNotesState,
+  derivedStatusEffectsState,
+  statusEffectsState,
+} from './atoms';
 import { skillGroups } from './skills';
 import { spellGroups } from './spells';
 
@@ -129,7 +134,8 @@ function FabU() {
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [backstoryAnswers, setBackstoryAnswers] = useAtom(backstoryAnswersState);
   const [characterNotes, setCharacterNotes] = useAtom(characterNotesState);
-  const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
+  const [, setStatusEffects] = useAtom(statusEffectsState);
+  const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };

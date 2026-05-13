@@ -11,6 +11,7 @@ type StatusNode = {
   id: StatusEffectId;
   label: string;
   color: string;
+  selectedFill?: string;
 };
 
 type StatusGroup = {
@@ -24,16 +25,28 @@ type StatusEffectsDiagramProps = {
   onToggle: (id: string) => void;
 };
 
+const DERIVED_SELECTED_FILL = '#4a5450';
+
 const groups: StatusGroup[] = [
   {
     topLeft: { id: 'slow', label: 'Slow', color: '#d8a24b' },
     topRight: { id: 'dazed', label: 'Dazed', color: '#7da06f' },
-    result: { id: 'enraged', label: 'Enraged', color: '#cfd3cf' },
+    result: {
+      id: 'enraged',
+      label: 'Enraged',
+      color: '#cfd3cf',
+      selectedFill: DERIVED_SELECTED_FILL,
+    },
   },
   {
     topLeft: { id: 'weak', label: 'Weak', color: '#c56a60' },
     topRight: { id: 'shaken', label: 'Shaken', color: '#7292d4' },
-    result: { id: 'poisoned', label: 'Poisoned', color: '#cfd3cf' },
+    result: {
+      id: 'poisoned',
+      label: 'Poisoned',
+      color: '#cfd3cf',
+      selectedFill: DERIVED_SELECTED_FILL,
+    },
   },
 ];
 

@@ -7,6 +7,7 @@ type StatusPillNode = {
   id: string;
   label: string;
   color: string;
+  selectedFill?: string;
   result?: boolean;
   selected?: boolean;
 };
@@ -41,6 +42,7 @@ function StatusPill({
   id,
   label,
   color,
+  selectedFill,
   result = false,
   selected = false,
   onToggle,
@@ -48,17 +50,19 @@ function StatusPill({
   return (
     <Box
       data-pw={`status-pill-${id}`}
-      onClick={() => onToggle(id)}
+      onClick={result ? undefined : () => onToggle(id)}
       sx={{
         minWidth: result ? 84 : 72,
         border: `1px solid ${color}`,
         borderRadius: '8px',
-        bgcolor: selected ? blendWithBlack(color, 0.25) : fabUTokens.color.surface,
+        bgcolor: selected
+          ? (selectedFill ?? blendWithBlack(color, 0.25))
+          : fabUTokens.color.surface,
         px: 1.05,
         py: 0.62,
         textAlign: 'center',
         boxShadow: '0 1px 3px rgba(31, 42, 38, 0.04)',
-        cursor: 'pointer',
+        cursor: result ? 'default' : 'pointer',
         userSelect: 'none',
         transition: 'background-color 150ms ease',
       }}
