@@ -306,6 +306,7 @@ function FabU() {
                       fontWeight: 700,
                       fontSize: '0.78rem',
                       bgcolor: fabUTokens.color.brand,
+                      color: '#fff',
                       boxShadow: 'none',
                       '&:hover': {
                         bgcolor: fabUTokens.color.brandStrong,
