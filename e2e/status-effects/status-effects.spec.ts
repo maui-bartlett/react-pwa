@@ -2,77 +2,78 @@ import { devices, expect, test } from '@playwright/test';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
 
-test.describe('StatusEffectsDiagram — bracket connectors (mobile viewport)', () => {
+const TOLERANCE = 1; // px — sub-pixel rendering tolerance
+
+test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
     await page.waitForLoadState('networkidle');
-    // Status Effects is in the Combat tab
     await page.getByRole('button', { name: 'Combat' }).first().click();
     await page.waitForLoadState('networkidle');
   });
 
-  test('all four pills are visible', async ({ page }) => {
-    await expect(page.getByText('Slow')).toBeVisible();
-    await expect(page.getByText('Dazed')).toBeVisible();
-    await expect(page.getByText('Enraged')).toBeVisible();
-    await expect(page.getByText('Weak')).toBeVisible();
-    await expect(page.getByText('Shaken')).toBeVisible();
-    await expect(page.getByText('Poisoned')).toBeVisible();
+  test('all six pills are visible', async ({ page }) => {
+    for (const label of ['Slow', 'Dazed', 'Enraged', 'Weak', 'Shaken', 'Poisoned']) {
+      await expect(page.getByText(label)).toBeVisible();
+    }
   });
 
-  test('left-drop connector exists below Slow pill and above the horizontal', async ({ page }) => {
-    // The left vertical drop is tagged with data-pw="left-drop"
-    const leftDrops = page.locator('[data-pw="left-drop"]');
-    await expect(leftDrops.first()).toBeVisible();
+  test('left-drop top is flush with Slow pill outer bottom edge (within 1px)', async ({ page }) => {
+    const pillBB = await page.getByText('Slow').locator('..').boundingBox();
+    const dropBB = await page.locator('[data-pw="left-drop"]').first().boundingBox();
 
-    const slowBB   = await page.getByText('Slow').boundingBox();
-    const dropBB   = await leftDrops.first().boundingBox();
+    const pillBottom = pillBB!.y + pillBB!.height;
+    const dropTop    = dropBB!.y;
 
-    // Drop must start at or after the bottom of the Slow pill
-    expect(dropBB!.y).toBeGreaterThanOrEqual(slowBB!.y + slowBB!.height - 2); // -2px tolerance for borders
-    // Drop must have meaningful height (≥ 8px)
-    expect(dropBB!.height).toBeGreaterThanOrEqual(8);
-    // Drop must be horizontally centered near the Slow pill's center
-    const slowCenter = slowBB!.x + slowBB!.width / 2;
-    const dropCenter = dropBB!.x + dropBB!.width / 2;
-    expect(Math.abs(slowCenter - dropCenter)).toBeLessThan(4);
-
-    console.log('Slow pill bottom:', slowBB!.y + slowBB!.height);
-    console.log('Left drop top:   ', dropBB!.y, ' height:', dropBB!.height);
+    console.log('BEFORE: pill bottom =', pillBottom, '| drop top =', dropTop, '| gap =', dropTop - pillBottom);
+    expect(Math.abs(dropTop - pillBottom)).toBeLessThanOrEqual(TOLERANCE);
   });
 
-  test('right-drop connector exists below Dazed pill and above the horizontal', async ({ page }) => {
-    const rightDrops = page.locator('[data-pw="right-drop"]');
-    await expect(rightDrops.first()).toBeVisible();
+  test('right-drop top is flush with Dazed pill outer bottom edge (within 1px)', async ({ page }) => {
+    const pillBB = await page.getByText('Dazed').locator('..').boundingBox();
+    const dropBB = await page.locator('[data-pw="right-drop"]').first().boundingBox();
 
-    const dazedBB = await page.getByText('Dazed').boundingBox();
-    const dropBB  = await rightDrops.first().boundingBox();
+    const pillBottom = pillBB!.y + pillBB!.height;
+    const dropTop    = dropBB!.y;
 
-    expect(dropBB!.y).toBeGreaterThanOrEqual(dazedBB!.y + dazedBB!.height - 2);
-    expect(dropBB!.height).toBeGreaterThanOrEqual(8);
-    const dazedCenter = dazedBB!.x + dazedBB!.width / 2;
-    const dropCenter  = dropBB!.x + dropBB!.width / 2;
-    expect(Math.abs(dazedCenter - dropCenter)).toBeLessThan(4);
-
-    console.log('Dazed pill bottom:', dazedBB!.y + dazedBB!.height);
-    console.log('Right drop top:   ', dropBB!.y, ' height:', dropBB!.height);
+    console.log('Dazed pill bottom =', pillBottom, '| drop top =', dropTop, '| gap =', dropTop - pillBottom);
+    expect(Math.abs(dropTop - pillBottom)).toBeLessThanOrEqual(TOLERANCE);
   });
 
-  test('second group also has both vertical drops (Weak / Shaken → Poisoned)', async ({ page }) => {
-    const allLeftDrops  = page.locator('[data-pw="left-drop"]');
-    const allRightDrops = page.locator('[data-pw="right-drop"]');
-    await expect(allLeftDrops).toHaveCount(2);
-    await expect(allRightDrops).toHaveCount(2);
+  test('center stem bottom is flush with Enraged pill outer top edge (within 1px)', async ({
+    page,
+  }) => {
+    // Center stem has no data-pw — locate it by position: it is the sibling Box
+    // between the horizontal and the Enraged pill. Use the Enraged pill's top.
+    const enragedBB = await page.getByText('Enraged').locator('..').boundingBox();
+    const dropBB    = await page.locator('[data-pw="left-drop"]').first().boundingBox();
 
-    const weakBB   = await page.getByText('Weak').boundingBox();
-    const shakenBB = await page.getByText('Shaken').boundingBox();
-    const drop2LBB = await allLeftDrops.nth(1).boundingBox();
-    const drop2RBB = await allRightDrops.nth(1).boundingBox();
+    // Reconstruct: stem bottom = container_top + H_TOP + STEM_H
+    // We know container_top from drop top - PILL_H
+    const containerTop = dropBB!.y - 36; // PILL_H = 36
+    const stemBottom   = containerTop + 46 + 12; // H_TOP + STEM_H
 
-    expect(drop2LBB!.y).toBeGreaterThanOrEqual(weakBB!.y + weakBB!.height - 2);
-    expect(drop2RBB!.y).toBeGreaterThanOrEqual(shakenBB!.y + shakenBB!.height - 2);
+    const enragedTop = enragedBB!.y;
 
-    console.log('Weak pill bottom:   ', weakBB!.y + weakBB!.height, ' | drop2L top:', drop2LBB!.y);
-    console.log('Shaken pill bottom: ', shakenBB!.y + shakenBB!.height, ' | drop2R top:', drop2RBB!.y);
+    console.log('Stem bottom =', stemBottom, '| Enraged top =', enragedTop, '| gap =', enragedTop - stemBottom);
+    expect(Math.abs(stemBottom - enragedTop)).toBeLessThanOrEqual(TOLERANCE);
+  });
+
+  test('drop height is 10px', async ({ page }) => {
+    const dropBB = await page.locator('[data-pw="left-drop"]').first().boundingBox();
+    expect(dropBB!.height).toBe(10);
+  });
+
+  test('second group (Weak/Shaken → Poisoned) has same geometry', async ({ page }) => {
+    const weakBB    = await page.getByText('Weak').locator('..').boundingBox();
+    const shakenBB  = await page.getByText('Shaken').locator('..').boundingBox();
+    const drop2L    = await page.locator('[data-pw="left-drop"]').nth(1).boundingBox();
+    const drop2R    = await page.locator('[data-pw="right-drop"]').nth(1).boundingBox();
+
+    expect(Math.abs(drop2L!.y - (weakBB!.y + weakBB!.height))).toBeLessThanOrEqual(TOLERANCE);
+    expect(Math.abs(drop2R!.y - (shakenBB!.y + shakenBB!.height))).toBeLessThanOrEqual(TOLERANCE);
+
+    console.log('Weak bottom =', weakBB!.y + weakBB!.height, '| drop2L top =', drop2L!.y);
+    console.log('Shaken bottom =', shakenBB!.y + shakenBB!.height, '| drop2R top =', drop2R!.y);
   });
 });

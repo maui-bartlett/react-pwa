@@ -16,11 +16,14 @@ type StatusPillGroupProps = {
 };
 
 const LINE_COLOR = '#d7ddd6';
-// Approximate rendered pill height (border 1×2 + py≈5×2 + caption 0.7rem×1.66≈18.6px)
-const PILL_H = 29;
+// Measured rendered pill height: 35.906px (border 1×2 + py 4.96×2 + caption lineHeight).
+// Using 36 gives a ~0.09px gap (sub-pixel, imperceptible) — drop flush with pill border.
+const PILL_H = 36;
 // Visible stem height below each upper pill before reaching the horizontal bar
 const DROP_H = 10;
-const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 39
+const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 46
+// Container height 94, lower pill top = 94 - PILL_H = 58. Stem: H_TOP(46) → 58 = 12px.
+const STEM_H = 12;
 
 function StatusPill({ label, color, result = false }: StatusPillNode) {
   return (
@@ -114,7 +117,7 @@ function StatusPillGroup({ topLeft, topRight, result }: StatusPillGroupProps) {
           left: '50%',
           transform: 'translateX(-50%)',
           width: 2,
-          height: 25,
+          height: STEM_H,
           bgcolor: LINE_COLOR,
         }}
       />
