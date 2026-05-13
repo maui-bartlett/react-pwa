@@ -263,7 +263,7 @@ function FabU() {
         <SummaryStrip
           metrics={[
             { label: 'Fabula Points', value: '4' },
-            { label: 'Experience Points', value: '7 / 10' },
+            { label: 'XP', value: '7 / 10' },
             { label: 'Level', value: '13' },
           ]}
         />
