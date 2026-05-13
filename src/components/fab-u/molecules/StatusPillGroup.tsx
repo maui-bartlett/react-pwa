@@ -4,15 +4,18 @@ import Typography from '@mui/material/Typography';
 import { fabUTokens } from '../tokens';
 
 type StatusPillNode = {
+  id: string;
   label: string;
   color: string;
   result?: boolean;
+  selected?: boolean;
 };
 
 type StatusPillGroupProps = {
   topLeft: StatusPillNode;
   topRight: StatusPillNode;
   result: StatusPillNode;
+  onToggle: (id: string) => void;
 };
 
 const LINE_COLOR = '#d7ddd6';
@@ -25,18 +28,38 @@ const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 46
 // Container height 94, lower pill top = 94 - PILL_H = 58. Stem: H_TOP(46) → 58 = 12px.
 const STEM_H = 12;
 
-function StatusPill({ label, color, result = false }: StatusPillNode) {
+// Blend a hex color with white at the given alpha (0–1) to produce a solid fill color.
+function blendWithWhite(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgb(${Math.round(r * alpha + 255 * (1 - alpha))}, ${Math.round(g * alpha + 255 * (1 - alpha))}, ${Math.round(b * alpha + 255 * (1 - alpha))})`;
+}
+
+function StatusPill({
+  id,
+  label,
+  color,
+  result = false,
+  selected = false,
+  onToggle,
+}: StatusPillNode & { onToggle: (id: string) => void }) {
   return (
     <Box
+      data-pw={`status-pill-${id}`}
+      onClick={() => onToggle(id)}
       sx={{
         minWidth: result ? 84 : 72,
         border: `1px solid ${color}`,
         borderRadius: '8px',
-        bgcolor: '#fff',
+        bgcolor: selected ? blendWithWhite(color, 0.2) : fabUTokens.color.surface,
         px: 1.05,
         py: 0.62,
         textAlign: 'center',
         boxShadow: '0 1px 3px rgba(31, 42, 38, 0.04)',
+        cursor: 'pointer',
+        userSelect: 'none',
+        transition: 'background-color 150ms ease',
       }}
     >
       <Typography
@@ -55,20 +78,20 @@ function StatusPill({ label, color, result = false }: StatusPillNode) {
   );
 }
 
-function StatusPillGroup({ topLeft, topRight, result }: StatusPillGroupProps) {
+function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGroupProps) {
   return (
     <Box sx={{ position: 'relative', width: 164, height: 94, flexShrink: 0 }}>
       {/* Upper pills */}
       <Box sx={{ position: 'absolute', top: 0, left: 0 }}>
-        <StatusPill {...topLeft} />
+        <StatusPill {...topLeft} onToggle={onToggle} />
       </Box>
       <Box sx={{ position: 'absolute', top: 0, right: 0 }}>
-        <StatusPill {...topRight} />
+        <StatusPill {...topRight} onToggle={onToggle} />
       </Box>
 
       {/* Result pill */}
       <Box sx={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)' }}>
-        <StatusPill {...result} result />
+        <StatusPill {...result} result onToggle={onToggle} />
       </Box>
 
       {/* Left vertical drop — from bottom-center of topLeft pill down to horizontal */}

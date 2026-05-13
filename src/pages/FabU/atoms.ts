@@ -11,4 +11,13 @@ const characterNotesState = atomWithStorage<string>(
   'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
 );
 
-export { backstoryAnswersState, characterNotesState };
+const statusEffectsState = atomWithStorage<Record<string, boolean>>('fab-u-status-effects', {
+  slow: false,
+  dazed: false,
+  enraged: false,
+  weak: false,
+  shaken: false,
+  poisoned: false,
+});
+
+export { backstoryAnswersState, characterNotesState, statusEffectsState };

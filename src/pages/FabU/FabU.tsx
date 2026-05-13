@@ -26,7 +26,7 @@ import {
   fabUTokens,
 } from '@/components/fab-u';
 
-import { backstoryAnswersState, characterNotesState } from './atoms';
+import { backstoryAnswersState, characterNotesState, statusEffectsState } from './atoms';
 import { skillGroups } from './skills';
 import { spellGroups } from './spells';
 
@@ -129,6 +129,10 @@ function FabU() {
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [backstoryAnswers, setBackstoryAnswers] = useAtom(backstoryAnswersState);
   const [characterNotes, setCharacterNotes] = useAtom(characterNotesState);
+  const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
+  const handleToggleEffect = (id: string) => {
+    setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   function renderOverview() {
     return (
@@ -214,7 +218,7 @@ function FabU() {
           bottomRow={[...combatAttributeRows]}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
         />
-        <StatusEffectsDiagram />
+        <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
