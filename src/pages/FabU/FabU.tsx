@@ -367,6 +367,7 @@ function FabU() {
         />
         <DetailListCard
           label="Backpack"
+          addLabel="Item"
           items={[
             {
               title: 'Green Crystal',
