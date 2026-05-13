@@ -1,9 +1,11 @@
 import { useState } from 'react';
 
-import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+
+import { useAtom } from 'jotai';
 
 import {
   AttributesStatsCard,
@@ -24,6 +26,7 @@ import {
   fabUTokens,
 } from '@/components/fab-u';
 
+import { backstoryAnswersState, characterNotesState } from './atoms';
 import { skillGroups } from './skills';
 import { spellGroups } from './spells';
 
@@ -85,25 +88,10 @@ const bondItems = [
 ] as const;
 
 const backstoryPrompts = [
-  {
-    question: 'What drove me and my parents out of Infinita?',
-    answer:
-      'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
-  },
-  {
-    question: 'How do I feel about being in Efowyn?',
-    answer:
-      'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
-  },
-  {
-    question: 'How do I feel about the castle in the sky?',
-    answer:
-      "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
-  },
+  { question: 'What drove me and my parents out of Infinita?' },
+  { question: 'How do I feel about being in Efowyn?' },
+  { question: 'How do I feel about the castle in the sky?' },
 ] as const;
-
-const notesBody =
-  'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.';
 
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
@@ -139,6 +127,8 @@ const screenMeta: Record<
 function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
+  const [backstoryAnswers, setBackstoryAnswers] = useAtom(backstoryAnswersState);
+  const [characterNotes, setCharacterNotes] = useAtom(characterNotesState);
 
   function renderOverview() {
     return (
@@ -385,6 +375,33 @@ function FabU() {
   }
 
   function renderNotes() {
+    const fieldSx = {
+      '& .MuiOutlinedInput-root': {
+        fontSize: '0.84rem',
+        lineHeight: 1.7,
+        color: fabUTokens.color.textSecondary,
+        bgcolor: fabUTokens.color.surface,
+        borderRadius: '10px',
+        boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+        '& fieldset': {
+          borderColor: fabUTokens.color.border,
+          borderRadius: '10px',
+        },
+        '&:hover fieldset': {
+          borderColor: fabUTokens.color.border,
+        },
+        '&.Mui-focused fieldset': {
+          borderColor: fabUTokens.color.textSecondary,
+          borderWidth: 1,
+        },
+      },
+      '& .MuiOutlinedInput-input': {
+        py: 1.05,
+        px: 1.2,
+        color: fabUTokens.color.textSecondary,
+      },
+    };
+
     return (
       <>
         <SurfaceCard
@@ -394,7 +411,7 @@ function FabU() {
           }}
         >
           <Stack spacing={1.5}>
-            {backstoryPrompts.map((prompt) => (
+            {backstoryPrompts.map((prompt, i) => (
               <Stack key={prompt.question} spacing={0.75}>
                 <Typography
                   variant="body2"
@@ -407,27 +424,18 @@ function FabU() {
                 >
                   {prompt.question}
                 </Typography>
-                <Box
-                  sx={{
-                    border: `1px solid ${fabUTokens.color.border}`,
-                    borderRadius: '10px',
-                    bgcolor: fabUTokens.color.surface,
-                    boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
-                    px: 1.2,
-                    py: 1.05,
+                <TextField
+                  multiline
+                  fullWidth
+                  value={backstoryAnswers[i] ?? ''}
+                  onChange={(e) => {
+                    const next = [...backstoryAnswers];
+                    next[i] = e.target.value;
+                    setBackstoryAnswers(next);
                   }}
-                >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: fabUTokens.color.textSecondary,
-                      fontSize: '0.84rem',
-                      lineHeight: 1.7,
-                    }}
-                  >
-                    {prompt.answer}
-                  </Typography>
-                </Box>
+                  variant="outlined"
+                  sx={fieldSx}
+                />
               </Stack>
             ))}
           </Stack>
@@ -439,23 +447,14 @@ function FabU() {
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
-          <Box
-            sx={{
-              border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '10px',
-              bgcolor: fabUTokens.color.surface,
-              boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
-              px: 1.2,
-              py: 1.05,
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
-            >
-              {notesBody}
-            </Typography>
-          </Box>
+          <TextField
+            multiline
+            fullWidth
+            value={characterNotes}
+            onChange={(e) => setCharacterNotes(e.target.value)}
+            variant="outlined"
+            sx={fieldSx}
+          />
         </SurfaceCard>
       </>
     );

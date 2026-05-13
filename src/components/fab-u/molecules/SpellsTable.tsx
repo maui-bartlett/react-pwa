@@ -78,14 +78,23 @@ function SpellsTable({
                 <>
                   <TableRow
                     key={row.name}
+                    data-pw="spell-row"
                     onClick={() => toggleRow(row.name)}
                     sx={{
+                      height: 36,
                       cursor: 'pointer',
                       '&:hover': { bgcolor: fabUTokens.color.surfaceMuted },
                     }}
                   >
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          overflow: 'hidden',
+                        }}
+                      >
                         {isOpen ? (
                           <KeyboardArrowUpIcon
                             fontSize="small"
@@ -99,7 +108,13 @@ function SpellsTable({
                         )}
                         <Typography
                           variant="body2"
-                          sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
+                          sx={{
+                            fontWeight: 700,
+                            color: fabUTokens.color.textPrimary,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
                         >
                           {row.name}
                         </Typography>
@@ -112,7 +127,11 @@ function SpellsTable({
                   <TableRow key={`${row.name}-detail`}>
                     <TableCell
                       colSpan={4}
-                      sx={{ py: 0, borderBottom: isOpen ? undefined : 'none' }}
+                      sx={
+                        isOpen
+                          ? {}
+                          : { '&&': { p: 0, borderBottom: 'none', lineHeight: 0, fontSize: 0 } }
+                      }
                     >
                       <Collapse in={isOpen} timeout="auto" unmountOnExit>
                         <Box
