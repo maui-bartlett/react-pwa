@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -199,10 +199,6 @@ const screenMeta: Record<
 function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
-
-  const combatTabLabel = useMemo(() => {
-    return combatTabs.find((option) => option.value === activeCombatTab)?.label ?? 'Bonds';
-  }, [activeCombatTab]);
 
   function renderOverview() {
     return (
@@ -509,7 +505,7 @@ function FabU() {
           eyebrow="RAD · LVL 13"
           title="Fabula Ultima"
           subtitle="Active encounter"
-          actionLabel={combatTabLabel}
+          actionLabel="Combat"
         />
       );
     }
