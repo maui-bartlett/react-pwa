@@ -30,7 +30,6 @@ function SpellsTable({
         <Table
           size="small"
           sx={{
-            minWidth: 520,
             '& .MuiTableCell-root': {
               borderColor: fabUTokens.color.border,
               py: 0.95,
@@ -70,7 +69,7 @@ function SpellsTable({
                 <TableCell>{row.cost}</TableCell>
                 <TableCell>{row.target}</TableCell>
                 <TableCell>{row.duration}</TableCell>
-                <TableCell sx={{ minWidth: 180 }}>{row.effect}</TableCell>
+                <TableCell>{row.effect}</TableCell>
                 <TableCell align="right">
                   <Button
                     size="small"

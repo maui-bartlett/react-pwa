@@ -25,7 +25,6 @@ function SkillsTable({ title, rows, subtitle, label, showTitle = false }: Skills
         <Table
           size="small"
           sx={{
-            minWidth: 420,
             '& .MuiTableCell-root': {
               borderColor: fabUTokens.color.border,
               py: 0.95,
@@ -60,7 +59,7 @@ function SkillsTable({ title, rows, subtitle, label, showTitle = false }: Skills
                   </Typography>
                 </TableCell>
                 <TableCell>{row.level ?? '—'}</TableCell>
-                <TableCell sx={{ minWidth: 220 }}>{row.effect}</TableCell>
+                <TableCell>{row.effect}</TableCell>
               </TableRow>
             ))}
           </TableBody>

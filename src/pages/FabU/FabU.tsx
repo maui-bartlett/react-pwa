@@ -264,14 +264,16 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
-            {skillGroups.map((group) => (
-              <SkillsTable
-                key={group.className}
-                label={`${group.className} Skills`}
-                title={`${group.className} Skills`}
-                rows={group.skills}
-              />
-            ))}
+            {skillGroups
+              .filter((g) => g.className !== 'Tinkerer')
+              .map((group) => (
+                <SkillsTable
+                  key={group.className}
+                  label={`${group.className} Skills`}
+                  title={`${group.className} Skills`}
+                  rows={group.skills}
+                />
+              ))}
           </>
         ) : null}
 
