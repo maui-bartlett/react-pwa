@@ -6,6 +6,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import { useAtom, useAtomValue } from 'jotai';
+import { Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -470,11 +471,20 @@ function FabU() {
     );
   }
 
+  const eyebrow =
+    activeTab === 'overview' ? (
+      <>
+        Fabula <Sparkles size={10} /> Ultima
+      </>
+    ) : (
+      'Rad • LV 13'
+    );
+
   const header = (() => {
     if (activeTab === 'combat') {
       return (
         <HeaderBar
-          eyebrow="FABULA + ULTIMA"
+          eyebrow={eyebrow}
           title="Combat"
           subtitle="Active encounter"
           actionLabel="Combat"
@@ -486,7 +496,7 @@ function FabU() {
 
     return (
       <HeaderBar
-        eyebrow="FABULA + ULTIMA"
+        eyebrow={eyebrow}
         title={meta.title}
         subtitle={meta.subtitle}
         actionLabel={meta.actionLabel}

@@ -33,6 +33,7 @@
     "@mui/material": "^6.4.6",
     "@toolpad/core": "^0.12.1",
     "jotai": "^2.12.1",
+    "lucide-react": "^1.14.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-error-boundary": "^5.0.0",

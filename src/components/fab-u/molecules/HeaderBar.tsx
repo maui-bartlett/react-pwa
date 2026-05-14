@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -6,7 +8,7 @@ import { alpha } from '@mui/material/styles';
 import { fabUTokens } from '../tokens';
 
 type HeaderBarProps = {
-  eyebrow?: string;
+  eyebrow?: ReactNode;
   title: string;
   subtitle?: string;
   actionLabel?: string;
@@ -36,6 +38,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       <Stack spacing={compact ? 0.16 : 0.3}>
         {eyebrow ? (
           <Typography
+            data-pw="header-eyebrow"
             variant="caption"
             sx={{
               color: 'rgba(255,255,255,0.78)',
@@ -43,6 +46,9 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
               fontSize: compact ? '0.58rem' : '0.63rem',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
             }}
           >
             {eyebrow}
