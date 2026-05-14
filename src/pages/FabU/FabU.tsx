@@ -136,6 +136,18 @@ function FabU() {
           : b,
       ),
     }));
+  const addBond = (characterName: string) =>
+    setCharacter((c) => ({
+      ...c,
+      bonds: [
+        ...c.bonds,
+        {
+          id: `${characterName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+          characterName,
+          types: [],
+        },
+      ],
+    }));
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
@@ -246,7 +258,7 @@ function FabU() {
           ]}
         />
 
-        <BondsCard bonds={character.bonds} onToggleType={toggleBondType} />
+        <BondsCard bonds={character.bonds} onToggleType={toggleBondType} onAddBond={addBond} />
 
         <SummaryStrip
           metrics={[
@@ -321,7 +333,7 @@ function FabU() {
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <BondsCard bonds={character.bonds} onToggleType={toggleBondType} />
+            <BondsCard bonds={character.bonds} onToggleType={toggleBondType} onAddBond={addBond} />
 
             <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>

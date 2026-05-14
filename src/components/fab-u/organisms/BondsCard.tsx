@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
@@ -26,11 +27,15 @@ const ALL_BOND_TYPES: BondType[] = [
 type BondsCardProps = {
   bonds: Bond[];
   onToggleType: (bondId: string, type: BondType) => void;
+  onAddBond: (characterName: string) => void;
   label?: string;
 };
 
-function BondsCard({ bonds, onToggleType, label = 'Bonds' }: BondsCardProps) {
+function BondsCard({ bonds, onToggleType, onAddBond, label = 'Bonds' }: BondsCardProps) {
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; bondId: string } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function openMenu(e: React.MouseEvent<HTMLElement>, bondId: string) {
     e.stopPropagation();
@@ -45,6 +50,25 @@ function BondsCard({ bonds, onToggleType, label = 'Bonds' }: BondsCardProps) {
     if (!menuAnchor) return;
     onToggleType(menuAnchor.bondId, type);
     closeMenu();
+  }
+
+  function startAdding() {
+    setDraft('');
+    setAdding(true);
+    // focus is handled by autoFocus on InputBase
+  }
+
+  function cancelAdding() {
+    setAdding(false);
+    setDraft('');
+  }
+
+  function commitAdding() {
+    const name = draft.trim();
+    if (name) {
+      onAddBond(name);
+    }
+    cancelAdding();
   }
 
   const activeBond = bonds.find((b) => b.id === menuAnchor?.bondId);
@@ -113,6 +137,70 @@ function BondsCard({ bonds, onToggleType, label = 'Bonds' }: BondsCardProps) {
             </IconButton>
           </Stack>
         ))}
+
+        {/* ── Add-bond row ── */}
+        {adding ? (
+          <Box
+            sx={{
+              border: `1px solid ${fabUTokens.color.textSecondary}`,
+              borderRadius: '9px',
+              px: 1.3,
+              py: 1.1,
+              bgcolor: fabUTokens.color.surface,
+            }}
+          >
+            <InputBase
+              inputRef={inputRef}
+              data-pw="bond-name-input"
+              inputProps={{ 'data-pw': 'bond-name-input' }}
+              autoFocus
+              fullWidth
+              placeholder="Character name…"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitAdding}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur();
+                }
+                if (e.key === 'Escape') {
+                  cancelAdding();
+                }
+              }}
+              sx={{
+                '& input': {
+                  p: 0,
+                  fontSize: '0.84rem',
+                  color: fabUTokens.color.textPrimary,
+                  lineHeight: 1.5,
+                  '&::placeholder': { color: fabUTokens.color.textSecondary, opacity: 1 },
+                },
+              }}
+            />
+          </Box>
+        ) : (
+          <Box
+            data-pw="bond-add-new"
+            onClick={startAdding}
+            sx={{
+              border: `1px dashed ${fabUTokens.color.border}`,
+              borderRadius: '9px',
+              px: 1.3,
+              py: 1.45,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: fabUTokens.color.textSecondary,
+              bgcolor: fabUTokens.color.surfaceMuted,
+              cursor: 'pointer',
+            }}
+          >
+            <AddIcon fontSize="small" />
+            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+              Bond
+            </Typography>
+          </Box>
+        )}
       </Stack>
 
       <Menu
