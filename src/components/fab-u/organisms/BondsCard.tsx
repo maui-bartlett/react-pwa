@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
@@ -24,14 +26,160 @@ const ALL_BOND_TYPES: BondType[] = [
   'Hatred',
 ];
 
+const SWIPE_THRESHOLD = 100;
+
+type BondRowProps = {
+  bond: Bond;
+  onOpenMenu: (e: React.MouseEvent<HTMLElement>, bondId: string) => void;
+  onRemove: (bondId: string) => void;
+};
+
+function BondRow({ bond, onOpenMenu, onRemove }: BondRowProps) {
+  const [dragX, setDragX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  function triggerRemove() {
+    setRemoving(true);
+    setTimeout(() => onRemove(bond.id), 450);
+  }
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX }) => {
+      setSwiping(true);
+      setDragX(Math.min(0, deltaX));
+    },
+    onSwiped: ({ dir, absX }) => {
+      setSwiping(false);
+      if (dir === 'Left' && absX >= SWIPE_THRESHOLD) {
+        triggerRemove();
+      } else {
+        setDragX(0);
+      }
+    },
+    trackMouse: true,
+    delta: 10,
+  });
+
+  const translateX = removing ? '-110%' : `${dragX}px`;
+  const rowTransition = swiping
+    ? 'none'
+    : removing
+      ? 'transform 0.15s ease'
+      : 'transform 0.22s ease';
+
+  return (
+    <Box
+      data-pw={`bond-row-${bond.id}`}
+      sx={{
+        overflow: 'hidden',
+        maxHeight: removing ? 0 : '200px',
+        opacity: removing ? 0 : 1,
+        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+      }}
+    >
+      <Stack
+        {...swipeHandlers}
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        gap={1}
+        sx={{
+          border: `1px solid ${fabUTokens.color.border}`,
+          borderRadius: '9px',
+          px: 1.25,
+          py: 0.85,
+          bgcolor: fabUTokens.color.surface,
+          boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+          transform: `translateX(${translateX})`,
+          transition: rowTransition,
+          touchAction: 'pan-y',
+          userSelect: 'none',
+          '&:hover .bond-delete-icon': { opacity: 1 },
+        }}
+      >
+        <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
+          >
+            {bond.characterName}
+          </Typography>
+          {bond.types.length > 0 ? (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {bond.types.map((t) => (
+                <Chip
+                  key={t}
+                  label={t}
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    bgcolor: 'rgba(49, 92, 77, 0.08)',
+                    color: fabUTokens.color.brand,
+                    border: `1px solid rgba(49, 92, 77, 0.18)`,
+                    borderRadius: '5px',
+                    '& .MuiChip-label': { px: 0.75 },
+                  }}
+                />
+              ))}
+            </Box>
+          ) : null}
+        </Stack>
+        <IconButton
+          data-pw={`bond-add-${bond.id}`}
+          size="small"
+          onClick={(e) => onOpenMenu(e, bond.id)}
+          sx={{
+            color: fabUTokens.color.textSecondary,
+            p: 0.25,
+            flexShrink: 0,
+            '&:hover': { color: fabUTokens.color.brand },
+          }}
+        >
+          <AddIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          className="bond-delete-icon"
+          data-pw={`bond-delete-${bond.id}`}
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            triggerRemove();
+          }}
+          sx={{
+            opacity: 0,
+            color: 'rgba(180, 50, 50, 0.6)',
+            p: 0.25,
+            flexShrink: 0,
+            transition: 'opacity 0.15s',
+            '&:hover': { color: 'rgba(180, 50, 50, 0.9)' },
+          }}
+        >
+          <CloseIcon sx={{ fontSize: 14 }} />
+        </IconButton>
+      </Stack>
+    </Box>
+  );
+}
+
 type BondsCardProps = {
   bonds: Bond[];
   onToggleType: (bondId: string, type: BondType) => void;
   onAddBond: (characterName: string) => void;
+  onRemoveBond: (bondId: string) => void;
   label?: string;
 };
 
-function BondsCard({ bonds, onToggleType, onAddBond, label = 'Bonds' }: BondsCardProps) {
+function BondsCard({
+  bonds,
+  onToggleType,
+  onAddBond,
+  onRemoveBond,
+  label = 'Bonds',
+}: BondsCardProps) {
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; bondId: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
@@ -55,7 +203,6 @@ function BondsCard({ bonds, onToggleType, onAddBond, label = 'Bonds' }: BondsCar
   function startAdding() {
     setDraft('');
     setAdding(true);
-    // focus is handled by autoFocus on InputBase
   }
 
   function cancelAdding() {
@@ -77,65 +224,7 @@ function BondsCard({ bonds, onToggleType, onAddBond, label = 'Bonds' }: BondsCar
     <SurfaceCard label={label}>
       <Stack spacing={1}>
         {bonds.map((bond) => (
-          <Stack
-            key={bond.id}
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            gap={1}
-            sx={{
-              border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '9px',
-              px: 1.25,
-              py: 0.85,
-              bgcolor: fabUTokens.color.surface,
-              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
-            }}
-          >
-            <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
-              <Typography
-                variant="body2"
-                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
-              >
-                {bond.characterName}
-              </Typography>
-              {bond.types.length > 0 ? (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {bond.types.map((t) => (
-                    <Chip
-                      key={t}
-                      label={t}
-                      size="small"
-                      sx={{
-                        height: 18,
-                        fontSize: '0.6rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.04em',
-                        bgcolor: 'rgba(49, 92, 77, 0.08)',
-                        color: fabUTokens.color.brand,
-                        border: `1px solid rgba(49, 92, 77, 0.18)`,
-                        borderRadius: '5px',
-                        '& .MuiChip-label': { px: 0.75 },
-                      }}
-                    />
-                  ))}
-                </Box>
-              ) : null}
-            </Stack>
-            <IconButton
-              data-pw={`bond-add-${bond.id}`}
-              size="small"
-              onClick={(e) => openMenu(e, bond.id)}
-              sx={{
-                color: fabUTokens.color.textSecondary,
-                p: 0.25,
-                flexShrink: 0,
-                '&:hover': { color: fabUTokens.color.brand },
-              }}
-            >
-              <AddIcon fontSize="small" />
-            </IconButton>
-          </Stack>
+          <BondRow key={bond.id} bond={bond} onOpenMenu={openMenu} onRemove={onRemoveBond} />
         ))}
 
         {/* ── Add-bond row ── */}

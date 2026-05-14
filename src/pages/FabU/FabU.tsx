@@ -148,6 +148,8 @@ function FabU() {
         },
       ],
     }));
+  const removeBond = (id: string) =>
+    setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
@@ -258,7 +260,12 @@ function FabU() {
           ]}
         />
 
-        <BondsCard bonds={character.bonds} onToggleType={toggleBondType} onAddBond={addBond} />
+        <BondsCard
+          bonds={character.bonds}
+          onToggleType={toggleBondType}
+          onAddBond={addBond}
+          onRemoveBond={removeBond}
+        />
 
         <SummaryStrip
           metrics={[
@@ -333,7 +340,12 @@ function FabU() {
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <BondsCard bonds={character.bonds} onToggleType={toggleBondType} onAddBond={addBond} />
+            <BondsCard
+              bonds={character.bonds}
+              onToggleType={toggleBondType}
+              onAddBond={addBond}
+              onRemoveBond={removeBond}
+            />
 
             <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>
