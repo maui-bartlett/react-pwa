@@ -4,6 +4,7 @@ import { atomWithStorage } from 'jotai/utils';
 import type { Attribute, Bond } from '@/components/fab-u';
 
 type Character = {
+  initiative: number;
   fabulaPoints: number;
   inventoryPoints: number;
   currentHP: number;
@@ -25,6 +26,7 @@ type Character = {
 };
 
 const CHARACTER_DEFAULTS: Character = {
+  initiative: 0,
   fabulaPoints: 4,
   inventoryPoints: 8,
   currentHP: 58,

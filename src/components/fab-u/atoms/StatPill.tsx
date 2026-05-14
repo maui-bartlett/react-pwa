@@ -28,7 +28,7 @@ function StatPill({
 
   function openEdit() {
     if (!onChange) return;
-    setDraft(value);
+    setDraft(value.replace(/[^0-9]/g, ''));
     setEditing(true);
   }
 

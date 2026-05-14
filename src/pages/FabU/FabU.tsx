@@ -46,7 +46,6 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 ];
 
 const combatResources = [
-  { label: 'Initiative', value: '0', tone: 'neutral' as const },
   { label: 'Defense', value: '8 (12)', tone: 'success' as const },
   { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
   { label: 'FP', value: '4', tone: 'neutral' as const },
@@ -115,6 +114,7 @@ function FabU() {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
   const [character, setCharacter] = useAtom(characterState);
+  const setInitiative = (v: number) => setCharacter((c) => ({ ...c, initiative: v }));
   const setFP = (v: number) => setCharacter((c) => ({ ...c, fabulaPoints: v }));
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
@@ -294,7 +294,17 @@ function FabU() {
     return (
       <>
         <AttributesStatsCard
-          topRow={[combatResources[0], combatResources[1], combatResources[2]]}
+          topRow={[
+            {
+              label: 'Initiative',
+              value: String(character.initiative),
+              tone: 'neutral' as const,
+              onChange: setInitiative,
+              pw: 'cb-initiative',
+            },
+            combatResources[0],
+            combatResources[1],
+          ]}
           middleRow={[
             {
               label: 'FP',
