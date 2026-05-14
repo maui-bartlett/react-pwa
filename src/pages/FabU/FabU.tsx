@@ -122,11 +122,18 @@ function FabU() {
   const setCurrentXP = (v: number) => setCharacter((c) => ({ ...c, currentXP: v }));
   const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
-  const addBondType = (id: string, type: BondType) =>
+  const toggleBondType = (id: string, type: BondType) =>
     setCharacter((c) => ({
       ...c,
       bonds: c.bonds.map((b) =>
-        b.id === id && !b.types.includes(type) ? { ...b, types: [...b.types, type] } : b,
+        b.id === id
+          ? {
+              ...b,
+              types: b.types.includes(type)
+                ? b.types.filter((t) => t !== type)
+                : [...b.types, type],
+            }
+          : b,
       ),
     }));
 
@@ -239,7 +246,7 @@ function FabU() {
           ]}
         />
 
-        <BondsCard bonds={character.bonds} onAddType={addBondType} />
+        <BondsCard bonds={character.bonds} onToggleType={toggleBondType} />
 
         <SummaryStrip
           metrics={[
@@ -314,7 +321,7 @@ function FabU() {
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <BondsCard bonds={character.bonds} onAddType={addBondType} />
+            <BondsCard bonds={character.bonds} onToggleType={toggleBondType} />
 
             <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>

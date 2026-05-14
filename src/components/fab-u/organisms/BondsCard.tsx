@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
@@ -24,11 +25,11 @@ const ALL_BOND_TYPES: BondType[] = [
 
 type BondsCardProps = {
   bonds: Bond[];
-  onAddType: (bondId: string, type: BondType) => void;
+  onToggleType: (bondId: string, type: BondType) => void;
   label?: string;
 };
 
-function BondsCard({ bonds, onAddType, label = 'Bonds' }: BondsCardProps) {
+function BondsCard({ bonds, onToggleType, label = 'Bonds' }: BondsCardProps) {
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; bondId: string } | null>(null);
 
   function openMenu(e: React.MouseEvent<HTMLElement>, bondId: string) {
@@ -40,9 +41,9 @@ function BondsCard({ bonds, onAddType, label = 'Bonds' }: BondsCardProps) {
     setMenuAnchor(null);
   }
 
-  function handleSelect(type: BondType) {
+  function handleToggle(type: BondType) {
     if (!menuAnchor) return;
-    onAddType(menuAnchor.bondId, type);
+    onToggleType(menuAnchor.bondId, type);
     closeMenu();
   }
 
@@ -131,19 +132,28 @@ function BondsCard({ bonds, onAddType, label = 'Bonds' }: BondsCardProps) {
         }}
       >
         {ALL_BOND_TYPES.map((type) => {
-          const already = activeBond?.types.includes(type) ?? false;
+          const selected = activeBond?.types.includes(type) ?? false;
           return (
             <MenuItem
               key={type}
-              disabled={already}
-              onClick={() => handleSelect(type)}
+              data-pw={`bond-type-${type.toLowerCase()}`}
+              data-selected={selected}
+              onClick={() => handleToggle(type)}
               sx={{
                 fontSize: '0.82rem',
                 fontWeight: 600,
                 py: 0.75,
-                color: already ? fabUTokens.color.textSecondary : fabUTokens.color.textPrimary,
+                gap: 1,
+                color: selected ? fabUTokens.color.brand : fabUTokens.color.textPrimary,
+                bgcolor: selected ? 'rgba(49, 92, 77, 0.06)' : 'transparent',
+                '&:hover': { bgcolor: 'rgba(49, 92, 77, 0.1)' },
               }}
             >
+              <Box sx={{ width: 16, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                {selected ? (
+                  <CheckIcon sx={{ fontSize: 14, color: fabUTokens.color.brand }} />
+                ) : null}
+              </Box>
               {type}
             </MenuItem>
           );
