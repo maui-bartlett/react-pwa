@@ -81,7 +81,7 @@ function SpellsTable({
                     data-pw="spell-row"
                     onClick={() => toggleRow(row.name)}
                     sx={{
-                      height: 36,
+                      height: 46,
                       cursor: 'pointer',
                       '&:hover': { bgcolor: fabUTokens.color.surfaceMuted },
                     }}

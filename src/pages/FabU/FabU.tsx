@@ -30,6 +30,7 @@ import {
 import {
   backstoryAnswersState,
   characterNotesState,
+  characterState,
   derivedStatusEffectsState,
   statusEffectsState,
 } from './atoms';
@@ -140,6 +141,9 @@ function FabU() {
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+  const [character, setCharacter] = useAtom(characterState);
+  const setFP = (v: number) => setCharacter((c) => ({ ...c, fabulaPoints: v }));
+  const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
 
   function renderOverview() {
     return (
@@ -200,7 +204,12 @@ function FabU() {
 
         <SummaryStrip
           metrics={[
-            { label: 'Fabula Points', value: '4' },
+            {
+              label: 'Fabula Points',
+              value: String(character.fabulaPoints),
+              pw: 'fp',
+              onChange: setFP,
+            },
             { label: 'XP', value: '7 / 10' },
             { label: 'Level', value: '13' },
           ]}
@@ -215,8 +224,8 @@ function FabU() {
         <AttributesStatsCard
           topRow={[combatResources[0], combatResources[1], combatResources[2]]}
           middleRow={[
-            combatResources[3],
-            combatResources[4],
+            { label: 'FP', value: String(character.fabulaPoints), tone: 'neutral' as const },
+            { label: 'IP', value: String(character.inventoryPoints), tone: 'warning' as const },
             combatResources[5],
             combatResources[6],
           ]}
@@ -307,8 +316,8 @@ function FabU() {
           metrics={[
             { label: 'LV', value: '13' },
             { label: 'XP', value: '7 / 10' },
-            { label: 'FP', value: '4' },
-            { label: 'IP', value: '8' },
+            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
+            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
         {skillGroups.map((group) => (
@@ -338,10 +347,10 @@ function FabU() {
         <SummaryStrip
           label="Resources"
           metrics={[
-            { label: 'FP', value: '4' },
+            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
             { label: 'HP', value: '58 / 58' },
             { label: 'MP', value: '58 / 58' },
-            { label: 'IP', value: '8' },
+            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
         {spellGroups.map((group) => (
@@ -363,7 +372,7 @@ function FabU() {
         <SummaryStrip
           label="Inventory Points"
           metrics={[
-            { label: 'IP', value: '8' },
+            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
             { label: 'ZENIT', value: '30' },
           ]}
         />

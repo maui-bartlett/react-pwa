@@ -1,6 +1,16 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
+type Character = {
+  fabulaPoints: number;
+  inventoryPoints: number;
+};
+
+const characterState = atomWithStorage<Character>('fab-u-character', {
+  fabulaPoints: 4,
+  inventoryPoints: 8,
+});
+
 const backstoryAnswersState = atomWithStorage<string[]>('fab-u-backstory-answers', [
   'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
   'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
@@ -32,6 +42,8 @@ const derivedStatusEffectsState = atom((get) => {
 export {
   backstoryAnswersState,
   characterNotesState,
+  characterState,
   derivedStatusEffectsState,
   statusEffectsState,
 };
+export type { Character };
