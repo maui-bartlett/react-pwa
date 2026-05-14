@@ -190,6 +190,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalHP}`,
               tone: 'danger' as const,
               onChange: setCurrentHP,
+              pw: 'ov-hp',
             },
             {
               label: 'MP',
@@ -197,12 +198,14 @@ function FabU() {
               valueSuffix: ` / ${character.totalMP}`,
               tone: 'accent' as const,
               onChange: setCurrentMP,
+              pw: 'ov-mp',
             },
             {
               label: 'IP',
               value: String(character.inventoryPoints),
               tone: 'warning' as const,
               onChange: setIP,
+              pw: 'ov-ip',
             },
           ]}
           bottomRow={makeAttrRows()}
@@ -259,12 +262,14 @@ function FabU() {
               value: String(character.fabulaPoints),
               tone: 'neutral' as const,
               onChange: setFP,
+              pw: 'cb-fp',
             },
             {
               label: 'IP',
               value: String(character.inventoryPoints),
               tone: 'warning' as const,
               onChange: setIP,
+              pw: 'cb-ip',
             },
             {
               label: 'HP',
@@ -272,6 +277,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalHP}`,
               tone: 'danger' as const,
               onChange: setCurrentHP,
+              pw: 'cb-hp',
             },
             {
               label: 'MP',
@@ -279,6 +285,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalMP}`,
               tone: 'accent' as const,
               onChange: setCurrentMP,
+              pw: 'cb-mp',
             },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"

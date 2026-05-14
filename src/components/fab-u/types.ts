@@ -27,6 +27,7 @@ export type StatPillData = {
   minHeight?: number | string;
   onChange?: (value: number) => void;
   valueSuffix?: string;
+  pw?: string;
 };
 
 export type AttributeRow = {

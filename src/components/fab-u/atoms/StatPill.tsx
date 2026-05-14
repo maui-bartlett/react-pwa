@@ -17,6 +17,7 @@ function StatPill({
   minHeight,
   onChange,
   valueSuffix,
+  pw,
 }: StatPillData) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -38,9 +39,20 @@ function StatPill({
     setEditing(false);
   }
 
+  // Use ch-based width matching the current value length so the text stays
+  // at the same x position when switching between display and edit modes.
+  // 'auto' would default to the HTML <input> intrinsic ~20ch width, which
+  // breaks the space-between layout by placing text far to the right.
+  const inputWidth = valueSuffix ? '2.5ch' : `${Math.max(draft.length, 1)}ch`;
+
   const valueEl = editing ? (
     <InputBase
-      inputProps={{ inputMode: 'numeric', min: 0, max: 999 }}
+      inputProps={{
+        inputMode: 'numeric',
+        min: 0,
+        max: 999,
+        'data-pw': pw ? `statpill-${pw}-input` : undefined,
+      }}
       value={draft}
       autoFocus
       onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, ''))}
@@ -57,7 +69,7 @@ function StatPill({
           fontSize: inline ? '0.96rem' : '0.98rem',
           lineHeight: 1.04,
           color: fabUTokens.color.textPrimary,
-          width: valueSuffix ? '2.5ch' : 'auto',
+          width: inputWidth,
           minWidth: '1.5ch',
           textAlign: inline ? 'right' : 'left',
         },
@@ -81,6 +93,7 @@ function StatPill({
 
   return (
     <Box
+      data-pw={pw ? `statpill-${pw}` : undefined}
       onClick={() => !editing && openEdit()}
       sx={{
         border: `1px solid ${editing ? fabUTokens.color.textSecondary : toneStyles.borderColor}`,

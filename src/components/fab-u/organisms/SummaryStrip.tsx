@@ -117,7 +117,9 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                             fontSize: '0.98rem',
                             lineHeight: 1.04,
                             color: fabUTokens.color.textPrimary,
-                            width: metric.valueSuffix ? '2.5ch' : '100%',
+                            width: metric.valueSuffix
+                              ? '2.5ch'
+                              : `${Math.max(editing!.draft.length, 1) + 0.5}ch`,
                             minWidth: '1.5ch',
                           },
                         }}
