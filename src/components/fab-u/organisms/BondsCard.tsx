@@ -55,7 +55,7 @@ function BondsCard({ bonds, onAddType, label = 'Bonds' }: BondsCardProps) {
           <Stack
             key={bond.id}
             direction="row"
-            alignItems="flex-start"
+            alignItems="center"
             justifyContent="space-between"
             gap={1}
             sx={{
@@ -104,7 +104,6 @@ function BondsCard({ bonds, onAddType, label = 'Bonds' }: BondsCardProps) {
               sx={{
                 color: fabUTokens.color.textSecondary,
                 p: 0.25,
-                mt: 0.1,
                 flexShrink: 0,
                 '&:hover': { color: fabUTokens.color.brand },
               }}
@@ -122,6 +121,7 @@ function BondsCard({ bonds, onAddType, label = 'Bonds' }: BondsCardProps) {
         slotProps={{
           paper: {
             sx: {
+              bgcolor: '#fff',
               borderRadius: '10px',
               boxShadow: '0 4px 16px rgba(31, 42, 38, 0.14)',
               minWidth: 148,
