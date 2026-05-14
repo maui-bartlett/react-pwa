@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -12,6 +12,8 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+
+import { Trash2 } from 'lucide-react';
 
 import { SurfaceCard } from '../atoms';
 import { fabUTokens } from '../tokens';
@@ -27,14 +29,16 @@ const ALL_BOND_TYPES: BondType[] = [
 ];
 
 const SWIPE_THRESHOLD = 100;
+const DELETE_RED = '#d32f2f';
 
 type BondRowProps = {
   bond: Bond;
   onOpenMenu: (e: React.MouseEvent<HTMLElement>, bondId: string) => void;
   onRemove: (bondId: string) => void;
+  isTouchDevice: boolean;
 };
 
-function BondRow({ bond, onOpenMenu, onRemove }: BondRowProps) {
+function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
   const [dragX, setDragX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -70,16 +74,55 @@ function BondRow({ bond, onOpenMenu, onRemove }: BondRowProps) {
       ? 'transform 0.15s ease'
       : 'transform 0.22s ease';
 
+  // Progress drives the red channel's trash icon fade + scale.
+  const progress = removing ? 1 : Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
+  const trashOpacity = progress;
+  const trashScale = 0.6 + progress * 0.4;
+  const iconTransition = swiping ? 'none' : 'opacity 0.22s ease, transform 0.22s ease';
+  const showRedChannel = (swiping && dragX < 0) || removing;
+
   return (
     <Box
       data-pw={`bond-row-${bond.id}`}
       sx={{
+        position: 'relative',
         overflow: 'hidden',
+        borderRadius: '9px',
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
         transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
       }}
     >
+      {/* Red delete channel — sits below the card, revealed as it slides left */}
+      {showRedChannel && (
+        <Box
+          data-pw={`bond-red-channel-${bond.id}`}
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            bgcolor: DELETE_RED,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            pr: 1.5,
+            zIndex: 0,
+          }}
+        >
+          <Box
+            data-pw={`bond-trash-${bond.id}`}
+            style={{
+              opacity: trashOpacity,
+              transform: `scale(${trashScale})`,
+              transition: iconTransition,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Trash2 size={18} color="white" />
+          </Box>
+        </Box>
+      )}
+
       <Stack
         {...swipeHandlers}
         direction="row"
@@ -87,6 +130,8 @@ function BondRow({ bond, onOpenMenu, onRemove }: BondRowProps) {
         justifyContent="space-between"
         gap={1}
         sx={{
+          position: 'relative',
+          zIndex: 1,
           border: `1px solid ${fabUTokens.color.border}`,
           borderRadius: '9px',
           px: 1.25,
@@ -143,25 +188,27 @@ function BondRow({ bond, onOpenMenu, onRemove }: BondRowProps) {
         >
           <AddIcon fontSize="small" />
         </IconButton>
-        <IconButton
-          className="bond-delete-icon"
-          data-pw={`bond-delete-${bond.id}`}
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            triggerRemove();
-          }}
-          sx={{
-            opacity: 0,
-            color: 'rgba(180, 50, 50, 0.6)',
-            p: 0.25,
-            flexShrink: 0,
-            transition: 'opacity 0.15s',
-            '&:hover': { color: 'rgba(180, 50, 50, 0.9)' },
-          }}
-        >
-          <CloseIcon sx={{ fontSize: 14 }} />
-        </IconButton>
+        {!isTouchDevice && (
+          <IconButton
+            className="bond-delete-icon"
+            data-pw={`bond-delete-${bond.id}`}
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerRemove();
+            }}
+            sx={{
+              opacity: 0,
+              color: 'rgba(180, 50, 50, 0.6)',
+              p: 0.25,
+              flexShrink: 0,
+              transition: 'opacity 0.15s',
+              '&:hover': { color: 'rgba(180, 50, 50, 0.9)' },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        )}
       </Stack>
     </Box>
   );
@@ -186,6 +233,13 @@ function BondsCard({
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isTouchDevice = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches,
+    [],
+  );
 
   function openMenu(e: React.MouseEvent<HTMLElement>, bondId: string) {
     e.stopPropagation();
@@ -226,7 +280,13 @@ function BondsCard({
     <SurfaceCard label={label}>
       <Stack spacing={1}>
         {bonds.map((bond) => (
-          <BondRow key={bond.id} bond={bond} onOpenMenu={openMenu} onRemove={onRemoveBond} />
+          <BondRow
+            key={bond.id}
+            bond={bond}
+            onOpenMenu={openMenu}
+            onRemove={onRemoveBond}
+            isTouchDevice={isTouchDevice}
+          />
         ))}
 
         {/* ── Add-bond row ── */}
