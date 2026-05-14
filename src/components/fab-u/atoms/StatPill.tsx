@@ -53,7 +53,7 @@ function StatPill({
       inputProps={{
         inputMode: 'numeric',
         min: 0,
-        max: 999,
+        max: maxValue,
         'data-pw': pw ? `statpill-${pw}-input` : undefined,
       }}
       value={draft}
