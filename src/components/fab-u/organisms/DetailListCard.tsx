@@ -27,6 +27,7 @@ function DetailListCard({ label, title, items, subtitle, addLabel }: DetailListC
         {items.map((item) => (
           <Stack
             key={`${item.title}-${item.subtitle}`}
+            data-pw="detail-list-row"
             direction="row"
             justifyContent="space-between"
             gap={2}
