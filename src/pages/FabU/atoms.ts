@@ -10,6 +10,9 @@ type Character = {
   totalHP: number;
   currentMP: number;
   totalMP: number;
+  currentXP: number;
+  totalXP: number;
+  level: number;
   zennit: number;
   attributes: {
     dex: Attribute;
@@ -27,6 +30,9 @@ const CHARACTER_DEFAULTS: Character = {
   totalHP: 58,
   currentMP: 58,
   totalMP: 58,
+  currentXP: 7,
+  totalXP: 10,
+  level: 13,
   zennit: 30,
   attributes: {
     dex: { die: 'd8', modifier: 0 },
@@ -43,7 +49,7 @@ const migratingCharacterStorage = {
   getItem(key: string, initialValue: Character): Character {
     try {
       const stored = localStorage.getItem(key);
-      if (stored !== null) return JSON.parse(stored);
+      if (stored !== null) return { ...initialValue, ...JSON.parse(stored) };
     } catch {
       /* ignore */
     }

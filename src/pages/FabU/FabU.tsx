@@ -86,7 +86,7 @@ const screenMeta: Record<
   overview: {
     title: 'Radovan "Rad" Milinic',
     subtitle: 'Transfer Student to UoE · Political refugee · Origin: Infinita',
-    actionLabel: 'LV 13',
+    actionLabel: '',
   },
   skills: {
     title: 'Skills & Growth',
@@ -124,6 +124,8 @@ function FabU() {
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
+  const setCurrentXP = (v: number) => setCharacter((c) => ({ ...c, currentXP: v }));
+  const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
@@ -218,17 +220,17 @@ function FabU() {
             {
               title: 'Entropist',
               subtitle: 'Entropic Magic · Absorb MP · Stolen Time',
-              trailing: 'LV 10',
+              trailing: 'LVL 10',
             },
             {
               title: 'Sharpshooter',
               subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP',
-              trailing: 'LV 2',
+              trailing: 'LVL 2',
             },
             {
               title: 'Tinkerer',
               subtitle: 'Emergency Item · improvised gear in conflict',
-              trailing: 'LV 1',
+              trailing: 'LVL 1',
             },
           ]}
         />
@@ -243,8 +245,14 @@ function FabU() {
               pw: 'fp',
               onChange: setFP,
             },
-            { label: 'XP', value: '7 / 10' },
-            { label: 'Level', value: '13' },
+            {
+              label: 'XP',
+              value: String(character.currentXP),
+              valueSuffix: ` / ${character.totalXP}`,
+              pw: 'ov-xp',
+              onChange: setCurrentXP,
+            },
+            { label: 'Level', value: String(character.level), pw: 'ov-level', onChange: setLevel },
           ]}
         />
       </>
@@ -373,8 +381,14 @@ function FabU() {
         <SummaryStrip
           label="Progress"
           metrics={[
-            { label: 'LV', value: '13' },
-            { label: 'XP', value: '7 / 10' },
+            { label: 'LVL', value: String(character.level), pw: 'sk-level', onChange: setLevel },
+            {
+              label: 'XP',
+              value: String(character.currentXP),
+              valueSuffix: ` / ${character.totalXP}`,
+              pw: 'sk-xp',
+              onChange: setCurrentXP,
+            },
             { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
@@ -557,7 +571,7 @@ function FabU() {
         Fabula <Sparkles size={10} /> Ultima
       </>
     ) : (
-      'Rad • LV 13'
+      `Rad • LVL ${character.level}`
     );
 
   const header = (() => {
@@ -579,7 +593,7 @@ function FabU() {
         eyebrow={eyebrow}
         title={meta.title}
         subtitle={meta.subtitle}
-        actionLabel={meta.actionLabel}
+        actionLabel={activeTab === 'overview' ? `LVL ${character.level}` : meta.actionLabel}
       />
     );
   })();
