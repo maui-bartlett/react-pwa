@@ -4,23 +4,62 @@ import { atomWithStorage } from 'jotai/utils';
 type Character = {
   fabulaPoints: number;
   inventoryPoints: number;
+  currentHP: number;
+  totalHP: number;
+  currentMP: number;
+  totalMP: number;
+  notes: string;
 };
 
-const characterState = atomWithStorage<Character>('fab-u-character', {
+const CHARACTER_DEFAULTS: Character = {
   fabulaPoints: 4,
   inventoryPoints: 8,
-});
+  currentHP: 58,
+  totalHP: 58,
+  currentMP: 58,
+  totalMP: 58,
+  notes:
+    'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
+};
+
+// Custom storage: migrates notes from the old 'fab-u-character-notes' key on first load.
+const migratingCharacterStorage = {
+  getItem(key: string, initialValue: Character): Character {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored !== null) return JSON.parse(stored);
+    } catch {
+      /* ignore */
+    }
+    try {
+      const oldNotes = localStorage.getItem('fab-u-character-notes');
+      if (oldNotes !== null) {
+        return { ...initialValue, notes: JSON.parse(oldNotes) };
+      }
+    } catch {
+      /* ignore */
+    }
+    return initialValue;
+  },
+  setItem(key: string, value: Character): void {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+  removeItem(key: string): void {
+    localStorage.removeItem(key);
+  },
+};
+
+const characterState = atomWithStorage<Character>(
+  'fab-u-character',
+  CHARACTER_DEFAULTS,
+  migratingCharacterStorage,
+);
 
 const backstoryAnswersState = atomWithStorage<string[]>('fab-u-backstory-answers', [
   'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
   'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
   "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
 ]);
-
-const characterNotesState = atomWithStorage<string>(
-  'fab-u-character-notes',
-  'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
-);
 
 // Only user-toggleable effects are stored; enraged/poisoned are derived.
 const statusEffectsState = atomWithStorage<Record<string, boolean>>('fab-u-status-effects', {
@@ -39,11 +78,5 @@ const derivedStatusEffectsState = atom((get) => {
   };
 });
 
-export {
-  backstoryAnswersState,
-  characterNotesState,
-  characterState,
-  derivedStatusEffectsState,
-  statusEffectsState,
-};
+export { backstoryAnswersState, characterState, derivedStatusEffectsState, statusEffectsState };
 export type { Character };

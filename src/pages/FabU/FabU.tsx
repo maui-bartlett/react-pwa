@@ -29,7 +29,6 @@ import {
 
 import {
   backstoryAnswersState,
-  characterNotesState,
   characterState,
   derivedStatusEffectsState,
   statusEffectsState,
@@ -135,7 +134,6 @@ function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [backstoryAnswers, setBackstoryAnswers] = useAtom(backstoryAnswersState);
-  const [characterNotes, setCharacterNotes] = useAtom(characterNotesState);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -144,6 +142,8 @@ function FabU() {
   const [character, setCharacter] = useAtom(characterState);
   const setFP = (v: number) => setCharacter((c) => ({ ...c, fabulaPoints: v }));
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
+  const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
+  const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
 
   function renderOverview() {
     return (
@@ -174,7 +174,19 @@ function FabU() {
         </SurfaceCard>
 
         <AttributesStatsCard
-          middleRow={[...overviewResources]}
+          middleRow={[
+            {
+              label: 'HP',
+              value: `${character.currentHP} / ${character.totalHP}`,
+              tone: 'danger' as const,
+            },
+            {
+              label: 'MP',
+              value: `${character.currentMP} / ${character.totalMP}`,
+              tone: 'accent' as const,
+            },
+            overviewResources[2],
+          ]}
           bottomRow={[...overviewAttributeRows]}
         />
 
@@ -226,8 +238,16 @@ function FabU() {
           middleRow={[
             { label: 'FP', value: String(character.fabulaPoints), tone: 'neutral' as const },
             { label: 'IP', value: String(character.inventoryPoints), tone: 'warning' as const },
-            combatResources[5],
-            combatResources[6],
+            {
+              label: 'HP',
+              value: `${character.currentHP} / ${character.totalHP}`,
+              tone: 'danger' as const,
+            },
+            {
+              label: 'MP',
+              value: `${character.currentMP} / ${character.totalMP}`,
+              tone: 'accent' as const,
+            },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
           middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
@@ -348,8 +368,20 @@ function FabU() {
           label="Resources"
           metrics={[
             { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
-            { label: 'HP', value: '58 / 58' },
-            { label: 'MP', value: '58 / 58' },
+            {
+              label: 'HP',
+              value: String(character.currentHP),
+              valueSuffix: ` / ${character.totalHP}`,
+              pw: 'hp',
+              onChange: setCurrentHP,
+            },
+            {
+              label: 'MP',
+              value: String(character.currentMP),
+              valueSuffix: ` / ${character.totalMP}`,
+              pw: 'mp',
+              onChange: setCurrentMP,
+            },
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
@@ -470,8 +502,8 @@ function FabU() {
           <TextField
             multiline
             fullWidth
-            value={characterNotes}
-            onChange={(e) => setCharacterNotes(e.target.value)}
+            value={character.notes}
+            onChange={(e) => setCharacter((c) => ({ ...c, notes: e.target.value }))}
             variant="outlined"
             sx={fieldSx}
           />

@@ -10,8 +10,11 @@ import { fabUTokens } from '../tokens';
 
 type SummaryMetric = {
   label: string;
+  /** The editable (or only) value portion */
   value: string;
-  /** data-pw suffix for this pill (e.g. "fp" → data-pw="metric-fp") */
+  /** Read-only suffix displayed after value, e.g. " / 58". Clicks on it do not open edit mode. */
+  valueSuffix?: string;
+  /** data-pw suffix for this pill (e.g. "hp" → data-pw="metric-hp") */
   pw?: string;
   /** When provided the pill is editable; called with the committed integer value */
   onChange?: (value: number) => void;
@@ -86,50 +89,69 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                   >
                     {metric.label}
                   </Typography>
-                  {isEditing ? (
-                    <InputBase
-                      inputProps={{
-                        inputMode: 'numeric',
-                        min: 0,
-                        max: 999,
-                        'data-pw': metric.pw ? `metric-${metric.pw}-input` : undefined,
-                      }}
-                      value={editing!.draft}
-                      autoFocus
-                      onChange={(e) => {
-                        const v = e.target.value.replace(/[^0-9]/g, '');
-                        setEditing({ label: metric.label, draft: v });
-                      }}
-                      onBlur={() => commitEdit(metric)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') e.currentTarget.blur();
-                        if (e.key === 'Escape') setEditing(null);
-                      }}
-                      sx={{
-                        p: 0,
-                        '& input': {
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                    {isEditing ? (
+                      <InputBase
+                        inputProps={{
+                          inputMode: 'numeric',
+                          min: 0,
+                          max: 999,
+                          'data-pw': metric.pw ? `metric-${metric.pw}-input` : undefined,
+                        }}
+                        value={editing!.draft}
+                        autoFocus
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/[^0-9]/g, '');
+                          setEditing({ label: metric.label, draft: v });
+                        }}
+                        onBlur={() => commitEdit(metric)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                          if (e.key === 'Escape') setEditing(null);
+                        }}
+                        sx={{
                           p: 0,
+                          '& input': {
+                            p: 0,
+                            fontWeight: 700,
+                            fontSize: '0.98rem',
+                            lineHeight: 1.04,
+                            color: fabUTokens.color.textPrimary,
+                            width: metric.valueSuffix ? '2.5ch' : '100%',
+                            minWidth: '1.5ch',
+                          },
+                        }}
+                      />
+                    ) : (
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          color: fabUTokens.color.textPrimary,
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,
-                          color: fabUTokens.color.textPrimary,
-                          width: '100%',
-                        },
-                      }}
-                    />
-                  ) : (
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: fabUTokens.color.textPrimary,
-                        fontWeight: 700,
-                        fontSize: '0.98rem',
-                        lineHeight: 1.04,
-                      }}
-                    >
-                      {metric.value}
-                    </Typography>
-                  )}
+                        }}
+                      >
+                        {metric.value}
+                      </Typography>
+                    )}
+                    {metric.valueSuffix ? (
+                      <Typography
+                        data-pw={metric.pw ? `metric-${metric.pw}-suffix` : undefined}
+                        onClick={(e) => e.stopPropagation()}
+                        variant="body1"
+                        sx={{
+                          color: fabUTokens.color.textSecondary,
+                          fontWeight: 700,
+                          fontSize: '0.98rem',
+                          lineHeight: 1.04,
+                          cursor: 'default',
+                        }}
+                      >
+                        {metric.valueSuffix}
+                      </Typography>
+                    ) : null}
+                  </Box>
                 </Stack>
               </Stack>
             </Box>
