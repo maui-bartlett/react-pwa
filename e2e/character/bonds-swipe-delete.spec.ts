@@ -14,7 +14,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // Uses the inner Stack (parent of bond-add-{id}) as target so the
   // events land directly on the element react-swipeable is attached to,
   // avoiding any overlap with the absolutely-positioned footer.
-  async function touchSwipeLeft(page: Page, bondId: string, distancePx = 130) {
+  async function touchSwipeLeft(page: Page, bondId: string, distancePx = 180) {
     await page.evaluate(
       ({ id, dist }) => {
         const target = document.querySelector(`[data-pw="bond-add-${id}"]`)?.parentElement;
@@ -187,27 +187,44 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(page.locator('text=Juice')).toHaveCount(0);
   });
 
-  // ── Red channel + trash icon at mid-swipe (-50 px) ───────────────────────
+  // ── Sub-commit drag (-40px): no visual slide ─────────────────────────────
+  // 40px is below the commit threshold (~98px on 393px viewport), so the row
+  // must not translate at all — red channel stays hidden.
 
-  test('Mid-swipe -50px: red channel visible, trash opacity≈0.5, scale≈0.8', async ({ page }) => {
-    await touchSwipeLeftPartial(page, 'jelena', 50);
+  test('Sub-commit -40px: no visual slide, red channel absent', async ({ page }) => {
+    await touchSwipeLeftPartial(page, 'jelena', 40);
 
-    const redChannel = page.locator('[data-pw="bond-red-channel-jelena"]');
-    await expect(redChannel).toBeVisible();
+    await expect(page.locator('[data-pw="bond-red-channel-jelena"]')).toHaveCount(0);
 
-    const trash = page.locator('[data-pw="bond-trash-jelena"]');
-    await expect(trash).toBeVisible();
-
-    const opacity = await trash.evaluate((el) => (el as HTMLElement).style.opacity);
-    expect(parseFloat(opacity)).toBeCloseTo(0.5, 1);
-
-    const transform = await trash.evaluate((el) => (el as HTMLElement).style.transform);
-    expect(transform).toContain('scale(0.8)');
+    const transform = await page
+      .locator('[data-pw="bond-add-jelena"]')
+      .evaluate((el) => getComputedStyle(el.closest('[data-pw^="bond-row"]')!).transform);
+    // translateX(0) renders as either "none" or "matrix(1,0,0,1,0,0)"
+    const isZero =
+      transform === 'none' ||
+      transform === 'matrix(1, 0, 0, 1, 0, 0)' ||
+      transform.includes('translateX(0');
+    expect(isZero, `expected no horizontal translate, got: ${transform}`).toBe(true);
   });
 
-  // ── Red channel + trash icon at full threshold (-100 px, no touchend) ────
+  // ── Red channel absent below commit threshold (-50px) ────────────────────
+  // 50px < ~98px commit threshold → row doesn't slide, red channel not rendered.
 
-  test('Mid-swipe -100px: red channel visible, trash opacity=1, scale=1', async ({ page }) => {
+  test('Mid-swipe -50px: below commit threshold, no visual slide, red channel absent', async ({
+    page,
+  }) => {
+    await touchSwipeLeftPartial(page, 'jelena', 50);
+    await expect(page.locator('[data-pw="bond-red-channel-jelena"]')).toHaveCount(0);
+  });
+
+  // ── Red channel + trash icon above commit threshold (-100px) ─────────────
+  // 100px > ~98px commit threshold → row slides, red channel visible.
+  // delete threshold = commitThreshold + 60 ≈ 158px on 393px viewport.
+  // progress = 100/158 ≈ 0.63 → opacity≈0.63, scale≈0.85.
+
+  test('Mid-swipe -100px: red channel visible, trash opacity≈0.63, scale≈0.85', async ({
+    page,
+  }) => {
     await touchSwipeLeftPartial(page, 'jelena', 100);
 
     const redChannel = page.locator('[data-pw="bond-red-channel-jelena"]');
@@ -217,10 +234,13 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(trash).toBeVisible();
 
     const opacity = await trash.evaluate((el) => (el as HTMLElement).style.opacity);
-    expect(parseFloat(opacity)).toBeCloseTo(1, 1);
+    expect(parseFloat(opacity)).toBeCloseTo(0.63, 1);
 
-    const transform = await trash.evaluate((el) => (el as HTMLElement).style.transform);
-    expect(transform).toContain('scale(1)');
+    const scale = await trash.evaluate((el) => {
+      const m = (el as HTMLElement).style.transform.match(/scale\(([^)]+)\)/);
+      return m ? parseFloat(m[1]) : NaN;
+    });
+    expect(scale).toBeCloseTo(0.85, 1);
   });
 });
 

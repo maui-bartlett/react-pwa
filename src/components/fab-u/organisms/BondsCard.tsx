@@ -28,7 +28,7 @@ const ALL_BOND_TYPES: BondType[] = [
   'Hatred',
 ];
 
-const SWIPE_THRESHOLD = 100;
+const COMMIT_THRESHOLD_EXTRA = 60; // extra px past commitThreshold to trigger delete
 const DELETE_RED = '#d32f2f';
 
 type BondRowProps = {
@@ -44,6 +44,8 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
   const [removing, setRemoving] = useState(false);
   const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const rowElRef = useRef<HTMLElement | null>(null);
+  const commitThresholdRef = useRef(0);
+  const committedRef = useRef(false);
 
   function triggerRemove() {
     setRemoving(true);
@@ -52,12 +54,18 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
 
   const swipeHandlers = useSwipeable({
     onSwiping: ({ deltaX }) => {
+      if (Math.abs(deltaX) < commitThresholdRef.current) return;
+      committedRef.current = true;
       setSwiping(true);
       setDragX(Math.min(0, deltaX));
     },
     onSwiped: ({ dir, absX }) => {
       setSwiping(false);
-      if (dir === 'Left' && absX >= SWIPE_THRESHOLD) {
+      if (
+        committedRef.current &&
+        dir === 'Left' &&
+        absX >= commitThresholdRef.current + COMMIT_THRESHOLD_EXTRA
+      ) {
         triggerRemove();
       } else {
         setDragX(0);
@@ -78,13 +86,17 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
 
     const onTouchStart = (e: TouchEvent) => {
       touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      commitThresholdRef.current = Math.max(Math.floor(window.innerWidth / 4), 60);
+      committedRef.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (!touchOriginRef.current || !e.cancelable) return;
       const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
       const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
-      if (dx > dy) e.preventDefault();
+      if (committedRef.current || (dx > dy && dx >= commitThresholdRef.current)) {
+        e.preventDefault();
+      }
     };
 
     el.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -109,7 +121,8 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
       : 'transform 0.22s ease';
 
   // Progress drives the red channel's trash icon fade + scale.
-  const progress = removing ? 1 : Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
+  const deleteThreshold = commitThresholdRef.current + COMMIT_THRESHOLD_EXTRA;
+  const progress = removing ? 1 : Math.min(Math.abs(dragX) / deleteThreshold, 1);
   const trashOpacity = progress;
   const trashScale = 0.6 + progress * 0.4;
   const iconTransition = swiping ? 'none' : 'opacity 0.22s ease, transform 0.22s ease';

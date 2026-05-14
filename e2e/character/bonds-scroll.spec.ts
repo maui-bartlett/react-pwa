@@ -148,10 +148,63 @@ test.describe('Bond row — vertical scroll pass-through', () => {
     );
   });
 
-  // ── Horizontal drag still triggers swipe-to-delete ──────────────────────────
-  // Belt-and-suspenders: the direction gate must not break horizontal swipes.
+  // ── Sub-commit horizontal drag: no visual slide ──────────────────────────
+  // 40px is below the commit threshold (~98px on 393px viewport); the row must
+  // not translate and the red channel must stay hidden.
 
-  test('horizontal drag past threshold still deletes the bond row', async ({ page }) => {
+  test('horizontal drag below commit threshold: no visual slide', async ({ page }) => {
+    const target = page.locator('[data-pw="bond-add-jelena"]');
+    await expect(target).toBeVisible();
+
+    const box = await target.boundingBox();
+    expect(box).not.toBeNull();
+    const cx = Math.round(box!.x + box!.width / 2);
+    const cy = Math.round(box!.y + box!.height / 2);
+
+    await page.evaluate(
+      ({ startX, startY, dist }) => {
+        const tgt = document.querySelector('[data-pw="bond-add-jelena"]')
+          ?.parentElement as HTMLElement;
+        function fire(type: string, x: number, y: number) {
+          const t = new Touch({
+            identifier: 1,
+            target: tgt,
+            clientX: x,
+            clientY: y,
+            screenX: x,
+            screenY: y,
+            pageX: x,
+            pageY: y,
+            radiusX: 10,
+            radiusY: 10,
+            rotationAngle: 0,
+            force: 1,
+          });
+          tgt.dispatchEvent(
+            new TouchEvent(type, {
+              touches: [t],
+              changedTouches: [t],
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+        }
+        fire('touchstart', startX, startY);
+        for (let i = 1; i <= 10; i++) fire('touchmove', startX - (dist * i) / 10, startY);
+        // no touchend — leave in mid-swipe state
+      },
+      { startX: cx, startY: cy, dist: 40 },
+    );
+
+    await expect(page.locator('[data-pw="bond-red-channel-jelena"]')).toHaveCount(0);
+    await expect(page.locator('[data-pw="bond-row-jelena"]')).toBeVisible();
+  });
+
+  // ── Horizontal drag past delete threshold still triggers swipe-to-delete ──
+  // Belt-and-suspenders: the direction gate must not break horizontal swipes.
+  // Delete threshold = commitThreshold + 60 ≈ 158px; use 180px to be safe.
+
+  test('horizontal drag past delete threshold still deletes the bond row', async ({ page }) => {
     const row = page.locator('[data-pw="bond-row-jelena"]');
     await expect(row).toBeVisible();
 
@@ -192,7 +245,7 @@ test.describe('Bond row — vertical scroll pass-through', () => {
         for (let i = 1; i <= 15; i++) fire('touchmove', startX - (dist * i) / 15, startY);
         fire('touchend', startX - dist, startY);
       },
-      { startX: cx, startY: cy, dist: 130 },
+      { startX: cx, startY: cy, dist: 180 },
     );
 
     await expect(row).toHaveCount(0, { timeout: 1500 });
