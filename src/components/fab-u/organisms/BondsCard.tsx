@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -42,6 +42,8 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
   const [dragX, setDragX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const rowElRef = useRef<HTMLElement | null>(null);
 
   function triggerRemove() {
     setRemoving(true);
@@ -63,9 +65,41 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
     },
     trackMouse: true,
     delta: 10,
-    preventScrollOnSwipe: true,
-    touchEventOptions: { passive: false },
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
   });
+
+  // Non-passive touchmove listener: only block scroll when gesture is horizontal.
+  // react-swipeable's built-in preventScrollOnSwipe calls preventDefault regardless
+  // of direction, which blocks vertical page scroll when the finger starts on a row.
+  useEffect(() => {
+    const el = rowElRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchOriginRef.current || !e.cancelable) return;
+      const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
+      const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
+      if (dx > dy) e.preventDefault();
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
+
+  // Combine react-swipeable's ref with our local ref for the touch listener.
+  const setRef = (el: HTMLElement | null) => {
+    swipeHandlers.ref(el);
+    rowElRef.current = el;
+  };
 
   const translateX = removing ? '-110%' : `${dragX}px`;
   const rowTransition = swiping
@@ -125,6 +159,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
 
       <Stack
         {...swipeHandlers}
+        ref={setRef}
         direction="row"
         alignItems="center"
         justifyContent="space-between"
