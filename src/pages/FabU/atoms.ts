@@ -1,6 +1,8 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
+import type { Attribute } from '@/components/fab-u';
+
 type Character = {
   fabulaPoints: number;
   inventoryPoints: number;
@@ -8,6 +10,13 @@ type Character = {
   totalHP: number;
   currentMP: number;
   totalMP: number;
+  zennit: number;
+  attributes: {
+    dex: Attribute;
+    insight: Attribute;
+    might: Attribute;
+    willpower: Attribute;
+  };
   notes: string;
 };
 
@@ -18,6 +27,13 @@ const CHARACTER_DEFAULTS: Character = {
   totalHP: 58,
   currentMP: 58,
   totalMP: 58,
+  zennit: 30,
+  attributes: {
+    dex: { die: 'd8', modifier: 0 },
+    insight: { die: 'd10', modifier: 0 },
+    might: { die: 'd8', modifier: 0 },
+    willpower: { die: 'd8', modifier: 1 },
+  },
   notes:
     'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
 };

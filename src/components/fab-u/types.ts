@@ -4,6 +4,10 @@ export type CombatSubTab = 'bonds' | 'skills' | 'spells' | 'gear';
 
 export type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
+export type DieSize = 'd6' | 'd8' | 'd10' | 'd12' | 'd20';
+
+export type Attribute = { die: DieSize; modifier: number };
+
 export type TabOption<T extends string> = {
   label: string;
   value: T;
@@ -21,6 +25,8 @@ export type StatPillData = {
   tone?: Tone;
   layout?: 'stacked' | 'inline';
   minHeight?: number | string;
+  onChange?: (value: number) => void;
+  valueSuffix?: string;
 };
 
 export type AttributeRow = {
@@ -28,6 +34,10 @@ export type AttributeRow = {
   score: string;
   modifier: string;
   category?: string;
+  die?: DieSize;
+  modifierNum?: number;
+  onChangeDie?: (die: DieSize) => void;
+  onChangeModifier?: (mod: number) => void;
 };
 
 export type SkillRow = {

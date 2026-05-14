@@ -43,20 +43,6 @@ const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Gear', value: 'gear' },
 ];
 
-const combatAttributeRows = [
-  { label: 'Dexterity', score: 'd8', modifier: '', category: 'speed' },
-  { label: 'Insight', score: 'd10', modifier: '', category: 'support' },
-  { label: 'Might', score: 'd8', modifier: '', category: 'power' },
-  { label: 'Willpower', score: 'd8 + 1', modifier: '', category: 'focus' },
-] as const;
-
-const overviewAttributeRows = [
-  { label: 'Dexterity', score: 'd8', modifier: '', category: 'speed' },
-  { label: 'Insight', score: 'd10', modifier: '', category: 'support' },
-  { label: 'Might', score: 'd8', modifier: '', category: 'power' },
-  { label: 'Willpower', score: 'd8 + 1', modifier: '', category: 'focus' },
-] as const;
-
 const combatResources = [
   { label: 'Initiative', value: '0', tone: 'neutral' as const },
   { label: 'Defense', value: '8 (12)', tone: 'success' as const },
@@ -65,12 +51,6 @@ const combatResources = [
   { label: 'IP', value: '8', tone: 'warning' as const },
   { label: 'HP', value: '58 / 58', tone: 'danger' as const },
   { label: 'MP', value: '58 / 58', tone: 'accent' as const },
-] as const;
-
-const overviewResources = [
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
-  { label: 'IP', value: '8', tone: 'warning' as const },
 ] as const;
 
 const gearItems = [
@@ -144,6 +124,35 @@ function FabU() {
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
+  const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+
+  type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
+  function makeAttrRows() {
+    const entries: Array<{ label: string; key: AttrKey; category: string }> = [
+      { label: 'Dexterity', key: 'dex', category: 'speed' },
+      { label: 'Insight', key: 'insight', category: 'support' },
+      { label: 'Might', key: 'might', category: 'power' },
+      { label: 'Willpower', key: 'willpower', category: 'focus' },
+    ];
+    return entries.map(({ label, key, category }) => ({
+      label,
+      score: '',
+      modifier: '',
+      category,
+      die: character.attributes[key].die,
+      modifierNum: character.attributes[key].modifier,
+      onChangeDie: (d: import('@/components/fab-u').DieSize) =>
+        setCharacter((c) => ({
+          ...c,
+          attributes: { ...c.attributes, [key]: { ...c.attributes[key], die: d } },
+        })),
+      onChangeModifier: (m: number) =>
+        setCharacter((c) => ({
+          ...c,
+          attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
+        })),
+    }));
+  }
 
   function renderOverview() {
     return (
@@ -177,17 +186,26 @@ function FabU() {
           middleRow={[
             {
               label: 'HP',
-              value: `${character.currentHP} / ${character.totalHP}`,
+              value: String(character.currentHP),
+              valueSuffix: ` / ${character.totalHP}`,
               tone: 'danger' as const,
+              onChange: setCurrentHP,
             },
             {
               label: 'MP',
-              value: `${character.currentMP} / ${character.totalMP}`,
+              value: String(character.currentMP),
+              valueSuffix: ` / ${character.totalMP}`,
               tone: 'accent' as const,
+              onChange: setCurrentMP,
             },
-            overviewResources[2],
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              tone: 'warning' as const,
+              onChange: setIP,
+            },
           ]}
-          bottomRow={[...overviewAttributeRows]}
+          bottomRow={makeAttrRows()}
         />
 
         <DetailListCard
@@ -236,22 +254,36 @@ function FabU() {
         <AttributesStatsCard
           topRow={[combatResources[0], combatResources[1], combatResources[2]]}
           middleRow={[
-            { label: 'FP', value: String(character.fabulaPoints), tone: 'neutral' as const },
-            { label: 'IP', value: String(character.inventoryPoints), tone: 'warning' as const },
+            {
+              label: 'FP',
+              value: String(character.fabulaPoints),
+              tone: 'neutral' as const,
+              onChange: setFP,
+            },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              tone: 'warning' as const,
+              onChange: setIP,
+            },
             {
               label: 'HP',
-              value: `${character.currentHP} / ${character.totalHP}`,
+              value: String(character.currentHP),
+              valueSuffix: ` / ${character.totalHP}`,
               tone: 'danger' as const,
+              onChange: setCurrentHP,
             },
             {
               label: 'MP',
-              value: `${character.currentMP} / ${character.totalMP}`,
+              value: String(character.currentMP),
+              valueSuffix: ` / ${character.totalMP}`,
               tone: 'accent' as const,
+              onChange: setCurrentMP,
             },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
           middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
-          bottomRow={[...combatAttributeRows]}
+          bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
         />
         <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
@@ -405,7 +437,7 @@ function FabU() {
           label="Inventory Points"
           metrics={[
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
-            { label: 'ZENIT', value: '30' },
+            { label: 'ZENIT', value: String(character.zennit), pw: 'zennit', onChange: setZennit },
           ]}
         />
         <DetailListCard
