@@ -59,6 +59,8 @@ function BondRow({ bond, onOpenMenu, onRemove }: BondRowProps) {
     },
     trackMouse: true,
     delta: 10,
+    preventScrollOnSwipe: true,
+    touchEventOptions: { passive: false },
   });
 
   const translateX = removing ? '-110%' : `${dragX}px`;

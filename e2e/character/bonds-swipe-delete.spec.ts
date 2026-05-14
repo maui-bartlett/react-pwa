@@ -10,15 +10,51 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  async function swipeLeft(page: Page, locator: ReturnType<Page['locator']>, distancePx = 130) {
-    const box = await locator.boundingBox();
-    if (!box) throw new Error(`No bounding box for locator`);
-    const cx = box.x + box.width / 2;
-    const cy = box.y + box.height / 2;
-    await page.mouse.move(cx, cy);
-    await page.mouse.down();
-    await page.mouse.move(cx - distancePx, cy, { steps: 12 });
-    await page.mouse.up();
+  // Dispatch raw touch events to the inner swipe-handler Stack.
+  // Uses the inner Stack (parent of bond-add-{id}) as target so the
+  // events land directly on the element react-swipeable is attached to,
+  // avoiding any overlap with the absolutely-positioned footer.
+  async function touchSwipeLeft(page: Page, bondId: string, distancePx = 130) {
+    await page.evaluate(
+      ({ id, dist }) => {
+        const target = document.querySelector(`[data-pw="bond-add-${id}"]`)?.parentElement;
+        if (!target) throw new Error(`swipe target not found for bond-add-${id}`);
+        const r = target.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+
+        function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
+          const touch = new Touch({
+            identifier: 1,
+            target: target!,
+            clientX: x,
+            clientY: y,
+            screenX: x,
+            screenY: y,
+            pageX: x,
+            pageY: y,
+            radiusX: 10,
+            radiusY: 10,
+            rotationAngle: 0,
+            force: 1,
+          });
+          return new TouchEvent(type, {
+            touches: type === 'touchend' ? [] : [touch],
+            changedTouches: [touch],
+            bubbles: true,
+            cancelable: true,
+          });
+        }
+
+        const steps = 15;
+        target.dispatchEvent(makeTouchEvent('touchstart', cx, cy));
+        for (let i = 1; i <= steps; i++) {
+          target.dispatchEvent(makeTouchEvent('touchmove', cx - Math.round((dist * i) / steps), cy));
+        }
+        target.dispatchEvent(makeTouchEvent('touchend', cx - dist, cy));
+      },
+      { id: bondId, dist: distancePx },
+    );
   }
 
   // ── Threshold removes bond ────────────────────────────────────────────────
@@ -27,7 +63,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     const row = page.locator('[data-pw="bond-row-jelena"]');
     await expect(row).toBeVisible();
 
-    await swipeLeft(page, row);
+    await touchSwipeLeft(page, 'jelena');
 
     // Row removed from DOM after collapse animation
     await expect(row).toHaveCount(0, { timeout: 1500 });
@@ -41,7 +77,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test('Swipe left below threshold springs row back, bond stays', async ({ page }) => {
     const row = page.locator('[data-pw="bond-row-jelena"]');
     // Drag only 50px (below 100px threshold)
-    await swipeLeft(page, row, 50);
+    await touchSwipeLeft(page, 'jelena', 50);
 
     // Row should remain visible
     await expect(row).toBeVisible();
@@ -84,7 +120,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // ── Cross-card sync ───────────────────────────────────────────────────────
 
   test('Remove on Overview → bond gone from Combat > Bonds subtab', async ({ page }) => {
-    await swipeLeft(page, page.locator('[data-pw="bond-row-granada"]'));
+    await touchSwipeLeft(page, 'granada');
     await expect(page.locator('[data-pw="bond-row-granada"]')).toHaveCount(0, { timeout: 1500 });
 
     await page.getByRole('button', { name: 'Combat' }).first().click();
@@ -97,7 +133,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // ── Persistence after reload ──────────────────────────────────────────────
 
   test('Removed bond does not reappear after reload', async ({ page }) => {
-    await swipeLeft(page, page.locator('[data-pw="bond-row-juice"]'));
+    await touchSwipeLeft(page, 'juice');
     await expect(page.locator('[data-pw="bond-row-juice"]')).toHaveCount(0, { timeout: 1500 });
 
     await page.reload();
