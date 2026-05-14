@@ -192,6 +192,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalHP}`,
               tone: 'danger' as const,
               onChange: setCurrentHP,
+              maxValue: character.totalHP,
               pw: 'ov-hp',
             },
             {
@@ -200,6 +201,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalMP}`,
               tone: 'accent' as const,
               onChange: setCurrentMP,
+              maxValue: character.totalMP,
               pw: 'ov-mp',
             },
             {
@@ -251,6 +253,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalXP}`,
               pw: 'ov-xp',
               onChange: setCurrentXP,
+              maxValue: character.totalXP,
             },
             { label: 'Level', value: String(character.level), pw: 'ov-level', onChange: setLevel },
           ]}
@@ -285,6 +288,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalHP}`,
               tone: 'danger' as const,
               onChange: setCurrentHP,
+              maxValue: character.totalHP,
               pw: 'cb-hp',
             },
             {
@@ -293,6 +297,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalMP}`,
               tone: 'accent' as const,
               onChange: setCurrentMP,
+              maxValue: character.totalMP,
               pw: 'cb-mp',
             },
           ]}
@@ -388,6 +393,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalXP}`,
               pw: 'sk-xp',
               onChange: setCurrentXP,
+              maxValue: character.totalXP,
             },
             { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
@@ -427,6 +433,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalHP}`,
               pw: 'hp',
               onChange: setCurrentHP,
+              maxValue: character.totalHP,
             },
             {
               label: 'MP',
@@ -434,6 +441,7 @@ function FabU() {
               valueSuffix: ` / ${character.totalMP}`,
               pw: 'mp',
               onChange: setCurrentMP,
+              maxValue: character.totalMP,
             },
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}

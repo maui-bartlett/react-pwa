@@ -18,6 +18,8 @@ type SummaryMetric = {
   pw?: string;
   /** When provided the pill is editable; called with the committed integer value */
   onChange?: (value: number) => void;
+  /** When set, the committed value is clamped to [0, maxValue]. */
+  maxValue?: number;
 };
 
 type SummaryStripProps = {
@@ -36,7 +38,9 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
   function commitEdit(metric: SummaryMetric) {
     if (!editing || !metric.onChange) return;
     const n = parseInt(editing.draft, 10);
-    metric.onChange(isNaN(n) ? 0 : Math.max(0, n));
+    let val = isNaN(n) ? 0 : Math.max(0, n);
+    if (metric.maxValue !== undefined) val = Math.min(val, metric.maxValue);
+    metric.onChange(val);
     setEditing(null);
   }
 
@@ -140,14 +144,13 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                     {metric.valueSuffix ? (
                       <Typography
                         data-pw={metric.pw ? `metric-${metric.pw}-suffix` : undefined}
-                        onClick={(e) => e.stopPropagation()}
                         variant="body1"
                         sx={{
                           color: fabUTokens.color.textSecondary,
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,
-                          cursor: 'default',
+                          pointerEvents: 'none',
                         }}
                       >
                         {metric.valueSuffix}

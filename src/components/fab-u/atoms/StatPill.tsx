@@ -17,6 +17,7 @@ function StatPill({
   minHeight,
   onChange,
   valueSuffix,
+  maxValue,
   pw,
 }: StatPillData) {
   const [editing, setEditing] = useState(false);
@@ -34,7 +35,9 @@ function StatPill({
   function commit() {
     if (onChange) {
       const n = parseInt(draft, 10);
-      onChange(isNaN(n) ? 0 : Math.max(0, n));
+      let val = isNaN(n) ? 0 : Math.max(0, n);
+      if (maxValue !== undefined) val = Math.min(val, maxValue);
+      onChange(val);
     }
     setEditing(false);
   }
@@ -133,14 +136,14 @@ function StatPill({
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
               {valueEl}
               <Typography
-                onClick={(e) => e.stopPropagation()}
+                data-pw={pw ? `statpill-${pw}-suffix` : undefined}
                 variant="h6"
                 sx={{
                   color: fabUTokens.color.textSecondary,
                   fontWeight: 700,
                   fontSize: inline ? '0.96rem' : '0.98rem',
                   lineHeight: 1.04,
-                  cursor: 'default',
+                  pointerEvents: 'none',
                 }}
               >
                 {valueSuffix}

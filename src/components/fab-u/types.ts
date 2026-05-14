@@ -27,6 +27,8 @@ export type StatPillData = {
   minHeight?: number | string;
   onChange?: (value: number) => void;
   valueSuffix?: string;
+  /** When set, the committed value is clamped to [0, maxValue]. */
+  maxValue?: number;
   pw?: string;
 };
 
