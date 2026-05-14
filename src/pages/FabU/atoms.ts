@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-import type { Attribute } from '@/components/fab-u';
+import type { Attribute, Bond } from '@/components/fab-u';
 
 type Character = {
   fabulaPoints: number;
@@ -20,6 +20,7 @@ type Character = {
     might: Attribute;
     willpower: Attribute;
   };
+  bonds: Bond[];
   notes: string;
 };
 
@@ -40,6 +41,12 @@ const CHARACTER_DEFAULTS: Character = {
     might: { die: 'd8', modifier: 0 },
     willpower: { die: 'd8', modifier: 1 },
   },
+  bonds: [
+    { id: 'jelena', characterName: 'Jelena', types: ['Loyalty', 'Affection'] },
+    { id: 'yoru', characterName: 'Yoru', types: ['Affection'] },
+    { id: 'granada', characterName: 'Granada', types: ['Admiration'] },
+    { id: 'juice', characterName: 'Juice', types: ['Loyalty'] },
+  ],
   notes:
     'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
 };

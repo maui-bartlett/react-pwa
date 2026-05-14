@@ -10,6 +10,8 @@ import { Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
+  BondType,
+  BondsCard,
   CombatSubTab,
   DetailListCard,
   EquipmentCard,
@@ -66,13 +68,6 @@ const gearItems = [
   },
 ];
 
-const bondItems = [
-  { title: 'Jelena', subtitle: 'Loyalty · Affection' },
-  { title: 'Yoru', subtitle: 'Affection' },
-  { title: 'Granada', subtitle: 'Admiration' },
-  { title: 'Juice', subtitle: 'Loyalty' },
-] as const;
-
 const backstoryPrompts = [
   { question: 'What drove me and my parents out of Infinita?' },
   { question: 'How do I feel about being in Efowyn?' },
@@ -127,6 +122,13 @@ function FabU() {
   const setCurrentXP = (v: number) => setCharacter((c) => ({ ...c, currentXP: v }));
   const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+  const addBondType = (id: string, type: BondType) =>
+    setCharacter((c) => ({
+      ...c,
+      bonds: c.bonds.map((b) =>
+        b.id === id && !b.types.includes(type) ? { ...b, types: [...b.types, type] } : b,
+      ),
+    }));
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
@@ -237,7 +239,7 @@ function FabU() {
           ]}
         />
 
-        <DetailListCard label="Bonds" addLabel="Bond" items={[...bondItems]} />
+        <BondsCard bonds={character.bonds} onAddType={addBondType} />
 
         <SummaryStrip
           metrics={[
@@ -312,7 +314,7 @@ function FabU() {
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <DetailListCard label="Bonds" addLabel="Bond" items={[...bondItems]} />
+            <BondsCard bonds={character.bonds} onAddType={addBondType} />
 
             <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>

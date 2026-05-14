@@ -1,5 +1,19 @@
 export type FabUTab = 'overview' | 'combat' | 'skills' | 'spells' | 'gear' | 'notes';
 
+export type BondType =
+  | 'Admiration'
+  | 'Loyalty'
+  | 'Affection'
+  | 'Inferiority'
+  | 'Mistrust'
+  | 'Hatred';
+
+export type Bond = {
+  id: string;
+  characterName: string;
+  types: BondType[];
+};
+
 export type CombatSubTab = 'bonds' | 'skills' | 'spells' | 'gear';
 
 export type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
