@@ -5,6 +5,10 @@ import type { Attribute, Bond } from '@/components/fab-u';
 
 type Character = {
   initiative: number;
+  defense: number;
+  defenseTemp: number | null;
+  magicDefense: number;
+  magicDefenseTemp: number | null;
   fabulaPoints: number;
   inventoryPoints: number;
   currentHP: number;
@@ -27,6 +31,10 @@ type Character = {
 
 const CHARACTER_DEFAULTS: Character = {
   initiative: 0,
+  defense: 8,
+  defenseTemp: 12,
+  magicDefense: 8,
+  magicDefenseTemp: 12,
   fabulaPoints: 4,
   inventoryPoints: 8,
   currentHP: 58,
