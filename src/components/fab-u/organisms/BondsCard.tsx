@@ -230,9 +230,13 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
           onClick={(e) => onOpenMenu(e, bond.id)}
           sx={{
             color: fabUTokens.color.textSecondary,
-            p: 0.25,
+            p: 0.5,
+            borderRadius: '50%',
             flexShrink: 0,
-            '&:hover': { color: fabUTokens.color.brandText },
+            '&:hover': {
+              color: fabUTokens.color.brandText,
+              bgcolor: 'rgba(49, 92, 77, 0.1)',
+            },
           }}
         >
           <AddIcon fontSize="small" />
@@ -249,10 +253,14 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
             sx={{
               opacity: 0,
               color: 'rgba(180, 50, 50, 0.6)',
-              p: 0.25,
+              p: 0.5,
+              borderRadius: '50%',
               flexShrink: 0,
               transition: 'opacity 0.15s',
-              '&:hover': { color: 'rgba(180, 50, 50, 0.9)' },
+              '&:hover': {
+                color: 'rgba(180, 50, 50, 0.9)',
+                bgcolor: 'rgba(180, 50, 50, 0.08)',
+              },
             }}
           >
             <CloseIcon sx={{ fontSize: 14 }} />
