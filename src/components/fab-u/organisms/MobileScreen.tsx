@@ -89,10 +89,11 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
           {header}
         </Box>
         <Box
+          data-pw="content-area"
           ref={scrollViewportRef}
           sx={{
             px: 1,
-            pt: 1,
+            pt: '9px',
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
