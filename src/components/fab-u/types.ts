@@ -42,6 +42,7 @@ export type StatPillData = {
   onChange?: (value: number) => void;
   onChangeSuffix?: (value: number | null) => void;
   valueSuffix?: string;
+  valueGroupMinWidth?: string;
   /** When set, the committed value is clamped to [0, maxValue]. */
   maxValue?: number;
   /** When set, the committed suffix value is clamped to [0, maxValueSuffix]. */

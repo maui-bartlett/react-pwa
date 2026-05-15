@@ -20,6 +20,7 @@ function StatPill({
   onChange,
   onChangeSuffix,
   valueSuffix,
+  valueGroupMinWidth,
   maxValue,
   maxValueSuffix,
   pw,
@@ -206,7 +207,15 @@ function StatPill({
               {label}
             </Typography>
             {valueSuffix ? (
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'flex-end',
+                  gap: '2px',
+                  minWidth: valueGroupMinWidth,
+                }}
+              >
                 {valueEl}
                 {editingSuffix && !hasBaseTempEditor ? (
                   <InputBase
