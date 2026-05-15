@@ -605,7 +605,7 @@ function FabU() {
             </IconButton>
           }
           sx={{
-            pt: 1.55,
+            pt: 3.4,
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
