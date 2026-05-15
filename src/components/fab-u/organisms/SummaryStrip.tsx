@@ -67,8 +67,10 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                 bgcolor: fabUTokens.color.surface,
                 display: 'flex',
                 alignItems: 'center',
+                boxSizing: 'border-box',
                 px: 1.05,
                 py: 0.6,
+                minHeight: 48,
                 cursor: editable && !isEditing ? 'text' : 'default',
                 transition: 'border-color 150ms ease',
               }}

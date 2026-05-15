@@ -33,6 +33,7 @@ function StatPill({
   const editable = !!onChange;
   const hasBaseTempEditor = !!(onChange && onChangeSuffix);
   const popoverOpen = Boolean(anchorEl);
+  const resolvedMinHeight = minHeight ?? (inline ? 42 : 46);
 
   function parseValueDraft(valueDraft: string, max?: number) {
     const n = parseInt(valueDraft, 10);
@@ -168,10 +169,11 @@ function StatPill({
           backgroundColor: '#fff',
           display: 'flex',
           alignItems: 'center',
+          boxSizing: 'border-box',
           px: 1.1,
           py: inline ? 0.75 : 0.6,
           minWidth: 0,
-          minHeight,
+          minHeight: resolvedMinHeight,
           cursor: editable && !editing ? (hasBaseTempEditor ? 'pointer' : 'text') : 'default',
           transition: 'border-color 150ms ease',
         }}

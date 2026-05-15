@@ -64,9 +64,11 @@ function AttributePill({
           backgroundColor: '#fff',
           display: 'flex',
           alignItems: 'center',
+          boxSizing: 'border-box',
           px: 1.1,
           py: 0.6,
           minWidth: 0,
+          minHeight: 46,
           cursor: editable ? 'pointer' : 'default',
           transition: 'border-color 150ms ease',
         }}
