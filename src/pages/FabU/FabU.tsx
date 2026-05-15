@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
@@ -17,6 +20,7 @@ import {
   DetailListCard,
   EquipmentCard,
   FabUTab,
+  FabUThemeProvider,
   HeaderBar,
   MobileScreen,
   PrimaryNavBar,
@@ -27,8 +31,11 @@ import {
   SummaryStrip,
   SurfaceCard,
   TabOption,
-  fabUTokens,
+  darkFabUTokens,
+  fabUTokens as lightFabUTokens,
 } from '@/components/fab-u';
+import { themeModeState } from '@/theme/atoms';
+import { ThemeMode } from '@/theme/types';
 
 import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
 import { skillGroups } from './skills';
@@ -86,6 +93,11 @@ const screenMeta: Record<
 };
 
 function FabU() {
+  const themeMode = useAtomValue(themeModeState);
+  const [, setThemeMode] = useAtom(themeModeState);
+  const fabUTokens = themeMode === ThemeMode.DARK ? darkFabUTokens : lightFabUTokens;
+  const toggleTheme = () =>
+    setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
@@ -728,29 +740,68 @@ function FabU() {
   })();
 
   return (
-    <>
-      <meta name="title" content="Fab-u Preview" />
-      <Stack
-        alignItems="center"
-        sx={{
-          minHeight: '100dvh',
-          height: '100dvh',
-          overflow: 'hidden',
-          bgcolor: fabUTokens.color.canvas,
-          pt: { xs: 'max(20px, calc(env(safe-area-inset-top) + 12px))', md: 3 },
-          pb: { xs: 2, md: 3 },
-          px: 1.5,
-          boxSizing: 'border-box',
-        }}
-      >
-        <MobileScreen
-          header={header}
-          footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+    <FabUThemeProvider>
+      <>
+        <meta name="title" content="Fab-u Preview" />
+        {/* Theme toggle button */}
+        <Box
+          data-pw="theme-toggle-container"
+          sx={{
+            position: 'fixed',
+            top: 12,
+            right: 12,
+            zIndex: 200,
+          }}
         >
-          {content}
-        </MobileScreen>
-      </Stack>
-    </>
+          <IconButton
+            data-pw="theme-toggle"
+            onClick={toggleTheme}
+            size="small"
+            aria-label={
+              themeMode === ThemeMode.DARK ? 'Switch to light mode' : 'Switch to dark mode'
+            }
+            sx={{
+              bgcolor: fabUTokens.color.surface,
+              border: `1px solid ${fabUTokens.color.border}`,
+              color: fabUTokens.color.textSecondary,
+              width: 32,
+              height: 32,
+              '&:hover': {
+                bgcolor: fabUTokens.color.surfaceMuted,
+                color: fabUTokens.color.textPrimary,
+              },
+            }}
+          >
+            {themeMode === ThemeMode.DARK ? (
+              <LightModeIcon sx={{ fontSize: 16 }} />
+            ) : (
+              <DarkModeIcon sx={{ fontSize: 16 }} />
+            )}
+          </IconButton>
+        </Box>
+        <Stack
+          data-pw="app-canvas"
+          alignItems="center"
+          sx={{
+            minHeight: '100dvh',
+            height: '100dvh',
+            overflow: 'hidden',
+            bgcolor: fabUTokens.color.canvas,
+            pt: { xs: 'max(20px, calc(env(safe-area-inset-top) + 12px))', md: 3 },
+            pb: { xs: 2, md: 3 },
+            px: 1.5,
+            boxSizing: 'border-box',
+          }}
+        >
+          <MobileScreen
+            header={header}
+            footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+          >
+            {content}
+          </MobileScreen>
+        </Stack>
+      </>
+    </FabUThemeProvider>
   );
 }
 

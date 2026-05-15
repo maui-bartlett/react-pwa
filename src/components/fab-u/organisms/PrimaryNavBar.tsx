@@ -9,8 +9,8 @@ import { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { useFabUTokens } from '../ThemeContext';
 import { DiamondIcon, NotesLinesIcon, SwordIcon } from '../icons';
-import { fabUTokens } from '../tokens';
 import { FabUTab } from '../types';
 
 type PrimaryNavBarProps = {
@@ -28,6 +28,7 @@ const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIco
 ];
 
 function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
+  const fabUTokens = useFabUTokens();
   return (
     <Stack
       direction="row"
@@ -53,13 +54,17 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
               borderRadius: '7px',
               px: 0.22,
               py: 0.68,
-              backgroundColor: active ? alpha(fabUTokens.color.brandSoft, 0.95) : 'transparent',
+              backgroundColor: active
+                ? fabUTokens.isDark
+                  ? alpha(fabUTokens.color.highlight, 0.15)
+                  : alpha(fabUTokens.color.brandSoft, 0.95)
+                : 'transparent',
             }}
           >
             <Stack alignItems="center" spacing={0.32}>
               <Icon
                 sx={{
-                  color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
+                  color: active ? fabUTokens.color.highlight : fabUTokens.color.textSecondary,
                   fontSize: 16,
                 }}
                 fontSize="small"
@@ -67,7 +72,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
               <Typography
                 variant="caption"
                 sx={{
-                  color: active ? fabUTokens.color.brand : fabUTokens.color.textSecondary,
+                  color: active ? fabUTokens.color.highlight : fabUTokens.color.textSecondary,
                   fontWeight: active ? 700 : 500,
                   fontSize: '0.62rem',
                 }}

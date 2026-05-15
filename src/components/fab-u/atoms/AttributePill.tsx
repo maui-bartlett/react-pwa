@@ -6,7 +6,8 @@ import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { fabUTokens, getToneStyles } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
+import { getToneStyles } from '../tokens';
 import { DieSize, Tone } from '../types';
 
 const DIE_SIZES: DieSize[] = ['d6', 'd8', 'd10', 'd12', 'd20'];
@@ -34,6 +35,7 @@ function AttributePill({
   onChangeDie,
   onChangeModifier,
 }: AttributePillProps) {
+  const fabUTokens = useFabUTokens();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [draftMod, setDraftMod] = useState('');
   const toneStyles = getToneStyles(tone);
@@ -61,7 +63,7 @@ function AttributePill({
         sx={{
           border: `1px solid ${open ? fabUTokens.color.textSecondary : toneStyles.borderColor}`,
           borderRadius: '10px',
-          backgroundColor: '#fff',
+          backgroundColor: fabUTokens.color.surface,
           display: 'flex',
           alignItems: 'center',
           px: 1.1,
@@ -89,7 +91,7 @@ function AttributePill({
             <Typography
               variant="h6"
               sx={{
-                color: '#1f2a26',
+                color: fabUTokens.color.textPrimary,
                 fontWeight: 700,
                 fontSize: '0.98rem',
                 lineHeight: 1.04,
@@ -146,8 +148,8 @@ function AttributePill({
               padding: '4px 8px',
               borderRadius: 8,
               border: `1px solid ${fabUTokens.color.border}`,
-              background: '#fff',
-              color: '#1f2a26',
+              background: fabUTokens.color.surface,
+              color: fabUTokens.color.textPrimary,
               outline: 'none',
             }}
           >
@@ -184,7 +186,7 @@ function AttributePill({
                 fontWeight: 700,
                 fontSize: '0.88rem',
                 padding: 0,
-                color: '#1f2a26',
+                color: fabUTokens.color.textPrimary,
               },
             }}
             onChange={(e) => {

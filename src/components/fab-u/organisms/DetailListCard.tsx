@@ -3,8 +3,8 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 
 type DetailListItem = {
   title: string;
@@ -21,6 +21,7 @@ type DetailListCardProps = {
 };
 
 function DetailListCard({ label, title, items, subtitle, addLabel }: DetailListCardProps) {
+  const fabUTokens = useFabUTokens();
   return (
     <SurfaceCard label={label} title={title} subtitle={subtitle}>
       <Stack spacing={1}>
@@ -73,14 +74,14 @@ function DetailListCard({ label, title, items, subtitle, addLabel }: DetailListC
         {addLabel ? (
           <Box
             sx={{
-              border: `1px dashed ${fabUTokens.color.border}`,
+              border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
               py: 1.45,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              color: fabUTokens.color.textSecondary,
+              color: fabUTokens.color.highlight,
               bgcolor: fabUTokens.color.surfaceMuted,
               cursor: 'pointer',
             }}

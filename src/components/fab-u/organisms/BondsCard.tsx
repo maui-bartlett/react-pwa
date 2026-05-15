@@ -15,8 +15,8 @@ import Typography from '@mui/material/Typography';
 
 import { Trash2 } from 'lucide-react';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 import type { Bond, BondType } from '../types';
 
 const ALL_BOND_TYPES: BondType[] = [
@@ -39,6 +39,7 @@ type BondRowProps = {
 };
 
 function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
+  const fabUTokens = useFabUTokens();
   const [dragX, setDragX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -277,6 +278,7 @@ function BondsCard({
   onRemoveBond,
   label = 'Bonds',
 }: BondsCardProps) {
+  const fabUTokens = useFabUTokens();
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; bondId: string } | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
@@ -382,14 +384,14 @@ function BondsCard({
             data-pw="bond-add-new"
             onClick={startAdding}
             sx={{
-              border: `1px dashed ${fabUTokens.color.border}`,
+              border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
               py: 1.45,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              color: fabUTokens.color.textSecondary,
+              color: fabUTokens.color.highlight,
               bgcolor: fabUTokens.color.surfaceMuted,
               cursor: 'pointer',
             }}

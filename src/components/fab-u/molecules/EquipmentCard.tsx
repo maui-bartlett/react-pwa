@@ -3,8 +3,8 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 import { EquipmentItem } from '../types';
 
 type EquipmentCardProps = {
@@ -20,6 +20,7 @@ function EquipmentCard({
   emptyLabel = 'Open accessory slot',
   label = 'Gear',
 }: EquipmentCardProps) {
+  const fabUTokens = useFabUTokens();
   return (
     <SurfaceCard label={label} title={title || undefined}>
       <Stack spacing={1.05}>
@@ -93,14 +94,14 @@ function EquipmentCard({
 
         <Box
           sx={{
-            border: `1px dashed ${fabUTokens.color.border}`,
+            border: `1px dashed ${fabUTokens.color.highlight}`,
             borderRadius: '9px',
             px: 1.3,
             py: 1.45,
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            color: fabUTokens.color.textSecondary,
+            color: fabUTokens.color.highlight,
             bgcolor: fabUTokens.color.surfaceMuted,
           }}
         >

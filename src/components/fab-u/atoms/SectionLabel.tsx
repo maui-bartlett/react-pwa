@@ -1,20 +1,22 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
-import { fabUTokens } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
 
 type SectionLabelProps = {
   label: string;
 };
 
 function SectionLabel({ label }: SectionLabelProps) {
+  const fabUTokens = useFabUTokens();
   return (
     <Box
+      data-pw="section-label"
       sx={{
         display: 'inline-flex',
         alignSelf: 'flex-start',
         borderRadius: '7px',
-        bgcolor: fabUTokens.color.brand,
+        bgcolor: fabUTokens.color.highlight,
         px: 1.05,
         py: 0.36,
       }}
@@ -22,7 +24,7 @@ function SectionLabel({ label }: SectionLabelProps) {
       <Typography
         variant="caption"
         sx={{
-          color: '#fff',
+          color: fabUTokens.color.highlightFg,
           fontWeight: 700,
           fontSize: '0.6rem',
           letterSpacing: '0.055em',

@@ -14,8 +14,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 import { SpellRow } from '../types';
 
 type SpellsTableProps = {
@@ -31,6 +31,7 @@ function SpellsTable({
   label,
   showTitle = false,
 }: SpellsTableProps) {
+  const fabUTokens = useFabUTokens();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [burst, setBurst] = useState<{ rowName: string; id: number } | null>(null);
 
