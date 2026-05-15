@@ -47,19 +47,6 @@ const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Gear', value: 'gear' },
 ];
 
-const gearItems = [
-  {
-    name: 'Pistol',
-    slot: 'Main Hand',
-    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
-  },
-  {
-    name: 'Pistol',
-    slot: 'Off Hand',
-    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
-  },
-];
-
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
   { title: string; subtitle: string; actionLabel: string }
@@ -401,7 +388,9 @@ function FabU() {
           <Box
             sx={{
               borderTop: `1px solid ${fabUTokens.color.border}`,
-              pt: 1.25,
+              mt: 1,
+              pt: 2.25,
+              pb: 1,
             }}
           >
             <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
@@ -482,7 +471,12 @@ function FabU() {
         ) : null}
 
         {activeCombatTab === 'gear' ? (
-          <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
+          <EquipmentCard
+            label="Equipment"
+            title=""
+            items={character.equipment}
+            emptyLabel="Accessory"
+          />
         ) : null}
       </>
     );
@@ -572,7 +566,12 @@ function FabU() {
   function renderGear() {
     return (
       <>
-        <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
+        <EquipmentCard
+          label="Equipment"
+          title=""
+          items={character.equipment}
+          emptyLabel="Accessory"
+        />
         <SummaryStrip
           label="Inventory Points"
           metrics={[

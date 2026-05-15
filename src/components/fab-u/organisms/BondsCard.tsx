@@ -354,7 +354,7 @@ function BondsCard({
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
-              py: 1.05,
+              py: 1.45,
               display: 'flex',
               alignItems: 'center',
               gap: 0.35,
