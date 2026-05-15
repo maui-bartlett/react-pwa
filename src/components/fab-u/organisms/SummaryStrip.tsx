@@ -139,6 +139,8 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,
+                          // Match edit-mode input width to prevent slash jump
+                          ...(metric.valueSuffix ? { minWidth: '2.5ch' } : {}),
                         }}
                       >
                         {metric.value}
