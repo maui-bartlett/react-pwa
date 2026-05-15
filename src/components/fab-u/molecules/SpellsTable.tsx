@@ -3,6 +3,7 @@ import { useState } from 'react';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -83,7 +84,13 @@ function SpellsTable({
                     sx={{
                       height: 46,
                       cursor: 'pointer',
-                      '&:hover': { bgcolor: fabUTokens.color.surfaceMuted },
+                      bgcolor: isOpen ? fabUTokens.color.brand : 'transparent',
+                      '&:hover': {
+                        bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
+                      },
+                      '& .MuiTableCell-root': {
+                        color: isOpen ? fabUTokens.color.surface : fabUTokens.color.textPrimary,
+                      },
                     }}
                   >
                     <TableCell>
@@ -98,7 +105,10 @@ function SpellsTable({
                         {isOpen ? (
                           <KeyboardArrowUpIcon
                             fontSize="small"
-                            sx={{ color: fabUTokens.color.textSecondary, flexShrink: 0 }}
+                            sx={{
+                              color: fabUTokens.color.surface,
+                              flexShrink: 0,
+                            }}
                           />
                         ) : (
                           <KeyboardArrowDownIcon
@@ -110,7 +120,7 @@ function SpellsTable({
                           variant="body2"
                           sx={{
                             fontWeight: 700,
-                            color: fabUTokens.color.textPrimary,
+                            color: isOpen ? fabUTokens.color.surface : fabUTokens.color.textPrimary,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -136,6 +146,10 @@ function SpellsTable({
                       <Collapse in={isOpen} timeout="auto" unmountOnExit>
                         <Box
                           sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            justifyContent: 'space-between',
+                            gap: 1.5,
                             py: 1.25,
                             px: 1.5,
                             bgcolor: fabUTokens.color.brandSoft,
@@ -145,10 +159,36 @@ function SpellsTable({
                         >
                           <Typography
                             variant="body2"
-                            sx={{ fontSize: '0.72rem', color: fabUTokens.color.textPrimary }}
+                            sx={{
+                              flex: 1,
+                              fontSize: '0.72rem',
+                              color: fabUTokens.color.textPrimary,
+                            }}
                           >
                             {row.effect}
                           </Typography>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={(event) => event.stopPropagation()}
+                            sx={{
+                              minWidth: 68,
+                              flexShrink: 0,
+                              bgcolor: fabUTokens.color.brand,
+                              color: fabUTokens.color.surface,
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              lineHeight: 1.2,
+                              textTransform: 'none',
+                              boxShadow: 'none',
+                              '&:hover': {
+                                bgcolor: fabUTokens.color.brandStrong,
+                                boxShadow: 'none',
+                              },
+                            }}
+                          >
+                            Cast
+                          </Button>
                         </Box>
                       </Collapse>
                     </TableCell>

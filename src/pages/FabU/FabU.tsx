@@ -658,6 +658,7 @@ function FabU() {
         <SurfaceCard
           label="Notes"
           sx={{
+            pt: 3.4,
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
