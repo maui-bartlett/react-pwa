@@ -263,7 +263,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
               },
             }}
           >
-            <CloseIcon sx={{ fontSize: 14 }} />
+            <CloseIcon fontSize="small" />
           </IconButton>
         )}
       </Stack>
