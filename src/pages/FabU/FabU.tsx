@@ -39,8 +39,6 @@ import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
-import { skillGroups } from './skills';
-import { spellGroups } from './spells';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Bonds', value: 'bonds' },
@@ -270,23 +268,11 @@ function FabU() {
         <DetailListCard
           label="Classes"
           addLabel="Class"
-          items={[
-            {
-              title: 'Entropist',
-              subtitle: 'Entropic Magic · Absorb MP · Stolen Time',
-              trailing: 'LVL 10',
-            },
-            {
-              title: 'Sharpshooter',
-              subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP',
-              trailing: 'LVL 2',
-            },
-            {
-              title: 'Tinkerer',
-              subtitle: 'Emergency Item · improvised gear in conflict',
-              trailing: 'LVL 1',
-            },
-          ]}
+          items={character.classes.map((cls) => ({
+            title: cls.name,
+            subtitle: cls.subtitle,
+            trailing: `LVL ${cls.level}`,
+          }))}
         />
 
         <BondsCard
@@ -437,7 +423,7 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
-            {skillGroups
+            {character.skillGroups
               .filter((g) => g.className !== 'Tinkerer')
               .map((group) => (
                 <SkillsTable
@@ -452,7 +438,7 @@ function FabU() {
 
         {activeCombatTab === 'spells' ? (
           <>
-            {spellGroups.map((group) => (
+            {character.spellGroups.map((group) => (
               <SpellsTable
                 key={group.className}
                 label={`${group.className} Spells`}
@@ -490,7 +476,7 @@ function FabU() {
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
-        {skillGroups.map((group) => (
+        {character.skillGroups.map((group) => (
           <SkillsTable
             key={group.className}
             label={`${group.className} Skills`}
@@ -503,8 +489,8 @@ function FabU() {
             variant="body2"
             sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
           >
-            Entropist 10 · Sharpshooter 2 · Tinkerer 1. XP is capped at 10; level up when it reaches
-            10.
+            {character.classes.map((c) => `${c.name} ${c.level}`).join(' · ')}. XP is capped at 10;
+            level up when it reaches 10.
           </Typography>
         </SurfaceCard>
       </>
@@ -537,7 +523,7 @@ function FabU() {
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
-        {spellGroups.map((group) => (
+        {character.spellGroups.map((group) => (
           <SpellsTable
             key={group.className}
             label={`${group.className} Spells`}
