@@ -580,6 +580,7 @@ function FabU() {
       <>
         <SurfaceCard
           label="Backstory"
+          actionsPosition="absolute"
           actions={
             <IconButton
               aria-label={
@@ -604,6 +605,7 @@ function FabU() {
             </IconButton>
           }
           sx={{
+            pt: 1.55,
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >

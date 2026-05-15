@@ -15,6 +15,7 @@ type SurfaceCardProps = PaperProps &
     title?: string;
     subtitle?: string;
     actions?: ReactNode;
+    actionsPosition?: 'inline' | 'absolute';
   }>;
 
 function SurfaceCard({
@@ -22,10 +23,14 @@ function SurfaceCard({
   title,
   subtitle,
   actions,
+  actionsPosition = 'inline',
   children,
   sx,
   ...props
 }: SurfaceCardProps) {
+  const hasInlineActions = actions && actionsPosition === 'inline';
+  const hasHeaderContent = title || subtitle || hasInlineActions;
+
   return (
     <Paper
       elevation={0}
@@ -56,8 +61,20 @@ function SurfaceCard({
           <SectionLabel label={label} />
         </Box>
       ) : null}
+      {actions && actionsPosition === 'absolute' ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -10,
+            right: 12,
+            zIndex: 1,
+          }}
+        >
+          {actions}
+        </Box>
+      ) : null}
       <Stack spacing={1.15}>
-        {(label || title || subtitle || actions) && (
+        {hasHeaderContent && (
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
             <Stack spacing={0.55}>
               {title ? (
@@ -81,7 +98,7 @@ function SurfaceCard({
                 </Typography>
               ) : null}
             </Stack>
-            {actions ? <Box>{actions}</Box> : null}
+            {hasInlineActions ? <Box>{actions}</Box> : null}
           </Stack>
         )}
         {children}
