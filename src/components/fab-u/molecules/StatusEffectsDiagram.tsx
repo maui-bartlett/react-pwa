@@ -74,6 +74,15 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
   const fabUTokens = useFabUTokens();
   const [expanded, setExpanded] = useState(false);
   const withSelected = (node: StatusNode) => ({ ...node, selected: !!activeEffects[node.id] });
+  const topLevelTransitionName = (id: StatusEffectId) => `status-effect-${id}`;
+  const toggleExpanded = () => {
+    const update = () => setExpanded((open) => !open);
+    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+      document.startViewTransition(update);
+      return;
+    }
+    update();
+  };
 
   return (
     <Stack spacing={expanded ? 1.2 : 0}>
@@ -82,7 +91,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
         type="button"
         data-pw="status-effects-accordion-toggle"
         aria-expanded={expanded}
-        onClick={() => setExpanded((open) => !open)}
+        onClick={toggleExpanded}
         sx={{
           appearance: 'none',
           border: 0,
@@ -128,17 +137,22 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                 }}
                 sx={{
                   border: `1px solid ${status.color}`,
-                  borderRadius: '999px',
+                  borderRadius: '8px',
                   bgcolor: selected ? blendWithBlack(status.color, 0.25) : fabUTokens.color.surface,
                   color: selected ? '#ffffff' : fabUTokens.color.textPrimary,
                   px: 0.8,
-                  py: 0.22,
+                  py: 0,
+                  minHeight: 18,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   fontSize: '0.62rem',
                   fontWeight: 700,
-                  lineHeight: 1.15,
+                  lineHeight: 1,
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
                   transition: 'background-color 150ms ease, color 150ms ease',
+                  viewTransitionName: expanded ? undefined : topLevelTransitionName(status.id),
                 }}
               >
                 {status.label}
@@ -162,14 +176,34 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
       <Collapse in={expanded} timeout={180} unmountOnExit>
         <Stack direction="row" alignItems="center" justifyContent="center" gap={1}>
           <StatusPillGroup
-            topLeft={withSelected(groups[0].topLeft)}
-            topRight={withSelected(groups[0].topRight)}
+            topLeft={{
+              ...withSelected(groups[0].topLeft),
+              viewTransitionName: expanded
+                ? topLevelTransitionName(groups[0].topLeft.id)
+                : undefined,
+            }}
+            topRight={{
+              ...withSelected(groups[0].topRight),
+              viewTransitionName: expanded
+                ? topLevelTransitionName(groups[0].topRight.id)
+                : undefined,
+            }}
             result={withSelected(groups[0].result)}
             onToggle={onToggle}
           />
           <StatusPillGroup
-            topLeft={withSelected(groups[1].topLeft)}
-            topRight={withSelected(groups[1].topRight)}
+            topLeft={{
+              ...withSelected(groups[1].topLeft),
+              viewTransitionName: expanded
+                ? topLevelTransitionName(groups[1].topLeft.id)
+                : undefined,
+            }}
+            topRight={{
+              ...withSelected(groups[1].topRight),
+              viewTransitionName: expanded
+                ? topLevelTransitionName(groups[1].topRight.id)
+                : undefined,
+            }}
             result={withSelected(groups[1].result)}
             onToggle={onToggle}
           />

@@ -351,20 +351,25 @@ function BondsCard({
         {adding ? (
           <Box
             sx={{
-              border: `1px solid ${fabUTokens.color.textSecondary}`,
+              border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
-              py: 1.1,
-              bgcolor: fabUTokens.color.surface,
+              py: 1.05,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.35,
+              color: fabUTokens.color.highlight,
+              bgcolor: fabUTokens.color.surfaceMuted,
             }}
           >
+            <AddIcon fontSize="small" />
             <InputBase
               inputRef={inputRef}
               data-pw="bond-name-input"
               inputProps={{ 'data-pw': 'bond-name-input' }}
               autoFocus
               fullWidth
-              placeholder="Character name…"
+              placeholder="Bond"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commitAdding}
@@ -377,6 +382,8 @@ function BondsCard({
                 }
               }}
               sx={{
+                flex: 1,
+                minWidth: 0,
                 '& input': {
                   p: 0,
                   fontSize: '0.84rem',

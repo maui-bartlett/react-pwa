@@ -47,6 +47,7 @@ type AttributePillProps = {
   onChangeDie?: (die: DieSize) => void;
   onChangeModifier?: (mod: number) => void;
   onChangeTemp?: (temp: DieSize | null) => void;
+  popoverHorizontal?: 'left' | 'center' | 'right';
 };
 
 function AttributePill({
@@ -58,6 +59,7 @@ function AttributePill({
   onChangeDie,
   onChangeModifier,
   onChangeTemp,
+  popoverHorizontal = 'center',
 }: AttributePillProps) {
   const fabUTokens = useFabUTokens();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -155,8 +157,9 @@ function AttributePill({
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: popoverHorizontal }}
+        transformOrigin={{ vertical: 'top', horizontal: popoverHorizontal }}
+        marginThreshold={12}
         disableRestoreFocus
         PaperProps={{
           sx: {

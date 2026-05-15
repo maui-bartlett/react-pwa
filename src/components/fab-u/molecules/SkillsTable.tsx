@@ -16,9 +16,19 @@ type SkillsTableProps = {
   subtitle?: string;
   label?: string;
   showTitle?: boolean;
+  onSkillClick?: (skillName: string) => void;
+  clickableSkills?: string[];
 };
 
-function SkillsTable({ title, rows, subtitle, label, showTitle = false }: SkillsTableProps) {
+function SkillsTable({
+  title,
+  rows,
+  subtitle,
+  label,
+  showTitle = false,
+  onSkillClick,
+  clickableSkills,
+}: SkillsTableProps) {
   const fabUTokens = useFabUTokens();
   return (
     <SurfaceCard label={label ?? title} title={showTitle ? title : undefined} subtitle={subtitle}>
@@ -56,20 +66,33 @@ function SkillsTable({ title, rows, subtitle, label, showTitle = false }: Skills
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.name}>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
-                  >
-                    {row.name}
-                  </Typography>
-                </TableCell>
-                <TableCell>{row.level ?? '—'}</TableCell>
-                <TableCell>{row.effect}</TableCell>
-              </TableRow>
-            ))}
+            {rows.map((row) => {
+              const clickable =
+                !!onSkillClick && (!clickableSkills || clickableSkills.includes(row.name));
+              return (
+                <TableRow
+                  key={row.name}
+                  hover={clickable}
+                  onClick={() => {
+                    if (clickable) onSkillClick(row.name);
+                  }}
+                  sx={{
+                    cursor: clickable ? 'pointer' : 'default',
+                  }}
+                >
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
+                    >
+                      {row.name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{row.level ?? '—'}</TableCell>
+                  <TableCell>{row.effect}</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

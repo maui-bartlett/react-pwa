@@ -10,6 +10,7 @@ type StatusPillNode = {
   selectedFill?: string;
   result?: boolean;
   selected?: boolean;
+  viewTransitionName?: string;
 };
 
 type StatusPillGroupProps = {
@@ -44,6 +45,7 @@ function StatusPill({
   selectedFill,
   result = false,
   selected = false,
+  viewTransitionName,
   onToggle,
 }: StatusPillNode & { onToggle: (id: string) => void }) {
   const fabUTokens = useFabUTokens();
@@ -60,11 +62,16 @@ function StatusPill({
           : fabUTokens.color.surface,
         px: 1.05,
         py: 0.62,
+        minHeight: 36,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         textAlign: 'center',
         boxShadow: '0 1px 3px rgba(31, 42, 38, 0.04)',
         cursor: result ? 'default' : 'pointer',
         userSelect: 'none',
         transition: 'background-color 150ms ease',
+        viewTransitionName,
       }}
     >
       <Typography
@@ -77,6 +84,7 @@ function StatusPill({
               : fabUTokens.color.textPrimary,
           fontWeight: 500,
           fontSize: '0.7rem',
+          lineHeight: 1,
           letterSpacing: 0,
           textTransform: 'none',
         }}

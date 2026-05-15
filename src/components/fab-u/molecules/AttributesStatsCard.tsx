@@ -72,6 +72,7 @@ function AttributesStatsCard({
               onChangeDie={attribute.onChangeDie}
               onChangeModifier={attribute.onChangeModifier}
               onChangeTemp={attribute.onChangeTemp}
+              popoverHorizontal={attribute.popoverHorizontal}
             />
           ) : (
             <StatPill

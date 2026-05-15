@@ -61,6 +61,7 @@ export type AttributeRow = {
   onChangeDie?: (die: DieSize) => void;
   onChangeModifier?: (mod: number) => void;
   onChangeTemp?: (temp: DieSize | null) => void;
+  popoverHorizontal?: 'left' | 'center' | 'right';
 };
 
 export type SkillRow = {

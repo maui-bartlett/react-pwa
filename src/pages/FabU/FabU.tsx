@@ -178,6 +178,11 @@ function FabU() {
     triggerSpellCastBurst();
   };
 
+  const handleSkillClick = (skillName: string) => {
+    if (skillName !== 'Entropic Magic') return;
+    setActiveTab('spells');
+  };
+
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
     const entries: Array<{ label: string; key: AttrKey; category: string }> = [
@@ -186,7 +191,7 @@ function FabU() {
       { label: 'Might', key: 'might', category: 'power' },
       { label: 'Willpower', key: 'willpower', category: 'focus' },
     ];
-    return entries.map(({ label, key, category }) => ({
+    return entries.map(({ label, key, category }, index) => ({
       label,
       score: '',
       modifier: '',
@@ -209,6 +214,12 @@ function FabU() {
           ...c,
           attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
         })),
+      popoverHorizontal:
+        index === 0
+          ? ('left' as const)
+          : index === entries.length - 1
+            ? ('right' as const)
+            : undefined,
     }));
   }
 
@@ -449,6 +460,8 @@ function FabU() {
                   label={`${group.className} Skills`}
                   title={`${group.className} Skills`}
                   rows={group.skills}
+                  onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
+                  clickableSkills={['Entropic Magic']}
                 />
               ))}
           </>
@@ -500,6 +513,8 @@ function FabU() {
             label={`${group.className} Skills`}
             title={`${group.className} Skills`}
             rows={group.skills}
+            onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
+            clickableSkills={['Entropic Magic']}
           />
         ))}
         <SurfaceCard label="Class Summary">
