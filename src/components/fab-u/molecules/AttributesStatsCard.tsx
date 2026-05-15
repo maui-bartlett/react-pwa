@@ -63,9 +63,11 @@ function AttributesStatsCard({
               label={attribute.label}
               die={attribute.die}
               modifier={attribute.modifierNum ?? 0}
+              temp={attribute.temp}
               tone={toneForCategory(attribute.category)}
               onChangeDie={attribute.onChangeDie}
               onChangeModifier={attribute.onChangeModifier}
+              onChangeTemp={attribute.onChangeTemp}
             />
           ) : (
             <StatPill

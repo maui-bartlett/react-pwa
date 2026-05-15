@@ -193,6 +193,7 @@ function FabU() {
       category,
       die: character.attributes[key].die,
       modifierNum: character.attributes[key].modifier,
+      temp: character.attributes[key].temp ?? null,
       onChangeDie: (d: import('@/components/fab-u').DieSize) =>
         setCharacter((c) => ({
           ...c,
@@ -202,6 +203,11 @@ function FabU() {
         setCharacter((c) => ({
           ...c,
           attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
+        })),
+      onChangeTemp: (t: import('@/components/fab-u').DieSize | null) =>
+        setCharacter((c) => ({
+          ...c,
+          attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
         })),
     }));
   }

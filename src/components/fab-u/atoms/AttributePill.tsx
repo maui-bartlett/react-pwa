@@ -18,26 +18,51 @@ function formatDie(die: DieSize, modifier: number): string {
   return `${die} - ${Math.abs(modifier)}`;
 }
 
+const selectStyle = (
+  borderColor: string,
+  bgColor: string,
+  textColor: string,
+): React.CSSProperties => ({
+  fontFamily: 'inherit',
+  fontSize: '0.88rem',
+  fontWeight: 700,
+  lineHeight: 1,
+  height: 30,
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '4px 8px',
+  borderRadius: 8,
+  border: `1px solid ${borderColor}`,
+  background: bgColor,
+  color: textColor,
+  outline: 'none',
+});
+
 type AttributePillProps = {
   label: string;
   die: DieSize;
   modifier: number;
+  temp?: DieSize | null;
   tone?: Tone;
   onChangeDie?: (die: DieSize) => void;
   onChangeModifier?: (mod: number) => void;
+  onChangeTemp?: (temp: DieSize | null) => void;
 };
 
 function AttributePill({
   label,
   die,
   modifier,
+  temp = null,
   tone = 'neutral',
   onChangeDie,
   onChangeModifier,
+  onChangeTemp,
 }: AttributePillProps) {
   const fabUTokens = useFabUTokens();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [draftMod, setDraftMod] = useState('');
+  const [draftTemp, setDraftTemp] = useState<DieSize | null>(null);
   const toneStyles = getToneStyles(tone);
   const editable = !!(onChangeDie || onChangeModifier);
   const open = Boolean(anchorEl);
@@ -45,6 +70,7 @@ function AttributePill({
   function handleOpen(e: React.MouseEvent<HTMLElement>) {
     if (!editable) return;
     setDraftMod(modifier === 0 ? '' : String(modifier));
+    setDraftTemp(temp ?? null);
     setAnchorEl(e.currentTarget);
   }
 
@@ -53,12 +79,31 @@ function AttributePill({
       const n = parseInt(draftMod, 10);
       onChangeModifier(isNaN(n) ? 0 : n);
     }
+    if (onChangeTemp) {
+      onChangeTemp(draftTemp);
+    }
     setAnchorEl(null);
   }
+
+  const fieldLabel = (text: string) => (
+    <Typography
+      variant="caption"
+      sx={{
+        color: fabUTokens.color.textSecondary,
+        fontSize: '0.6rem',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+      }}
+    >
+      {text}
+    </Typography>
+  );
 
   return (
     <>
       <Box
+        data-pw={`attr-pill-${label.toLowerCase()}`}
         onClick={handleOpen}
         sx={{
           border: `1px solid ${open ? fabUTokens.color.textSecondary : toneStyles.borderColor}`,
@@ -116,9 +161,13 @@ function AttributePill({
         PaperProps={{
           sx: {
             p: 1.5,
+            // Vertical column layout — stack Base / Mod / Temp fields
             display: 'flex',
-            gap: 1.5,
-            alignItems: 'flex-end',
+            flexDirection: 'column',
+            gap: 1.25,
+            // Constrain within mobile screen frame (~360px wide)
+            width: 160,
+            maxWidth: 'min(90vw, 200px)',
             bgcolor: fabUTokens.color.surface,
             border: `1px solid ${fabUTokens.color.border}`,
             borderRadius: '12px',
@@ -126,37 +175,18 @@ function AttributePill({
           },
         }}
       >
+        {/* Base (die size) */}
         <Stack spacing={0.5}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: fabUTokens.color.textSecondary,
-              fontSize: '0.6rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Die
-          </Typography>
+          {fieldLabel('Base')}
           <select
             data-pw="attr-die-select"
             value={die}
             onChange={(e) => onChangeDie?.(e.target.value as DieSize)}
-            style={{
-              fontFamily: 'inherit',
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              lineHeight: 1,
-              height: 30,
-              boxSizing: 'border-box',
-              padding: '4px 8px',
-              borderRadius: 8,
-              border: `1px solid ${fabUTokens.color.border}`,
-              background: fabUTokens.color.surface,
-              color: fabUTokens.color.textPrimary,
-              outline: 'none',
-            }}
+            style={selectStyle(
+              fabUTokens.color.border,
+              fabUTokens.color.surface,
+              fabUTokens.color.textPrimary,
+            )}
           >
             {DIE_SIZES.map((d) => (
               <option key={d} value={d}>
@@ -166,19 +196,9 @@ function AttributePill({
           </select>
         </Stack>
 
+        {/* Mod */}
         <Stack spacing={0.5}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: fabUTokens.color.textSecondary,
-              fontSize: '0.6rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Mod
-          </Typography>
+          {fieldLabel('Mod')}
           <InputBase
             data-pw="attr-mod-input-shell"
             value={draftMod}
@@ -187,7 +207,7 @@ function AttributePill({
               inputMode: 'numeric',
               'data-pw': 'attr-mod-input',
               style: {
-                width: '3.5ch',
+                width: '100%',
                 textAlign: 'center',
                 fontWeight: 700,
                 fontSize: '0.88rem',
@@ -200,23 +220,52 @@ function AttributePill({
             }}
             onChange={(e) => {
               const raw = e.target.value.replace(/[^0-9-]/g, '');
-              // Keep at most one leading minus, no minus elsewhere
               const cleaned = raw.startsWith('-')
                 ? '-' + raw.slice(1).replace(/-/g, '')
                 : raw.replace(/-/g, '');
               setDraftMod(cleaned);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleClose();
+              if (e.key === 'Escape') setAnchorEl(null);
             }}
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
               borderRadius: '8px',
               boxSizing: 'border-box',
               height: 30,
+              width: '100%',
               alignItems: 'center',
               px: 0.75,
               py: 0.5,
               '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
             }}
           />
+        </Stack>
+
+        {/* Temp */}
+        <Stack spacing={0.5}>
+          {fieldLabel('Temp')}
+          <select
+            data-pw="attr-temp-select"
+            value={draftTemp ?? ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              setDraftTemp(val === '' ? null : (val as DieSize));
+            }}
+            style={selectStyle(
+              fabUTokens.color.border,
+              fabUTokens.color.surface,
+              fabUTokens.color.textPrimary,
+            )}
+          >
+            <option value="">—</option>
+            {DIE_SIZES.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
         </Stack>
       </Popover>
     </>
