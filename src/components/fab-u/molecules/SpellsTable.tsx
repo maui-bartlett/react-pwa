@@ -14,8 +14,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 import { SpellRow } from '../types';
 
 type SpellsTableProps = {
@@ -31,6 +31,7 @@ function SpellsTable({
   label,
   showTitle = false,
 }: SpellsTableProps) {
+  const fabUTokens = useFabUTokens();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [burst, setBurst] = useState<{ rowName: string; id: number } | null>(null);
 
@@ -98,7 +99,7 @@ function SpellsTable({
                         bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
                       },
                       '& .MuiTableCell-root': {
-                        color: isOpen ? fabUTokens.color.surface : fabUTokens.color.textPrimary,
+                        color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
                       },
                     }}
                   >
@@ -115,7 +116,7 @@ function SpellsTable({
                           <KeyboardArrowUpIcon
                             fontSize="small"
                             sx={{
-                              color: fabUTokens.color.surface,
+                              color: fabUTokens.color.brandFg,
                               flexShrink: 0,
                             }}
                           />
@@ -129,7 +130,7 @@ function SpellsTable({
                           variant="body2"
                           sx={{
                             fontWeight: 700,
-                            color: isOpen ? fabUTokens.color.surface : fabUTokens.color.textPrimary,
+                            color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -195,7 +196,7 @@ function SpellsTable({
                               flexShrink: 0,
                               overflow: 'visible',
                               bgcolor: fabUTokens.color.brand,
-                              color: fabUTokens.color.surface,
+                              color: fabUTokens.color.brandFg,
                               fontSize: '0.68rem',
                               fontWeight: 700,
                               lineHeight: 1.2,

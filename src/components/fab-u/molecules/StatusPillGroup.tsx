@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
-import { fabUTokens } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
 
 type StatusPillNode = {
   id: string;
@@ -19,7 +19,6 @@ type StatusPillGroupProps = {
   onToggle: (id: string) => void;
 };
 
-const LINE_COLOR = '#d7ddd6';
 // Measured rendered pill height: 35.906px (border 1×2 + py 4.96×2 + caption lineHeight).
 // Using 36 gives a ~0.09px gap (sub-pixel, imperceptible) — drop flush with pill border.
 const PILL_H = 36;
@@ -47,6 +46,7 @@ function StatusPill({
   selected = false,
   onToggle,
 }: StatusPillNode & { onToggle: (id: string) => void }) {
+  const fabUTokens = useFabUTokens();
   return (
     <Box
       data-pw={`status-pill-${id}`}
@@ -88,6 +88,8 @@ function StatusPill({
 }
 
 function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGroupProps) {
+  const fabUTokens = useFabUTokens();
+  const lineColor = fabUTokens.color.border;
   return (
     <Box sx={{ position: 'relative', width: 164, height: 94, flexShrink: 0 }}>
       {/* Upper pills */}
@@ -112,7 +114,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
           left: 35,
           width: 2,
           height: DROP_H,
-          bgcolor: LINE_COLOR,
+          bgcolor: lineColor,
         }}
       />
 
@@ -125,7 +127,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
           right: 35,
           width: 2,
           height: DROP_H,
-          bgcolor: LINE_COLOR,
+          bgcolor: lineColor,
         }}
       />
 
@@ -137,7 +139,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
           left: 35,
           width: 94,
           height: 2,
-          bgcolor: LINE_COLOR,
+          bgcolor: lineColor,
         }}
       />
 
@@ -150,7 +152,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
           transform: 'translateX(-50%)',
           width: 2,
           height: STEM_H,
-          bgcolor: LINE_COLOR,
+          bgcolor: lineColor,
         }}
       />
     </Box>

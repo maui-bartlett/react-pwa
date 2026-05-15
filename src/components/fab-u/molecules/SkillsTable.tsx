@@ -6,8 +6,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 import { SkillRow } from '../types';
 
 type SkillsTableProps = {
@@ -19,6 +19,7 @@ type SkillsTableProps = {
 };
 
 function SkillsTable({ title, rows, subtitle, label, showTitle = false }: SkillsTableProps) {
+  const fabUTokens = useFabUTokens();
   return (
     <SurfaceCard label={label ?? title} title={showTitle ? title : undefined} subtitle={subtitle}>
       <TableContainer

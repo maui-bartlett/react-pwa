@@ -3,7 +3,7 @@ import { PropsWithChildren, ReactNode, useEffect, useRef, useState } from 'react
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 
-import { fabUTokens } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
 
 type MobileScreenProps = PropsWithChildren<{
   header: ReactNode;
@@ -11,6 +11,7 @@ type MobileScreenProps = PropsWithChildren<{
 }>;
 
 function MobileScreen({ header, footer, children }: MobileScreenProps) {
+  const fabUTokens = useFabUTokens();
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
