@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 import Box from '@mui/material/Box';
 
 import { AttributePill, StatPill, SurfaceCard } from '../atoms';
@@ -10,6 +12,7 @@ type AttributesStatsCardProps = {
   topRowTemplate?: string;
   middleRowTemplate?: string;
   bottomRowTemplate?: string;
+  children?: ReactNode;
 };
 
 function AttributesStatsCard({
@@ -19,6 +22,7 @@ function AttributesStatsCard({
   topRowTemplate,
   middleRowTemplate,
   bottomRowTemplate,
+  children,
 }: AttributesStatsCardProps) {
   function renderStatRow(items: StatPillData[], template?: string) {
     return (
@@ -81,6 +85,7 @@ function AttributesStatsCard({
           ),
         )}
       </Box>
+      {children}
     </SurfaceCard>
   );
 }

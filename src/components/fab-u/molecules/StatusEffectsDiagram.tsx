@@ -1,6 +1,13 @@
-import Stack from '@mui/material/Stack';
+import { useState } from 'react';
 
-import { SurfaceCard } from '../atoms';
+import Box from '@mui/material/Box';
+import Collapse from '@mui/material/Collapse';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+
+import { ChevronDown } from 'lucide-react';
+
+import { useFabUTokens } from '../ThemeContext';
 import StatusPillGroup from './StatusPillGroup';
 
 export type StatusEffectId = 'slow' | 'dazed' | 'enraged' | 'weak' | 'shaken' | 'poisoned';
@@ -48,26 +55,127 @@ const groups: StatusGroup[] = [
   },
 ];
 
+const topLevelStatuses = [
+  groups[0].topLeft,
+  groups[0].topRight,
+  groups[1].topLeft,
+  groups[1].topRight,
+];
+
+function blendWithBlack(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const scale = 1 - alpha;
+  return `rgb(${Math.round(r * scale)}, ${Math.round(g * scale)}, ${Math.round(b * scale)})`;
+}
+
 function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramProps) {
+  const fabUTokens = useFabUTokens();
+  const [expanded, setExpanded] = useState(false);
   const withSelected = (node: StatusNode) => ({ ...node, selected: !!activeEffects[node.id] });
 
   return (
-    <SurfaceCard title="Status Effects">
-      <Stack direction="row" alignItems="center" justifyContent="center" gap={1}>
-        <StatusPillGroup
-          topLeft={withSelected(groups[0].topLeft)}
-          topRight={withSelected(groups[0].topRight)}
-          result={withSelected(groups[0].result)}
-          onToggle={onToggle}
+    <Stack spacing={expanded ? 1.2 : 0}>
+      <Box
+        component="button"
+        type="button"
+        data-pw="status-effects-accordion-toggle"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}
+        sx={{
+          appearance: 'none',
+          border: 0,
+          bgcolor: 'transparent',
+          p: 0,
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          color: 'inherit',
+          font: 'inherit',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          sx={{ minWidth: 0, flex: 1, gap: 0.75, flexWrap: 'wrap' }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              color: fabUTokens.color.textPrimary,
+              fontWeight: 700,
+              fontSize: '1rem',
+              lineHeight: 1.2,
+              mr: 0.25,
+            }}
+          >
+            Status Effects
+          </Typography>
+          {topLevelStatuses.map((status) => {
+            const selected = !!activeEffects[status.id];
+            return (
+              <Box
+                key={status.id}
+                component="span"
+                data-pw={`status-summary-pill-${status.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle(status.id);
+                }}
+                sx={{
+                  border: `1px solid ${status.color}`,
+                  borderRadius: '999px',
+                  bgcolor: selected ? blendWithBlack(status.color, 0.25) : fabUTokens.color.surface,
+                  color: selected ? '#ffffff' : fabUTokens.color.textPrimary,
+                  px: 0.8,
+                  py: 0.22,
+                  fontSize: '0.62rem',
+                  fontWeight: 700,
+                  lineHeight: 1.15,
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  transition: 'background-color 150ms ease, color 150ms ease',
+                }}
+              >
+                {status.label}
+              </Box>
+            );
+          })}
+        </Stack>
+        <Box
+          component={ChevronDown}
+          size={18}
+          aria-hidden="true"
+          sx={{
+            flexShrink: 0,
+            color: fabUTokens.color.textSecondary,
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 180ms ease',
+          }}
         />
-        <StatusPillGroup
-          topLeft={withSelected(groups[1].topLeft)}
-          topRight={withSelected(groups[1].topRight)}
-          result={withSelected(groups[1].result)}
-          onToggle={onToggle}
-        />
-      </Stack>
-    </SurfaceCard>
+      </Box>
+
+      <Collapse in={expanded} timeout={180} unmountOnExit>
+        <Stack direction="row" alignItems="center" justifyContent="center" gap={1}>
+          <StatusPillGroup
+            topLeft={withSelected(groups[0].topLeft)}
+            topRight={withSelected(groups[0].topRight)}
+            result={withSelected(groups[0].result)}
+            onToggle={onToggle}
+          />
+          <StatusPillGroup
+            topLeft={withSelected(groups[1].topLeft)}
+            topRight={withSelected(groups[1].topRight)}
+            result={withSelected(groups[1].result)}
+            onToggle={onToggle}
+          />
+        </Stack>
+      </Collapse>
+    </Stack>
   );
 }
 

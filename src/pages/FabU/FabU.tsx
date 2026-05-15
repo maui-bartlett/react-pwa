@@ -365,6 +365,7 @@ function FabU() {
               label: 'HP',
               value: String(character.currentHP),
               valueSuffix: ` / ${character.totalHP}`,
+              valueGroupMinWidth: '7ch',
               tone: 'danger' as const,
               onChange: setCurrentHP,
               maxValue: character.totalHP,
@@ -374,6 +375,7 @@ function FabU() {
               label: 'MP',
               value: String(character.currentMP),
               valueSuffix: ` / ${character.totalMP}`,
+              valueGroupMinWidth: '7ch',
               tone: 'accent' as const,
               onChange: setCurrentMP,
               maxValue: character.totalMP,
@@ -381,11 +383,19 @@ function FabU() {
             },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
-          middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
+          middleRowTemplate="0.62fr 0.62fr 1.12fr 1.12fr"
           bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
-        />
-        <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
+        >
+          <Box
+            sx={{
+              borderTop: `1px solid ${fabUTokens.color.border}`,
+              pt: 1.25,
+            }}
+          >
+            <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
+          </Box>
+        </AttributesStatsCard>
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
