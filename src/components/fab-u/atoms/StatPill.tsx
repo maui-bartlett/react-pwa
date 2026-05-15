@@ -226,8 +226,8 @@ function StatPill({
                   <Typography
                     data-pw={pw ? `statpill-${pw}-suffix` : undefined}
                     onClick={(e) => {
-                      e.stopPropagation();
                       if (hasBaseTempEditor) {
+                        e.stopPropagation();
                         openBaseTempEditor(e);
                       } else {
                         openSuffixEdit();
@@ -240,6 +240,7 @@ function StatPill({
                       fontSize: inline ? '0.96rem' : '0.98rem',
                       lineHeight: 1.04,
                       cursor: onChangeSuffix ? (hasBaseTempEditor ? 'pointer' : 'text') : 'default',
+                      pointerEvents: onChangeSuffix ? 'auto' : 'none',
                     }}
                   >
                     {valueSuffix}

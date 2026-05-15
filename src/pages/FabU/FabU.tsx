@@ -192,7 +192,7 @@ function FabU() {
     return (
       <>
         <SurfaceCard label="Traits">
-          <Stack spacing={1}>
+          <Stack spacing={1} sx={{ pl: 1.18 }}>
             {[
               ['IDENTITY', 'Transfer Student to UoE'],
               ['THEME', 'Belonging'],
@@ -201,7 +201,7 @@ function FabU() {
               <Stack key={label} direction="row" justifyContent="space-between" gap={2}>
                 <Typography
                   variant="caption"
-                  sx={{ color: fabUTokens.color.textSecondary, minWidth: 76 }}
+                  sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, minWidth: 76 }}
                 >
                   {label}
                 </Typography>
