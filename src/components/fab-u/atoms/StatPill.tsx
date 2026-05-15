@@ -146,6 +146,9 @@ function StatPill({
           lineHeight: 1.04,
           whiteSpace: 'nowrap',
           textAlign: inline ? 'right' : 'left',
+          // Match the 2.5ch input width so the slash stays in the same
+          // x position when switching between display and edit modes.
+          ...(valueSuffix ? { minWidth: '2.5ch' } : {}),
         }}
       >
         {value}
