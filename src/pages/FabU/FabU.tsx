@@ -172,6 +172,14 @@ function FabU() {
     }, 980);
   };
 
+  const handleCastSpell = (_spellName: string, mpCost: string) => {
+    const cost = parseInt(mpCost, 10);
+    if (!Number.isNaN(cost) && cost > 0) {
+      setCharacter((c) => ({ ...c, currentMP: Math.max(0, c.currentMP - cost) }));
+    }
+    triggerSpellCastBurst();
+  };
+
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
     const entries: Array<{ label: string; key: AttrKey; category: string }> = [
@@ -450,7 +458,7 @@ function FabU() {
                 label={`${group.className} Spells`}
                 title={`${group.className} Spells`}
                 rows={group.spells}
-                onCastSpell={triggerSpellCastBurst}
+                onCastSpell={handleCastSpell}
               />
             ))}
           </>
@@ -535,7 +543,7 @@ function FabU() {
             label={`${group.className} Spells`}
             title={`${group.className} Spells`}
             rows={group.spells}
-            onCastSpell={triggerSpellCastBurst}
+            onCastSpell={handleCastSpell}
           />
         ))}
       </>
