@@ -6,7 +6,8 @@ import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { fabUTokens, getToneStyles } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
+import { getToneStyles } from '../tokens';
 import { StatPillData } from '../types';
 
 function StatPill({
@@ -23,6 +24,7 @@ function StatPill({
   maxValueSuffix,
   pw,
 }: StatPillData) {
+  const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState(false);
   const [editingSuffix, setEditingSuffix] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -138,7 +140,7 @@ function StatPill({
       <Typography
         variant="h6"
         sx={{
-          color: '#1f2a26',
+          color: fabUTokens.color.textPrimary,
           fontWeight: 700,
           fontSize: inline ? '0.96rem' : '0.98rem',
           lineHeight: 1.04,
@@ -166,7 +168,7 @@ function StatPill({
             editing || popoverOpen ? fabUTokens.color.textSecondary : toneStyles.borderColor
           }`,
           borderRadius: '10px',
-          backgroundColor: '#fff',
+          backgroundColor: fabUTokens.color.surface,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box',
@@ -254,7 +256,7 @@ function StatPill({
           {helperText ? (
             <Typography
               variant="caption"
-              sx={{ color: '#51605a', fontSize: '0.64rem', lineHeight: 1.25 }}
+              sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.64rem', lineHeight: 1.25 }}
             >
               {helperText}
             </Typography>
@@ -312,7 +314,7 @@ function StatPill({
                   fontWeight: 700,
                   fontSize: '0.88rem',
                   padding: 0,
-                  color: '#1f2a26',
+                  color: fabUTokens.color.textPrimary,
                 },
               }}
               onChange={(e) => field.setter(cleanNumeric(e.target.value))}

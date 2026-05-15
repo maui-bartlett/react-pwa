@@ -1,8 +1,8 @@
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 import { NoteItem } from '../types';
 
 type NoteCardProps = {
@@ -10,6 +10,7 @@ type NoteCardProps = {
 };
 
 function NoteCard({ note }: NoteCardProps) {
+  const fabUTokens = useFabUTokens();
   return (
     <SurfaceCard label={note.tag ?? 'Notes'} title={note.title}>
       <Stack spacing={1}>

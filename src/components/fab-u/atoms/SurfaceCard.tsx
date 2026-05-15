@@ -6,7 +6,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { fabUTokens } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
 import SectionLabel from './SectionLabel';
 
 type SurfaceCardProps = PaperProps &
@@ -28,6 +28,7 @@ function SurfaceCard({
   sx,
   ...props
 }: SurfaceCardProps) {
+  const fabUTokens = useFabUTokens();
   const hasInlineActions = actions && actionsPosition === 'inline';
   const hasHeaderContent = title || subtitle || hasInlineActions;
 

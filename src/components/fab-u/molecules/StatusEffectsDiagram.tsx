@@ -1,8 +1,8 @@
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 import StatusPillGroup from './StatusPillGroup';
 
 export type StatusEffectId = 'slow' | 'dazed' | 'enraged' | 'weak' | 'shaken' | 'poisoned';
@@ -51,6 +51,7 @@ const groups: StatusGroup[] = [
 ];
 
 function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramProps) {
+  const fabUTokens = useFabUTokens();
   const withSelected = (node: StatusNode) => ({ ...node, selected: !!activeEffects[node.id] });
 
   return (

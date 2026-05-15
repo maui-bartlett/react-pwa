@@ -1,7 +1,7 @@
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 
-import { fabUTokens } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
 import { TabOption } from '../types';
 
 type SegmentedTabsProps<T extends string> = {
@@ -11,6 +11,7 @@ type SegmentedTabsProps<T extends string> = {
 };
 
 function SegmentedTabs<T extends string>({ options, value, onChange }: SegmentedTabsProps<T>) {
+  const fabUTokens = useFabUTokens();
   return (
     <Stack
       direction="row"

@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { fabUTokens } from '../tokens';
+import { useFabUTokens } from '../ThemeContext';
 
 type HeaderBarProps = {
   eyebrow?: ReactNode;
@@ -16,6 +16,7 @@ type HeaderBarProps = {
 };
 
 function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: HeaderBarProps) {
+  const fabUTokens = useFabUTokens();
   const compact = variant === 'compact';
 
   return (
@@ -89,8 +90,10 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
             minWidth: compact ? 78 : 88,
             minHeight: compact ? 30 : 32,
             borderRadius: '7px',
-            bgcolor: alpha('#ffffff', 0.96),
-            color: fabUTokens.color.brandStrong,
+            bgcolor: fabUTokens.isDark
+              ? alpha(fabUTokens.color.brandStrong, 0.75)
+              : alpha('#ffffff', 0.96),
+            color: fabUTokens.isDark ? fabUTokens.color.highlight : fabUTokens.color.brandStrong,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',

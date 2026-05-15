@@ -5,8 +5,8 @@ import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
-import { fabUTokens } from '../tokens';
 
 type SummaryMetric = {
   label: string;
@@ -28,6 +28,7 @@ type SummaryStripProps = {
 };
 
 function SummaryStrip({ metrics, label }: SummaryStripProps) {
+  const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState<{ label: string; draft: string } | null>(null);
 
   function openEdit(metric: SummaryMetric) {
