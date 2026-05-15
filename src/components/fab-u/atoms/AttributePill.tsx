@@ -145,7 +145,7 @@ function AttributePill({
                 whiteSpace: 'nowrap',
               }}
             >
-              {formatDie(die, modifier)}
+              {temp ? `(${formatDie(temp, modifier)})` : formatDie(die, modifier)}
             </Typography>
           </Stack>
         </Stack>
@@ -238,6 +238,7 @@ function AttributePill({
               alignItems: 'center',
               px: 0.75,
               py: 0.5,
+              bgcolor: fabUTokens.color.surface,
               '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
             }}
           />

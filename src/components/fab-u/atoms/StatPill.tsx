@@ -148,7 +148,9 @@ function StatPill({
           textAlign: inline ? 'right' : 'left',
           // Match the 2.5ch input width so the slash stays in the same
           // x position when switching between display and edit modes.
-          ...(valueSuffix ? { minWidth: '2.5ch' } : {}),
+          // Only applies to inline-edit pills (not hasBaseTempEditor popover
+          // pills like Defense/MagicDef, where there is no input to match).
+          ...(valueSuffix && !hasBaseTempEditor ? { minWidth: '2.5ch' } : {}),
         }}
       >
         {value}

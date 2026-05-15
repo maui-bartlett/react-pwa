@@ -32,12 +32,37 @@ const darkScrollbarStyles = {
   },
 };
 
+const lightScrollbarStyles = {
+  '*::-webkit-scrollbar': {
+    width: '6px',
+    height: '6px',
+  },
+  '*::-webkit-scrollbar-track': {
+    background: fabUTokens.color.canvas,
+  },
+  '*::-webkit-scrollbar-thumb': {
+    background: fabUTokens.color.border,
+    borderRadius: '3px',
+  },
+  '*::-webkit-scrollbar-thumb:hover': {
+    background: fabUTokens.color.brandText,
+  },
+  '*': {
+    scrollbarColor: `${fabUTokens.color.border} ${fabUTokens.color.canvas}`,
+    scrollbarWidth: 'thin' as const,
+  },
+};
+
 function FabUThemeProvider({ children }: PropsWithChildren) {
   const mode = useAtomValue(themeModeState);
   const tokens = mode === ThemeMode.DARK ? darkFabUTokens : fabUTokens;
   return (
     <FabUTokensContext.Provider value={tokens}>
-      {mode === ThemeMode.DARK && <GlobalStyles styles={darkScrollbarStyles} />}
+      {mode === ThemeMode.DARK ? (
+        <GlobalStyles styles={darkScrollbarStyles} />
+      ) : (
+        <GlobalStyles styles={lightScrollbarStyles} />
+      )}
       {children}
     </FabUTokensContext.Provider>
   );

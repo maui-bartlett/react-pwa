@@ -56,7 +56,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
 
   return (
     <SurfaceCard title="Status Effects">
-      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.2}>
+      <Stack direction="row" alignItems="center" justifyContent="center" gap={0.5}>
         <StatusPillGroup
           topLeft={withSelected(groups[0].topLeft)}
           topRight={withSelected(groups[0].topRight)}
