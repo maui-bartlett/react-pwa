@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -82,10 +82,8 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
         ) : null}
       </Stack>
       {actionLabel ? (
-        <Button
+        <Box
           data-pw="header-action"
-          variant="contained"
-          size="small"
           sx={{
             alignSelf: compact ? 'center' : 'flex-start',
             minWidth: compact ? 78 : 88,
@@ -93,19 +91,19 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
             borderRadius: '7px',
             bgcolor: alpha('#ffffff', 0.96),
             color: fabUTokens.color.brandStrong,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             px: 1.15,
             boxShadow: 'none',
+            cursor: 'default',
             textTransform: 'none',
             fontWeight: 700,
             fontSize: compact ? '0.72rem' : '0.74rem',
-            '&:hover': {
-              bgcolor: '#fff',
-              boxShadow: 'none',
-            },
           }}
         >
           {actionLabel}
-        </Button>
+        </Box>
       ) : null}
     </Stack>
   );
