@@ -16,7 +16,7 @@ function SectionLabel({ label }: SectionLabelProps) {
         display: 'inline-flex',
         alignSelf: 'flex-start',
         borderRadius: '7px',
-        bgcolor: fabUTokens.color.highlight,
+        bgcolor: fabUTokens.color.labelBg,
         px: 1.05,
         py: 0.36,
       }}
@@ -24,7 +24,7 @@ function SectionLabel({ label }: SectionLabelProps) {
       <Typography
         variant="caption"
         sx={{
-          color: fabUTokens.color.highlightFg,
+          color: fabUTokens.color.labelFg,
           fontWeight: 700,
           fontSize: '0.6rem',
           letterSpacing: '0.055em',

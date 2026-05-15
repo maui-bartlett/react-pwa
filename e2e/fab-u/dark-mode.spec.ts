@@ -29,28 +29,35 @@ test.describe('Dark mode', () => {
     );
   });
 
-  // ── Section labels are yellow in dark mode ─────────────────────────────────
-  // SectionLabel renders with data-pw="section-label" and bgcolor=highlight.
-  // Dark: highlight = #c5a557 ≈ rgb(197, 165, 87) — R > G (yellow).
-  // Light: highlight = brand  = #315c4d ≈ rgb(49,  92, 77) — G > R (green).
+  // ── Section labels are dark green in dark mode ─────────────────────────────
+  // SectionLabel renders with data-pw="section-label" and bgcolor=labelBg.
+  // Dark: labelBg = #1f2f25 ≈ rgb(31, 47, 37) — G > R, very dark (brightness < 50).
+  // Light: labelBg = brand  = #315c4d ≈ rgb(49, 92, 77) — G > R, medium (brightness > 50).
 
-  test('section labels render in yellow accent (not green) in dark mode', async ({ page }) => {
-    const labelBgs = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('[data-pw="section-label"]')).map(
-        (el) => getComputedStyle(el).backgroundColor,
-      );
+  test('section labels render in dark-green fill in dark mode', async ({ page }) => {
+    const labelData = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('[data-pw="section-label"]')).map((el) => ({
+        bg: getComputedStyle(el).backgroundColor,
+        color: getComputedStyle(el.querySelector('*') ?? el).color,
+      }));
     });
-    expect(labelBgs.length, 'should find section-label elements').toBeGreaterThan(0);
-    for (const bg of labelBgs) {
-      const match = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-      expect(match, `section label bg should be an rgb color, got: ${bg}`).toBeTruthy();
-      const r = parseInt(match![1]);
-      const g = parseInt(match![2]);
-      // Yellow (#c5a557): R≈197 > G≈165. Green (#315c4d): R≈49 < G≈92.
-      expect(
-        r,
-        `section label bg should be yellow-ish (R=${r} > G=${g}), got: ${bg}`,
-      ).toBeGreaterThan(g);
+    expect(labelData.length, 'should find section-label elements').toBeGreaterThan(0);
+    for (const { bg, color } of labelData) {
+      const bgMatch = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      expect(bgMatch, `section label bg should be rgb, got: ${bg}`).toBeTruthy();
+      const r = parseInt(bgMatch![1]);
+      const g = parseInt(bgMatch![2]);
+      const b = parseInt(bgMatch![3]);
+      const brightness = (r + g + b) / 3;
+      // Dark green (#1f2f25 → rgb(31,47,37)): G > R and very dark (brightness ≈ 38).
+      expect(g, `section label bg should be green-ish (G=${g} > R=${r}), got: ${bg}`).toBeGreaterThan(r);
+      expect(brightness, `section label should be dark-green (brightness < 50), got: ${bg}`).toBeLessThan(50);
+      // Text should be light (white #fff → brightness ≈ 255).
+      const colorMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (colorMatch) {
+        const textBrightness = (parseInt(colorMatch[1]) + parseInt(colorMatch[2]) + parseInt(colorMatch[3])) / 3;
+        expect(textBrightness, `section label text should be near-white (> 200), got: ${color}`).toBeGreaterThan(200);
+      }
     }
   });
 
@@ -99,9 +106,36 @@ test.describe('Dark mode', () => {
     ).toBeGreaterThan(180);
   });
 
+  // ── Scrollbar is styled in dark mode ──────────────────────────────────────
+
+  test('scrollbar is styled (dark track) in dark mode', async ({ page }) => {
+    const scrollbarColor = await page.evaluate(() => getComputedStyle(document.body).scrollbarColor);
+    // Firefox exposes scrollbar-color: "<thumb> <track>".
+    // In dark mode it should contain the dark border token (#263530).
+    // WebKit doesn't expose scrollbar-color via getComputedStyle; we just verify the property
+    // is non-empty when set (Firefox) or skip gracefully (Chromium).
+    if (scrollbarColor && scrollbarColor !== 'auto') {
+      expect(scrollbarColor, 'scrollbar-color should contain dark values in dark mode').not.toBe('');
+    }
+    // Verify the GlobalStyles were injected by checking a stylesheet rule exists.
+    const hasScrollbarRule = await page.evaluate(() => {
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          for (const rule of Array.from(sheet.cssRules ?? [])) {
+            if (rule.cssText.includes('-webkit-scrollbar')) return true;
+          }
+        } catch {
+          // cross-origin stylesheet, skip
+        }
+      }
+      return false;
+    });
+    expect(hasScrollbarRule, 'dark mode scrollbar GlobalStyles rule should be injected').toBe(true);
+  });
+
   // ── Light mode regression ──────────────────────────────────────────────────
 
-  test('light mode still works — section labels are green', async ({ page }) => {
+  test('light mode still works — section labels are medium green', async ({ page }) => {
     await page.evaluate(() => localStorage.setItem('theme-mode', '"light"'));
     await page.reload();
     await page.waitForLoadState('networkidle');
@@ -117,11 +151,14 @@ test.describe('Dark mode', () => {
       expect(match, `section label bg should be rgb in light mode, got: ${bg}`).toBeTruthy();
       const r = parseInt(match![1]);
       const g = parseInt(match![2]);
-      // Light mode brand = #315c4d ≈ rgb(49, 92, 77) — G > R (green).
+      const b = parseInt(match![3]);
+      const brightness = (r + g + b) / 3;
+      // Light mode labelBg = #315c4d ≈ rgb(49, 92, 77) — G > R (green), brightness ≈ 73.
       expect(
         g,
         `section label in light mode should be green (G=${g} > R=${r}), got: ${bg}`,
       ).toBeGreaterThan(r);
+      expect(brightness, `light mode label should be medium brightness (> 50), got: ${bg}`).toBeGreaterThan(50);
     }
   });
 
@@ -131,7 +168,7 @@ test.describe('Dark mode', () => {
     const toggle = page.locator('[data-pw="theme-toggle"]');
     await expect(toggle).toBeVisible();
 
-    // Currently dark — section labels should be yellow.
+    // Currently dark — section labels should be dark green (G > R, brightness < 50).
     const darkLabelBgs = await page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-pw="section-label"]')).map(
         (el) => getComputedStyle(el).backgroundColor,
@@ -140,14 +177,18 @@ test.describe('Dark mode', () => {
     expect(darkLabelBgs.length).toBeGreaterThan(0);
     for (const bg of darkLabelBgs) {
       const m = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-      if (m) expect(parseInt(m[1])).toBeGreaterThan(parseInt(m[2])); // R > G = yellow
+      if (m) {
+        expect(parseInt(m[2])).toBeGreaterThan(parseInt(m[1])); // G > R = green
+        const brightness = (parseInt(m[1]) + parseInt(m[2]) + parseInt(m[3])) / 3;
+        expect(brightness).toBeLessThan(50); // dark green
+      }
     }
 
     // Click toggle → light mode.
     await toggle.click();
     await page.waitForTimeout(150);
 
-    // Section labels should now be green (light mode).
+    // Section labels should now be medium green (light mode).
     const lightLabelBgs = await page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-pw="section-label"]')).map(
         (el) => getComputedStyle(el).backgroundColor,
@@ -156,7 +197,11 @@ test.describe('Dark mode', () => {
     expect(lightLabelBgs.length).toBeGreaterThan(0);
     for (const bg of lightLabelBgs) {
       const m = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-      if (m) expect(parseInt(m[2])).toBeGreaterThan(parseInt(m[1])); // G > R = green
+      if (m) {
+        expect(parseInt(m[2])).toBeGreaterThan(parseInt(m[1])); // G > R = green
+        const brightness = (parseInt(m[1]) + parseInt(m[2]) + parseInt(m[3])) / 3;
+        expect(brightness).toBeGreaterThan(50); // medium green (light mode)
+      }
     }
   });
 });

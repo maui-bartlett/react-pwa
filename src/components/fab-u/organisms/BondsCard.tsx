@@ -214,7 +214,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
                     fontWeight: 700,
                     letterSpacing: '0.04em',
                     bgcolor: 'rgba(49, 92, 77, 0.08)',
-                    color: fabUTokens.color.brand,
+                    color: fabUTokens.color.brandText,
                     border: `1px solid rgba(49, 92, 77, 0.18)`,
                     borderRadius: '5px',
                     '& .MuiChip-label': { px: 0.75 },
@@ -232,7 +232,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
             color: fabUTokens.color.textSecondary,
             p: 0.25,
             flexShrink: 0,
-            '&:hover': { color: fabUTokens.color.brand },
+            '&:hover': { color: fabUTokens.color.brandText },
           }}
         >
           <AddIcon fontSize="small" />

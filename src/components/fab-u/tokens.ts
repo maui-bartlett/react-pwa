@@ -12,6 +12,14 @@ type FabUColorTokens = {
   brand: string;
   brandStrong: string;
   brandSoft: string;
+  /** Text on regular (canvas/surface) backgrounds that uses brand-green hue — lightened in dark mode for AA contrast. */
+  brandText: string;
+  /** Foreground always rendered ON a brand-green background (always white). */
+  brandFg: string;
+  /** Background fill for SectionLabel header pills. */
+  labelBg: string;
+  /** Foreground text for SectionLabel header pills. */
+  labelFg: string;
   highlight: string;
   highlightFg: string;
   hp: string;
@@ -42,6 +50,10 @@ const fabUTokens: FabUTokens = {
     brand: '#315c4d',
     brandStrong: '#26493d',
     brandSoft: '#e3ebe2',
+    brandText: '#315c4d', // same as brand in light mode
+    brandFg: '#ffffff', // text ON brand-green bg
+    labelBg: '#315c4d', // section header pill fill
+    labelFg: '#ffffff', // section header pill text
     highlight: '#315c4d', // = brand in light mode
     highlightFg: '#ffffff',
     hp: '#c06355',
@@ -68,6 +80,10 @@ const darkFabUTokens: FabUTokens = {
     brand: '#315c4d',
     brandStrong: '#26493d',
     brandSoft: '#1a2e26',
+    brandText: '#7fae9a', // lightened for AA contrast on dark bg (#7fae9a on #131613 ≈ 7.9:1)
+    brandFg: '#ffffff', // text ON brand-green bg
+    labelBg: '#1f2f25', // dark desaturated green for section header pills
+    labelFg: '#ffffff', // white text on dark-green pill
     highlight: '#c5a557', // yellow accent in dark mode
     highlightFg: '#1a2e26',
     hp: '#c06355',

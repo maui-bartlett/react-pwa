@@ -59,7 +59,7 @@ function DetailListCard({ label, title, items, subtitle, addLabel }: DetailListC
               <Typography
                 variant="caption"
                 sx={{
-                  color: fabUTokens.color.brand,
+                  color: fabUTokens.color.brandText,
                   fontWeight: 700,
                   fontSize: '0.68rem',
                   whiteSpace: 'nowrap',
