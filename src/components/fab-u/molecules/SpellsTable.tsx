@@ -43,7 +43,7 @@ function SpellsTable({
     setBurst({ rowName: name, id });
     window.setTimeout(() => {
       setBurst((current) => (current?.id === id ? null : current));
-    }, 720);
+    }, 980);
   };
 
   return (
@@ -146,13 +146,17 @@ function SpellsTable({
                   <TableRow>
                     <TableCell
                       colSpan={4}
-                      sx={
-                        isOpen
-                          ? {}
-                          : { '&&': { p: 0, borderBottom: 'none', lineHeight: 0, fontSize: 0 } }
-                      }
+                      sx={{
+                        '&&': {
+                          px: 1.2,
+                          py: 0,
+                          borderBottom: isOpen ? undefined : 'none',
+                          lineHeight: isOpen ? undefined : 0,
+                          fontSize: isOpen ? undefined : 0,
+                        },
+                      }}
                     >
-                      <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                      <Collapse in={isOpen} timeout="auto">
                         <Box
                           sx={{
                             display: 'grid',
@@ -204,15 +208,33 @@ function SpellsTable({
                               '@keyframes spellCastBurst': {
                                 '0%': {
                                   opacity: 0,
-                                  transform: 'translate(-50%, -50%) scale(0.25) rotate(0deg)',
+                                  transform: 'translate(-50%, -50%) scale(0.2) rotate(0deg)',
                                 },
-                                '18%': {
+                                '14%': {
+                                  opacity: 1,
+                                  transform: 'translate(-50%, -50%) scale(1.35) rotate(12deg)',
+                                },
+                                '62%': {
                                   opacity: 1,
                                 },
                                 '100%': {
                                   opacity: 0,
                                   transform:
-                                    'translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(1) rotate(var(--burst-rotate))',
+                                    'translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(0.78) rotate(var(--burst-rotate))',
+                                },
+                              },
+                              '@keyframes spellCastFlash': {
+                                '0%': {
+                                  opacity: 0,
+                                  transform: 'translate(-50%, -50%) scale(0.45)',
+                                },
+                                '18%': {
+                                  opacity: 0.75,
+                                  transform: 'translate(-50%, -50%) scale(1.15)',
+                                },
+                                '100%': {
+                                  opacity: 0,
+                                  transform: 'translate(-50%, -50%) scale(2.35)',
                                 },
                               },
                             }}
@@ -228,12 +250,85 @@ function SpellsTable({
                                   inset: 0,
                                 }}
                               >
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    width: 40,
+                                    height: 40,
+                                    border: '2px solid rgba(240, 204, 95, 0.82)',
+                                    borderRadius: '50%',
+                                    boxShadow:
+                                      '0 0 0 3px rgba(255, 255, 255, 0.42), 0 0 18px rgba(240, 204, 95, 0.72)',
+                                    animation: 'spellCastFlash 560ms ease-out both',
+                                  }}
+                                />
                                 {[
-                                  { color: '#ffffff', x: '-26px', y: '-24px', rotate: '-24deg' },
-                                  { color: '#f0cc5f', x: '0px', y: '-32px', rotate: '18deg' },
-                                  { color: '#ffffff', x: '29px', y: '-20px', rotate: '34deg' },
-                                  { color: '#f0cc5f', x: '-20px', y: '21px', rotate: '22deg' },
-                                  { color: '#ffffff', x: '26px', y: '20px', rotate: '-32deg' },
+                                  {
+                                    color: '#ffffff',
+                                    x: '-46px',
+                                    y: '-34px',
+                                    rotate: '-120deg',
+                                    size: 21,
+                                  },
+                                  {
+                                    color: '#f0cc5f',
+                                    x: '-18px',
+                                    y: '-52px',
+                                    rotate: '-42deg',
+                                    size: 27,
+                                  },
+                                  {
+                                    color: '#ffffff',
+                                    x: '22px',
+                                    y: '-48px',
+                                    rotate: '48deg',
+                                    size: 22,
+                                  },
+                                  {
+                                    color: '#f0cc5f',
+                                    x: '52px',
+                                    y: '-22px',
+                                    rotate: '128deg',
+                                    size: 25,
+                                  },
+                                  {
+                                    color: '#ffffff',
+                                    x: '48px',
+                                    y: '28px',
+                                    rotate: '218deg',
+                                    size: 21,
+                                  },
+                                  {
+                                    color: '#f0cc5f',
+                                    x: '16px',
+                                    y: '50px',
+                                    rotate: '284deg',
+                                    size: 26,
+                                  },
+                                  {
+                                    color: '#ffffff',
+                                    x: '-24px',
+                                    y: '45px',
+                                    rotate: '338deg',
+                                    size: 20,
+                                  },
+                                  {
+                                    color: '#f0cc5f',
+                                    x: '-52px',
+                                    y: '15px',
+                                    rotate: '-212deg',
+                                    size: 23,
+                                  },
+                                  {
+                                    color: '#ffffff',
+                                    x: '0px',
+                                    y: '-4px',
+                                    rotate: '84deg',
+                                    size: 18,
+                                  },
                                 ].map((star, index) => (
                                   <AutoAwesomeOutlinedIcon
                                     key={`${star.x}-${star.y}`}
@@ -245,9 +340,11 @@ function SpellsTable({
                                       top: '50%',
                                       left: '50%',
                                       color: star.color,
-                                      fontSize: index === 1 ? 17 : 14,
-                                      filter: 'drop-shadow(0 1px 2px rgba(38, 73, 61, 0.28))',
-                                      animation: `spellCastBurst 680ms ease-out ${index * 42}ms both`,
+                                      fontSize: star.size,
+                                      strokeWidth: 2.4,
+                                      filter:
+                                        'drop-shadow(0 1px 2px rgba(38, 73, 61, 0.42)) drop-shadow(0 0 8px rgba(240, 204, 95, 0.55))',
+                                      animation: `spellCastBurst 900ms cubic-bezier(0.16, 1, 0.3, 1) ${index * 36}ms both`,
                                     }}
                                   />
                                 ))}
