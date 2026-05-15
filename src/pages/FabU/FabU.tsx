@@ -713,7 +713,7 @@ function FabU() {
         <HeaderBar
           eyebrow={eyebrow}
           title="Combat"
-          subtitle="Active encounter"
+          subtitle="Stats, status effects, and battle actions"
           actionLabel="Combat"
         />
       );
