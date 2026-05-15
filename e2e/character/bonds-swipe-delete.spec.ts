@@ -2,6 +2,20 @@ import { type Page, devices, expect, test } from '@playwright/test';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Resolve the runtime bond ID by finding the [data-pw="bond-row-*"] element
+ * that contains the given character name text. Resilient to ID changes.
+ */
+async function getBondId(page: Page, characterName: string): Promise<string> {
+  const row = page.locator('[data-pw^="bond-row-"]').filter({ hasText: characterName }).first();
+  await expect(row).toBeVisible();
+  const pw = await row.getAttribute('data-pw');
+  if (!pw) throw new Error(`No bond row found for character name: ${characterName}`);
+  return pw.replace('bond-row-', '');
+}
+
 test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
@@ -104,10 +118,11 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // ── Threshold removes bond ────────────────────────────────────────────────
 
   test('Swipe left past threshold removes bond row and updates storage', async ({ page }) => {
-    const row = page.locator('[data-pw="bond-row-jelena"]');
+    const id = await getBondId(page, 'Jelena');
+    const row = page.locator(`[data-pw="bond-row-${id}"]`);
     await expect(row).toBeVisible();
 
-    await touchSwipeLeft(page, 'jelena');
+    await touchSwipeLeft(page, id);
 
     // Row removed from DOM after collapse animation
     await expect(row).toHaveCount(0, { timeout: 1500 });
@@ -119,9 +134,10 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // ── Sub-threshold springs back ────────────────────────────────────────────
 
   test('Swipe left below threshold springs row back, bond stays', async ({ page }) => {
-    const row = page.locator('[data-pw="bond-row-jelena"]');
-    // Drag only 50px (below 100px threshold)
-    await touchSwipeLeft(page, 'jelena', 50);
+    const id = await getBondId(page, 'Jelena');
+    const row = page.locator(`[data-pw="bond-row-${id}"]`);
+    // Drag only 20px (below 35px commit threshold)
+    await touchSwipeLeft(page, id, 20);
 
     // Row should remain visible
     await expect(row).toBeVisible();
@@ -131,11 +147,12 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // ── Child control tap doesn't delete ─────────────────────────────────────
 
   test('Tapping + button opens menu without removing bond', async ({ page }) => {
-    const row = page.locator('[data-pw="bond-row-jelena"]');
+    const id = await getBondId(page, 'Jelena');
+    const row = page.locator(`[data-pw="bond-row-${id}"]`);
     await expect(row).toBeVisible();
 
     // Simple click on the + button
-    await page.locator('[data-pw="bond-add-jelena"]').click();
+    await page.locator(`[data-pw="bond-add-${id}"]`).click();
 
     // Menu should open
     await expect(page.locator('[role="menu"]')).toBeVisible();
@@ -149,11 +166,12 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // ── Desktop × button removes bond ────────────────────────────────────────
 
   test('Click × button removes bond row', async ({ page }) => {
-    const row = page.locator('[data-pw="bond-row-yoru"]');
+    const id = await getBondId(page, 'Yoru');
+    const row = page.locator(`[data-pw="bond-row-${id}"]`);
     await expect(row).toBeVisible();
 
     // The × button is opacity:0 normally; force-click it
-    await page.locator('[data-pw="bond-delete-yoru"]').click({ force: true });
+    await page.locator(`[data-pw="bond-delete-${id}"]`).click({ force: true });
 
     await expect(row).toHaveCount(0, { timeout: 1500 });
 
@@ -164,40 +182,43 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   // ── Cross-card sync ───────────────────────────────────────────────────────
 
   test('Remove on Overview → bond gone from Combat > Bonds subtab', async ({ page }) => {
-    await touchSwipeLeft(page, 'granada');
-    await expect(page.locator('[data-pw="bond-row-granada"]')).toHaveCount(0, { timeout: 1500 });
+    const id = await getBondId(page, 'Granada');
+    await touchSwipeLeft(page, id);
+    await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
 
     await page.getByRole('button', { name: 'Combat' }).first().click();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('[data-pw="bond-row-granada"]')).toHaveCount(0);
+    await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0);
     await expect(page.locator('text=Granada')).toHaveCount(0);
   });
 
   // ── Persistence after reload ──────────────────────────────────────────────
 
   test('Removed bond does not reappear after reload', async ({ page }) => {
-    await touchSwipeLeft(page, 'juice');
-    await expect(page.locator('[data-pw="bond-row-juice"]')).toHaveCount(0, { timeout: 1500 });
+    const id = await getBondId(page, 'Juice');
+    await touchSwipeLeft(page, id);
+    await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
 
     await page.reload();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('[data-pw="bond-row-juice"]')).toHaveCount(0);
+    await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0);
     await expect(page.locator('text=Juice')).toHaveCount(0);
   });
 
-  // ── Sub-commit drag (-40px): no visual slide ─────────────────────────────
-  // 40px is below the commit threshold (~98px on 393px viewport), so the row
+  // ── Sub-commit drag (-20px): no visual slide ─────────────────────────────
+  // 20px is below the flat 35px commit threshold, so the row
   // must not translate at all — red channel stays hidden.
 
-  test('Sub-commit -40px: no visual slide, red channel absent', async ({ page }) => {
-    await touchSwipeLeftPartial(page, 'jelena', 40);
+  test('Sub-commit -20px: no visual slide, red channel absent', async ({ page }) => {
+    const id = await getBondId(page, 'Jelena');
+    await touchSwipeLeftPartial(page, id, 20);
 
-    await expect(page.locator('[data-pw="bond-red-channel-jelena"]')).toHaveCount(0);
+    await expect(page.locator(`[data-pw="bond-red-channel-${id}"]`)).toHaveCount(0);
 
     const transform = await page
-      .locator('[data-pw="bond-add-jelena"]')
+      .locator(`[data-pw="bond-add-${id}"]`)
       .evaluate((el) => getComputedStyle(el.closest('[data-pw^="bond-row"]')!).transform);
     // translateX(0) renders as either "none" or "matrix(1,0,0,1,0,0)"
     const isZero =
@@ -207,40 +228,42 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     expect(isZero, `expected no horizontal translate, got: ${transform}`).toBe(true);
   });
 
-  // ── Red channel absent below commit threshold (-50px) ────────────────────
-  // 50px < ~98px commit threshold → row doesn't slide, red channel not rendered.
+  // ── Red channel absent below commit threshold (-20px) ────────────────────
+  // 20px < 35px flat commit threshold → row doesn't slide, red channel not rendered.
 
-  test('Mid-swipe -50px: below commit threshold, no visual slide, red channel absent', async ({
+  test('Mid-swipe -20px: below commit threshold, no visual slide, red channel absent', async ({
     page,
   }) => {
-    await touchSwipeLeftPartial(page, 'jelena', 50);
-    await expect(page.locator('[data-pw="bond-red-channel-jelena"]')).toHaveCount(0);
+    const id = await getBondId(page, 'Jelena');
+    await touchSwipeLeftPartial(page, id, 20);
+    await expect(page.locator(`[data-pw="bond-red-channel-${id}"]`)).toHaveCount(0);
   });
 
-  // ── Red channel + trash icon above commit threshold (-100px) ─────────────
-  // 100px > ~98px commit threshold → row slides, red channel visible.
-  // delete threshold = commitThreshold + 60 ≈ 158px on 393px viewport.
-  // progress = 100/158 ≈ 0.63 → opacity≈0.63, scale≈0.85.
+  // ── Red channel + trash icon above commit threshold (-45px) ──────────────
+  // 45px > 35px flat commit threshold → row slides, red channel visible.
+  // delete threshold = 35 + 25 = 60px.
+  // progress = 45/60 = 0.75 → opacity≈0.75, scale≈0.90.
 
-  test('Mid-swipe -100px: red channel visible, trash opacity≈0.63, scale≈0.85', async ({
+  test('Mid-swipe -45px: red channel visible, trash opacity≈0.75, scale≈0.90', async ({
     page,
   }) => {
-    await touchSwipeLeftPartial(page, 'jelena', 100);
+    const id = await getBondId(page, 'Jelena');
+    await touchSwipeLeftPartial(page, id, 45);
 
-    const redChannel = page.locator('[data-pw="bond-red-channel-jelena"]');
+    const redChannel = page.locator(`[data-pw="bond-red-channel-${id}"]`);
     await expect(redChannel).toBeVisible();
 
-    const trash = page.locator('[data-pw="bond-trash-jelena"]');
+    const trash = page.locator(`[data-pw="bond-trash-${id}"]`);
     await expect(trash).toBeVisible();
 
     const opacity = await trash.evaluate((el) => (el as HTMLElement).style.opacity);
-    expect(parseFloat(opacity)).toBeCloseTo(0.63, 1);
+    expect(parseFloat(opacity)).toBeCloseTo(0.75, 1);
 
     const scale = await trash.evaluate((el) => {
       const m = (el as HTMLElement).style.transform.match(/scale\(([^)]+)\)/);
       return m ? parseFloat(m[1]) : NaN;
     });
-    expect(scale).toBeCloseTo(0.85, 1);
+    expect(scale).toBeCloseTo(0.9, 1);
   });
 });
 
@@ -257,7 +280,8 @@ test.describe('Bond × button absent on touch device', () => {
   });
 
   test('× button not in DOM when pointer is coarse (touch device)', async ({ page }) => {
-    await expect(page.locator('[data-pw="bond-delete-jelena"]')).toHaveCount(0);
+    const id = await getBondId(page, 'Jelena');
+    await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toHaveCount(0);
   });
 });
 
@@ -274,6 +298,7 @@ test.describe('Bond × button present on desktop', () => {
   });
 
   test('× button is in DOM on desktop (hover: hover, pointer: fine)', async ({ page }) => {
-    await expect(page.locator('[data-pw="bond-delete-jelena"]')).toHaveCount(1);
+    const id = await getBondId(page, 'Jelena');
+    await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toHaveCount(1);
   });
 });

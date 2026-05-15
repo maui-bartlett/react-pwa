@@ -22,7 +22,7 @@ type SpellsTableProps = {
   title?: string;
   label?: string;
   showTitle?: boolean;
-  onCastSpell?: (spellName: string) => void;
+  onCastSpell?: (spellName: string, mpCost: string) => void;
 };
 
 function SpellsTable({
@@ -156,7 +156,7 @@ function SpellsTable({
                             gridTemplateColumns: 'minmax(0, 1fr) 76px',
                             alignItems: 'center',
                             gap: 1.5,
-                            py: 1.25,
+                            py: 2.5,
                             px: 1.5,
                             bgcolor: fabUTokens.color.brandSoft,
                             borderRadius: '6px',
@@ -178,12 +178,13 @@ function SpellsTable({
                             size="small"
                             onClick={(event) => {
                               event.stopPropagation();
-                              onCastSpell?.(row.name);
+                              onCastSpell?.(row.name, row.cost);
                             }}
                             sx={{
                               justifySelf: 'end',
                               width: 68,
                               minWidth: 68,
+                              minHeight: 40,
                               flexShrink: 0,
                               overflow: 'visible',
                               bgcolor: fabUTokens.color.brand,

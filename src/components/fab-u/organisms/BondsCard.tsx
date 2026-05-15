@@ -28,7 +28,7 @@ const ALL_BOND_TYPES: BondType[] = [
   'Hatred',
 ];
 
-const COMMIT_THRESHOLD_EXTRA = 30; // extra px past commitThreshold to trigger delete
+const COMMIT_THRESHOLD_EXTRA = 25; // extra px past commitThreshold to trigger delete (total = 60px)
 const DELETE_RED = '#d32f2f';
 
 type BondRowProps = {
@@ -45,7 +45,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
   const [removing, setRemoving] = useState(false);
   const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const rowElRef = useRef<HTMLElement | null>(null);
-  const commitThresholdRef = useRef(30);
+  const commitThresholdRef = useRef(35);
   const committedRef = useRef(false);
 
   function triggerRemove() {
@@ -87,7 +87,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
 
     const onTouchStart = (e: TouchEvent) => {
       touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      commitThresholdRef.current = 30;
+      commitThresholdRef.current = 35;
       committedRef.current = false;
     };
 
@@ -230,9 +230,13 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
           onClick={(e) => onOpenMenu(e, bond.id)}
           sx={{
             color: fabUTokens.color.textSecondary,
-            p: 0.25,
+            p: 0.5,
+            borderRadius: '50%',
             flexShrink: 0,
-            '&:hover': { color: fabUTokens.color.brandText },
+            '&:hover': {
+              color: fabUTokens.color.brandText,
+              bgcolor: 'rgba(49, 92, 77, 0.1)',
+            },
           }}
         >
           <AddIcon fontSize="small" />
@@ -249,13 +253,17 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
             sx={{
               opacity: 0,
               color: 'rgba(180, 50, 50, 0.6)',
-              p: 0.25,
+              p: 0.5,
+              borderRadius: '50%',
               flexShrink: 0,
               transition: 'opacity 0.15s',
-              '&:hover': { color: 'rgba(180, 50, 50, 0.9)' },
+              '&:hover': {
+                color: 'rgba(180, 50, 50, 0.9)',
+                bgcolor: 'rgba(180, 50, 50, 0.08)',
+              },
             }}
           >
-            <CloseIcon sx={{ fontSize: 14 }} />
+            <CloseIcon fontSize="small" />
           </IconButton>
         )}
       </Stack>

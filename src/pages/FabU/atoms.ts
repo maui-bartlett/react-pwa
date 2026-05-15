@@ -3,6 +3,17 @@ import { atomWithStorage } from 'jotai/utils';
 
 import type { Attribute, Bond } from '@/components/fab-u';
 
+import { skillGroups as defaultSkillGroups } from './skills';
+import type { SkillGroup } from './skills';
+import { spellGroups as defaultSpellGroups } from './spells';
+import type { SpellGroup } from './spells';
+
+type ClassEntry = {
+  name: string;
+  level: number;
+  subtitle: string;
+};
+
 type Character = {
   initiative: number;
   defense: number;
@@ -28,12 +39,21 @@ type Character = {
   bonds: Bond[];
   backstoryPrompts: BackstoryPrompt[];
   notes: string;
+  classes: ClassEntry[];
+  skillGroups: SkillGroup[];
+  spellGroups: SpellGroup[];
 };
 
 type BackstoryPrompt = {
   prompt: string;
   response: string;
 };
+
+const CLASS_DEFAULTS: ClassEntry[] = [
+  { name: 'Entropist', level: 10, subtitle: 'Entropic Magic · Absorb MP · Stolen Time' },
+  { name: 'Sharpshooter', level: 2, subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP' },
+  { name: 'Tinkerer', level: 1, subtitle: 'Emergency Item · improvised gear in conflict' },
+];
 
 const BACKSTORY_PROMPT_DEFAULTS: BackstoryPrompt[] = [
   {
@@ -84,6 +104,9 @@ const CHARACTER_DEFAULTS: Character = {
   backstoryPrompts: BACKSTORY_PROMPT_DEFAULTS,
   notes:
     'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
+  classes: CLASS_DEFAULTS,
+  skillGroups: defaultSkillGroups,
+  spellGroups: defaultSpellGroups,
 };
 
 function normalizeBackstoryPrompts(
@@ -192,4 +215,4 @@ const derivedStatusEffectsState = atom((get) => {
 });
 
 export { characterState, derivedStatusEffectsState, statusEffectsState };
-export type { BackstoryPrompt, Character };
+export type { BackstoryPrompt, Character, ClassEntry };

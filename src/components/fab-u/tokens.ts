@@ -82,7 +82,7 @@ const darkFabUTokens: FabUTokens = {
     brandSoft: '#1a2e26',
     brandText: '#7fae9a', // lightened for AA contrast on dark bg (#7fae9a on #131613 ≈ 7.9:1)
     brandFg: '#ffffff', // text ON brand-green bg
-    labelBg: '#1f2f25', // dark desaturated green for section header pills
+    labelBg: '#315c4d', // same as brand — matches the top header bar green
     labelFg: '#ffffff', // white text on dark-green pill
     highlight: '#c5a557', // yellow accent in dark mode
     highlightFg: '#1a2e26',

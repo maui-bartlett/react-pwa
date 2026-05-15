@@ -20,7 +20,7 @@ export type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
 export type DieSize = 'd6' | 'd8' | 'd10' | 'd12' | 'd20';
 
-export type Attribute = { die: DieSize; modifier: number };
+export type Attribute = { die: DieSize; modifier: number; temp?: DieSize | null };
 
 export type TabOption<T extends string> = {
   label: string;
@@ -56,8 +56,10 @@ export type AttributeRow = {
   category?: string;
   die?: DieSize;
   modifierNum?: number;
+  temp?: DieSize | null;
   onChangeDie?: (die: DieSize) => void;
   onChangeModifier?: (mod: number) => void;
+  onChangeTemp?: (temp: DieSize | null) => void;
 };
 
 export type SkillRow = {

@@ -44,7 +44,7 @@ function AttributesStatsCard({
   }
 
   return (
-    <SurfaceCard label="Attributes & Stats" sx={{ pt: 2.65 }}>
+    <SurfaceCard label="Attributes & Stats">
       {topRow.length ? renderStatRow(topRow, topRowTemplate) : null}
 
       {middleRow.length ? renderStatRow(middleRow, middleRowTemplate) : null}
@@ -63,9 +63,11 @@ function AttributesStatsCard({
               label={attribute.label}
               die={attribute.die}
               modifier={attribute.modifierNum ?? 0}
+              temp={attribute.temp}
               tone={toneForCategory(attribute.category)}
               onChangeDie={attribute.onChangeDie}
               onChangeModifier={attribute.onChangeModifier}
+              onChangeTemp={attribute.onChangeTemp}
             />
           ) : (
             <StatPill

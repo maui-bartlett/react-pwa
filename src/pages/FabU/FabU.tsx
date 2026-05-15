@@ -39,8 +39,6 @@ import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
-import { skillGroups } from './skills';
-import { spellGroups } from './spells';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Bonds', value: 'bonds' },
@@ -172,6 +170,14 @@ function FabU() {
     }, 980);
   };
 
+  const handleCastSpell = (_spellName: string, mpCost: string) => {
+    const cost = parseInt(mpCost, 10);
+    if (!Number.isNaN(cost) && cost > 0) {
+      setCharacter((c) => ({ ...c, currentMP: Math.max(0, c.currentMP - cost) }));
+    }
+    triggerSpellCastBurst();
+  };
+
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
     const entries: Array<{ label: string; key: AttrKey; category: string }> = [
@@ -187,6 +193,7 @@ function FabU() {
       category,
       die: character.attributes[key].die,
       modifierNum: character.attributes[key].modifier,
+      temp: character.attributes[key].temp ?? null,
       onChangeDie: (d: import('@/components/fab-u').DieSize) =>
         setCharacter((c) => ({
           ...c,
@@ -196,6 +203,11 @@ function FabU() {
         setCharacter((c) => ({
           ...c,
           attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
+        })),
+      onChangeTemp: (t: import('@/components/fab-u').DieSize | null) =>
+        setCharacter((c) => ({
+          ...c,
+          attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
         })),
     }));
   }
@@ -262,23 +274,11 @@ function FabU() {
         <DetailListCard
           label="Classes"
           addLabel="Class"
-          items={[
-            {
-              title: 'Entropist',
-              subtitle: 'Entropic Magic · Absorb MP · Stolen Time',
-              trailing: 'LVL 10',
-            },
-            {
-              title: 'Sharpshooter',
-              subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP',
-              trailing: 'LVL 2',
-            },
-            {
-              title: 'Tinkerer',
-              subtitle: 'Emergency Item · improvised gear in conflict',
-              trailing: 'LVL 1',
-            },
-          ]}
+          items={character.classes.map((cls) => ({
+            title: cls.name,
+            subtitle: cls.subtitle,
+            trailing: `LVL ${cls.level}`,
+          }))}
         />
 
         <BondsCard
@@ -429,7 +429,7 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
-            {skillGroups
+            {character.skillGroups
               .filter((g) => g.className !== 'Tinkerer')
               .map((group) => (
                 <SkillsTable
@@ -444,13 +444,13 @@ function FabU() {
 
         {activeCombatTab === 'spells' ? (
           <>
-            {spellGroups.map((group) => (
+            {character.spellGroups.map((group) => (
               <SpellsTable
                 key={group.className}
                 label={`${group.className} Spells`}
                 title={`${group.className} Spells`}
                 rows={group.spells}
-                onCastSpell={triggerSpellCastBurst}
+                onCastSpell={handleCastSpell}
               />
             ))}
           </>
@@ -482,7 +482,7 @@ function FabU() {
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
-        {skillGroups.map((group) => (
+        {character.skillGroups.map((group) => (
           <SkillsTable
             key={group.className}
             label={`${group.className} Skills`}
@@ -495,8 +495,8 @@ function FabU() {
             variant="body2"
             sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
           >
-            Entropist 10 · Sharpshooter 2 · Tinkerer 1. XP is capped at 10; level up when it reaches
-            10.
+            {character.classes.map((c) => `${c.name} ${c.level}`).join(' · ')}. XP is capped at 10;
+            level up when it reaches 10.
           </Typography>
         </SurfaceCard>
       </>
@@ -529,13 +529,13 @@ function FabU() {
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
-        {spellGroups.map((group) => (
+        {character.spellGroups.map((group) => (
           <SpellsTable
             key={group.className}
             label={`${group.className} Spells`}
             title={`${group.className} Spells`}
             rows={group.spells}
-            onCastSpell={triggerSpellCastBurst}
+            onCastSpell={handleCastSpell}
           />
         ))}
       </>
@@ -628,7 +628,6 @@ function FabU() {
             </IconButton>
           }
           sx={{
-            pt: 3.4,
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
@@ -647,7 +646,8 @@ function FabU() {
                       '& .MuiOutlinedInput-input': {
                         py: 0.72,
                         px: 1,
-                        color: fabUTokens.color.brand,
+                        // highlight = brand (#315c4d) in light mode, yellow (#c5a557) in dark
+                        color: fabUTokens.color.highlight,
                         fontWeight: 700,
                       },
                     }}
@@ -656,7 +656,8 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: fabUTokens.color.brand,
+                      // highlight = brand in light, yellow in dark — matches the Notes pill
+                      color: fabUTokens.color.highlight,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
@@ -681,7 +682,6 @@ function FabU() {
         <SurfaceCard
           label="Notes"
           sx={{
-            pt: 3.4,
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
@@ -713,7 +713,7 @@ function FabU() {
         <HeaderBar
           eyebrow={eyebrow}
           title="Combat"
-          subtitle="Active encounter"
+          subtitle="Stats, status effects, and battle actions"
           actionLabel="Combat"
         />
       );
