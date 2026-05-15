@@ -1,3 +1,5 @@
+import AddIcon from '@mui/icons-material/Add';
+import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -15,15 +17,17 @@ type DetailListCardProps = {
   title?: string;
   items: DetailListItem[];
   subtitle?: string;
+  addLabel?: string;
 };
 
-function DetailListCard({ label, title, items, subtitle }: DetailListCardProps) {
+function DetailListCard({ label, title, items, subtitle, addLabel }: DetailListCardProps) {
   return (
     <SurfaceCard label={label} title={title} subtitle={subtitle}>
       <Stack spacing={1}>
         {items.map((item) => (
           <Stack
             key={`${item.title}-${item.subtitle}`}
+            data-pw="detail-list-row"
             direction="row"
             justifyContent="space-between"
             gap={2}
@@ -65,6 +69,28 @@ function DetailListCard({ label, title, items, subtitle }: DetailListCardProps) 
             ) : null}
           </Stack>
         ))}
+
+        {addLabel ? (
+          <Box
+            sx={{
+              border: `1px dashed ${fabUTokens.color.border}`,
+              borderRadius: '9px',
+              px: 1.3,
+              py: 1.45,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: fabUTokens.color.textSecondary,
+              bgcolor: fabUTokens.color.surfaceMuted,
+              cursor: 'pointer',
+            }}
+          >
+            <AddIcon fontSize="small" />
+            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+              {addLabel}
+            </Typography>
+          </Box>
+        ) : null}
       </Stack>
     </SurfaceCard>
   );

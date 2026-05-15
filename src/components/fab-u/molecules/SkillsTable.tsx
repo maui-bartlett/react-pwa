@@ -21,16 +21,22 @@ type SkillsTableProps = {
 function SkillsTable({ title, rows, subtitle, label, showTitle = false }: SkillsTableProps) {
   return (
     <SurfaceCard label={label ?? title} title={showTitle ? title : undefined} subtitle={subtitle}>
-      <TableContainer sx={{ border: `1px solid ${fabUTokens.color.border}`, borderRadius: '9px' }}>
+      <TableContainer
+        sx={{
+          border: `1px solid ${fabUTokens.color.border}`,
+          borderRadius: '9px',
+          overflowX: 'auto',
+        }}
+      >
         <Table
           size="small"
           sx={{
-            minWidth: 420,
             '& .MuiTableCell-root': {
               borderColor: fabUTokens.color.border,
               py: 0.95,
               px: 1.2,
               fontSize: '0.74rem',
+              color: fabUTokens.color.textPrimary,
             },
             '& .MuiTableCell-head': {
               color: fabUTokens.color.textSecondary,
@@ -60,7 +66,7 @@ function SkillsTable({ title, rows, subtitle, label, showTitle = false }: Skills
                   </Typography>
                 </TableCell>
                 <TableCell>{row.level ?? '—'}</TableCell>
-                <TableCell sx={{ minWidth: 220 }}>{row.effect}</TableCell>
+                <TableCell>{row.effect}</TableCell>
               </TableRow>
             ))}
           </TableBody>

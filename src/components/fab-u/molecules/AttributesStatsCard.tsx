@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 
-import { StatPill, SurfaceCard } from '../atoms';
+import { AttributePill, StatPill, SurfaceCard } from '../atoms';
 import { AttributeRow, StatPillData } from '../types';
 
 type AttributesStatsCardProps = {
@@ -36,6 +36,13 @@ function AttributesStatsCard({
     );
   }
 
+  function toneForCategory(category?: string) {
+    if (category === 'power') return 'danger' as const;
+    if (category === 'focus') return 'accent' as const;
+    if (category === 'speed') return 'warning' as const;
+    return 'success' as const;
+  }
+
   return (
     <SurfaceCard label="Attributes & Stats">
       {topRow.length ? renderStatRow(topRow, topRowTemplate) : null}
@@ -49,24 +56,28 @@ function AttributesStatsCard({
           gap: 0.85,
         }}
       >
-        {bottomRow.map((attribute) => (
-          <StatPill
-            key={attribute.label}
-            label={attribute.label}
-            value={attribute.score}
-            helperText={attribute.modifier || undefined}
-            layout="stacked"
-            tone={
-              attribute.category === 'power'
-                ? 'danger'
-                : attribute.category === 'focus'
-                  ? 'accent'
-                  : attribute.category === 'speed'
-                    ? 'warning'
-                    : 'success'
-            }
-          />
-        ))}
+        {bottomRow.map((attribute) =>
+          attribute.die !== undefined && attribute.onChangeDie ? (
+            <AttributePill
+              key={attribute.label}
+              label={attribute.label}
+              die={attribute.die}
+              modifier={attribute.modifierNum ?? 0}
+              tone={toneForCategory(attribute.category)}
+              onChangeDie={attribute.onChangeDie}
+              onChangeModifier={attribute.onChangeModifier}
+            />
+          ) : (
+            <StatPill
+              key={attribute.label}
+              label={attribute.label}
+              value={attribute.score}
+              helperText={attribute.modifier || undefined}
+              layout="stacked"
+              tone={toneForCategory(attribute.category)}
+            />
+          ),
+        )}
       </Box>
     </SurfaceCard>
   );

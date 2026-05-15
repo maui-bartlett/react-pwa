@@ -1,8 +1,26 @@
 export type FabUTab = 'overview' | 'combat' | 'skills' | 'spells' | 'gear' | 'notes';
 
+export type BondType =
+  | 'Admiration'
+  | 'Loyalty'
+  | 'Affection'
+  | 'Inferiority'
+  | 'Mistrust'
+  | 'Hatred';
+
+export type Bond = {
+  id: string;
+  characterName: string;
+  types: BondType[];
+};
+
 export type CombatSubTab = 'bonds' | 'skills' | 'spells' | 'gear';
 
 export type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
+
+export type DieSize = 'd6' | 'd8' | 'd10' | 'd12' | 'd20';
+
+export type Attribute = { die: DieSize; modifier: number };
 
 export type TabOption<T extends string> = {
   label: string;
@@ -21,6 +39,14 @@ export type StatPillData = {
   tone?: Tone;
   layout?: 'stacked' | 'inline';
   minHeight?: number | string;
+  onChange?: (value: number) => void;
+  onChangeSuffix?: (value: number | null) => void;
+  valueSuffix?: string;
+  /** When set, the committed value is clamped to [0, maxValue]. */
+  maxValue?: number;
+  /** When set, the committed suffix value is clamped to [0, maxValueSuffix]. */
+  maxValueSuffix?: number;
+  pw?: string;
 };
 
 export type AttributeRow = {
@@ -28,6 +54,10 @@ export type AttributeRow = {
   score: string;
   modifier: string;
   category?: string;
+  die?: DieSize;
+  modifierNum?: number;
+  onChangeDie?: (die: DieSize) => void;
+  onChangeModifier?: (mod: number) => void;
 };
 
 export type SkillRow = {

@@ -1,12 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+
+import { useAtom, useAtomValue } from 'jotai';
+import { Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
+  BondType,
+  BondsCard,
   CombatSubTab,
   DetailListCard,
   EquipmentCard,
@@ -24,104 +29,20 @@ import {
   fabUTokens,
 } from '@/components/fab-u';
 
+import {
+  backstoryAnswersState,
+  characterState,
+  derivedStatusEffectsState,
+  statusEffectsState,
+} from './atoms';
+import { skillGroups } from './skills';
+import { spellGroups } from './spells';
+
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Bonds', value: 'bonds' },
   { label: 'Skills', value: 'skills' },
   { label: 'Spells', value: 'spells' },
   { label: 'Gear', value: 'gear' },
-];
-
-const combatAttributeRows = [
-  { label: 'Dexterity', score: 'd8', modifier: '', category: 'speed' },
-  { label: 'Insight', score: 'd10', modifier: '', category: 'support' },
-  { label: 'Might', score: 'd8', modifier: '', category: 'power' },
-  { label: 'Willpower', score: 'd8 + 1', modifier: '', category: 'focus' },
-] as const;
-
-const overviewAttributeRows = [
-  { label: 'Dexterity', score: 'd8', modifier: '', category: 'speed' },
-  { label: 'Insight', score: 'd10', modifier: '', category: 'support' },
-  { label: 'Might', score: 'd8', modifier: '', category: 'power' },
-  { label: 'Willpower', score: 'd8 + 1', modifier: '', category: 'focus' },
-] as const;
-
-const combatResources = [
-  { label: 'Initiative', value: '0', tone: 'neutral' as const },
-  { label: 'Defense', value: '8 (12)', tone: 'success' as const },
-  { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
-  { label: 'FP', value: '4', tone: 'neutral' as const },
-  { label: 'IP', value: '8', tone: 'warning' as const },
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
-] as const;
-
-const overviewResources = [
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
-  { label: 'IP', value: '8', tone: 'warning' as const },
-] as const;
-
-const entropistSkills = [
-  { name: 'Entropic Magic', level: '7', effect: 'Alter fate, time, decay, or probability.' },
-  { name: 'Absorb MP', level: '1', effect: 'Recover MP when magic is turned aside.' },
-  { name: 'Stolen Time', level: '1', effect: 'Read time, weather, and celestial signs.' },
-];
-
-const sharpshooterSkills = [
-  {
-    name: 'Ranged Weapon Mastery',
-    level: '1',
-    effect: 'Improve attacks and damage with ranged weapons.',
-  },
-  {
-    name: 'Crossfire',
-    level: '1',
-    effect: 'Create an opening or apply pressure with ranged attacks.',
-  },
-];
-
-const tinkererSkills = [
-  {
-    name: 'Emergency Item',
-    level: '1',
-    effect: 'Once per conflict, create a useful item or tool.',
-  },
-  {
-    name: 'Improvisation',
-    level: '—',
-    effect: 'Spend IP to solve a practical problem in the scene.',
-  },
-];
-
-const spellRows = [
-  {
-    name: 'Accelerate',
-    cost: '20 MP',
-    target: '1',
-    duration: 'Scene' as const,
-    effect: 'Target takes one extra action on their turn.',
-  },
-  {
-    name: 'Drain Spirit',
-    cost: '5 MP',
-    target: '1',
-    duration: 'Instant' as const,
-    effect: 'HR + 15 MP; recover half as MP.',
-  },
-  {
-    name: 'Stop',
-    cost: '10 MP',
-    target: '1',
-    duration: 'Scene' as const,
-    effect: 'Target performs fewer actions.',
-  },
-  {
-    name: 'Mirror',
-    cost: '10 MP',
-    target: '1',
-    duration: 'Instant' as const,
-    effect: 'Redirect a spell to protect the chosen target.',
-  },
 ];
 
 const gearItems = [
@@ -137,33 +58,11 @@ const gearItems = [
   },
 ];
 
-const bondItems = [
-  { title: 'Jelena', subtitle: 'Loyalty · Affection' },
-  { title: 'Yoru', subtitle: 'Affection' },
-  { title: 'Granada', subtitle: 'Admiration' },
-  { title: 'Juice', subtitle: 'Loyalty' },
-] as const;
-
 const backstoryPrompts = [
-  {
-    question: 'What drove me and my parents out of Infinita?',
-    answer:
-      'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
-  },
-  {
-    question: 'How do I feel about being in Efowyn?',
-    answer:
-      'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
-  },
-  {
-    question: 'How do I feel about the castle in the sky?',
-    answer:
-      "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
-  },
+  { question: 'What drove me and my parents out of Infinita?' },
+  { question: 'How do I feel about being in Efowyn?' },
+  { question: 'How do I feel about the castle in the sky?' },
 ] as const;
-
-const notesBody =
-  'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.';
 
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
@@ -172,7 +71,7 @@ const screenMeta: Record<
   overview: {
     title: 'Radovan "Rad" Milinic',
     subtitle: 'Transfer Student to UoE · Political refugee · Origin: Infinita',
-    actionLabel: 'LV 13',
+    actionLabel: '',
   },
   skills: {
     title: 'Skills & Growth',
@@ -199,10 +98,82 @@ const screenMeta: Record<
 function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
+  const [backstoryAnswers, setBackstoryAnswers] = useAtom(backstoryAnswersState);
+  const [, setStatusEffects] = useAtom(statusEffectsState);
+  const statusEffects = useAtomValue(derivedStatusEffectsState);
+  const handleToggleEffect = (id: string) => {
+    setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+  const [character, setCharacter] = useAtom(characterState);
+  const setInitiative = (v: number) => setCharacter((c) => ({ ...c, initiative: v }));
+  const setDefense = (v: number) => setCharacter((c) => ({ ...c, defense: v }));
+  const setDefenseTemp = (v: number | null) => setCharacter((c) => ({ ...c, defenseTemp: v }));
+  const setMagicDefense = (v: number) => setCharacter((c) => ({ ...c, magicDefense: v }));
+  const setMagicDefenseTemp = (v: number | null) =>
+    setCharacter((c) => ({ ...c, magicDefenseTemp: v }));
+  const setFP = (v: number) => setCharacter((c) => ({ ...c, fabulaPoints: v }));
+  const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
+  const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
+  const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
+  const setCurrentXP = (v: number) => setCharacter((c) => ({ ...c, currentXP: v }));
+  const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
+  const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+  const toggleBondType = (id: string, type: BondType) =>
+    setCharacter((c) => ({
+      ...c,
+      bonds: c.bonds.map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              types: b.types.includes(type)
+                ? b.types.filter((t) => t !== type)
+                : [...b.types, type],
+            }
+          : b,
+      ),
+    }));
+  const addBond = (characterName: string) =>
+    setCharacter((c) => ({
+      ...c,
+      bonds: [
+        ...c.bonds,
+        {
+          id: `${characterName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+          characterName,
+          types: [],
+        },
+      ],
+    }));
+  const removeBond = (id: string) =>
+    setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
 
-  const combatTabLabel = useMemo(() => {
-    return combatTabs.find((option) => option.value === activeCombatTab)?.label ?? 'Bonds';
-  }, [activeCombatTab]);
+  type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
+  function makeAttrRows() {
+    const entries: Array<{ label: string; key: AttrKey; category: string }> = [
+      { label: 'Dexterity', key: 'dex', category: 'speed' },
+      { label: 'Insight', key: 'insight', category: 'support' },
+      { label: 'Might', key: 'might', category: 'power' },
+      { label: 'Willpower', key: 'willpower', category: 'focus' },
+    ];
+    return entries.map(({ label, key, category }) => ({
+      label,
+      score: '',
+      modifier: '',
+      category,
+      die: character.attributes[key].die,
+      modifierNum: character.attributes[key].modifier,
+      onChangeDie: (d: import('@/components/fab-u').DieSize) =>
+        setCharacter((c) => ({
+          ...c,
+          attributes: { ...c.attributes, [key]: { ...c.attributes[key], die: d } },
+        })),
+      onChangeModifier: (m: number) =>
+        setCharacter((c) => ({
+          ...c,
+          attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
+        })),
+    }));
+  }
 
   function renderOverview() {
     return (
@@ -233,38 +204,82 @@ function FabU() {
         </SurfaceCard>
 
         <AttributesStatsCard
-          middleRow={[...overviewResources]}
-          bottomRow={[...overviewAttributeRows]}
+          middleRow={[
+            {
+              label: 'HP',
+              value: String(character.currentHP),
+              valueSuffix: ` / ${character.totalHP}`,
+              tone: 'danger' as const,
+              onChange: setCurrentHP,
+              maxValue: character.totalHP,
+              pw: 'ov-hp',
+            },
+            {
+              label: 'MP',
+              value: String(character.currentMP),
+              valueSuffix: ` / ${character.totalMP}`,
+              tone: 'accent' as const,
+              onChange: setCurrentMP,
+              maxValue: character.totalMP,
+              pw: 'ov-mp',
+            },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              tone: 'warning' as const,
+              onChange: setIP,
+              pw: 'ov-ip',
+            },
+          ]}
+          bottomRow={makeAttrRows()}
         />
 
         <DetailListCard
           label="Classes"
+          addLabel="Class"
           items={[
             {
               title: 'Entropist',
               subtitle: 'Entropic Magic · Absorb MP · Stolen Time',
-              trailing: 'LV 10',
+              trailing: 'LVL 10',
             },
             {
               title: 'Sharpshooter',
               subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP',
-              trailing: 'LV 2',
+              trailing: 'LVL 2',
             },
             {
               title: 'Tinkerer',
               subtitle: 'Emergency Item · improvised gear in conflict',
-              trailing: 'LV 1',
+              trailing: 'LVL 1',
             },
           ]}
         />
 
-        <DetailListCard label="Bonds" items={[...bondItems]} />
+        <BondsCard
+          bonds={character.bonds}
+          onToggleType={toggleBondType}
+          onAddBond={addBond}
+          onRemoveBond={removeBond}
+        />
 
         <SummaryStrip
           metrics={[
-            { label: 'Fabula Points', value: '4' },
-            { label: 'Experience Points', value: '7 / 10' },
-            { label: 'Level', value: '13' },
+            {
+              label: 'Fabula Points',
+              value: String(character.fabulaPoints),
+              pw: 'fp',
+              onChange: setFP,
+            },
+            {
+              label: 'XP',
+              value: String(character.currentXP),
+              valueSuffix: ` / ${character.totalXP}`,
+              pw: 'ov-xp',
+              onChange: setCurrentXP,
+              maxValue: character.totalXP,
+            },
+            { label: 'Level', value: String(character.level), pw: 'ov-level', onChange: setLevel },
           ]}
         />
       </>
@@ -275,25 +290,86 @@ function FabU() {
     return (
       <>
         <AttributesStatsCard
-          topRow={[combatResources[0], combatResources[1], combatResources[2]]}
+          topRow={[
+            {
+              label: 'Defense',
+              value: String(character.defense),
+              valueSuffix:
+                character.defenseTemp === null ? undefined : `(${character.defenseTemp})`,
+              tone: 'success' as const,
+              onChange: setDefense,
+              onChangeSuffix: setDefenseTemp,
+              pw: 'cb-defense',
+            },
+            {
+              label: 'Magic Def.',
+              value: String(character.magicDefense),
+              valueSuffix:
+                character.magicDefenseTemp === null ? undefined : `(${character.magicDefenseTemp})`,
+              tone: 'success' as const,
+              onChange: setMagicDefense,
+              onChangeSuffix: setMagicDefenseTemp,
+              pw: 'cb-magic-defense',
+            },
+            {
+              label: 'Initiative',
+              value: String(character.initiative),
+              tone: 'neutral' as const,
+              onChange: setInitiative,
+              pw: 'cb-initiative',
+            },
+          ]}
           middleRow={[
-            combatResources[3],
-            combatResources[4],
-            combatResources[5],
-            combatResources[6],
+            {
+              label: 'FP',
+              value: String(character.fabulaPoints),
+              tone: 'neutral' as const,
+              onChange: setFP,
+              pw: 'cb-fp',
+            },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              tone: 'warning' as const,
+              onChange: setIP,
+              pw: 'cb-ip',
+            },
+            {
+              label: 'HP',
+              value: String(character.currentHP),
+              valueSuffix: ` / ${character.totalHP}`,
+              tone: 'danger' as const,
+              onChange: setCurrentHP,
+              maxValue: character.totalHP,
+              pw: 'cb-hp',
+            },
+            {
+              label: 'MP',
+              value: String(character.currentMP),
+              valueSuffix: ` / ${character.totalMP}`,
+              tone: 'accent' as const,
+              onChange: setCurrentMP,
+              maxValue: character.totalMP,
+              pw: 'cb-mp',
+            },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
           middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
-          bottomRow={[...combatAttributeRows]}
+          bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
         />
-        <StatusEffectsDiagram />
+        <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
         {activeCombatTab === 'bonds' ? (
           <>
-            <DetailListCard label="Bonds" items={[...bondItems]} />
+            <BondsCard
+              bonds={character.bonds}
+              onToggleType={toggleBondType}
+              onAddBond={addBond}
+              onRemoveBond={removeBond}
+            />
 
             <SurfaceCard label="Actions" title="Battle Actions">
               <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -310,6 +386,7 @@ function FabU() {
                       fontWeight: 700,
                       fontSize: '0.78rem',
                       bgcolor: fabUTokens.color.brand,
+                      color: '#fff',
                       boxShadow: 'none',
                       '&:hover': {
                         bgcolor: fabUTokens.color.brandStrong,
@@ -327,17 +404,30 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
-            <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
-            <SkillsTable
-              label="Sharpshooter Skills"
-              title="Sharpshooter Skills"
-              rows={sharpshooterSkills}
-            />
+            {skillGroups
+              .filter((g) => g.className !== 'Tinkerer')
+              .map((group) => (
+                <SkillsTable
+                  key={group.className}
+                  label={`${group.className} Skills`}
+                  title={`${group.className} Skills`}
+                  rows={group.skills}
+                />
+              ))}
           </>
         ) : null}
 
         {activeCombatTab === 'spells' ? (
-          <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
+          <>
+            {spellGroups.map((group) => (
+              <SpellsTable
+                key={group.className}
+                label={`${group.className} Spells`}
+                title={`${group.className} Spells`}
+                rows={group.spells}
+              />
+            ))}
+          </>
         ) : null}
 
         {activeCombatTab === 'gear' ? (
@@ -353,19 +443,27 @@ function FabU() {
         <SummaryStrip
           label="Progress"
           metrics={[
-            { label: 'LV', value: '13' },
-            { label: 'XP', value: '7 / 10' },
-            { label: 'FP', value: '4' },
-            { label: 'IP', value: '8' },
+            { label: 'LVL', value: String(character.level), pw: 'sk-level', onChange: setLevel },
+            {
+              label: 'XP',
+              value: String(character.currentXP),
+              valueSuffix: ` / ${character.totalXP}`,
+              pw: 'sk-xp',
+              onChange: setCurrentXP,
+              maxValue: character.totalXP,
+            },
+            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
+            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
-        <SkillsTable label="Entropist Skills" title="Entropist Skills" rows={entropistSkills} />
-        <SkillsTable
-          label="Sharpshooter Skills"
-          title="Sharpshooter Skills"
-          rows={sharpshooterSkills}
-        />
-        <SkillsTable label="Tinkerer Skills" title="Tinkerer Skills" rows={tinkererSkills} />
+        {skillGroups.map((group) => (
+          <SkillsTable
+            key={group.className}
+            label={`${group.className} Skills`}
+            title={`${group.className} Skills`}
+            rows={group.skills}
+          />
+        ))}
         <SurfaceCard label="Class Summary">
           <Typography
             variant="body2"
@@ -385,13 +483,34 @@ function FabU() {
         <SummaryStrip
           label="Resources"
           metrics={[
-            { label: 'FP', value: '4' },
-            { label: 'HP', value: '58 / 58' },
-            { label: 'MP', value: '58 / 58' },
-            { label: 'IP', value: '8' },
+            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
+            {
+              label: 'HP',
+              value: String(character.currentHP),
+              valueSuffix: ` / ${character.totalHP}`,
+              pw: 'hp',
+              onChange: setCurrentHP,
+              maxValue: character.totalHP,
+            },
+            {
+              label: 'MP',
+              value: String(character.currentMP),
+              valueSuffix: ` / ${character.totalMP}`,
+              pw: 'mp',
+              onChange: setCurrentMP,
+              maxValue: character.totalMP,
+            },
+            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
-        <SpellsTable label="Entropist Spells" title="Entropist Spells" rows={spellRows} />
+        {spellGroups.map((group) => (
+          <SpellsTable
+            key={group.className}
+            label={`${group.className} Spells`}
+            title={`${group.className} Spells`}
+            rows={group.spells}
+          />
+        ))}
       </>
     );
   }
@@ -403,12 +522,13 @@ function FabU() {
         <SummaryStrip
           label="Inventory Points"
           metrics={[
-            { label: 'IP', value: '8' },
-            { label: 'ZENIT', value: '30' },
+            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
+            { label: 'ZENIT', value: String(character.zennit), pw: 'zennit', onChange: setZennit },
           ]}
         />
         <DetailListCard
           label="Backpack"
+          addLabel="Item"
           items={[
             {
               title: 'Green Crystal',
@@ -425,6 +545,33 @@ function FabU() {
   }
 
   function renderNotes() {
+    const fieldSx = {
+      '& .MuiOutlinedInput-root': {
+        fontSize: '0.84rem',
+        lineHeight: 1.7,
+        color: fabUTokens.color.textSecondary,
+        bgcolor: fabUTokens.color.surface,
+        borderRadius: '10px',
+        boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+        '& fieldset': {
+          borderColor: fabUTokens.color.border,
+          borderRadius: '10px',
+        },
+        '&:hover fieldset': {
+          borderColor: fabUTokens.color.border,
+        },
+        '&.Mui-focused fieldset': {
+          borderColor: fabUTokens.color.textSecondary,
+          borderWidth: 1,
+        },
+      },
+      '& .MuiOutlinedInput-input': {
+        py: 1.05,
+        px: 1.2,
+        color: fabUTokens.color.textSecondary,
+      },
+    };
+
     return (
       <>
         <SurfaceCard
@@ -434,7 +581,7 @@ function FabU() {
           }}
         >
           <Stack spacing={1.5}>
-            {backstoryPrompts.map((prompt) => (
+            {backstoryPrompts.map((prompt, i) => (
               <Stack key={prompt.question} spacing={0.75}>
                 <Typography
                   variant="body2"
@@ -447,27 +594,18 @@ function FabU() {
                 >
                   {prompt.question}
                 </Typography>
-                <Box
-                  sx={{
-                    border: `1px solid ${fabUTokens.color.border}`,
-                    borderRadius: '10px',
-                    bgcolor: fabUTokens.color.surface,
-                    boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
-                    px: 1.2,
-                    py: 1.05,
+                <TextField
+                  multiline
+                  fullWidth
+                  value={backstoryAnswers[i] ?? ''}
+                  onChange={(e) => {
+                    const next = [...backstoryAnswers];
+                    next[i] = e.target.value;
+                    setBackstoryAnswers(next);
                   }}
-                >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: fabUTokens.color.textSecondary,
-                      fontSize: '0.84rem',
-                      lineHeight: 1.7,
-                    }}
-                  >
-                    {prompt.answer}
-                  </Typography>
-                </Box>
+                  variant="outlined"
+                  sx={fieldSx}
+                />
               </Stack>
             ))}
           </Stack>
@@ -479,37 +617,36 @@ function FabU() {
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
-          <Box
-            sx={{
-              border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '10px',
-              bgcolor: fabUTokens.color.surface,
-              boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
-              px: 1.2,
-              py: 1.05,
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
-            >
-              {notesBody}
-            </Typography>
-          </Box>
+          <TextField
+            multiline
+            fullWidth
+            value={character.notes}
+            onChange={(e) => setCharacter((c) => ({ ...c, notes: e.target.value }))}
+            variant="outlined"
+            sx={fieldSx}
+          />
         </SurfaceCard>
       </>
     );
   }
 
+  const eyebrow =
+    activeTab === 'overview' ? (
+      <>
+        Fabula <Sparkles size={10} /> Ultima
+      </>
+    ) : (
+      `Rad • LVL ${character.level}`
+    );
+
   const header = (() => {
     if (activeTab === 'combat') {
       return (
         <HeaderBar
-          variant="compact"
-          eyebrow="RAD · LVL 13"
-          title="Fabula Ultima"
+          eyebrow={eyebrow}
+          title="Combat"
           subtitle="Active encounter"
-          actionLabel={combatTabLabel}
+          actionLabel="Combat"
         />
       );
     }
@@ -518,10 +655,10 @@ function FabU() {
 
     return (
       <HeaderBar
-        eyebrow="FABULA + ULTIMA"
+        eyebrow={eyebrow}
         title={meta.title}
         subtitle={meta.subtitle}
-        actionLabel={meta.actionLabel}
+        actionLabel={activeTab === 'overview' ? `LVL ${character.level}` : meta.actionLabel}
       />
     );
   })();

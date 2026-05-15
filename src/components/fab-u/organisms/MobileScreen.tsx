@@ -104,6 +104,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
       </Stack>
       <Box
         ref={footerRef}
+        data-pw="app-footer"
         sx={{
           position: 'absolute',
           right: 0,
@@ -111,6 +112,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
           left: 0,
           px: 1,
           py: 0.85,
+          zIndex: 10,
           borderTop: `1px solid ${fabUTokens.color.border}`,
           bgcolor: fabUTokens.color.surface,
         }}
