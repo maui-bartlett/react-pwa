@@ -121,7 +121,7 @@ function AttributePill({
         }}
       >
         <Stack spacing={0.08} sx={{ width: '100%', justifyContent: 'center' }}>
-          <Stack direction="column" alignItems="flex-start" gap={0.28}>
+          <Stack direction="column" alignItems="flex-start" gap={0.78}>
             <Typography
               variant="caption"
               sx={{
