@@ -646,7 +646,8 @@ function FabU() {
                       '& .MuiOutlinedInput-input': {
                         py: 0.72,
                         px: 1,
-                        color: fabUTokens.color.brand,
+                        // highlight = brand (#315c4d) in light mode, yellow (#c5a557) in dark
+                        color: fabUTokens.color.highlight,
                         fontWeight: 700,
                       },
                     }}
@@ -655,7 +656,8 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: fabUTokens.color.brand,
+                      // highlight = brand in light, yellow in dark — matches the Notes pill
+                      color: fabUTokens.color.highlight,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
