@@ -120,8 +120,8 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
 
   test('Swipe left below threshold springs row back, bond stays', async ({ page }) => {
     const row = page.locator('[data-pw="bond-row-jelena"]');
-    // Drag only 50px (below 100px threshold)
-    await touchSwipeLeft(page, 'jelena', 50);
+    // Drag only 20px (below 35px commit threshold)
+    await touchSwipeLeft(page, 'jelena', 20);
 
     // Row should remain visible
     await expect(row).toBeVisible();
@@ -187,12 +187,12 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(page.locator('text=Juice')).toHaveCount(0);
   });
 
-  // ── Sub-commit drag (-40px): no visual slide ─────────────────────────────
-  // 40px is below the commit threshold (~98px on 393px viewport), so the row
+  // ── Sub-commit drag (-20px): no visual slide ─────────────────────────────
+  // 20px is below the flat 35px commit threshold, so the row
   // must not translate at all — red channel stays hidden.
 
-  test('Sub-commit -40px: no visual slide, red channel absent', async ({ page }) => {
-    await touchSwipeLeftPartial(page, 'jelena', 40);
+  test('Sub-commit -20px: no visual slide, red channel absent', async ({ page }) => {
+    await touchSwipeLeftPartial(page, 'jelena', 20);
 
     await expect(page.locator('[data-pw="bond-red-channel-jelena"]')).toHaveCount(0);
 
@@ -207,25 +207,25 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     expect(isZero, `expected no horizontal translate, got: ${transform}`).toBe(true);
   });
 
-  // ── Red channel absent below commit threshold (-50px) ────────────────────
-  // 50px < ~98px commit threshold → row doesn't slide, red channel not rendered.
+  // ── Red channel absent below commit threshold (-20px) ────────────────────
+  // 20px < 35px flat commit threshold → row doesn't slide, red channel not rendered.
 
-  test('Mid-swipe -50px: below commit threshold, no visual slide, red channel absent', async ({
+  test('Mid-swipe -20px: below commit threshold, no visual slide, red channel absent', async ({
     page,
   }) => {
-    await touchSwipeLeftPartial(page, 'jelena', 50);
+    await touchSwipeLeftPartial(page, 'jelena', 20);
     await expect(page.locator('[data-pw="bond-red-channel-jelena"]')).toHaveCount(0);
   });
 
-  // ── Red channel + trash icon above commit threshold (-100px) ─────────────
-  // 100px > ~98px commit threshold → row slides, red channel visible.
-  // delete threshold = commitThreshold + 60 ≈ 158px on 393px viewport.
-  // progress = 100/158 ≈ 0.63 → opacity≈0.63, scale≈0.85.
+  // ── Red channel + trash icon above commit threshold (-45px) ──────────────
+  // 45px > 35px flat commit threshold → row slides, red channel visible.
+  // delete threshold = 35 + 25 = 60px.
+  // progress = 45/60 = 0.75 → opacity≈0.75, scale≈0.90.
 
-  test('Mid-swipe -100px: red channel visible, trash opacity≈0.63, scale≈0.85', async ({
+  test('Mid-swipe -45px: red channel visible, trash opacity≈0.75, scale≈0.90', async ({
     page,
   }) => {
-    await touchSwipeLeftPartial(page, 'jelena', 100);
+    await touchSwipeLeftPartial(page, 'jelena', 45);
 
     const redChannel = page.locator('[data-pw="bond-red-channel-jelena"]');
     await expect(redChannel).toBeVisible();
@@ -234,13 +234,13 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(trash).toBeVisible();
 
     const opacity = await trash.evaluate((el) => (el as HTMLElement).style.opacity);
-    expect(parseFloat(opacity)).toBeCloseTo(0.63, 1);
+    expect(parseFloat(opacity)).toBeCloseTo(0.75, 1);
 
     const scale = await trash.evaluate((el) => {
       const m = (el as HTMLElement).style.transform.match(/scale\(([^)]+)\)/);
       return m ? parseFloat(m[1]) : NaN;
     });
-    expect(scale).toBeCloseTo(0.85, 1);
+    expect(scale).toBeCloseTo(0.9, 1);
   });
 });
 

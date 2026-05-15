@@ -28,7 +28,7 @@ const ALL_BOND_TYPES: BondType[] = [
   'Hatred',
 ];
 
-const COMMIT_THRESHOLD_EXTRA = 30; // extra px past commitThreshold to trigger delete
+const COMMIT_THRESHOLD_EXTRA = 25; // extra px past commitThreshold to trigger delete (total = 60px)
 const DELETE_RED = '#d32f2f';
 
 type BondRowProps = {
@@ -45,7 +45,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
   const [removing, setRemoving] = useState(false);
   const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const rowElRef = useRef<HTMLElement | null>(null);
-  const commitThresholdRef = useRef(30);
+  const commitThresholdRef = useRef(35);
   const committedRef = useRef(false);
 
   function triggerRemove() {
@@ -87,7 +87,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
 
     const onTouchStart = (e: TouchEvent) => {
       touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      commitThresholdRef.current = 30;
+      commitThresholdRef.current = 35;
       committedRef.current = false;
     };
 
