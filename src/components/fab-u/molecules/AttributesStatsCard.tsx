@@ -44,7 +44,7 @@ function AttributesStatsCard({
   }
 
   return (
-    <SurfaceCard label="Attributes & Stats" sx={{ pt: 2.65 }}>
+    <SurfaceCard label="Attributes & Stats">
       {topRow.length ? renderStatRow(topRow, topRowTemplate) : null}
 
       {middleRow.length ? renderStatRow(middleRow, middleRowTemplate) : null}

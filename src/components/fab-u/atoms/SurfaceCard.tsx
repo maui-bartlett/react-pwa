@@ -42,7 +42,7 @@ function SurfaceCard({
         bgcolor: fabUTokens.color.surface,
         boxShadow: fabUTokens.shadow.soft,
         p: 1.65,
-        pt: label ? 2.3 : 1.65,
+        pt: label ? 3.4 : 1.65,
         backgroundImage: `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.62)} 0%, ${fabUTokens.color.surface} 24%)`,
         ...sx,
       }}
