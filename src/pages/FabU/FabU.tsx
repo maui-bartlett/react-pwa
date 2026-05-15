@@ -26,6 +26,7 @@ import {
   PrimaryNavBar,
   SegmentedTabs,
   SkillsTable,
+  SpellCastOverlay,
   SpellsTable,
   StatusEffectsDiagram,
   SummaryStrip,
@@ -101,6 +102,7 @@ function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
+  const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -162,6 +164,13 @@ function FabU() {
         i === index ? { ...item, response } : item,
       ),
     }));
+  const triggerSpellCastBurst = () => {
+    const id = Date.now();
+    setSpellCastBurstId(id);
+    window.setTimeout(() => {
+      setSpellCastBurstId((current) => (current === id ? null : current));
+    }, 980);
+  };
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
@@ -195,7 +204,7 @@ function FabU() {
     return (
       <>
         <SurfaceCard label="Traits">
-          <Stack spacing={1}>
+          <Stack spacing={1} sx={{ pl: 1.18 }}>
             {[
               ['IDENTITY', 'Transfer Student to UoE'],
               ['THEME', 'Belonging'],
@@ -204,7 +213,7 @@ function FabU() {
               <Stack key={label} direction="row" justifyContent="space-between" gap={2}>
                 <Typography
                   variant="caption"
-                  sx={{ color: fabUTokens.color.textSecondary, minWidth: 76 }}
+                  sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, minWidth: 76 }}
                 >
                   {label}
                 </Typography>
@@ -441,6 +450,7 @@ function FabU() {
                 label={`${group.className} Spells`}
                 title={`${group.className} Spells`}
                 rows={group.spells}
+                onCastSpell={triggerSpellCastBurst}
               />
             ))}
           </>
@@ -525,6 +535,7 @@ function FabU() {
             label={`${group.className} Spells`}
             title={`${group.className} Spells`}
             rows={group.spells}
+            onCastSpell={triggerSpellCastBurst}
           />
         ))}
       </>
@@ -796,6 +807,11 @@ function FabU() {
           <MobileScreen
             header={header}
             footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+            overlay={
+              spellCastBurstId === null ? undefined : (
+                <SpellCastOverlay burstId={spellCastBurstId} />
+              )
+            }
           >
             {content}
           </MobileScreen>

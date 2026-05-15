@@ -8,9 +8,10 @@ import { useFabUTokens } from '../ThemeContext';
 type MobileScreenProps = PropsWithChildren<{
   header: ReactNode;
   footer: ReactNode;
+  overlay?: ReactNode;
 }>;
 
-function MobileScreen({ header, footer, children }: MobileScreenProps) {
+function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) {
   const fabUTokens = useFabUTokens();
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -55,6 +56,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
 
   return (
     <Box
+      data-pw="mobile-screen"
       sx={{
         position: 'relative',
         width: '100%',
@@ -120,6 +122,7 @@ function MobileScreen({ header, footer, children }: MobileScreenProps) {
       >
         {footer}
       </Box>
+      {overlay}
     </Box>
   );
 }

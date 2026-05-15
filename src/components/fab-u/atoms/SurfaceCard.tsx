@@ -56,7 +56,7 @@ function SurfaceCard({
             left: 12,
             transform: 'translateY(-50%)',
             px: 0.28,
-            bgcolor: fabUTokens.color.canvas,
+            bgcolor: 'transparent',
           }}
         >
           <SectionLabel label={label} />

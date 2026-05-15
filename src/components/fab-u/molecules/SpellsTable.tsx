@@ -1,6 +1,5 @@
 import { Fragment, useState } from 'react';
 
-import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Box from '@mui/material/Box';
@@ -23,6 +22,7 @@ type SpellsTableProps = {
   title?: string;
   label?: string;
   showTitle?: boolean;
+  onCastSpell?: (spellName: string) => void;
 };
 
 function SpellsTable({
@@ -30,21 +30,13 @@ function SpellsTable({
   title = 'Prepared spells',
   label,
   showTitle = false,
+  onCastSpell,
 }: SpellsTableProps) {
   const fabUTokens = useFabUTokens();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [burst, setBurst] = useState<{ rowName: string; id: number } | null>(null);
 
   const toggleRow = (name: string) => {
     setExpandedRow((prev) => (prev === name ? null : name));
-  };
-
-  const castSpell = (name: string) => {
-    const id = Date.now();
-    setBurst({ rowName: name, id });
-    window.setTimeout(() => {
-      setBurst((current) => (current?.id === id ? null : current));
-    }, 980);
   };
 
   return (
@@ -186,10 +178,9 @@ function SpellsTable({
                             size="small"
                             onClick={(event) => {
                               event.stopPropagation();
-                              castSpell(row.name);
+                              onCastSpell?.(row.name);
                             }}
                             sx={{
-                              position: 'relative',
                               justifySelf: 'end',
                               width: 68,
                               minWidth: 68,
@@ -206,151 +197,9 @@ function SpellsTable({
                                 bgcolor: fabUTokens.color.brandStrong,
                                 boxShadow: 'none',
                               },
-                              '@keyframes spellCastBurst': {
-                                '0%': {
-                                  opacity: 0,
-                                  transform: 'translate(-50%, -50%) scale(0.2) rotate(0deg)',
-                                },
-                                '14%': {
-                                  opacity: 1,
-                                  transform: 'translate(-50%, -50%) scale(1.35) rotate(12deg)',
-                                },
-                                '62%': {
-                                  opacity: 1,
-                                },
-                                '100%': {
-                                  opacity: 0,
-                                  transform:
-                                    'translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(0.78) rotate(var(--burst-rotate))',
-                                },
-                              },
-                              '@keyframes spellCastFlash': {
-                                '0%': {
-                                  opacity: 0,
-                                  transform: 'translate(-50%, -50%) scale(0.45)',
-                                },
-                                '18%': {
-                                  opacity: 0.75,
-                                  transform: 'translate(-50%, -50%) scale(1.15)',
-                                },
-                                '100%': {
-                                  opacity: 0,
-                                  transform: 'translate(-50%, -50%) scale(2.35)',
-                                },
-                              },
                             }}
                           >
                             Cast
-                            {burst?.rowName === row.name ? (
-                              <Box
-                                key={burst.id}
-                                component="span"
-                                sx={{
-                                  pointerEvents: 'none',
-                                  position: 'absolute',
-                                  inset: 0,
-                                }}
-                              >
-                                <Box
-                                  component="span"
-                                  sx={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    width: 40,
-                                    height: 40,
-                                    border: '2px solid rgba(240, 204, 95, 0.82)',
-                                    borderRadius: '50%',
-                                    boxShadow:
-                                      '0 0 0 3px rgba(255, 255, 255, 0.42), 0 0 18px rgba(240, 204, 95, 0.72)',
-                                    animation: 'spellCastFlash 560ms ease-out both',
-                                  }}
-                                />
-                                {[
-                                  {
-                                    color: '#ffffff',
-                                    x: '-46px',
-                                    y: '-34px',
-                                    rotate: '-120deg',
-                                    size: 21,
-                                  },
-                                  {
-                                    color: '#f0cc5f',
-                                    x: '-18px',
-                                    y: '-52px',
-                                    rotate: '-42deg',
-                                    size: 27,
-                                  },
-                                  {
-                                    color: '#ffffff',
-                                    x: '22px',
-                                    y: '-48px',
-                                    rotate: '48deg',
-                                    size: 22,
-                                  },
-                                  {
-                                    color: '#f0cc5f',
-                                    x: '52px',
-                                    y: '-22px',
-                                    rotate: '128deg',
-                                    size: 25,
-                                  },
-                                  {
-                                    color: '#ffffff',
-                                    x: '48px',
-                                    y: '28px',
-                                    rotate: '218deg',
-                                    size: 21,
-                                  },
-                                  {
-                                    color: '#f0cc5f',
-                                    x: '16px',
-                                    y: '50px',
-                                    rotate: '284deg',
-                                    size: 26,
-                                  },
-                                  {
-                                    color: '#ffffff',
-                                    x: '-24px',
-                                    y: '45px',
-                                    rotate: '338deg',
-                                    size: 20,
-                                  },
-                                  {
-                                    color: '#f0cc5f',
-                                    x: '-52px',
-                                    y: '15px',
-                                    rotate: '-212deg',
-                                    size: 23,
-                                  },
-                                  {
-                                    color: '#ffffff',
-                                    x: '0px',
-                                    y: '-4px',
-                                    rotate: '84deg',
-                                    size: 18,
-                                  },
-                                ].map((star, index) => (
-                                  <AutoAwesomeOutlinedIcon
-                                    key={`${star.x}-${star.y}`}
-                                    sx={{
-                                      '--burst-x': star.x,
-                                      '--burst-y': star.y,
-                                      '--burst-rotate': star.rotate,
-                                      position: 'absolute',
-                                      top: '50%',
-                                      left: '50%',
-                                      color: star.color,
-                                      fontSize: star.size,
-                                      strokeWidth: 2.4,
-                                      filter:
-                                        'drop-shadow(0 1px 2px rgba(38, 73, 61, 0.42)) drop-shadow(0 0 8px rgba(240, 204, 95, 0.55))',
-                                      animation: `spellCastBurst 900ms cubic-bezier(0.16, 1, 0.3, 1) ${index * 36}ms both`,
-                                    }}
-                                  />
-                                ))}
-                              </Box>
-                            ) : null}
                           </Button>
                         </Box>
                       </Collapse>

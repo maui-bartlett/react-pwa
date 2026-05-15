@@ -66,15 +66,17 @@ function AttributePill({
           backgroundColor: fabUTokens.color.surface,
           display: 'flex',
           alignItems: 'center',
+          boxSizing: 'border-box',
           px: 1.1,
           py: 0.6,
           minWidth: 0,
+          minHeight: 48,
           cursor: editable ? 'pointer' : 'default',
           transition: 'border-color 150ms ease',
         }}
       >
         <Stack spacing={0.08} sx={{ width: '100%', justifyContent: 'center' }}>
-          <Stack direction="column" alignItems="flex-start" gap={0.12}>
+          <Stack direction="column" alignItems="flex-start" gap={0.28}>
             <Typography
               variant="caption"
               sx={{
@@ -145,6 +147,9 @@ function AttributePill({
               fontFamily: 'inherit',
               fontSize: '0.88rem',
               fontWeight: 700,
+              lineHeight: 1,
+              height: 30,
+              boxSizing: 'border-box',
               padding: '4px 8px',
               borderRadius: 8,
               border: `1px solid ${fabUTokens.color.border}`,
@@ -175,6 +180,7 @@ function AttributePill({
             Mod
           </Typography>
           <InputBase
+            data-pw="attr-mod-input-shell"
             value={draftMod}
             placeholder="0"
             inputProps={{
@@ -185,6 +191,9 @@ function AttributePill({
                 textAlign: 'center',
                 fontWeight: 700,
                 fontSize: '0.88rem',
+                lineHeight: 1,
+                height: '100%',
+                boxSizing: 'border-box',
                 padding: 0,
                 color: fabUTokens.color.textPrimary,
               },
@@ -200,9 +209,12 @@ function AttributePill({
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
               borderRadius: '8px',
+              boxSizing: 'border-box',
+              height: 30,
+              alignItems: 'center',
               px: 0.75,
               py: 0.5,
-              '& input': { p: 0 },
+              '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
             }}
           />
         </Stack>

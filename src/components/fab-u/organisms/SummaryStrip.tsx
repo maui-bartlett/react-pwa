@@ -68,8 +68,10 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                 bgcolor: fabUTokens.color.surface,
                 display: 'flex',
                 alignItems: 'center',
+                boxSizing: 'border-box',
                 px: 1.05,
                 py: 0.6,
+                minHeight: 52,
                 cursor: editable && !isEditing ? 'text' : 'default',
                 transition: 'border-color 150ms ease',
               }}
@@ -79,7 +81,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                   direction="column"
                   justifyContent="space-between"
                   alignItems="flex-start"
-                  gap={0.12}
+                  gap={0.45}
                 >
                   <Typography
                     variant="caption"
