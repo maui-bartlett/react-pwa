@@ -45,16 +45,6 @@ const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Gear', value: 'gear' },
 ];
 
-const combatResources = [
-  { label: 'Initiative', value: '0', tone: 'neutral' as const },
-  { label: 'Defense', value: '8 (12)', tone: 'success' as const },
-  { label: 'Magic Def.', value: '8 (12)', tone: 'success' as const },
-  { label: 'FP', value: '4', tone: 'neutral' as const },
-  { label: 'IP', value: '8', tone: 'warning' as const },
-  { label: 'HP', value: '58 / 58', tone: 'danger' as const },
-  { label: 'MP', value: '58 / 58', tone: 'accent' as const },
-] as const;
-
 const gearItems = [
   {
     name: 'Pistol',
@@ -115,6 +105,12 @@ function FabU() {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
   const [character, setCharacter] = useAtom(characterState);
+  const setInitiative = (v: number) => setCharacter((c) => ({ ...c, initiative: v }));
+  const setDefense = (v: number) => setCharacter((c) => ({ ...c, defense: v }));
+  const setDefenseTemp = (v: number | null) => setCharacter((c) => ({ ...c, defenseTemp: v }));
+  const setMagicDefense = (v: number) => setCharacter((c) => ({ ...c, magicDefense: v }));
+  const setMagicDefenseTemp = (v: number | null) =>
+    setCharacter((c) => ({ ...c, magicDefenseTemp: v }));
   const setFP = (v: number) => setCharacter((c) => ({ ...c, fabulaPoints: v }));
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
@@ -294,7 +290,35 @@ function FabU() {
     return (
       <>
         <AttributesStatsCard
-          topRow={[combatResources[0], combatResources[1], combatResources[2]]}
+          topRow={[
+            {
+              label: 'Defense',
+              value: String(character.defense),
+              valueSuffix:
+                character.defenseTemp === null ? undefined : `(${character.defenseTemp})`,
+              tone: 'success' as const,
+              onChange: setDefense,
+              onChangeSuffix: setDefenseTemp,
+              pw: 'cb-defense',
+            },
+            {
+              label: 'Magic Def.',
+              value: String(character.magicDefense),
+              valueSuffix:
+                character.magicDefenseTemp === null ? undefined : `(${character.magicDefenseTemp})`,
+              tone: 'success' as const,
+              onChange: setMagicDefense,
+              onChangeSuffix: setMagicDefenseTemp,
+              pw: 'cb-magic-defense',
+            },
+            {
+              label: 'Initiative',
+              value: String(character.initiative),
+              tone: 'neutral' as const,
+              onChange: setInitiative,
+              pw: 'cb-initiative',
+            },
+          ]}
           middleRow={[
             {
               label: 'FP',

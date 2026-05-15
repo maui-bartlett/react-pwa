@@ -16,20 +16,30 @@ function StatPill({
   layout = 'stacked',
   minHeight,
   onChange,
+  onChangeSuffix,
   valueSuffix,
   maxValue,
+  maxValueSuffix,
   pw,
 }: StatPillData) {
   const [editing, setEditing] = useState(false);
+  const [editingSuffix, setEditingSuffix] = useState(false);
   const [draft, setDraft] = useState('');
+  const [suffixDraft, setSuffixDraft] = useState('');
   const toneStyles = getToneStyles(tone);
   const inline = layout === 'inline';
   const editable = !!onChange;
 
   function openEdit() {
     if (!onChange) return;
-    setDraft(value);
+    setDraft(value.replace(/[^0-9]/g, ''));
     setEditing(true);
+  }
+
+  function openSuffixEdit() {
+    if (!onChangeSuffix) return;
+    setSuffixDraft(valueSuffix?.replace(/[^0-9]/g, '') ?? '');
+    setEditingSuffix(true);
   }
 
   function commit() {
@@ -40,6 +50,20 @@ function StatPill({
       onChange(val);
     }
     setEditing(false);
+  }
+
+  function commitSuffix() {
+    if (onChangeSuffix) {
+      if (!suffixDraft.length) {
+        onChangeSuffix(null);
+      } else {
+        const n = parseInt(suffixDraft, 10);
+        let val = isNaN(n) ? 0 : Math.max(0, n);
+        if (maxValueSuffix !== undefined) val = Math.min(val, maxValueSuffix);
+        onChangeSuffix(val);
+      }
+    }
+    setEditingSuffix(false);
   }
 
   // Use ch-based width matching the current value length so the text stays
@@ -53,7 +77,7 @@ function StatPill({
       inputProps={{
         inputMode: 'numeric',
         min: 0,
-        max: 999,
+        max: maxValue,
         'data-pw': pw ? `statpill-${pw}-input` : undefined,
       }}
       value={draft}
@@ -135,19 +159,43 @@ function StatPill({
           {valueSuffix ? (
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
               {valueEl}
-              <Typography
-                data-pw={pw ? `statpill-${pw}-suffix` : undefined}
-                variant="h6"
-                sx={{
-                  color: fabUTokens.color.textSecondary,
-                  fontWeight: 700,
-                  fontSize: inline ? '0.96rem' : '0.98rem',
-                  lineHeight: 1.04,
-                  pointerEvents: 'none',
-                }}
-              >
-                {valueSuffix}
-              </Typography>
+              {editingSuffix ? (
+                <InputBase
+                  inputProps={{
+                    inputMode: 'numeric',
+                    min: 0,
+                    max: maxValueSuffix,
+                    'data-pw': pw ? `statpill-${pw}-suffix-input` : undefined,
+                  }}
+                  value={suffixDraft}
+                  autoFocus
+                  onChange={(e) => setSuffixDraft(e.target.value.replace(/[^0-9]/g, ''))}
+                  onBlur={commitSuffix}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur();
+                    if (e.key === 'Escape') setEditingSuffix(false);
+                  }}
+                  sx={{ p: 0, '& input': { p: 0, width: `${Math.max(suffixDraft.length, 1)}ch` } }}
+                />
+              ) : (
+                <Typography
+                  data-pw={pw ? `statpill-${pw}-suffix` : undefined}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openSuffixEdit();
+                  }}
+                  variant="h6"
+                  sx={{
+                    color: fabUTokens.color.textSecondary,
+                    fontWeight: 700,
+                    fontSize: inline ? '0.96rem' : '0.98rem',
+                    lineHeight: 1.04,
+                    cursor: onChangeSuffix ? 'text' : 'default',
+                  }}
+                >
+                  {valueSuffix}
+                </Typography>
+              )}
             </Box>
           ) : (
             valueEl
