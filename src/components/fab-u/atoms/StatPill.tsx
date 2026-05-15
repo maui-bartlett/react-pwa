@@ -289,8 +289,10 @@ function StatPill({
           sx: {
             p: 1.5,
             display: 'flex',
-            gap: 1.5,
-            alignItems: 'flex-end',
+            flexDirection: 'column',
+            gap: 1.25,
+            width: 160,
+            maxWidth: 'min(90vw, 200px)',
             bgcolor: fabUTokens.color.surface,
             border: `1px solid ${fabUTokens.color.border}`,
             borderRadius: '12px',
@@ -323,10 +325,13 @@ function StatPill({
                 inputMode: 'numeric',
                 'data-pw': pw ? `statpill-${pw}-${field.pwSuffix}` : undefined,
                 style: {
-                  width: '3.5ch',
+                  width: '100%',
                   textAlign: 'center',
                   fontWeight: 700,
                   fontSize: '0.88rem',
+                  lineHeight: 1,
+                  height: '100%',
+                  boxSizing: 'border-box',
                   padding: 0,
                   color: fabUTokens.color.textPrimary,
                 },
@@ -341,11 +346,15 @@ function StatPill({
                 }
               }}
               sx={{
-                border: `1px solid ${fabUTokens.color.border}`,
+                border: `1px solid ${fabUTokens.color.brand}`,
                 borderRadius: '8px',
+                boxSizing: 'border-box',
+                height: 30,
+                width: '100%',
+                alignItems: 'center',
                 px: 0.75,
                 py: 0.5,
-                '& input': { p: 0 },
+                '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
               }}
             />
           </Stack>

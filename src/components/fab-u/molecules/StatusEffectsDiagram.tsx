@@ -1,7 +1,5 @@
-import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 
-import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
 import StatusPillGroup from './StatusPillGroup';
 
@@ -51,26 +49,16 @@ const groups: StatusGroup[] = [
 ];
 
 function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramProps) {
-  const fabUTokens = useFabUTokens();
   const withSelected = (node: StatusNode) => ({ ...node, selected: !!activeEffects[node.id] });
 
   return (
     <SurfaceCard title="Status Effects">
-      <Stack direction="row" alignItems="center" justifyContent="center" gap={0.5}>
+      <Stack direction="row" alignItems="center" justifyContent="center" gap={1}>
         <StatusPillGroup
           topLeft={withSelected(groups[0].topLeft)}
           topRight={withSelected(groups[0].topRight)}
           result={withSelected(groups[0].result)}
           onToggle={onToggle}
-        />
-        <Box
-          sx={{
-            width: 1,
-            alignSelf: 'stretch',
-            minHeight: 90,
-            bgcolor: fabUTokens.color.border,
-            opacity: 0.9,
-          }}
         />
         <StatusPillGroup
           topLeft={withSelected(groups[1].topLeft)}

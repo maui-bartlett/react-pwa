@@ -183,7 +183,7 @@ function AttributePill({
             value={die}
             onChange={(e) => onChangeDie?.(e.target.value as DieSize)}
             style={selectStyle(
-              fabUTokens.color.border,
+              fabUTokens.color.brand,
               fabUTokens.color.surface,
               fabUTokens.color.textPrimary,
             )}
@@ -230,7 +230,7 @@ function AttributePill({
               if (e.key === 'Escape') setAnchorEl(null);
             }}
             sx={{
-              border: `1px solid ${fabUTokens.color.border}`,
+              border: `1px solid ${fabUTokens.color.brand}`,
               borderRadius: '8px',
               boxSizing: 'border-box',
               height: 30,
@@ -255,7 +255,7 @@ function AttributePill({
               setDraftTemp(val === '' ? null : (val as DieSize));
             }}
             style={selectStyle(
-              fabUTokens.color.border,
+              fabUTokens.color.brand,
               fabUTokens.color.surface,
               fabUTokens.color.textPrimary,
             )}
