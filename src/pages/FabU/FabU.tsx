@@ -1,12 +1,13 @@
 import { useState } from 'react';
 
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { Sparkles } from 'lucide-react';
+import { Check, Pencil, Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -29,12 +30,7 @@ import {
   fabUTokens,
 } from '@/components/fab-u';
 
-import {
-  backstoryAnswersState,
-  characterState,
-  derivedStatusEffectsState,
-  statusEffectsState,
-} from './atoms';
+import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
 import { skillGroups } from './skills';
 import { spellGroups } from './spells';
 
@@ -57,12 +53,6 @@ const gearItems = [
     description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
   },
 ];
-
-const backstoryPrompts = [
-  { question: 'What drove me and my parents out of Infinita?' },
-  { question: 'How do I feel about being in Efowyn?' },
-  { question: 'How do I feel about the castle in the sky?' },
-] as const;
 
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
@@ -98,7 +88,7 @@ const screenMeta: Record<
 function FabU() {
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
-  const [backstoryAnswers, setBackstoryAnswers] = useAtom(backstoryAnswersState);
+  const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -146,6 +136,20 @@ function FabU() {
     }));
   const removeBond = (id: string) =>
     setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
+  const updateBackstoryPrompt = (index: number, prompt: string) =>
+    setCharacter((c) => ({
+      ...c,
+      backstoryPrompts: c.backstoryPrompts.map((item, i) =>
+        i === index ? { ...item, prompt } : item,
+      ),
+    }));
+  const updateBackstoryResponse = (index: number, response: string) =>
+    setCharacter((c) => ({
+      ...c,
+      backstoryPrompts: c.backstoryPrompts.map((item, i) =>
+        i === index ? { ...item, response } : item,
+      ),
+    }));
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
@@ -576,33 +580,71 @@ function FabU() {
       <>
         <SurfaceCard
           label="Backstory"
+          actions={
+            <IconButton
+              aria-label={
+                isEditingBackstoryPrompts
+                  ? 'Save backstory prompt changes'
+                  : 'Edit backstory prompts'
+              }
+              size="small"
+              onClick={() => setIsEditingBackstoryPrompts((value) => !value)}
+              sx={{
+                width: 30,
+                height: 30,
+                color: fabUTokens.color.brand,
+                border: `1px solid ${fabUTokens.color.border}`,
+                bgcolor: fabUTokens.color.surface,
+                '&:hover': {
+                  bgcolor: fabUTokens.color.surfaceMuted,
+                },
+              }}
+            >
+              {isEditingBackstoryPrompts ? <Check size={16} /> : <Pencil size={15} />}
+            </IconButton>
+          }
           sx={{
             backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
           <Stack spacing={1.5}>
-            {backstoryPrompts.map((prompt, i) => (
-              <Stack key={prompt.question} spacing={0.75}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: fabUTokens.color.brand,
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    lineHeight: 1.45,
-                  }}
-                >
-                  {prompt.question}
-                </Typography>
+            {character.backstoryPrompts.map((backstoryPrompt, i) => (
+              <Stack key={`backstory-${i}`} spacing={0.75}>
+                {isEditingBackstoryPrompts ? (
+                  <TextField
+                    fullWidth
+                    value={backstoryPrompt.prompt}
+                    onChange={(e) => updateBackstoryPrompt(i, e.target.value)}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      ...fieldSx,
+                      '& .MuiOutlinedInput-input': {
+                        py: 0.72,
+                        px: 1,
+                        color: fabUTokens.color.brand,
+                        fontWeight: 700,
+                      },
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: fabUTokens.color.brand,
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {backstoryPrompt.prompt}
+                  </Typography>
+                )}
                 <TextField
                   multiline
                   fullWidth
-                  value={backstoryAnswers[i] ?? ''}
-                  onChange={(e) => {
-                    const next = [...backstoryAnswers];
-                    next[i] = e.target.value;
-                    setBackstoryAnswers(next);
-                  }}
+                  value={backstoryPrompt.response}
+                  onChange={(e) => updateBackstoryResponse(i, e.target.value)}
                   variant="outlined"
                   sx={fieldSx}
                 />

@@ -26,8 +26,32 @@ type Character = {
     willpower: Attribute;
   };
   bonds: Bond[];
+  backstoryPrompts: BackstoryPrompt[];
   notes: string;
 };
+
+type BackstoryPrompt = {
+  prompt: string;
+  response: string;
+};
+
+const BACKSTORY_PROMPT_DEFAULTS: BackstoryPrompt[] = [
+  {
+    prompt: 'What drove me and my parents out of Infinita?',
+    response:
+      'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
+  },
+  {
+    prompt: 'How do I feel about being in Efowyn?',
+    response:
+      'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
+  },
+  {
+    prompt: 'How do I feel about the castle in the sky?',
+    response:
+      "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
+  },
+];
 
 const CHARACTER_DEFAULTS: Character = {
   initiative: 0,
@@ -57,16 +81,61 @@ const CHARACTER_DEFAULTS: Character = {
     { id: 'granada', characterName: 'Granada', types: ['Admiration'] },
     { id: 'juice', characterName: 'Juice', types: ['Loyalty'] },
   ],
+  backstoryPrompts: BACKSTORY_PROMPT_DEFAULTS,
   notes:
     'Rad idolizes Chuck Norris, and draws upon his spirit for strength and inspiration as a hero of his homeland, Infinita.',
 };
+
+function normalizeBackstoryPrompts(
+  storedPrompts: unknown,
+  storedAnswers: unknown = null,
+): BackstoryPrompt[] {
+  const answers = Array.isArray(storedAnswers) ? storedAnswers : [];
+
+  return BACKSTORY_PROMPT_DEFAULTS.map((defaultPrompt, index) => {
+    const storedPrompt = Array.isArray(storedPrompts) ? storedPrompts[index] : null;
+    const answer = answers[index];
+
+    if (storedPrompt && typeof storedPrompt === 'object') {
+      const maybePrompt = storedPrompt as Partial<BackstoryPrompt>;
+      return {
+        prompt: typeof maybePrompt.prompt === 'string' ? maybePrompt.prompt : defaultPrompt.prompt,
+        response:
+          typeof maybePrompt.response === 'string'
+            ? maybePrompt.response
+            : typeof answer === 'string'
+              ? answer
+              : defaultPrompt.response,
+      };
+    }
+
+    return {
+      prompt: defaultPrompt.prompt,
+      response: typeof answer === 'string' ? answer : defaultPrompt.response,
+    };
+  });
+}
 
 // Custom storage: migrates notes from the old 'fab-u-character-notes' key on first load.
 const migratingCharacterStorage = {
   getItem(key: string, initialValue: Character): Character {
     try {
       const stored = localStorage.getItem(key);
-      if (stored !== null) return { ...initialValue, ...JSON.parse(stored) };
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        let oldAnswers: unknown = null;
+        try {
+          const storedAnswers = localStorage.getItem('fab-u-backstory-answers');
+          if (storedAnswers !== null) oldAnswers = JSON.parse(storedAnswers);
+        } catch {
+          /* ignore */
+        }
+        return {
+          ...initialValue,
+          ...parsed,
+          backstoryPrompts: normalizeBackstoryPrompts(parsed.backstoryPrompts, oldAnswers),
+        };
+      }
     } catch {
       /* ignore */
     }
@@ -74,6 +143,17 @@ const migratingCharacterStorage = {
       const oldNotes = localStorage.getItem('fab-u-character-notes');
       if (oldNotes !== null) {
         return { ...initialValue, notes: JSON.parse(oldNotes) };
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      const storedAnswers = localStorage.getItem('fab-u-backstory-answers');
+      if (storedAnswers !== null) {
+        return {
+          ...initialValue,
+          backstoryPrompts: normalizeBackstoryPrompts(null, JSON.parse(storedAnswers)),
+        };
       }
     } catch {
       /* ignore */
@@ -94,12 +174,6 @@ const characterState = atomWithStorage<Character>(
   migratingCharacterStorage,
 );
 
-const backstoryAnswersState = atomWithStorage<string[]>('fab-u-backstory-answers', [
-  'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
-  'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
-  "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
-]);
-
 // Only user-toggleable effects are stored; enraged/poisoned are derived.
 const statusEffectsState = atomWithStorage<Record<string, boolean>>('fab-u-status-effects', {
   slow: false,
@@ -117,5 +191,5 @@ const derivedStatusEffectsState = atom((get) => {
   };
 });
 
-export { backstoryAnswersState, characterState, derivedStatusEffectsState, statusEffectsState };
-export type { Character };
+export { characterState, derivedStatusEffectsState, statusEffectsState };
+export type { BackstoryPrompt, Character };
