@@ -108,22 +108,21 @@ function SkillsTable({
       </TableContainer>
       {showAddSkillButton ? (
         <Box
-          onClick={onAddSkill}
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 0.75,
-            px: 0.5,
+            px: 1,
             py: 0.6,
-            cursor: 'pointer',
-            color: fabUTokens.color.brandText,
+            cursor: 'default',
+            color: fabUTokens.color.highlight,
+            border: `1px dashed ${fabUTokens.color.highlight}`,
             borderRadius: '8px',
-            '&:hover': { bgcolor: fabUTokens.color.surfaceMuted },
           }}
         >
           <AddIcon sx={{ fontSize: '1rem' }} />
           <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.74rem' }}>
-            + Skill
+            Skill
           </Typography>
         </Box>
       ) : null}
