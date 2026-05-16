@@ -50,6 +50,8 @@ const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Gear', value: 'gear' },
 ];
 
+const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
+
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
   { title: string; subtitle: string; actionLabel: string }
@@ -896,6 +898,11 @@ function FabU() {
           }}
           sx={{
             bottom: { xs: 'calc(env(safe-area-inset-bottom) + 22px)', sm: 24 },
+            width: '100%',
+            '& .MuiSnackbarContent-root': {
+              width: FAB_U_TOAST_WIDTH,
+              maxWidth: 390,
+            },
           }}
         >
           <Box
@@ -904,6 +911,9 @@ function FabU() {
             sx={{
               bgcolor: fabUTokens.color.hp,
               color: '#ffffff',
+              width: FAB_U_TOAST_WIDTH,
+              maxWidth: 390,
+              boxSizing: 'border-box',
               px: 2,
               py: 1.1,
               borderRadius: '8px',
@@ -911,6 +921,7 @@ function FabU() {
               fontSize: '0.84rem',
               fontWeight: 700,
               letterSpacing: 0,
+              textAlign: 'center',
             }}
           >
             Not enough MP to cast

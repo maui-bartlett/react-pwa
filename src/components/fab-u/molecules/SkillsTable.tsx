@@ -39,9 +39,10 @@ function SkillsTable({
     const n = parseInt(row.level ?? '0', 10);
     return sum + (isNaN(n) ? 0 : n);
   }, 0);
+  const headingLabel = `${label ?? title} • ${tableTotal}/10`;
   const showAddSkillButton = !!onAddSkill && tableTotal < 10;
   return (
-    <SurfaceCard label={label ?? title} title={showTitle ? title : undefined} subtitle={subtitle}>
+    <SurfaceCard label={headingLabel} title={showTitle ? title : undefined} subtitle={subtitle}>
       <TableContainer
         sx={{
           border: `1px solid ${fabUTokens.color.border}`,
