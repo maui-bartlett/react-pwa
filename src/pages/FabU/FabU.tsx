@@ -5,6 +5,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -90,6 +91,7 @@ function FabU() {
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
+  const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -162,7 +164,11 @@ function FabU() {
   const handleCastSpell = (_spellName: string, mpCost: string) => {
     const cost = parseInt(mpCost, 10);
     if (!Number.isNaN(cost) && cost > 0) {
-      setCharacter((c) => ({ ...c, currentMP: Math.max(0, c.currentMP - cost) }));
+      if (character.currentMP - cost < 0) {
+        setNotEnoughMpToastOpen(true);
+        return;
+      }
+      setCharacter((c) => ({ ...c, currentMP: c.currentMP - cost }));
     }
     triggerSpellCastBurst();
   };
@@ -880,6 +886,36 @@ function FabU() {
             {content}
           </MobileScreen>
         </Stack>
+        <Snackbar
+          open={notEnoughMpToastOpen}
+          autoHideDuration={2400}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          onClose={(_, reason) => {
+            if (reason === 'clickaway') return;
+            setNotEnoughMpToastOpen(false);
+          }}
+          sx={{
+            bottom: { xs: 'calc(env(safe-area-inset-bottom) + 22px)', sm: 24 },
+          }}
+        >
+          <Box
+            data-pw="not-enough-mp-toast"
+            role="alert"
+            sx={{
+              bgcolor: fabUTokens.color.hp,
+              color: '#ffffff',
+              px: 2,
+              py: 1.1,
+              borderRadius: '8px',
+              boxShadow: '0 10px 26px rgba(31, 42, 38, 0.22)',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              letterSpacing: 0,
+            }}
+          >
+            Not enough MP to cast
+          </Box>
+        </Snackbar>
       </>
     </FabUThemeProvider>
   );
