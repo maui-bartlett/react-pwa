@@ -1,7 +1,7 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
-import type { Attribute, Bond } from '@/components/fab-u';
+import type { Attribute, Bond, EquipmentItem } from '@/components/fab-u';
 
 import { skillGroups as defaultSkillGroups } from './skills';
 import type { SkillGroup } from './skills';
@@ -42,6 +42,7 @@ type Character = {
   classes: ClassEntry[];
   skillGroups: SkillGroup[];
   spellGroups: SpellGroup[];
+  equipment: EquipmentItem[];
 };
 
 type BackstoryPrompt = {
@@ -70,6 +71,19 @@ const BACKSTORY_PROMPT_DEFAULTS: BackstoryPrompt[] = [
     prompt: 'How do I feel about the castle in the sky?',
     response:
       "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
+  },
+];
+
+const EQUIPMENT_DEFAULTS: EquipmentItem[] = [
+  {
+    name: 'Pistol',
+    slot: 'Main Hand',
+    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
+  },
+  {
+    name: 'Pistol',
+    slot: 'Off Hand',
+    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
   },
 ];
 
@@ -107,6 +121,7 @@ const CHARACTER_DEFAULTS: Character = {
   classes: CLASS_DEFAULTS,
   skillGroups: defaultSkillGroups,
   spellGroups: defaultSpellGroups,
+  equipment: EQUIPMENT_DEFAULTS,
 };
 
 function normalizeBackstoryPrompts(
@@ -139,6 +154,19 @@ function normalizeBackstoryPrompts(
   });
 }
 
+function normalizeEquipment(storedEquipment: unknown): EquipmentItem[] {
+  if (!Array.isArray(storedEquipment)) return EQUIPMENT_DEFAULTS;
+
+  return storedEquipment.filter(
+    (item): item is EquipmentItem =>
+      item &&
+      typeof item === 'object' &&
+      typeof (item as Partial<EquipmentItem>).name === 'string' &&
+      typeof (item as Partial<EquipmentItem>).slot === 'string' &&
+      typeof (item as Partial<EquipmentItem>).description === 'string',
+  );
+}
+
 // Custom storage: migrates notes from the old 'fab-u-character-notes' key on first load.
 const migratingCharacterStorage = {
   getItem(key: string, initialValue: Character): Character {
@@ -157,6 +185,7 @@ const migratingCharacterStorage = {
           ...initialValue,
           ...parsed,
           backstoryPrompts: normalizeBackstoryPrompts(parsed.backstoryPrompts, oldAnswers),
+          equipment: normalizeEquipment(parsed.equipment),
         };
       }
     } catch {

@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
+import { scaledEditableControlStyle, scaledEditableTextStyle } from '../editableText';
 import { getToneStyles } from '../tokens';
 import { DieSize, Tone } from '../types';
 
@@ -22,21 +23,21 @@ const selectStyle = (
   borderColor: string,
   bgColor: string,
   textColor: string,
-): React.CSSProperties => ({
-  fontFamily: 'inherit',
-  fontSize: '0.88rem',
-  fontWeight: 700,
-  lineHeight: 1,
-  height: 30,
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '4px 8px',
-  borderRadius: 8,
-  border: `1px solid ${borderColor}`,
-  background: bgColor,
-  color: textColor,
-  outline: 'none',
-});
+): React.CSSProperties =>
+  scaledEditableControlStyle(0.88, 30, {
+    fontFamily: 'inherit',
+    fontWeight: 700,
+    lineHeight: 1,
+    height: 30,
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '4px 8px',
+    borderRadius: 8,
+    border: `1px solid ${borderColor}`,
+    background: bgColor,
+    color: textColor,
+    outline: 'none',
+  });
 
 type AttributePillProps = {
   label: string;
@@ -47,6 +48,7 @@ type AttributePillProps = {
   onChangeDie?: (die: DieSize) => void;
   onChangeModifier?: (mod: number) => void;
   onChangeTemp?: (temp: DieSize | null) => void;
+  popoverHorizontal?: 'left' | 'center' | 'right';
 };
 
 function AttributePill({
@@ -58,6 +60,7 @@ function AttributePill({
   onChangeDie,
   onChangeModifier,
   onChangeTemp,
+  popoverHorizontal = 'center',
 }: AttributePillProps) {
   const fabUTokens = useFabUTokens();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -155,8 +158,9 @@ function AttributePill({
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: popoverHorizontal }}
+        transformOrigin={{ vertical: 'top', horizontal: popoverHorizontal }}
+        marginThreshold={12}
         disableRestoreFocus
         PaperProps={{
           sx: {
@@ -183,7 +187,7 @@ function AttributePill({
             value={die}
             onChange={(e) => onChangeDie?.(e.target.value as DieSize)}
             style={selectStyle(
-              fabUTokens.color.border,
+              fabUTokens.color.brand,
               fabUTokens.color.surface,
               fabUTokens.color.textPrimary,
             )}
@@ -210,7 +214,11 @@ function AttributePill({
                 width: '100%',
                 textAlign: 'center',
                 fontWeight: 700,
-                fontSize: '0.88rem',
+                ...scaledEditableTextStyle(0.88, {
+                  lineHeight: 1,
+                  stretch: true,
+                  transformOrigin: 'center center',
+                }),
                 lineHeight: 1,
                 height: '100%',
                 boxSizing: 'border-box',
@@ -230,7 +238,7 @@ function AttributePill({
               if (e.key === 'Escape') setAnchorEl(null);
             }}
             sx={{
-              border: `1px solid ${fabUTokens.color.border}`,
+              border: `1px solid ${fabUTokens.color.brand}`,
               borderRadius: '8px',
               boxSizing: 'border-box',
               height: 30,
@@ -255,7 +263,7 @@ function AttributePill({
               setDraftTemp(val === '' ? null : (val as DieSize));
             }}
             style={selectStyle(
-              fabUTokens.color.border,
+              fabUTokens.color.brand,
               fabUTokens.color.surface,
               fabUTokens.color.textPrimary,
             )}

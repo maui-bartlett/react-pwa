@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
+import { STATUS_PILL_BORDER_RADIUS } from './statusEffectsTokens';
 
 type StatusPillNode = {
   id: string;
@@ -10,6 +11,7 @@ type StatusPillNode = {
   selectedFill?: string;
   result?: boolean;
   selected?: boolean;
+  viewTransitionName?: string;
 };
 
 type StatusPillGroupProps = {
@@ -27,7 +29,6 @@ const DROP_H = 10;
 const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 46
 // Container height 94, lower pill top = 94 - PILL_H = 58. Stem: H_TOP(46) → 58 = 12px.
 const STEM_H = 12;
-
 // Darken a hex color by blending it toward black at the given alpha (0–1).
 function blendWithBlack(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -44,6 +45,7 @@ function StatusPill({
   selectedFill,
   result = false,
   selected = false,
+  viewTransitionName,
   onToggle,
 }: StatusPillNode & { onToggle: (id: string) => void }) {
   const fabUTokens = useFabUTokens();
@@ -54,17 +56,23 @@ function StatusPill({
       sx={{
         minWidth: result ? 84 : 72,
         border: `1px solid ${color}`,
-        borderRadius: '8px',
+        borderRadius: STATUS_PILL_BORDER_RADIUS,
         bgcolor: selected
           ? (selectedFill ?? blendWithBlack(color, 0.25))
           : fabUTokens.color.surface,
         px: 1.05,
         py: 0.62,
+        minHeight: 36,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         textAlign: 'center',
         boxShadow: '0 1px 3px rgba(31, 42, 38, 0.04)',
         cursor: result ? 'default' : 'pointer',
         userSelect: 'none',
-        transition: 'background-color 150ms ease',
+        transition: 'background-color 150ms ease, border-radius 180ms ease, transform 180ms ease',
+        willChange: 'border-radius, transform',
+        viewTransitionName,
       }}
     >
       <Typography
@@ -77,6 +85,7 @@ function StatusPill({
               : fabUTokens.color.textPrimary,
           fontWeight: 500,
           fontSize: '0.7rem',
+          lineHeight: 1,
           letterSpacing: 0,
           textTransform: 'none',
         }}
@@ -91,7 +100,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
   const fabUTokens = useFabUTokens();
   const lineColor = fabUTokens.color.border;
   return (
-    <Box sx={{ position: 'relative', width: 164, height: 94, flexShrink: 0 }}>
+    <Box sx={{ position: 'relative', width: 150, height: 94, flexShrink: 0 }}>
       {/* Upper pills */}
       <Box sx={{ position: 'absolute', top: 0, left: 0 }}>
         <StatusPill {...topLeft} onToggle={onToggle} />
@@ -111,7 +120,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
         sx={{
           position: 'absolute',
           top: PILL_H,
-          left: 35,
+          left: 32,
           width: 2,
           height: DROP_H,
           bgcolor: lineColor,
@@ -124,7 +133,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
         sx={{
           position: 'absolute',
           top: PILL_H,
-          right: 35,
+          right: 32,
           width: 2,
           height: DROP_H,
           bgcolor: lineColor,
@@ -136,8 +145,8 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
         sx={{
           position: 'absolute',
           top: H_TOP,
-          left: 35,
-          width: 94,
+          left: 32,
+          width: 86,
           height: 2,
           bgcolor: lineColor,
         }}

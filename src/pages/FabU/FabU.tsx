@@ -8,6 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
 import { Check, Pencil, Sparkles } from 'lucide-react';
@@ -35,6 +36,7 @@ import {
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
 } from '@/components/fab-u';
+import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
@@ -45,19 +47,6 @@ const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Skills', value: 'skills' },
   { label: 'Spells', value: 'spells' },
   { label: 'Gear', value: 'gear' },
-];
-
-const gearItems = [
-  {
-    name: 'Pistol',
-    slot: 'Main Hand',
-    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
-  },
-  {
-    name: 'Pistol',
-    slot: 'Off Hand',
-    description: 'High quality ranged weapon · DEX + INS + 1 · HR + 8',
-  },
 ];
 
 const screenMeta: Record<
@@ -178,6 +167,33 @@ function FabU() {
     triggerSpellCastBurst();
   };
 
+  const handleSkillClick = (skillName: string) => {
+    if (skillName !== 'Entropic Magic') return;
+    setActiveTab('spells');
+  };
+
+  const totalSkillLevels = character.skillGroups.reduce(
+    (sum, group) =>
+      sum +
+      group.skills.reduce((gSum, skill) => {
+        const n = parseInt(skill.level ?? '0', 10);
+        return gSum + (isNaN(n) ? 0 : n);
+      }, 0),
+    0,
+  );
+  const canAddMoreSkills = character.level > totalSkillLevels;
+
+  const handleAddSkill = (className: string) => {
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className
+          ? { ...g, skills: [...g.skills, { name: 'New Skill', level: '1', effect: '' }] }
+          : g,
+      ),
+    }));
+  };
+
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
   function makeAttrRows() {
     const entries: Array<{ label: string; key: AttrKey; category: string }> = [
@@ -186,7 +202,7 @@ function FabU() {
       { label: 'Might', key: 'might', category: 'power' },
       { label: 'Willpower', key: 'willpower', category: 'focus' },
     ];
-    return entries.map(({ label, key, category }) => ({
+    return entries.map(({ label, key, category }, index) => ({
       label,
       score: '',
       modifier: '',
@@ -209,6 +225,12 @@ function FabU() {
           ...c,
           attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
         })),
+      popoverHorizontal:
+        index === 0
+          ? ('left' as const)
+          : index === entries.length - 1
+            ? ('right' as const)
+            : undefined,
     }));
   }
 
@@ -246,6 +268,7 @@ function FabU() {
               label: 'HP',
               value: String(character.currentHP),
               valueSuffix: ` / ${character.totalHP}`,
+              valueGroupMinWidth: '7ch',
               tone: 'danger' as const,
               onChange: setCurrentHP,
               maxValue: character.totalHP,
@@ -255,6 +278,7 @@ function FabU() {
               label: 'MP',
               value: String(character.currentMP),
               valueSuffix: ` / ${character.totalMP}`,
+              valueGroupMinWidth: '7ch',
               tone: 'accent' as const,
               onChange: setCurrentMP,
               maxValue: character.totalMP,
@@ -363,6 +387,7 @@ function FabU() {
               label: 'HP',
               value: String(character.currentHP),
               valueSuffix: ` / ${character.totalHP}`,
+              valueGroupMinWidth: '7ch',
               tone: 'danger' as const,
               onChange: setCurrentHP,
               maxValue: character.totalHP,
@@ -372,6 +397,7 @@ function FabU() {
               label: 'MP',
               value: String(character.currentMP),
               valueSuffix: ` / ${character.totalMP}`,
+              valueGroupMinWidth: '7ch',
               tone: 'accent' as const,
               onChange: setCurrentMP,
               maxValue: character.totalMP,
@@ -379,11 +405,21 @@ function FabU() {
             },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
-          middleRowTemplate="0.72fr 0.72fr 1fr 1fr"
+          middleRowTemplate="0.62fr 0.62fr 1.12fr 1.12fr"
           bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
-        />
-        <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
+        >
+          <Box
+            sx={{
+              borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.45)}`,
+              mt: '20px',
+              pt: 2.25,
+              pb: 1,
+            }}
+          >
+            <StatusEffectsDiagram activeEffects={statusEffects} onToggle={handleToggleEffect} />
+          </Box>
+        </AttributesStatsCard>
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
@@ -402,10 +438,14 @@ function FabU() {
                   <Button
                     key={action}
                     variant="contained"
+                    onClick={() => {
+                      if (action === 'Cast') setActiveCombatTab('spells');
+                    }}
                     sx={{
-                      flexGrow: 1,
-                      minWidth: 120,
-                      minHeight: 38,
+                      flex: '1 1 calc(50% - 4px)',
+                      width: 'calc(50% - 4px)',
+                      minWidth: 0,
+                      height: 40,
                       borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 700,
@@ -437,6 +477,9 @@ function FabU() {
                   label={`${group.className} Skills`}
                   title={`${group.className} Skills`}
                   rows={group.skills}
+                  onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
+                  clickableSkills={['Entropic Magic']}
+                  onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
                 />
               ))}
           </>
@@ -457,7 +500,12 @@ function FabU() {
         ) : null}
 
         {activeCombatTab === 'gear' ? (
-          <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
+          <EquipmentCard
+            label="Equipment"
+            title=""
+            items={character.equipment}
+            emptyLabel="Accessory"
+          />
         ) : null}
       </>
     );
@@ -488,6 +536,9 @@ function FabU() {
             label={`${group.className} Skills`}
             title={`${group.className} Skills`}
             rows={group.skills}
+            onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
+            clickableSkills={['Entropic Magic']}
+            onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
           />
         ))}
         <SurfaceCard label="Class Summary">
@@ -545,7 +596,12 @@ function FabU() {
   function renderGear() {
     return (
       <>
-        <EquipmentCard label="Equipment" title="" items={gearItems} emptyLabel="Accessory" />
+        <EquipmentCard
+          label="Equipment"
+          title=""
+          items={character.equipment}
+          emptyLabel="Accessory"
+        />
         <SummaryStrip
           label="Inventory Points"
           metrics={[
@@ -593,8 +649,13 @@ function FabU() {
         },
       },
       '& .MuiOutlinedInput-input': {
-        py: 1.05,
-        px: 1.2,
+        ...scaledEditableTextStyle(0.84, {
+          lineHeight: 1.7,
+          stretch: true,
+          transformOrigin: 'left top',
+        }),
+        py: `${1.05 / 0.84}rem`,
+        px: `${1.2 / 0.84}rem`,
         color: fabUTokens.color.textSecondary,
       },
     };
@@ -644,8 +705,13 @@ function FabU() {
                     sx={{
                       ...fieldSx,
                       '& .MuiOutlinedInput-input': {
-                        py: 0.72,
-                        px: 1,
+                        ...scaledEditableTextStyle(0.84, {
+                          lineHeight: 1.45,
+                          stretch: true,
+                          transformOrigin: 'left center',
+                        }),
+                        py: `${0.72 / 0.84}rem`,
+                        px: `${1 / 0.84}rem`,
                         // highlight = brand (#315c4d) in light mode, yellow (#c5a557) in dark
                         color: fabUTokens.color.highlight,
                         fontWeight: 700,

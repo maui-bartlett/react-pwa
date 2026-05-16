@@ -37,11 +37,6 @@ export const skillGroups: SkillGroup[] = [
         level: '1',
         effect: 'Once per conflict, create a useful item or tool.',
       },
-      {
-        name: 'Improvisation',
-        level: '—',
-        effect: 'Spend IP to solve a practical problem in the scene.',
-      },
     ],
   },
 ];

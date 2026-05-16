@@ -1,3 +1,5 @@
+import AddIcon from '@mui/icons-material/Add';
+import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -16,10 +18,28 @@ type SkillsTableProps = {
   subtitle?: string;
   label?: string;
   showTitle?: boolean;
+  onSkillClick?: (skillName: string) => void;
+  clickableSkills?: string[];
+  /** When provided, a "+ Skill" button appears if this table's total levels < 10 */
+  onAddSkill?: () => void;
 };
 
-function SkillsTable({ title, rows, subtitle, label, showTitle = false }: SkillsTableProps) {
+function SkillsTable({
+  title,
+  rows,
+  subtitle,
+  label,
+  showTitle = false,
+  onSkillClick,
+  clickableSkills,
+  onAddSkill,
+}: SkillsTableProps) {
   const fabUTokens = useFabUTokens();
+  const tableTotal = rows.reduce((sum, row) => {
+    const n = parseInt(row.level ?? '0', 10);
+    return sum + (isNaN(n) ? 0 : n);
+  }, 0);
+  const showAddSkillButton = !!onAddSkill && tableTotal < 10;
   return (
     <SurfaceCard label={label ?? title} title={showTitle ? title : undefined} subtitle={subtitle}>
       <TableContainer
@@ -56,23 +76,56 @@ function SkillsTable({ title, rows, subtitle, label, showTitle = false }: Skills
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.name}>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
-                  >
-                    {row.name}
-                  </Typography>
-                </TableCell>
-                <TableCell>{row.level ?? '—'}</TableCell>
-                <TableCell>{row.effect}</TableCell>
-              </TableRow>
-            ))}
+            {rows.map((row) => {
+              const clickable =
+                !!onSkillClick && (!clickableSkills || clickableSkills.includes(row.name));
+              return (
+                <TableRow
+                  key={row.name}
+                  hover={clickable}
+                  onClick={() => {
+                    if (clickable) onSkillClick(row.name);
+                  }}
+                  sx={{
+                    cursor: clickable ? 'pointer' : 'default',
+                  }}
+                >
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary }}
+                    >
+                      {row.name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{row.level ?? '—'}</TableCell>
+                  <TableCell>{row.effect}</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
+      {showAddSkillButton ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1,
+            py: 0.6,
+            cursor: 'default',
+            color: fabUTokens.color.highlight,
+            border: `1px dashed ${fabUTokens.color.highlight}`,
+            borderRadius: '8px',
+          }}
+        >
+          <AddIcon sx={{ fontSize: '1rem' }} />
+          <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.74rem' }}>
+            Skill
+          </Typography>
+        </Box>
+      ) : null}
     </SurfaceCard>
   );
 }

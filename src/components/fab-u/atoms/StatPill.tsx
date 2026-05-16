@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
+import { scaledEditableTextStyle } from '../editableText';
 import { getToneStyles } from '../tokens';
 import { StatPillData } from '../types';
 
@@ -20,6 +21,7 @@ function StatPill({
   onChange,
   onChangeSuffix,
   valueSuffix,
+  valueGroupMinWidth,
   maxValue,
   maxValueSuffix,
   pw,
@@ -127,7 +129,10 @@ function StatPill({
           '& input': {
             p: 0,
             fontWeight: 700,
-            fontSize: inline ? '0.96rem' : '0.98rem',
+            ...scaledEditableTextStyle(inline ? 0.96 : 0.98, {
+              lineHeight: 1.04,
+              transformOrigin: inline ? 'right center' : 'left center',
+            }),
             lineHeight: 1.04,
             color: fabUTokens.color.textPrimary,
             width: inputWidth,
@@ -206,7 +211,15 @@ function StatPill({
               {label}
             </Typography>
             {valueSuffix ? (
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'flex-end',
+                  gap: '2px',
+                  minWidth: valueGroupMinWidth,
+                }}
+              >
                 {valueEl}
                 {editingSuffix && !hasBaseTempEditor ? (
                   <InputBase
@@ -226,7 +239,14 @@ function StatPill({
                     }}
                     sx={{
                       p: 0,
-                      '& input': { p: 0, width: `${Math.max(suffixDraft.length, 1)}ch` },
+                      '& input': {
+                        p: 0,
+                        ...scaledEditableTextStyle(inline ? 0.96 : 0.98, {
+                          lineHeight: 1.04,
+                          transformOrigin: 'left center',
+                        }),
+                        width: `${Math.max(suffixDraft.length, 1)}ch`,
+                      },
                     }}
                   />
                 ) : (
@@ -280,8 +300,10 @@ function StatPill({
           sx: {
             p: 1.5,
             display: 'flex',
-            gap: 1.5,
-            alignItems: 'flex-end',
+            flexDirection: 'column',
+            gap: 1.25,
+            width: 160,
+            maxWidth: 'min(90vw, 200px)',
             bgcolor: fabUTokens.color.surface,
             border: `1px solid ${fabUTokens.color.border}`,
             borderRadius: '12px',
@@ -314,10 +336,17 @@ function StatPill({
                 inputMode: 'numeric',
                 'data-pw': pw ? `statpill-${pw}-${field.pwSuffix}` : undefined,
                 style: {
-                  width: '3.5ch',
+                  width: '100%',
                   textAlign: 'center',
                   fontWeight: 700,
-                  fontSize: '0.88rem',
+                  ...scaledEditableTextStyle(0.88, {
+                    lineHeight: 1,
+                    stretch: true,
+                    transformOrigin: 'center center',
+                  }),
+                  lineHeight: 1,
+                  height: '100%',
+                  boxSizing: 'border-box',
                   padding: 0,
                   color: fabUTokens.color.textPrimary,
                 },
@@ -332,11 +361,15 @@ function StatPill({
                 }
               }}
               sx={{
-                border: `1px solid ${fabUTokens.color.border}`,
+                border: `1px solid ${fabUTokens.color.brand}`,
                 borderRadius: '8px',
+                boxSizing: 'border-box',
+                height: 30,
+                width: '100%',
+                alignItems: 'center',
                 px: 0.75,
                 py: 0.5,
-                '& input': { p: 0 },
+                '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
               }}
             />
           </Stack>
