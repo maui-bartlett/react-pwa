@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
+import { STATUS_PILL_BORDER_RADIUS } from './statusEffectsTokens';
 
 type StatusPillNode = {
   id: string;
@@ -28,7 +29,6 @@ const DROP_H = 10;
 const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 46
 // Container height 94, lower pill top = 94 - PILL_H = 58. Stem: H_TOP(46) → 58 = 12px.
 const STEM_H = 12;
-
 // Darken a hex color by blending it toward black at the given alpha (0–1).
 function blendWithBlack(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -56,7 +56,7 @@ function StatusPill({
       sx={{
         minWidth: result ? 84 : 72,
         border: `1px solid ${color}`,
-        borderRadius: '8px',
+        borderRadius: STATUS_PILL_BORDER_RADIUS,
         bgcolor: selected
           ? (selectedFill ?? blendWithBlack(color, 0.25))
           : fabUTokens.color.surface,

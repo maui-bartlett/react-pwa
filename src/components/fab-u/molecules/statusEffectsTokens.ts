@@ -1,0 +1,3 @@
+const STATUS_PILL_BORDER_RADIUS = '8px';
+
+export { STATUS_PILL_BORDER_RADIUS };

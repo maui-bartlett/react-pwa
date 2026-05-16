@@ -5,6 +5,8 @@ import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { Coins } from 'lucide-react';
+
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
 
@@ -57,6 +59,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
         {metrics.map((metric) => {
           const isEditing = editing?.label === metric.label;
           const editable = !!metric.onChange;
+          const showZennitIcon = metric.pw === 'zennit';
           return (
             <Box
               key={metric.label}
@@ -96,7 +99,14 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                   >
                     {metric.label}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2px',
+                      width: '100%',
+                    }}
+                  >
                     {isEditing ? (
                       <InputBase
                         inputProps={{
@@ -146,6 +156,19 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                         {metric.value}
                       </Typography>
                     )}
+                    {showZennitIcon ? (
+                      <Box
+                        component={Coins}
+                        size={15}
+                        aria-hidden="true"
+                        sx={{
+                          ml: 'auto',
+                          color: fabUTokens.color.highlight,
+                          flexShrink: 0,
+                          strokeWidth: 2.1,
+                        }}
+                      />
+                    ) : null}
                     {metric.valueSuffix ? (
                       <Typography
                         data-pw={metric.pw ? `metric-${metric.pw}-suffix` : undefined}

@@ -9,6 +9,7 @@ import { ChevronDown } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import StatusPillGroup from './StatusPillGroup';
+import { STATUS_PILL_BORDER_RADIUS } from './statusEffectsTokens';
 
 export type StatusEffectId = 'slow' | 'dazed' | 'enraged' | 'weak' | 'shaken' | 'poisoned';
 
@@ -119,7 +120,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
               fontWeight: 700,
               fontSize: '1rem',
               lineHeight: 1.2,
-              mr: 0.25,
+              mr: '12px',
             }}
           >
             Status Effects
@@ -137,7 +138,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                 }}
                 sx={{
                   border: `1px solid ${status.color}`,
-                  borderRadius: '8px',
+                  borderRadius: STATUS_PILL_BORDER_RADIUS,
                   bgcolor: selected ? blendWithBlack(status.color, 0.25) : fabUTokens.color.surface,
                   color: selected ? '#ffffff' : fabUTokens.color.textPrimary,
                   px: 0.8,

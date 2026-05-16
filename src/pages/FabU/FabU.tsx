@@ -414,6 +414,9 @@ function FabU() {
                   <Button
                     key={action}
                     variant="contained"
+                    onClick={() => {
+                      if (action === 'Cast') setActiveCombatTab('spells');
+                    }}
                     sx={{
                       flex: '1 1 calc(50% - 4px)',
                       width: 'calc(50% - 4px)',
