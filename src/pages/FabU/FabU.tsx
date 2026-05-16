@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -95,6 +95,7 @@ function FabU() {
     setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
+  const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
@@ -155,6 +156,16 @@ function FabU() {
     }));
   const removeBond = (id: string) =>
     setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
+  const removeClass = (index: number) => {
+    const cls = character.classes[index];
+    if (!cls) return;
+    setCharacter((c) => ({
+      ...c,
+      classes: c.classes.filter((_, i) => i !== index),
+      skillGroups: c.skillGroups.filter((g) => g.className !== cls.name),
+      spellGroups: c.spellGroups.filter((g) => g.className !== cls.name),
+    }));
+  };
   const updateBackstoryPrompt = (index: number, prompt: string) =>
     setCharacter((c) => ({
       ...c,
@@ -215,6 +226,24 @@ function FabU() {
   ).length;
   const canAddClass = canAddMoreSkills && unmasteredClassCount < 3;
   const selectedClassNames = new Set(character.classes.map((cls) => cls.name));
+
+  const navigateToClassSkills = (index: number) => {
+    const cls = character.classes[index];
+    if (!cls) return;
+    setActiveTab('skills');
+    setTargetClassName(cls.name);
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'skills' || !targetClassName) return;
+    const timer = setTimeout(() => {
+      document
+        .querySelector(`[data-class-group="${targetClassName}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTargetClassName(null);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [activeTab, targetClassName]);
   const classPickerOpen = Boolean(classPickerAnchorEl);
 
   const openClassPicker = (event: MouseEvent<HTMLElement>) => {
@@ -390,6 +419,8 @@ function FabU() {
           label="Classes"
           addLabel={canAddClass ? 'Class' : undefined}
           onAdd={canAddClass ? openClassPicker : undefined}
+          onItemClick={navigateToClassSkills}
+          onRemoveItem={removeClass}
           items={character.classes.map((cls) => ({
             title: cls.name,
             subtitle: cls.subtitle,
@@ -578,7 +609,7 @@ function FabU() {
           <Box
             sx={{
               borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.3)}`,
-              mt: '40px',
+              mt: '45px',
               pt: 2.25,
               pb: 1,
             }}
@@ -698,19 +729,20 @@ function FabU() {
           ]}
         />
         {character.skillGroups.map((group) => (
-          <SkillsTable
-            key={group.className}
-            label={`${group.className} Skills`}
-            title={`${group.className} Skills`}
-            rows={group.skills}
-            onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
-            clickableSkills={['Entropic Magic']}
-            onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
-            freeSkillLevels={freeSkillLevels}
-            onAddSkillLevels={(skillName, levels) =>
-              handleAddSkillLevels(group.className, skillName, levels)
-            }
-          />
+          <Box key={group.className} data-class-group={group.className}>
+            <SkillsTable
+              label={`${group.className} Skills`}
+              title={`${group.className} Skills`}
+              rows={group.skills}
+              onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
+              clickableSkills={['Entropic Magic']}
+              onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
+              freeSkillLevels={freeSkillLevels}
+              onAddSkillLevels={(skillName, levels) =>
+                handleAddSkillLevels(group.className, skillName, levels)
+              }
+            />
+          </Box>
         ))}
       </>
     );
