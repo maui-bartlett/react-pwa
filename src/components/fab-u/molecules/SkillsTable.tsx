@@ -120,6 +120,7 @@ function SkillsTable({
               return (
                 <TableRow
                   key={row.name}
+                  data-pw="skill-table-row"
                   hover={clickable}
                   onClick={() => {
                     if (clickable) onSkillClick(row.name);
@@ -248,12 +249,14 @@ function SkillsTable({
       ) : null}
       {showAddSkillButton ? (
         <Box
+          data-pw="add-skill-button"
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 0.75,
             px: 1,
             py: 0.6,
+            minHeight: 33,
             cursor: 'default',
             color: fabUTokens.color.highlight,
             border: `1px dashed ${fabUTokens.color.highlight}`,
