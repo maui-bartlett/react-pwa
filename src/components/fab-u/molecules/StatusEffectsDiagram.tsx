@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
@@ -63,6 +63,10 @@ const topLevelStatuses = [
   groups[1].topRight,
 ];
 
+const SUMMARY_FADE_MS = 140;
+const DETAIL_FADE_MS = 160;
+const COLLAPSE_MS = 180;
+
 function blendWithBlack(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -73,25 +77,70 @@ function blendWithBlack(hex: string, alpha: number): string {
 
 function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramProps) {
   const fabUTokens = useFabUTokens();
-  const [expanded, setExpanded] = useState(false);
+  const [summaryVisible, setSummaryVisible] = useState(true);
+  const [detailMounted, setDetailMounted] = useState(false);
+  const [detailVisible, setDetailVisible] = useState(false);
+  const timersRef = useRef<number[]>([]);
   const withSelected = (node: StatusNode) => ({ ...node, selected: !!activeEffects[node.id] });
   const topLevelTransitionName = (id: StatusEffectId) => `status-effect-${id}`;
-  const toggleExpanded = () => {
-    const update = () => setExpanded((open) => !open);
-    if (typeof document !== 'undefined' && 'startViewTransition' in document) {
-      document.startViewTransition(update);
-      return;
-    }
-    update();
+
+  const clearTimers = () => {
+    timersRef.current.forEach((timer) => window.clearTimeout(timer));
+    timersRef.current = [];
   };
 
+  const queueTimer = (callback: () => void, delay: number) => {
+    const timer = window.setTimeout(callback, delay);
+    timersRef.current.push(timer);
+  };
+
+  const toggleExpanded = () => {
+    clearTimers();
+
+    if (!detailMounted) {
+      setSummaryVisible(false);
+      queueTimer(() => {
+        const mountDetails = () => {
+          setDetailMounted(true);
+          window.requestAnimationFrame(() => setDetailVisible(true));
+        };
+
+        if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+          document.startViewTransition(mountDetails);
+          return;
+        }
+
+        mountDetails();
+      }, SUMMARY_FADE_MS);
+      return;
+    }
+
+    setDetailVisible(false);
+    queueTimer(() => {
+      const unmountDetails = () => setDetailMounted(false);
+      if (typeof document !== 'undefined' && 'startViewTransition' in document) {
+        document.startViewTransition(unmountDetails);
+      } else {
+        unmountDetails();
+      }
+      queueTimer(() => setSummaryVisible(true), COLLAPSE_MS);
+    }, DETAIL_FADE_MS);
+  };
+
+  useEffect(
+    () => () => {
+      timersRef.current.forEach((timer) => window.clearTimeout(timer));
+    },
+    [],
+  );
+
   return (
-    <Stack spacing={expanded ? 1.2 : 0}>
+    <Stack spacing={detailMounted ? 1.2 : 0}>
       <Box
         component="button"
         type="button"
         data-pw="status-effects-accordion-toggle"
-        aria-expanded={expanded}
+        aria-expanded={detailMounted}
         onClick={toggleExpanded}
         sx={{
           appearance: 'none',
@@ -151,11 +200,13 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                   fontWeight: 700,
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
-                  cursor: 'pointer',
+                  cursor: summaryVisible ? 'pointer' : 'default',
+                  opacity: summaryVisible ? 1 : 0,
+                  pointerEvents: summaryVisible ? 'auto' : 'none',
                   transition:
-                    'background-color 150ms ease, border-radius 180ms ease, color 150ms ease, transform 180ms ease',
-                  willChange: 'border-radius, transform',
-                  viewTransitionName: expanded ? undefined : topLevelTransitionName(status.id),
+                    'background-color 150ms ease, border-radius 180ms ease, color 150ms ease, opacity 140ms ease, transform 180ms ease',
+                  willChange: 'border-radius, opacity, transform',
+                  viewTransitionName: detailMounted ? undefined : topLevelTransitionName(status.id),
                 }}
               >
                 {status.label}
@@ -170,24 +221,34 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
           sx={{
             flexShrink: 0,
             color: fabUTokens.color.textSecondary,
-            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transform: detailMounted ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 180ms ease',
           }}
         />
       </Box>
 
-      <Collapse in={expanded} timeout={180} unmountOnExit>
-        <Stack direction="row" alignItems="center" justifyContent="center" gap={1}>
+      <Collapse in={detailMounted} timeout={COLLAPSE_MS} unmountOnExit>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="center"
+          gap={1}
+          sx={{
+            opacity: detailVisible ? 1 : 0,
+            transition: `opacity ${DETAIL_FADE_MS}ms ease`,
+            willChange: 'opacity',
+          }}
+        >
           <StatusPillGroup
             topLeft={{
               ...withSelected(groups[0].topLeft),
-              viewTransitionName: expanded
+              viewTransitionName: detailMounted
                 ? topLevelTransitionName(groups[0].topLeft.id)
                 : undefined,
             }}
             topRight={{
               ...withSelected(groups[0].topRight),
-              viewTransitionName: expanded
+              viewTransitionName: detailMounted
                 ? topLevelTransitionName(groups[0].topRight.id)
                 : undefined,
             }}
@@ -197,13 +258,13 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
           <StatusPillGroup
             topLeft={{
               ...withSelected(groups[1].topLeft),
-              viewTransitionName: expanded
+              viewTransitionName: detailMounted
                 ? topLevelTransitionName(groups[1].topLeft.id)
                 : undefined,
             }}
             topRight={{
               ...withSelected(groups[1].topRight),
-              viewTransitionName: expanded
+              viewTransitionName: detailMounted
                 ? topLevelTransitionName(groups[1].topRight.id)
                 : undefined,
             }}

@@ -12,6 +12,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { Trash2 } from 'lucide-react';
 
@@ -31,6 +32,11 @@ const ALL_BOND_TYPES: BondType[] = [
 
 const COMMIT_THRESHOLD_EXTRA = 25; // extra px past commitThreshold to trigger delete (total = 60px)
 const DELETE_RED = '#d32f2f';
+const NEGATIVE_BOND_TYPES = new Set<BondType>(['Inferiority', 'Mistrust', 'Hatred']);
+
+function isNegativeBondType(type: BondType) {
+  return NEGATIVE_BOND_TYPES.has(type);
+}
 
 type BondRowProps = {
   bond: Bond;
@@ -209,16 +215,21 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
                   key={t}
                   label={t}
                   size="small"
-                  sx={{
-                    height: 18,
-                    fontSize: '0.6rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    bgcolor: 'rgba(49, 92, 77, 0.08)',
-                    color: fabUTokens.color.brandText,
-                    border: `1px solid rgba(49, 92, 77, 0.18)`,
-                    borderRadius: '5px',
-                    '& .MuiChip-label': { px: 0.75 },
+                  sx={() => {
+                    const toneColor = isNegativeBondType(t)
+                      ? fabUTokens.color.hp
+                      : fabUTokens.color.brandText;
+                    return {
+                      height: 18,
+                      fontSize: '0.6rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                      bgcolor: alpha(toneColor, 0.08),
+                      color: toneColor,
+                      border: `1px solid ${alpha(toneColor, 0.22)}`,
+                      borderRadius: '5px',
+                      '& .MuiChip-label': { px: 0.75 },
+                    };
                   }}
                 />
               ))}
@@ -438,6 +449,9 @@ function BondsCard({
       >
         {ALL_BOND_TYPES.map((type) => {
           const selected = activeBond?.types.includes(type) ?? false;
+          const selectedColor = isNegativeBondType(type)
+            ? fabUTokens.color.hp
+            : fabUTokens.color.brand;
           return (
             <MenuItem
               key={type}
@@ -449,15 +463,13 @@ function BondsCard({
                 fontWeight: 600,
                 py: 0.75,
                 gap: 1,
-                color: selected ? fabUTokens.color.brand : '#1f2a26',
-                bgcolor: selected ? 'rgba(49, 92, 77, 0.06)' : 'transparent',
-                '&:hover': { bgcolor: 'rgba(49, 92, 77, 0.1)' },
+                color: selected ? selectedColor : '#1f2a26',
+                bgcolor: selected ? alpha(selectedColor, 0.08) : 'transparent',
+                '&:hover': { bgcolor: alpha(selectedColor, 0.1) },
               }}
             >
               <Box sx={{ width: 16, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                {selected ? (
-                  <CheckIcon sx={{ fontSize: 14, color: fabUTokens.color.brand }} />
-                ) : null}
+                {selected ? <CheckIcon sx={{ fontSize: 14, color: selectedColor }} /> : null}
               </Box>
               {type}
             </MenuItem>
