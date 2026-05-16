@@ -212,8 +212,8 @@ function SkillsTable({
         open={Boolean(anchorEl) && Boolean(activeSkill)}
         anchorEl={anchorEl}
         onClose={closeLevelPopover}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         marginThreshold={12}
         disableRestoreFocus
         PaperProps={{
@@ -300,32 +300,13 @@ function SkillsTable({
             />
 
             {/* Actions */}
-            <Stack direction="row" spacing={0.75}>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={closeLevelPopover}
-                sx={{
-                  flex: 1,
-                  color: fabUTokens.color.textSecondary,
-                  borderColor: fabUTokens.color.border,
-                  boxShadow: 'none',
-                  '&:hover': {
-                    borderColor: fabUTokens.color.textSecondary,
-                    bgcolor: 'transparent',
-                    boxShadow: 'none',
-                  },
-                }}
-              >
-                Cancel
-              </Button>
+            <Stack direction="column" spacing={0.75}>
               <Button
                 size="small"
                 variant="contained"
                 onClick={commitLevelDraft}
                 disabled={activeSkillAvailable <= 0}
                 sx={{
-                  flex: 1,
                   bgcolor: fabUTokens.color.brand,
                   color: '#fff',
                   boxShadow: 'none',
@@ -337,6 +318,23 @@ function SkillsTable({
                 }}
               >
                 Add
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={closeLevelPopover}
+                sx={{
+                  color: fabUTokens.color.textSecondary,
+                  borderColor: fabUTokens.color.border,
+                  boxShadow: 'none',
+                  '&:hover': {
+                    borderColor: fabUTokens.color.textSecondary,
+                    bgcolor: 'transparent',
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                Cancel
               </Button>
             </Stack>
           </Stack>
