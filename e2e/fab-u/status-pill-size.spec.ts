@@ -68,21 +68,28 @@ test.describe('Status Effects pill size increase', () => {
     ).toBeLessThanOrEqual(2);
   });
 
-  test('result pill (Enraged) is visible and wider than regular pills', async ({ page }) => {
-    const regularPill = page.locator('[data-pw="status-pill-slow"]');
+  test('result pill (Enraged) is shorter than upper pills — only upper pills were enlarged', async ({ page }) => {
+    const upperPill = page.locator('[data-pw="status-pill-slow"]');
     const resultPill = page.locator('[data-pw="status-pill-enraged"]');
 
     await expect(resultPill).toBeVisible();
 
-    const regularBox = await regularPill.boundingBox();
+    const upperBox = await upperPill.boundingBox();
     const resultBox = await resultPill.boundingBox();
-    expect(regularBox).not.toBeNull();
+    expect(upperBox).not.toBeNull();
     expect(resultBox).not.toBeNull();
 
+    // Result pill kept original minHeight:36; upper pill is minHeight:41
     expect(
-      resultBox!.width,
-      `Enraged result pill (${resultBox!.width}px) should be wider than Slow pill (${regularBox!.width}px)`,
-    ).toBeGreaterThanOrEqual(regularBox!.width);
+      resultBox!.height,
+      `Enraged result pill (${resultBox!.height}px) should be shorter than enlarged upper pill (${upperBox!.height}px)`,
+    ).toBeLessThan(upperBox!.height);
+
+    // Result pill minHeight stays at original 36px
+    expect(
+      resultBox!.height,
+      `Enraged result pill (${resultBox!.height}px) should not exceed original 36px minHeight`,
+    ).toBeLessThanOrEqual(36);
   });
 
   test('two StatusPillGroups fit within the card width', async ({ page }) => {
