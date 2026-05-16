@@ -208,4 +208,28 @@ test.describe('Popup positioning and border styling', () => {
       'rgb(49, 92, 77)',
     );
   });
+
+  // ─── Background color — dark mode (default) ───────────────────────────────
+
+  test('attr popup background matches dark surface token in dark mode', async ({ page }) => {
+    await page.locator('[data-pw="attr-pill-dex"]').click();
+
+    const popup = page.locator('[data-pw="attr-popup"]');
+    await expect(popup).toBeVisible();
+
+    const bg = await popup.evaluate((el) => window.getComputedStyle(el).backgroundColor);
+    // darkFabUTokens.color.surface = #131613 → rgb(19, 22, 19)
+    expect(bg, `dark-mode attr popup bg should be dark surface, got ${bg}`).toBe('rgb(19, 22, 19)');
+  });
+
+  test('bond type menu background matches dark surface token in dark mode', async ({ page }) => {
+    await page.locator('[data-pw="bond-add-jelena"]').click();
+
+    const menu = page.locator('[data-pw="bond-type-menu"]');
+    await expect(menu).toBeVisible();
+
+    const bg = await menu.evaluate((el) => window.getComputedStyle(el).backgroundColor);
+    // darkFabUTokens.color.surface = #131613 → rgb(19, 22, 19)
+    expect(bg, `dark-mode bond menu bg should be dark surface, got ${bg}`).toBe('rgb(19, 22, 19)');
+  });
 });
