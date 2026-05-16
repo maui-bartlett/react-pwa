@@ -101,7 +101,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
   const fabUTokens = useFabUTokens();
   const lineColor = fabUTokens.color.border;
   return (
-    <Box sx={{ position: 'relative', width: 150, height: 104, flexShrink: 0 }}>
+    <Box sx={{ position: 'relative', width: 155, height: 104, flexShrink: 0 }}>
       {/* Upper pills */}
       <Box sx={{ position: 'absolute', top: 0, left: 0 }}>
         <StatusPill {...topLeft} onToggle={onToggle} />
@@ -147,7 +147,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
           position: 'absolute',
           top: H_TOP,
           left: 32,
-          width: 86,
+          width: 91,
           height: 2,
           bgcolor: lineColor,
         }}
