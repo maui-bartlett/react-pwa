@@ -21,13 +21,14 @@ type StatusPillGroupProps = {
   onToggle: (id: string) => void;
 };
 
-// Measured rendered pill height: 35.906px (border 1×2 + py 4.96×2 + caption lineHeight).
-// Using 36 gives a ~0.09px gap (sub-pixel, imperceptible) — drop flush with pill border.
-const PILL_H = 36;
+// Rendered pill height with minHeight:41 border-box (border 1×2 + py 6.4×2 + caption).
+// Using 41 keeps the drop flush with the pill's bottom edge.
+const PILL_H = 41;
 // Visible stem height below each upper pill before reaching the horizontal bar
 const DROP_H = 10;
-const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 46
-// Container height 94, lower pill top = 94 - PILL_H = 58. Stem: H_TOP(46) → 58 = 12px.
+const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 51
+// Container height 104 = H_TOP(51) + STEM_H(12) + PILL_H(41).
+// Lower pill top = 104 - PILL_H = 63. Stem: H_TOP(51) → 63 = 12px.
 const STEM_H = 12;
 // Darken a hex color by blending it toward black at the given alpha (0–1).
 function blendWithBlack(hex: string, alpha: number): string {
@@ -54,15 +55,15 @@ function StatusPill({
       data-pw={`status-pill-${id}`}
       onClick={result ? undefined : () => onToggle(id)}
       sx={{
-        minWidth: result ? 84 : 72,
+        minWidth: result ? 96 : 72,
         border: `1px solid ${color}`,
         borderRadius: STATUS_PILL_BORDER_RADIUS,
         bgcolor: selected
           ? (selectedFill ?? blendWithBlack(color, 0.25))
           : fabUTokens.color.surface,
-        px: 1.05,
-        py: 0.62,
-        minHeight: 36,
+        px: 1.25,
+        py: 0.8,
+        minHeight: 41,
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -84,7 +85,7 @@ function StatusPill({
               ? fabUTokens.color.textSecondary
               : fabUTokens.color.textPrimary,
           fontWeight: 500,
-          fontSize: '0.7rem',
+          fontSize: '0.77rem',
           lineHeight: 1,
           letterSpacing: 0,
           textTransform: 'none',
@@ -100,7 +101,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
   const fabUTokens = useFabUTokens();
   const lineColor = fabUTokens.color.border;
   return (
-    <Box sx={{ position: 'relative', width: 150, height: 94, flexShrink: 0 }}>
+    <Box sx={{ position: 'relative', width: 155, height: 104, flexShrink: 0 }}>
       {/* Upper pills */}
       <Box sx={{ position: 'absolute', top: 0, left: 0 }}>
         <StatusPill {...topLeft} onToggle={onToggle} />
@@ -146,7 +147,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
           position: 'absolute',
           top: H_TOP,
           left: 32,
-          width: 86,
+          width: 91,
           height: 2,
           bgcolor: lineColor,
         }}

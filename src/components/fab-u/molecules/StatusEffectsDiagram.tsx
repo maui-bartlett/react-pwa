@@ -116,14 +116,12 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
       return;
     }
 
+    // Fade pills out first, then let MUI Collapse animate the height closed.
+    // No startViewTransition here — it would compete with the Collapse height
+    // animation and produce a double-animation artifact on close.
     setDetailVisible(false);
     queueTimer(() => {
-      const unmountDetails = () => setDetailMounted(false);
-      if (typeof document !== 'undefined' && 'startViewTransition' in document) {
-        document.startViewTransition(unmountDetails);
-      } else {
-        unmountDetails();
-      }
+      setDetailMounted(false);
       queueTimer(() => setSummaryVisible(true), COLLAPSE_MS + TRANSITION_HANDOFF_BUFFER_MS);
     }, DETAIL_FADE_MS + TRANSITION_HANDOFF_BUFFER_MS);
   };

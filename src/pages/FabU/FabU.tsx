@@ -5,6 +5,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -49,6 +50,9 @@ const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Gear', value: 'gear' },
 ];
 
+const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
+const DEFAULT_SKILL_MAX_LEVEL = 5;
+
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
   { title: string; subtitle: string; actionLabel: string }
@@ -90,6 +94,7 @@ function FabU() {
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
+  const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -106,7 +111,16 @@ function FabU() {
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
-  const setCurrentXP = (v: number) => setCharacter((c) => ({ ...c, currentXP: v }));
+  const setCurrentXP = (v: number) =>
+    setCharacter((c) => {
+      if (v <= c.totalXP) return { ...c, currentXP: v };
+
+      return {
+        ...c,
+        level: c.level + Math.floor(v / c.totalXP),
+        currentXP: v % c.totalXP,
+      };
+    });
   const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
   const toggleBondType = (id: string, type: BondType) =>
@@ -162,7 +176,11 @@ function FabU() {
   const handleCastSpell = (_spellName: string, mpCost: string) => {
     const cost = parseInt(mpCost, 10);
     if (!Number.isNaN(cost) && cost > 0) {
-      setCharacter((c) => ({ ...c, currentMP: Math.max(0, c.currentMP - cost) }));
+      if (character.currentMP - cost < 0) {
+        setNotEnoughMpToastOpen(true);
+        return;
+      }
+      setCharacter((c) => ({ ...c, currentMP: c.currentMP - cost }));
     }
     triggerSpellCastBurst();
   };
@@ -172,16 +190,22 @@ function FabU() {
     setActiveTab('spells');
   };
 
-  const totalSkillLevels = character.skillGroups.reduce(
-    (sum, group) =>
-      sum +
-      group.skills.reduce((gSum, skill) => {
+  const skillLevelTotalsByClass = character.skillGroups.reduce<Record<string, number>>(
+    (totals, group) => ({
+      ...totals,
+      [group.className]: group.skills.reduce((gSum, skill) => {
         const n = parseInt(skill.level ?? '0', 10);
         return gSum + (isNaN(n) ? 0 : n);
       }, 0),
+    }),
+    {},
+  );
+  const totalSkillLevels = Object.values(skillLevelTotalsByClass).reduce(
+    (sum, total) => sum + total,
     0,
   );
   const canAddMoreSkills = character.level > totalSkillLevels;
+  const freeSkillLevels = Math.max(0, character.level - totalSkillLevels);
 
   const handleAddSkill = (className: string) => {
     setCharacter((c) => ({
@@ -192,6 +216,40 @@ function FabU() {
           : g,
       ),
     }));
+  };
+  const handleAddSkillLevels = (className: string, skillName: string, levels: number) => {
+    setCharacter((c) => {
+      const allocatedLevels = c.skillGroups.reduce(
+        (sum, group) =>
+          sum +
+          group.skills.reduce((groupSum, skill) => {
+            const n = parseInt(skill.level ?? '0', 10);
+            return groupSum + (isNaN(n) ? 0 : n);
+          }, 0),
+        0,
+      );
+      const availableLevels = Math.max(0, c.level - allocatedLevels);
+
+      return {
+        ...c,
+        skillGroups: c.skillGroups.map((group) =>
+          group.className === className
+            ? {
+                ...group,
+                skills: group.skills.map((skill) => {
+                  if (skill.name !== skillName) return skill;
+                  const currentLevel = parseInt(skill.level ?? '0', 10);
+                  const normalizedLevel = isNaN(currentLevel) ? 0 : currentLevel;
+                  const remainingSkillLevels =
+                    (skill.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL) - normalizedLevel;
+                  const levelsToAdd = Math.min(levels, availableLevels, remainingSkillLevels);
+                  return { ...skill, level: String(normalizedLevel + Math.max(0, levelsToAdd)) };
+                }),
+              }
+            : group,
+        ),
+      };
+    });
   };
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
@@ -301,7 +359,7 @@ function FabU() {
           items={character.classes.map((cls) => ({
             title: cls.name,
             subtitle: cls.subtitle,
-            trailing: `LVL ${cls.level}`,
+            trailing: `LVL ${skillLevelTotalsByClass[cls.name] ?? 0}`,
           }))}
         />
 
@@ -326,7 +384,6 @@ function FabU() {
               valueSuffix: ` / ${character.totalXP}`,
               pw: 'ov-xp',
               onChange: setCurrentXP,
-              maxValue: character.totalXP,
             },
             { label: 'Level', value: String(character.level), pw: 'ov-level', onChange: setLevel },
           ]}
@@ -411,8 +468,8 @@ function FabU() {
         >
           <Box
             sx={{
-              borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.45)}`,
-              mt: '20px',
+              borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.3)}`,
+              mt: '40px',
               pt: 2.25,
               pb: 1,
             }}
@@ -421,50 +478,48 @@ function FabU() {
           </Box>
         </AttributesStatsCard>
 
+        <SurfaceCard label="Actions" title="Battle Actions">
+          <Stack direction="row" flexWrap="wrap" gap={1}>
+            {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
+              <Button
+                key={action}
+                variant="contained"
+                onClick={() => {
+                  if (action === 'Cast') setActiveCombatTab('spells');
+                }}
+                sx={{
+                  flex: '1 1 calc(50% - 4px)',
+                  width: 'calc(50% - 4px)',
+                  minWidth: 0,
+                  height: 40,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  bgcolor: fabUTokens.color.brand,
+                  color: '#fff',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: fabUTokens.color.brandStrong,
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                {action}
+              </Button>
+            ))}
+          </Stack>
+        </SurfaceCard>
+
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
         {activeCombatTab === 'bonds' ? (
-          <>
-            <BondsCard
-              bonds={character.bonds}
-              onToggleType={toggleBondType}
-              onAddBond={addBond}
-              onRemoveBond={removeBond}
-            />
-
-            <SurfaceCard label="Actions" title="Battle Actions">
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
-                  <Button
-                    key={action}
-                    variant="contained"
-                    onClick={() => {
-                      if (action === 'Cast') setActiveCombatTab('spells');
-                    }}
-                    sx={{
-                      flex: '1 1 calc(50% - 4px)',
-                      width: 'calc(50% - 4px)',
-                      minWidth: 0,
-                      height: 40,
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      fontWeight: 700,
-                      fontSize: '0.78rem',
-                      bgcolor: fabUTokens.color.brand,
-                      color: '#fff',
-                      boxShadow: 'none',
-                      '&:hover': {
-                        bgcolor: fabUTokens.color.brandStrong,
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    {action}
-                  </Button>
-                ))}
-              </Stack>
-            </SurfaceCard>
-          </>
+          <BondsCard
+            bonds={character.bonds}
+            onToggleType={toggleBondType}
+            onAddBond={addBond}
+            onRemoveBond={removeBond}
+          />
         ) : null}
 
         {activeCombatTab === 'skills' ? (
@@ -480,6 +535,10 @@ function FabU() {
                   onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
                   clickableSkills={['Entropic Magic']}
                   onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
+                  freeSkillLevels={freeSkillLevels}
+                  onAddSkillLevels={(skillName, levels) =>
+                    handleAddSkillLevels(group.className, skillName, levels)
+                  }
                 />
               ))}
           </>
@@ -524,7 +583,6 @@ function FabU() {
               valueSuffix: ` / ${character.totalXP}`,
               pw: 'sk-xp',
               onChange: setCurrentXP,
-              maxValue: character.totalXP,
             },
             { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
@@ -539,17 +597,12 @@ function FabU() {
             onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
             clickableSkills={['Entropic Magic']}
             onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
+            freeSkillLevels={freeSkillLevels}
+            onAddSkillLevels={(skillName, levels) =>
+              handleAddSkillLevels(group.className, skillName, levels)
+            }
           />
         ))}
-        <SurfaceCard label="Class Summary">
-          <Typography
-            variant="body2"
-            sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
-          >
-            {character.classes.map((c) => `${c.name} ${c.level}`).join(' · ')}. XP is capped at 10;
-            level up when it reaches 10.
-          </Typography>
-        </SurfaceCard>
       </>
     );
   }
@@ -882,6 +935,45 @@ function FabU() {
             {content}
           </MobileScreen>
         </Stack>
+        <Snackbar
+          open={notEnoughMpToastOpen}
+          autoHideDuration={2400}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          onClose={(_, reason) => {
+            if (reason === 'clickaway') return;
+            setNotEnoughMpToastOpen(false);
+          }}
+          sx={{
+            bottom: { xs: 'calc(env(safe-area-inset-bottom) + 22px)', sm: 24 },
+            width: '100%',
+            '& .MuiSnackbarContent-root': {
+              width: FAB_U_TOAST_WIDTH,
+              maxWidth: 390,
+            },
+          }}
+        >
+          <Box
+            data-pw="not-enough-mp-toast"
+            role="alert"
+            sx={{
+              bgcolor: fabUTokens.color.hp,
+              color: '#ffffff',
+              width: FAB_U_TOAST_WIDTH,
+              maxWidth: 390,
+              boxSizing: 'border-box',
+              px: 2,
+              py: 1.1,
+              borderRadius: '8px',
+              boxShadow: '0 10px 26px rgba(31, 42, 38, 0.22)',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              letterSpacing: 0,
+              textAlign: 'center',
+            }}
+          >
+            Not enough MP to cast
+          </Box>
+        </Snackbar>
       </>
     </FabUThemeProvider>
   );
