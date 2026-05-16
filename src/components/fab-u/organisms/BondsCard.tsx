@@ -448,7 +448,7 @@ function BondsCard({
               border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
               minWidth: 148,
             },
-          },
+          } as Record<string, unknown>,
         }}
       >
         {ALL_BOND_TYPES.map((type) => {
