@@ -35,6 +35,7 @@ import {
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
 } from '@/components/fab-u';
+import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
@@ -623,8 +624,13 @@ function FabU() {
         },
       },
       '& .MuiOutlinedInput-input': {
-        py: 1.05,
-        px: 1.2,
+        ...scaledEditableTextStyle(0.84, {
+          lineHeight: 1.7,
+          stretch: true,
+          transformOrigin: 'left top',
+        }),
+        py: `${1.05 / 0.84}rem`,
+        px: `${1.2 / 0.84}rem`,
         color: fabUTokens.color.textSecondary,
       },
     };
@@ -674,8 +680,13 @@ function FabU() {
                     sx={{
                       ...fieldSx,
                       '& .MuiOutlinedInput-input': {
-                        py: 0.72,
-                        px: 1,
+                        ...scaledEditableTextStyle(0.84, {
+                          lineHeight: 1.45,
+                          stretch: true,
+                          transformOrigin: 'left center',
+                        }),
+                        py: `${0.72 / 0.84}rem`,
+                        px: `${1 / 0.84}rem`,
                         // highlight = brand (#315c4d) in light mode, yellow (#c5a557) in dark
                         color: fabUTokens.color.highlight,
                         fontWeight: 700,

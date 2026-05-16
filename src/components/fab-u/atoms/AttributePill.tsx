@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
+import { scaledEditableControlStyle, scaledEditableTextStyle } from '../editableText';
 import { getToneStyles } from '../tokens';
 import { DieSize, Tone } from '../types';
 
@@ -22,21 +23,21 @@ const selectStyle = (
   borderColor: string,
   bgColor: string,
   textColor: string,
-): React.CSSProperties => ({
-  fontFamily: 'inherit',
-  fontSize: '0.88rem',
-  fontWeight: 700,
-  lineHeight: 1,
-  height: 30,
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '4px 8px',
-  borderRadius: 8,
-  border: `1px solid ${borderColor}`,
-  background: bgColor,
-  color: textColor,
-  outline: 'none',
-});
+): React.CSSProperties =>
+  scaledEditableControlStyle(0.88, 30, {
+    fontFamily: 'inherit',
+    fontWeight: 700,
+    lineHeight: 1,
+    height: 30,
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '4px 8px',
+    borderRadius: 8,
+    border: `1px solid ${borderColor}`,
+    background: bgColor,
+    color: textColor,
+    outline: 'none',
+  });
 
 type AttributePillProps = {
   label: string;
@@ -213,7 +214,11 @@ function AttributePill({
                 width: '100%',
                 textAlign: 'center',
                 fontWeight: 700,
-                fontSize: '0.88rem',
+                ...scaledEditableTextStyle(0.88, {
+                  lineHeight: 1,
+                  stretch: true,
+                  transformOrigin: 'center center',
+                }),
                 lineHeight: 1,
                 height: '100%',
                 boxSizing: 'border-box',

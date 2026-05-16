@@ -9,6 +9,7 @@ import { Coins } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
+import { scaledEditableTextStyle } from '../editableText';
 
 type SummaryMetric = {
   label: string;
@@ -131,7 +132,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                           '& input': {
                             p: 0,
                             fontWeight: 700,
-                            fontSize: '0.98rem',
+                            ...scaledEditableTextStyle(0.98, { lineHeight: 1.04 }),
                             lineHeight: 1.04,
                             color: fabUTokens.color.textPrimary,
                             width: metric.valueSuffix

@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
+import { scaledEditableTextStyle } from '../editableText';
 import { getToneStyles } from '../tokens';
 import { StatPillData } from '../types';
 
@@ -128,7 +129,10 @@ function StatPill({
           '& input': {
             p: 0,
             fontWeight: 700,
-            fontSize: inline ? '0.96rem' : '0.98rem',
+            ...scaledEditableTextStyle(inline ? 0.96 : 0.98, {
+              lineHeight: 1.04,
+              transformOrigin: inline ? 'right center' : 'left center',
+            }),
             lineHeight: 1.04,
             color: fabUTokens.color.textPrimary,
             width: inputWidth,
@@ -235,7 +239,14 @@ function StatPill({
                     }}
                     sx={{
                       p: 0,
-                      '& input': { p: 0, width: `${Math.max(suffixDraft.length, 1)}ch` },
+                      '& input': {
+                        p: 0,
+                        ...scaledEditableTextStyle(inline ? 0.96 : 0.98, {
+                          lineHeight: 1.04,
+                          transformOrigin: 'left center',
+                        }),
+                        width: `${Math.max(suffixDraft.length, 1)}ch`,
+                      },
                     }}
                   />
                 ) : (
@@ -328,7 +339,11 @@ function StatPill({
                   width: '100%',
                   textAlign: 'center',
                   fontWeight: 700,
-                  fontSize: '0.88rem',
+                  ...scaledEditableTextStyle(0.88, {
+                    lineHeight: 1,
+                    stretch: true,
+                    transformOrigin: 'center center',
+                  }),
                   lineHeight: 1,
                   height: '100%',
                   boxSizing: 'border-box',

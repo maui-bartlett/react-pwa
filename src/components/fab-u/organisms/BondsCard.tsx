@@ -17,6 +17,7 @@ import { Trash2 } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
+import { scaledEditableTextStyle } from '../editableText';
 import type { Bond, BondType } from '../types';
 
 const ALL_BOND_TYPES: BondType[] = [
@@ -386,7 +387,7 @@ function BondsCard({
                 minWidth: 0,
                 '& input': {
                   p: 0,
-                  fontSize: '0.84rem',
+                  ...scaledEditableTextStyle(0.84, { lineHeight: 1.5, stretch: true }),
                   color: fabUTokens.color.textPrimary,
                   lineHeight: 1.5,
                   '&::placeholder': { color: fabUTokens.color.textSecondary, opacity: 1 },
