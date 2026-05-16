@@ -55,7 +55,7 @@ function StatusPill({
       data-pw={`status-pill-${id}`}
       onClick={result ? undefined : () => onToggle(id)}
       sx={{
-        minWidth: result ? 96 : 82,
+        minWidth: result ? 96 : 72,
         border: `1px solid ${color}`,
         borderRadius: STATUS_PILL_BORDER_RADIUS,
         bgcolor: selected

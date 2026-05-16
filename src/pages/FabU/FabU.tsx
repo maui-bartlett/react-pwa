@@ -411,8 +411,8 @@ function FabU() {
         >
           <Box
             sx={{
-              borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.45)}`,
-              mt: '20px',
+              borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.3)}`,
+              mt: '30px',
               pt: 2.25,
               pb: 1,
             }}
@@ -421,50 +421,48 @@ function FabU() {
           </Box>
         </AttributesStatsCard>
 
+        <SurfaceCard label="Actions" title="Battle Actions">
+          <Stack direction="row" flexWrap="wrap" gap={1}>
+            {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
+              <Button
+                key={action}
+                variant="contained"
+                onClick={() => {
+                  if (action === 'Cast') setActiveCombatTab('spells');
+                }}
+                sx={{
+                  flex: '1 1 calc(50% - 4px)',
+                  width: 'calc(50% - 4px)',
+                  minWidth: 0,
+                  height: 40,
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  bgcolor: fabUTokens.color.brand,
+                  color: '#fff',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    bgcolor: fabUTokens.color.brandStrong,
+                    boxShadow: 'none',
+                  },
+                }}
+              >
+                {action}
+              </Button>
+            ))}
+          </Stack>
+        </SurfaceCard>
+
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
         {activeCombatTab === 'bonds' ? (
-          <>
-            <BondsCard
-              bonds={character.bonds}
-              onToggleType={toggleBondType}
-              onAddBond={addBond}
-              onRemoveBond={removeBond}
-            />
-
-            <SurfaceCard label="Actions" title="Battle Actions">
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
-                  <Button
-                    key={action}
-                    variant="contained"
-                    onClick={() => {
-                      if (action === 'Cast') setActiveCombatTab('spells');
-                    }}
-                    sx={{
-                      flex: '1 1 calc(50% - 4px)',
-                      width: 'calc(50% - 4px)',
-                      minWidth: 0,
-                      height: 40,
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      fontWeight: 700,
-                      fontSize: '0.78rem',
-                      bgcolor: fabUTokens.color.brand,
-                      color: '#fff',
-                      boxShadow: 'none',
-                      '&:hover': {
-                        bgcolor: fabUTokens.color.brandStrong,
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    {action}
-                  </Button>
-                ))}
-              </Stack>
-            </SurfaceCard>
-          </>
+          <BondsCard
+            bonds={character.bonds}
+            onToggleType={toggleBondType}
+            onAddBond={addBond}
+            onRemoveBond={removeBond}
+          />
         ) : null}
 
         {activeCombatTab === 'skills' ? (
