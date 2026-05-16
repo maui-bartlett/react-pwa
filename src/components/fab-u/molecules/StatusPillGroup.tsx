@@ -27,8 +27,8 @@ const PILL_H = 41;
 // Visible stem height below each upper pill before reaching the horizontal bar
 const DROP_H = 10;
 const H_TOP = PILL_H + DROP_H; // y of horizontal bar = 51
-// Container height 99 = H_TOP(51) + STEM_H(12) + result_minHeight(36).
-// Lower pill top = 99 - 36 = 63. Stem: H_TOP(51) → 63 = 12px ✓
+// Container height 104 = H_TOP(51) + STEM_H(12) + PILL_H(41).
+// Lower pill top = 104 - PILL_H = 63. Stem: H_TOP(51) → 63 = 12px.
 const STEM_H = 12;
 // Darken a hex color by blending it toward black at the given alpha (0–1).
 function blendWithBlack(hex: string, alpha: number): string {
@@ -55,15 +55,15 @@ function StatusPill({
       data-pw={`status-pill-${id}`}
       onClick={result ? undefined : () => onToggle(id)}
       sx={{
-        minWidth: result ? 84 : 82,
+        minWidth: result ? 96 : 82,
         border: `1px solid ${color}`,
         borderRadius: STATUS_PILL_BORDER_RADIUS,
         bgcolor: selected
           ? (selectedFill ?? blendWithBlack(color, 0.25))
           : fabUTokens.color.surface,
-        px: result ? 1.05 : 1.25,
-        py: result ? 0.62 : 0.8,
-        minHeight: result ? 36 : 41,
+        px: 1.25,
+        py: 0.8,
+        minHeight: 41,
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -85,7 +85,7 @@ function StatusPill({
               ? fabUTokens.color.textSecondary
               : fabUTokens.color.textPrimary,
           fontWeight: 500,
-          fontSize: result ? '0.7rem' : '0.77rem',
+          fontSize: '0.77rem',
           lineHeight: 1,
           letterSpacing: 0,
           textTransform: 'none',
@@ -101,7 +101,7 @@ function StatusPillGroup({ topLeft, topRight, result, onToggle }: StatusPillGrou
   const fabUTokens = useFabUTokens();
   const lineColor = fabUTokens.color.border;
   return (
-    <Box sx={{ position: 'relative', width: 150, height: 99, flexShrink: 0 }}>
+    <Box sx={{ position: 'relative', width: 150, height: 104, flexShrink: 0 }}>
       {/* Upper pills */}
       <Box sx={{ position: 'absolute', top: 0, left: 0 }}>
         <StatusPill {...topLeft} onToggle={onToggle} />
