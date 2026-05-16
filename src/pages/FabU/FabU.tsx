@@ -8,6 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
 import { Check, Pencil, Sparkles } from 'lucide-react';
@@ -169,6 +170,28 @@ function FabU() {
   const handleSkillClick = (skillName: string) => {
     if (skillName !== 'Entropic Magic') return;
     setActiveTab('spells');
+  };
+
+  const totalSkillLevels = character.skillGroups.reduce(
+    (sum, group) =>
+      sum +
+      group.skills.reduce((gSum, skill) => {
+        const n = parseInt(skill.level ?? '0', 10);
+        return gSum + (isNaN(n) ? 0 : n);
+      }, 0),
+    0,
+  );
+  const canAddMoreSkills = character.level > totalSkillLevels;
+
+  const handleAddSkill = (className: string) => {
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className
+          ? { ...g, skills: [...g.skills, { name: 'New Skill', level: '1', effect: '' }] }
+          : g,
+      ),
+    }));
   };
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
@@ -388,8 +411,8 @@ function FabU() {
         >
           <Box
             sx={{
-              borderTop: `1px solid ${fabUTokens.color.border}`,
-              mt: 1,
+              borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.45)}`,
+              mt: 2.25,
               pt: 2.25,
               pb: 1,
             }}
@@ -456,6 +479,7 @@ function FabU() {
                   rows={group.skills}
                   onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
                   clickableSkills={['Entropic Magic']}
+                  onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
                 />
               ))}
           </>
@@ -514,6 +538,7 @@ function FabU() {
             rows={group.skills}
             onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
             clickableSkills={['Entropic Magic']}
+            onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
           />
         ))}
         <SurfaceCard label="Class Summary">

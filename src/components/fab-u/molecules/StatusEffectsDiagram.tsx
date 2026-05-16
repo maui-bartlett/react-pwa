@@ -233,7 +233,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
           direction="row"
           alignItems="center"
           justifyContent="center"
-          gap={1}
+          gap={2}
           sx={{
             opacity: detailVisible ? 1 : 0,
             transition: `opacity ${DETAIL_FADE_MS}ms ease`,

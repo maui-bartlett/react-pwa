@@ -26,6 +26,14 @@ See `package.json` scripts section. Key commands:
 - The `prepare` script runs `husky install` and copies `env/.shared` to `.env`. This runs automatically on `npm install`.
 - ESLint is configured with `--max-warnings=0`, so any warning will cause a non-zero exit code.
 
+### Scheduling rule
+
+- Always schedule `at` jobs using standalone scripts (for example, under `~/Library/Scripts`) and invoke them via `/bin/bash /path/to/script`.
+- Do not place multi-line inline payloads directly inside `at <<EOF ... EOF` for task logic.
+- For scripts executed by `at`, do not rely on inherited working directory; start from `HOME` and use absolute paths (for Git, prefer `git -C /abs/repo/path ...`).
+- For scripts executed by `at`, explicitly export required environment variables (`HOME`, `PATH`, `LANG`, `LC_ALL`) and set `GIT_TERMINAL_PROMPT=0` for non-interactive Git safety.
+- For scripts executed by `at`, detach stdin for non-interactive CLIs when appropriate (`</dev/null`) and write clear start/end log markers with exit status.
+
 ### Vercel plugin
 
 The Vercel plugin is pre-installed via the update script (`npx plugins add vercel/vercel-plugin --target cursor`). It provides 26 skills, 3 specialist agents, and 5 slash commands for the Vercel/Next.js ecosystem. The plugin requires Bun (also installed by the update script). No manual setup is needed — it activates automatically for Vercel/Next.js projects.

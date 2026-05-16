@@ -103,6 +103,7 @@ function EquipmentCard({
             gap: 1,
             color: fabUTokens.color.highlight,
             bgcolor: fabUTokens.color.surfaceMuted,
+            cursor: 'pointer',
           }}
         >
           <AddIcon fontSize="small" />
