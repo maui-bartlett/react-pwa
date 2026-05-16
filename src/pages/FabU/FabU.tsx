@@ -180,13 +180,18 @@ function FabU() {
     setActiveTab('spells');
   };
 
-  const totalSkillLevels = character.skillGroups.reduce(
-    (sum, group) =>
-      sum +
-      group.skills.reduce((gSum, skill) => {
+  const skillLevelTotalsByClass = character.skillGroups.reduce<Record<string, number>>(
+    (totals, group) => ({
+      ...totals,
+      [group.className]: group.skills.reduce((gSum, skill) => {
         const n = parseInt(skill.level ?? '0', 10);
         return gSum + (isNaN(n) ? 0 : n);
       }, 0),
+    }),
+    {},
+  );
+  const totalSkillLevels = Object.values(skillLevelTotalsByClass).reduce(
+    (sum, total) => sum + total,
     0,
   );
   const canAddMoreSkills = character.level > totalSkillLevels;
@@ -309,7 +314,7 @@ function FabU() {
           items={character.classes.map((cls) => ({
             title: cls.name,
             subtitle: cls.subtitle,
-            trailing: `LVL ${cls.level}`,
+            trailing: `LVL ${skillLevelTotalsByClass[cls.name] ?? 0}`,
           }))}
         />
 
@@ -547,15 +552,6 @@ function FabU() {
             onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
           />
         ))}
-        <SurfaceCard label="Class Summary">
-          <Typography
-            variant="body2"
-            sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.84rem', lineHeight: 1.7 }}
-          >
-            {character.classes.map((c) => `${c.name} ${c.level}`).join(' · ')}. XP is capped at 10;
-            level up when it reaches 10.
-          </Typography>
-        </SurfaceCard>
       </>
     );
   }
