@@ -262,6 +262,7 @@ function StatPill({
                     }}
                     variant="h6"
                     sx={{
+                      ml: '5px',
                       color: fabUTokens.color.textSecondary,
                       fontWeight: 700,
                       fontSize: inline ? '0.96rem' : '0.98rem',

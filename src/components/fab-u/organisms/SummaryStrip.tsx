@@ -152,8 +152,14 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,
-                          // Match edit-mode input width to prevent slash jump
-                          ...(metric.valueSuffix && !isXpMetric ? { minWidth: '2.5ch' } : {}),
+                          // Match edit-mode input width to prevent slash jump.
+                          // XP uses a dynamic ch width keyed to value length so
+                          // the slash stays put when edit mode opens.
+                          ...(metric.valueSuffix
+                            ? isXpMetric
+                              ? { minWidth: `${Math.max(metric.value.length, 1) + 0.5}ch` }
+                              : { minWidth: '2.5ch' }
+                            : {}),
                         }}
                       >
                         {metric.value}
