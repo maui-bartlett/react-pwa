@@ -66,6 +66,7 @@ const topLevelStatuses = [
 const SUMMARY_FADE_MS = 140;
 const DETAIL_FADE_MS = 160;
 const COLLAPSE_MS = 180;
+const TRANSITION_HANDOFF_BUFFER_MS = 40;
 
 function blendWithBlack(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -123,8 +124,8 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
       } else {
         unmountDetails();
       }
-      queueTimer(() => setSummaryVisible(true), COLLAPSE_MS);
-    }, DETAIL_FADE_MS);
+      queueTimer(() => setSummaryVisible(true), COLLAPSE_MS + TRANSITION_HANDOFF_BUFFER_MS);
+    }, DETAIL_FADE_MS + TRANSITION_HANDOFF_BUFFER_MS);
   };
 
   useEffect(
