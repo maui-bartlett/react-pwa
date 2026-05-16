@@ -110,7 +110,16 @@ function FabU() {
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
-  const setCurrentXP = (v: number) => setCharacter((c) => ({ ...c, currentXP: v }));
+  const setCurrentXP = (v: number) =>
+    setCharacter((c) => {
+      if (v <= c.totalXP) return { ...c, currentXP: v };
+
+      return {
+        ...c,
+        level: c.level + Math.floor(v / c.totalXP),
+        currentXP: v % c.totalXP,
+      };
+    });
   const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
   const toggleBondType = (id: string, type: BondType) =>
@@ -339,7 +348,6 @@ function FabU() {
               valueSuffix: ` / ${character.totalXP}`,
               pw: 'ov-xp',
               onChange: setCurrentXP,
-              maxValue: character.totalXP,
             },
             { label: 'Level', value: String(character.level), pw: 'ov-level', onChange: setLevel },
           ]}
@@ -535,7 +543,6 @@ function FabU() {
               valueSuffix: ` / ${character.totalXP}`,
               pw: 'sk-xp',
               onChange: setCurrentXP,
-              maxValue: character.totalXP,
             },
             { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
