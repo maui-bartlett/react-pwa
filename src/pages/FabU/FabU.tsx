@@ -469,7 +469,7 @@ function FabU() {
           <Box
             sx={{
               borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.3)}`,
-              mt: '30px',
+              mt: '40px',
               pt: 2.25,
               pb: 1,
             }}
