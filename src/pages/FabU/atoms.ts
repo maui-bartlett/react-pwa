@@ -220,6 +220,9 @@ const migratingCharacterStorage = {
   },
 };
 
+/** Maximum character level in Fabula Ultima. Not displayed in the UI. */
+const MAX_CHARACTER_LEVEL = 50;
+
 const characterState = atomWithStorage<Character>(
   'fab-u-character',
   CHARACTER_DEFAULTS,
@@ -243,5 +246,5 @@ const derivedStatusEffectsState = atom((get) => {
   };
 });
 
-export { characterState, derivedStatusEffectsState, statusEffectsState };
+export { characterState, derivedStatusEffectsState, statusEffectsState, MAX_CHARACTER_LEVEL };
 export type { BackstoryPrompt, Character, ClassEntry };

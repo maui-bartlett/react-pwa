@@ -14,7 +14,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { Check, Pencil, Sparkles } from 'lucide-react';
+import { Check, CheckCircle, Pencil, Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -210,6 +210,10 @@ function FabU() {
   );
   const canAddMoreSkills = character.level > totalSkillLevels;
   const freeSkillLevels = Math.max(0, character.level - totalSkillLevels);
+  const unmasteredClassCount = character.classes.filter(
+    (cls) => (skillLevelTotalsByClass[cls.name] ?? 0) < 10,
+  ).length;
+  const canAddClass = canAddMoreSkills && unmasteredClassCount < 3;
   const selectedClassNames = new Set(character.classes.map((cls) => cls.name));
   const classPickerOpen = Boolean(classPickerAnchorEl);
 
@@ -384,8 +388,8 @@ function FabU() {
 
         <DetailListCard
           label="Classes"
-          addLabel="Class"
-          onAdd={openClassPicker}
+          addLabel={canAddClass ? 'Class' : undefined}
+          onAdd={canAddClass ? openClassPicker : undefined}
           items={character.classes.map((cls) => ({
             title: cls.name,
             subtitle: cls.subtitle,
@@ -419,7 +423,10 @@ function FabU() {
           }}
         >
           <Stack spacing={0.5}>
-            {selectableClasses.map((selectableClass) => {
+            {[
+              ...selectableClasses.filter((c) => selectedClassNames.has(c.name)),
+              ...selectableClasses.filter((c) => !selectedClassNames.has(c.name)),
+            ].map((selectableClass) => {
               const isSelected = selectedClassNames.has(selectableClass.name);
 
               return (
@@ -443,9 +450,7 @@ function FabU() {
                     fontWeight: 700,
                     boxShadow: 'none',
                     '&:hover': {
-                      bgcolor: isSelected
-                        ? fabUTokens.color.surfaceMuted
-                        : fabUTokens.color.surfaceMuted,
+                      bgcolor: fabUTokens.color.surfaceMuted,
                       boxShadow: 'none',
                     },
                     '&.Mui-disabled': {
@@ -456,17 +461,10 @@ function FabU() {
                 >
                   <span>{selectableClass.name}</span>
                   {isSelected ? (
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      sx={{
-                        color: fabUTokens.color.brandText,
-                        fontSize: '0.62rem',
-                        fontWeight: 800,
-                      }}
-                    >
-                      Added
-                    </Typography>
+                    <CheckCircle
+                      size={15}
+                      style={{ color: fabUTokens.color.brand, flexShrink: 0 }}
+                    />
                   ) : null}
                 </Button>
               );
