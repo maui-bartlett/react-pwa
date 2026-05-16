@@ -357,7 +357,7 @@ function BondsCard({
               py: 1.45,
               display: 'flex',
               alignItems: 'center',
-              gap: 0.35,
+              gap: 1,
               color: fabUTokens.color.highlight,
               bgcolor: fabUTokens.color.surfaceMuted,
             }}
@@ -448,7 +448,7 @@ function BondsCard({
                 fontWeight: 600,
                 py: 0.75,
                 gap: 1,
-                color: selected ? fabUTokens.color.brand : fabUTokens.color.textPrimary,
+                color: selected ? fabUTokens.color.brand : '#1f2a26',
                 bgcolor: selected ? 'rgba(49, 92, 77, 0.06)' : 'transparent',
                 '&:hover': { bgcolor: 'rgba(49, 92, 77, 0.1)' },
               }}

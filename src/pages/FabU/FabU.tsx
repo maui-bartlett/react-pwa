@@ -415,9 +415,10 @@ function FabU() {
                     key={action}
                     variant="contained"
                     sx={{
-                      flexGrow: 1,
-                      minWidth: 120,
-                      minHeight: 38,
+                      flex: '1 1 calc(50% - 4px)',
+                      width: 'calc(50% - 4px)',
+                      minWidth: 0,
+                      height: 40,
                       borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 700,
