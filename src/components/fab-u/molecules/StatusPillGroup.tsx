@@ -70,7 +70,8 @@ function StatusPill({
         boxShadow: '0 1px 3px rgba(31, 42, 38, 0.04)',
         cursor: result ? 'default' : 'pointer',
         userSelect: 'none',
-        transition: 'background-color 150ms ease',
+        transition: 'background-color 150ms ease, border-radius 180ms ease, transform 180ms ease',
+        willChange: 'border-radius, transform',
         viewTransitionName,
       }}
     >

@@ -9,7 +9,7 @@ import { ChevronDown } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import StatusPillGroup from './StatusPillGroup';
-import { STATUS_PILL_BORDER_RADIUS } from './statusEffectsTokens';
+import { SMALL_STATUS_PILL_BORDER_RADIUS } from './statusEffectsTokens';
 
 export type StatusEffectId = 'slow' | 'dazed' | 'enraged' | 'weak' | 'shaken' | 'poisoned';
 
@@ -138,7 +138,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                 }}
                 sx={{
                   border: `1px solid ${status.color}`,
-                  borderRadius: STATUS_PILL_BORDER_RADIUS,
+                  borderRadius: SMALL_STATUS_PILL_BORDER_RADIUS,
                   bgcolor: selected ? blendWithBlack(status.color, 0.25) : fabUTokens.color.surface,
                   color: selected ? '#ffffff' : fabUTokens.color.textPrimary,
                   px: 0.8,
@@ -152,7 +152,9 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
-                  transition: 'background-color 150ms ease, color 150ms ease',
+                  transition:
+                    'background-color 150ms ease, border-radius 180ms ease, color 150ms ease, transform 180ms ease',
+                  willChange: 'border-radius, transform',
                   viewTransitionName: expanded ? undefined : topLevelTransitionName(status.id),
                 }}
               >

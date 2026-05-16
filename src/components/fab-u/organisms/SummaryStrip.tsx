@@ -164,7 +164,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                         aria-hidden="true"
                         sx={{
                           ml: 'auto',
-                          color: fabUTokens.color.highlight,
+                          color: '#d8a24b',
                           flexShrink: 0,
                           strokeWidth: 2.1,
                         }}
