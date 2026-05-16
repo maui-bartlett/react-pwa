@@ -51,6 +51,7 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 ];
 
 const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
+const DEFAULT_SKILL_MAX_LEVEL = 5;
 
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
@@ -204,6 +205,7 @@ function FabU() {
     0,
   );
   const canAddMoreSkills = character.level > totalSkillLevels;
+  const freeSkillLevels = Math.max(0, character.level - totalSkillLevels);
 
   const handleAddSkill = (className: string) => {
     setCharacter((c) => ({
@@ -214,6 +216,40 @@ function FabU() {
           : g,
       ),
     }));
+  };
+  const handleAddSkillLevels = (className: string, skillName: string, levels: number) => {
+    setCharacter((c) => {
+      const allocatedLevels = c.skillGroups.reduce(
+        (sum, group) =>
+          sum +
+          group.skills.reduce((groupSum, skill) => {
+            const n = parseInt(skill.level ?? '0', 10);
+            return groupSum + (isNaN(n) ? 0 : n);
+          }, 0),
+        0,
+      );
+      const availableLevels = Math.max(0, c.level - allocatedLevels);
+
+      return {
+        ...c,
+        skillGroups: c.skillGroups.map((group) =>
+          group.className === className
+            ? {
+                ...group,
+                skills: group.skills.map((skill) => {
+                  if (skill.name !== skillName) return skill;
+                  const currentLevel = parseInt(skill.level ?? '0', 10);
+                  const normalizedLevel = isNaN(currentLevel) ? 0 : currentLevel;
+                  const remainingSkillLevels =
+                    (skill.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL) - normalizedLevel;
+                  const levelsToAdd = Math.min(levels, availableLevels, remainingSkillLevels);
+                  return { ...skill, level: String(normalizedLevel + Math.max(0, levelsToAdd)) };
+                }),
+              }
+            : group,
+        ),
+      };
+    });
   };
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
@@ -499,6 +535,10 @@ function FabU() {
                   onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
                   clickableSkills={['Entropic Magic']}
                   onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
+                  freeSkillLevels={freeSkillLevels}
+                  onAddSkillLevels={(skillName, levels) =>
+                    handleAddSkillLevels(group.className, skillName, levels)
+                  }
                 />
               ))}
           </>
@@ -557,6 +597,10 @@ function FabU() {
             onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
             clickableSkills={['Entropic Magic']}
             onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
+            freeSkillLevels={freeSkillLevels}
+            onAddSkillLevels={(skillName, levels) =>
+              handleAddSkillLevels(group.className, skillName, levels)
+            }
           />
         ))}
       </>

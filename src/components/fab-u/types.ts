@@ -67,6 +67,7 @@ export type AttributeRow = {
 export type SkillRow = {
   name: string;
   level?: string;
+  maxLevel?: number;
   effect: string;
 };
 
