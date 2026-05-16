@@ -100,7 +100,7 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
             overscrollBehavior: 'contain',
           }}
         >
-          <Stack ref={contentRef} spacing={2.15}>
+          <Stack ref={contentRef} spacing={2.775}>
             {children}
           </Stack>
           <Box sx={{ height: bottomSpacerHeight, flexShrink: 0 }} />

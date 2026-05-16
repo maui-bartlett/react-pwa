@@ -52,7 +52,7 @@ function SurfaceCard({
         <Box
           sx={{
             position: 'absolute',
-            top: 5,
+            top: 0,
             left: 12,
             transform: 'translateY(-50%)',
             px: 0.28,
