@@ -354,6 +354,25 @@ function FabU() {
     }));
   }
 
+  function renderProgressStrip() {
+    return (
+      <SummaryStrip
+        label="Progress"
+        metrics={[
+          { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
+          {
+            label: 'XP',
+            value: String(character.currentXP),
+            valueSuffix: ` / ${character.totalXP}`,
+            pw: 'ov-xp',
+            onChange: setCurrentXP,
+          },
+          { label: 'LVL', value: String(character.level), pw: 'ov-level', onChange: setLevel },
+        ]}
+      />
+    );
+  }
+
   function renderOverview() {
     return (
       <>
@@ -414,6 +433,8 @@ function FabU() {
           ]}
           bottomRow={makeAttrRows()}
         />
+
+        {renderProgressStrip()}
 
         <DetailListCard
           label="Classes"
@@ -508,25 +529,6 @@ function FabU() {
           onToggleType={toggleBondType}
           onAddBond={addBond}
           onRemoveBond={removeBond}
-        />
-
-        <SummaryStrip
-          metrics={[
-            {
-              label: 'Fabula Points',
-              value: String(character.fabulaPoints),
-              pw: 'fp',
-              onChange: setFP,
-            },
-            {
-              label: 'XP',
-              value: String(character.currentXP),
-              valueSuffix: ` / ${character.totalXP}`,
-              pw: 'ov-xp',
-              onChange: setCurrentXP,
-            },
-            { label: 'Level', value: String(character.level), pw: 'ov-level', onChange: setLevel },
-          ]}
         />
       </>
     );
@@ -666,21 +668,29 @@ function FabU() {
           <>
             {character.skillGroups
               .filter((g) => g.className !== 'Tinkerer')
-              .map((group) => (
-                <SkillsTable
-                  key={group.className}
-                  label={`${group.className} Skills`}
-                  title={`${group.className} Skills`}
-                  rows={group.skills}
-                  onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
-                  clickableSkills={['Entropic Magic']}
-                  onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
-                  freeSkillLevels={freeSkillLevels}
-                  onAddSkillLevels={(skillName, levels) =>
-                    handleAddSkillLevels(group.className, skillName, levels)
-                  }
-                />
-              ))}
+              .map((group) => {
+                const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
+                return (
+                  <SkillsTable
+                    key={group.className}
+                    label={`${group.className} Skills`}
+                    title={`${group.className} Skills`}
+                    rows={group.skills}
+                    onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
+                    clickableSkills={['Entropic Magic']}
+                    onAddSkill={
+                      canAddMoreSkills ? () => handleAddSkill(group.className) : undefined
+                    }
+                    freeSkillLevels={freeSkillLevels}
+                    onAddSkillLevels={
+                      mastered
+                        ? undefined
+                        : (skillName, levels) =>
+                            handleAddSkillLevels(group.className, skillName, levels)
+                    }
+                  />
+                );
+              })}
           </>
         ) : null}
 
@@ -713,37 +723,33 @@ function FabU() {
   function renderSkills() {
     return (
       <>
-        <SummaryStrip
-          label="Progress"
-          metrics={[
-            { label: 'LVL', value: String(character.level), pw: 'sk-level', onChange: setLevel },
-            {
-              label: 'XP',
-              value: String(character.currentXP),
-              valueSuffix: ` / ${character.totalXP}`,
-              pw: 'sk-xp',
-              onChange: setCurrentXP,
-            },
-            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
-            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
-          ]}
-        />
-        {character.skillGroups.map((group) => (
-          <Box key={group.className} data-class-group={group.className}>
-            <SkillsTable
-              label={`${group.className} Skills`}
-              title={`${group.className} Skills`}
-              rows={group.skills}
-              onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
-              clickableSkills={['Entropic Magic']}
-              onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
-              freeSkillLevels={freeSkillLevels}
-              onAddSkillLevels={(skillName, levels) =>
-                handleAddSkillLevels(group.className, skillName, levels)
-              }
-            />
-          </Box>
-        ))}
+        {renderProgressStrip()}
+        {character.skillGroups.map((group) => {
+          const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
+          return (
+            <Box
+              key={group.className}
+              data-class-group={group.className}
+              sx={{ scrollMarginTop: '15px' }}
+            >
+              <SkillsTable
+                label={`${group.className} Skills`}
+                title={`${group.className} Skills`}
+                rows={group.skills}
+                onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
+                clickableSkills={['Entropic Magic']}
+                onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
+                freeSkillLevels={freeSkillLevels}
+                onAddSkillLevels={
+                  mastered
+                    ? undefined
+                    : (skillName, levels) =>
+                        handleAddSkillLevels(group.className, skillName, levels)
+                }
+              />
+            </Box>
+          );
+        })}
       </>
     );
   }

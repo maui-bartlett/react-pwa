@@ -219,7 +219,6 @@ function AttributePill({
                 fontWeight: 700,
                 ...scaledEditableTextStyle(0.88, {
                   lineHeight: 1,
-                  stretch: true,
                   transformOrigin: 'center center',
                 }),
                 lineHeight: 1,

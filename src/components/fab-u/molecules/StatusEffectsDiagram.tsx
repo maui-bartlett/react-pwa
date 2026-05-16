@@ -159,16 +159,17 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
         <Stack
           direction="row"
           alignItems="center"
-          sx={{ minWidth: 0, flex: 1, gap: 0.75, flexWrap: 'wrap' }}
+          sx={{ minWidth: 0, flex: 1, gap: 0.75, flexWrap: 'nowrap' }}
         >
           <Typography
             variant="h6"
             sx={{
               color: fabUTokens.color.textPrimary,
               fontWeight: 700,
-              fontSize: '1rem',
+              fontSize: '0.72rem',
               lineHeight: 1.2,
-              mr: '12px',
+              mr: '6px',
+              whiteSpace: 'nowrap',
             }}
           >
             Status Effects
