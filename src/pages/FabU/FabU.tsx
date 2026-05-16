@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { useState } from 'react';
 
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -5,6 +6,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Popover from '@mui/material/Popover';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -42,6 +44,7 @@ import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
+import { selectableClasses } from './selectableClasses';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Bonds', value: 'bonds' },
@@ -95,6 +98,7 @@ function FabU() {
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
+  const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -206,6 +210,31 @@ function FabU() {
   );
   const canAddMoreSkills = character.level > totalSkillLevels;
   const freeSkillLevels = Math.max(0, character.level - totalSkillLevels);
+  const selectedClassNames = new Set(character.classes.map((cls) => cls.name));
+  const classPickerOpen = Boolean(classPickerAnchorEl);
+
+  const openClassPicker = (event: MouseEvent<HTMLElement>) => {
+    setClassPickerAnchorEl(event.currentTarget);
+  };
+
+  const closeClassPicker = () => {
+    setClassPickerAnchorEl(null);
+  };
+
+  const selectClass = (className: string) => {
+    setCharacter((c) => {
+      if (c.classes.some((cls) => cls.name === className)) return c;
+
+      return {
+        ...c,
+        classes: [...c.classes, { name: className, level: 0, subtitle: 'No skills recorded yet' }],
+        skillGroups: c.skillGroups.some((group) => group.className === className)
+          ? c.skillGroups
+          : [...c.skillGroups, { className, skills: [] }],
+      };
+    });
+    closeClassPicker();
+  };
 
   const handleAddSkill = (className: string) => {
     setCharacter((c) => ({
@@ -356,12 +385,94 @@ function FabU() {
         <DetailListCard
           label="Classes"
           addLabel="Class"
+          onAdd={openClassPicker}
           items={character.classes.map((cls) => ({
             title: cls.name,
             subtitle: cls.subtitle,
             trailing: `LVL ${skillLevelTotalsByClass[cls.name] ?? 0}`,
           }))}
         />
+
+        <Popover
+          open={classPickerOpen}
+          anchorEl={classPickerAnchorEl}
+          onClose={closeClassPicker}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          marginThreshold={12}
+          disableRestoreFocus
+          PaperProps={{
+            'data-pw': 'class-picker-popover',
+            sx: {
+              mt: '5px',
+              p: 1,
+              width: 232,
+              maxWidth: 'min(90vw, 280px)',
+              maxHeight: 360,
+              overflowY: 'auto',
+              bgcolor: fabUTokens.color.surface,
+              backgroundImage: 'none',
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+              borderRadius: '12px',
+              boxShadow: fabUTokens.shadow.soft,
+            },
+          }}
+        >
+          <Stack spacing={0.5}>
+            {selectableClasses.map((selectableClass) => {
+              const isSelected = selectedClassNames.has(selectableClass.name);
+
+              return (
+                <Button
+                  key={selectableClass.name}
+                  data-pw="selectable-class-option"
+                  disabled={isSelected}
+                  onClick={() => selectClass(selectableClass.name)}
+                  sx={{
+                    justifyContent: 'space-between',
+                    minHeight: 36,
+                    px: 1.2,
+                    py: 0.75,
+                    borderRadius: '8px',
+                    color: isSelected
+                      ? fabUTokens.color.textSecondary
+                      : fabUTokens.color.textPrimary,
+                    bgcolor: isSelected ? fabUTokens.color.surfaceMuted : 'transparent',
+                    textTransform: 'none',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: isSelected
+                        ? fabUTokens.color.surfaceMuted
+                        : fabUTokens.color.surfaceMuted,
+                      boxShadow: 'none',
+                    },
+                    '&.Mui-disabled': {
+                      color: fabUTokens.color.textSecondary,
+                      opacity: 1,
+                    },
+                  }}
+                >
+                  <span>{selectableClass.name}</span>
+                  {isSelected ? (
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      sx={{
+                        color: fabUTokens.color.brandText,
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      Added
+                    </Typography>
+                  ) : null}
+                </Button>
+              );
+            })}
+          </Stack>
+        </Popover>
 
         <BondsCard
           bonds={character.bonds}

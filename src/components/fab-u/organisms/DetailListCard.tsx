@@ -1,3 +1,5 @@
+import type { KeyboardEvent, MouseEvent } from 'react';
+
 import AddIcon from '@mui/icons-material/Add';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -18,10 +20,17 @@ type DetailListCardProps = {
   items: DetailListItem[];
   subtitle?: string;
   addLabel?: string;
+  onAdd?: (event: MouseEvent<HTMLElement>) => void;
 };
 
-function DetailListCard({ label, title, items, subtitle, addLabel }: DetailListCardProps) {
+function DetailListCard({ label, title, items, subtitle, addLabel, onAdd }: DetailListCardProps) {
   const fabUTokens = useFabUTokens();
+  const handleAddKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!onAdd || (event.key !== 'Enter' && event.key !== ' ')) return;
+    event.preventDefault();
+    onAdd(event as unknown as MouseEvent<HTMLElement>);
+  };
+
   return (
     <SurfaceCard label={label} title={title} subtitle={subtitle}>
       <Stack spacing={1}>
@@ -73,6 +82,10 @@ function DetailListCard({ label, title, items, subtitle, addLabel }: DetailListC
 
         {addLabel ? (
           <Box
+            role="button"
+            tabIndex={0}
+            onClick={onAdd}
+            onKeyDown={handleAddKeyDown}
             sx={{
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
