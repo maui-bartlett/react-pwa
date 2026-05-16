@@ -435,16 +435,20 @@ function BondsCard({
         anchorEl={menuAnchor?.el ?? null}
         open={!!menuAnchor}
         onClose={closeMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        marginThreshold={12}
         slotProps={{
           paper: {
+            'data-pw': 'bond-type-menu',
             sx: {
-              bgcolor: '#fff',
+              bgcolor: fabUTokens.color.surface,
               borderRadius: '10px',
               boxShadow: '0 4px 16px rgba(31, 42, 38, 0.14)',
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
               minWidth: 148,
-              mt: 0.5,
             },
-          },
+          } as Record<string, unknown>,
         }}
       >
         {ALL_BOND_TYPES.map((type) => {

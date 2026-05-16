@@ -295,8 +295,10 @@ function StatPill({
         onClose={closeBaseTempEditor}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        marginThreshold={12}
         disableRestoreFocus
         PaperProps={{
+          'data-pw': 'statpill-popup',
           sx: {
             p: 1.5,
             display: 'flex',
@@ -305,7 +307,7 @@ function StatPill({
             width: 160,
             maxWidth: 'min(90vw, 200px)',
             bgcolor: fabUTokens.color.surface,
-            border: `1px solid ${fabUTokens.color.border}`,
+            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
             borderRadius: '12px',
             boxShadow: fabUTokens.shadow.soft,
           },
