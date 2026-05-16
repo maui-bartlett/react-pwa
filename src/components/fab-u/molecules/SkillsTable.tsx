@@ -167,6 +167,7 @@ function SkillsTable({
                             sx={{
                               width: 26,
                               height: 26,
+                              mr: '5px',
                               color: '#fff',
                               bgcolor: fabUTokens.color.brand,
                               '&:hover': { bgcolor: fabUTokens.color.brandStrong },
@@ -186,6 +187,7 @@ function SkillsTable({
         {showAddSkillButton ? (
           <Box
             data-pw="add-skill-button"
+            onClick={onAddSkill}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -193,7 +195,7 @@ function SkillsTable({
               px: 1,
               py: 0.6,
               minHeight: 33,
-              cursor: 'default',
+              cursor: 'pointer',
               color: fabUTokens.color.highlight,
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '8px',

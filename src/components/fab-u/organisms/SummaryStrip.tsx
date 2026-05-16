@@ -61,6 +61,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
           const isEditing = editing?.label === metric.label;
           const editable = !!metric.onChange;
           const showZennitIcon = metric.pw === 'zennit';
+          const isXpMetric = metric.label === 'XP';
           return (
             <Box
               key={metric.label}
@@ -104,7 +105,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '2px',
+                      gap: isXpMetric ? 0 : '2px',
                       width: '100%',
                     }}
                   >
@@ -135,9 +136,10 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                             ...scaledEditableTextStyle(0.98, { lineHeight: 1.04 }),
                             lineHeight: 1.04,
                             color: fabUTokens.color.textPrimary,
-                            width: metric.valueSuffix
-                              ? '2.5ch'
-                              : `${Math.max(editing!.draft.length, 1) + 0.5}ch`,
+                            width:
+                              metric.valueSuffix && !isXpMetric
+                                ? '2.5ch'
+                                : `${Math.max(editing!.draft.length, 1) + 0.5}ch`,
                             minWidth: '1.5ch',
                           },
                         }}
@@ -151,7 +153,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                           fontSize: '0.98rem',
                           lineHeight: 1.04,
                           // Match edit-mode input width to prevent slash jump
-                          ...(metric.valueSuffix ? { minWidth: '2.5ch' } : {}),
+                          ...(metric.valueSuffix && !isXpMetric ? { minWidth: '2.5ch' } : {}),
                         }}
                       >
                         {metric.value}

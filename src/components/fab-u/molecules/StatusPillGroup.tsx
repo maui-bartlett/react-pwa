@@ -56,9 +56,9 @@ function StatusPill({
       onClick={result ? undefined : () => onToggle(id)}
       sx={{
         // Upper pills: fixed width so all labels ("Slow","Dazed","Weak","Shaken")
-        // render identically regardless of font metrics. Result pill keeps minWidth
-        // so longer labels ("Enraged", "Poisoned") still expand naturally.
-        ...(result ? { minWidth: 96 } : { width: 72 }),
+        // render identically regardless of font metrics. Result pills stay just
+        // inside the horizontal bracket span.
+        ...(result ? { width: 88 } : { width: 72 }),
         border: `1px solid ${color}`,
         borderRadius: STATUS_PILL_BORDER_RADIUS,
         bgcolor: selected

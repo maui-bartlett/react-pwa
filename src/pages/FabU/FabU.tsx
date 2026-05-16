@@ -689,6 +689,7 @@ function FabU() {
         bgcolor: fabUTokens.color.surface,
         borderRadius: '10px',
         boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+        alignItems: 'center',
         '& fieldset': {
           borderColor: fabUTokens.color.border,
           borderRadius: '10px',
@@ -705,11 +706,12 @@ function FabU() {
         ...scaledEditableTextStyle(0.84, {
           lineHeight: 1.7,
           stretch: true,
-          transformOrigin: 'left top',
+          transformOrigin: 'left center',
         }),
         py: `${1.05 / 0.84}rem`,
         px: `${1.2 / 0.84}rem`,
         color: fabUTokens.color.textSecondary,
+        alignSelf: 'center',
       },
     };
 
