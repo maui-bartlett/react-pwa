@@ -300,6 +300,7 @@ function StatPill({
         PaperProps={{
           'data-pw': 'statpill-popup',
           sx: {
+            mt: '5px',
             p: 1.5,
             display: 'flex',
             flexDirection: 'column',

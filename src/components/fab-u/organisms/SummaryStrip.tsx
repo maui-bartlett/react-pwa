@@ -177,6 +177,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                         data-pw={metric.pw ? `metric-${metric.pw}-suffix` : undefined}
                         variant="body1"
                         sx={{
+                          ml: '5px',
                           color: fabUTokens.color.textSecondary,
                           fontWeight: 700,
                           fontSize: '0.98rem',

@@ -165,6 +165,7 @@ function AttributePill({
         PaperProps={{
           'data-pw': 'attr-popup',
           sx: {
+            mt: '5px',
             p: 1.5,
             // Vertical column layout — stack Base / Mod / Temp fields
             display: 'flex',

@@ -442,6 +442,7 @@ function BondsCard({
           paper: {
             'data-pw': 'bond-type-menu',
             sx: {
+              mt: '5px',
               bgcolor: fabUTokens.color.surface,
               backgroundImage: 'none',
               borderRadius: '10px',

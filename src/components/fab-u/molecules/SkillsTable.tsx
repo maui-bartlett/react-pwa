@@ -221,6 +221,7 @@ function SkillsTable({
         PaperProps={{
           'data-pw': 'add-level-popup',
           sx: {
+            mt: '5px',
             p: 1.5,
             width: 180,
             maxWidth: 'min(90vw, 220px)',
