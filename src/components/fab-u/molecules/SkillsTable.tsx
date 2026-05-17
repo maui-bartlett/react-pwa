@@ -509,9 +509,10 @@ function SwipeableSkillRow({
                   py: 1.25,
                   px: 1.5,
                   bgcolor: fabUTokens.color.surface,
-                  border: `1px solid ${fabUTokens.color.border}`,
                   borderRadius: '9px',
                   minHeight: 42,
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
                 {descEditActive ? (
@@ -534,7 +535,7 @@ function SwipeableSkillRow({
                       '& textarea': {
                         p: 0,
                         lineHeight: 1.5,
-                        ...scaledEditableTextStyle(0.74, { stretch: true, lineHeight: 1.5 }),
+                        ...scaledEditableTextStyle(0.84, { stretch: true, lineHeight: 1.5 }),
                         color: fabUTokens.color.textPrimary,
                       },
                     }}
@@ -543,7 +544,7 @@ function SwipeableSkillRow({
                   <Typography
                     variant="body2"
                     sx={{
-                      fontSize: '0.74rem',
+                      fontSize: '0.84rem',
                       lineHeight: 1.5,
                       color: fabUTokens.color.textPrimary,
                       fontStyle: !row.description && !row.effect ? 'italic' : 'normal',

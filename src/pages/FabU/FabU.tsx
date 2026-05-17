@@ -7,6 +7,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
@@ -99,6 +100,7 @@ function FabU() {
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
   const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
+  const [isEditingTraits, setIsEditingTraits] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
@@ -182,6 +184,8 @@ function FabU() {
       spellGroups: c.spellGroups.filter((g) => g.className !== cls.name),
     }));
   };
+  const updateTrait = (key: 'identity' | 'theme' | 'origin', value: string) =>
+    setCharacter((c) => ({ ...c, traits: { ...c.traits, [key]: value } }));
   const updateBackstoryPrompt = (index: number, prompt: string) =>
     setCharacter((c) => ({
       ...c,
@@ -562,26 +566,72 @@ function FabU() {
   function renderOverview() {
     return (
       <>
-        <SurfaceCard label="Traits">
+        <SurfaceCard
+          label="Traits"
+          actionsPosition="absolute"
+          actions={
+            <IconButton
+              aria-label={isEditingTraits ? 'Save trait changes' : 'Edit traits'}
+              size="small"
+              onClick={() => setIsEditingTraits((v) => !v)}
+              sx={{
+                width: 30,
+                height: 30,
+                color: fabUTokens.color.brand,
+                border: `1px solid ${fabUTokens.color.border}`,
+                bgcolor: fabUTokens.color.surface,
+                '&:hover': {
+                  bgcolor: fabUTokens.color.surfaceMuted,
+                },
+              }}
+            >
+              {isEditingTraits ? <Check size={16} /> : <Pencil size={15} />}
+            </IconButton>
+          }
+        >
           <Stack spacing={1} sx={{ pl: 1.18 }}>
-            {[
-              ['IDENTITY', 'Transfer Student to UoE'],
-              ['THEME', 'Belonging'],
-              ['ORIGIN', 'Infinita'],
-            ].map(([label, value]) => (
-              <Stack key={label} direction="row" justifyContent="space-between" gap={2}>
+            {(
+              [
+                ['IDENTITY', 'identity'],
+                ['THEME', 'theme'],
+                ['ORIGIN', 'origin'],
+              ] as [string, 'identity' | 'theme' | 'origin'][]
+            ).map(([label, key]) => (
+              <Stack
+                key={label}
+                direction="row"
+                justifyContent="space-between"
+                gap={2}
+                alignItems="center"
+              >
                 <Typography
                   variant="caption"
                   sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, minWidth: 76 }}
                 >
                   {label}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}
-                >
-                  {value}
-                </Typography>
+                {isEditingTraits ? (
+                  <InputBase
+                    value={character.traits[key]}
+                    onChange={(e) => updateTrait(key, e.target.value)}
+                    sx={{
+                      flex: 1,
+                      '& input': {
+                        p: 0,
+                        textAlign: 'right',
+                        ...scaledEditableTextStyle(0.875, { lineHeight: 1.5, stretch: true }),
+                        color: fabUTokens.color.textPrimary,
+                      },
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}
+                  >
+                    {character.traits[key]}
+                  </Typography>
+                )}
               </Stack>
             ))}
           </Stack>
@@ -842,11 +892,11 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.color.brandText,
+                    bgcolor: fabUTokens.color.success,
                     color: '#ffffff',
                     boxShadow: 'none',
                     '&:hover': {
-                      bgcolor: fabUTokens.color.brandText,
+                      bgcolor: fabUTokens.color.success,
                       filter: 'brightness(0.88)',
                       boxShadow: 'none',
                     },
@@ -1054,7 +1104,6 @@ function FabU() {
       <>
         {renderProgressStrip()}
         {character.skillGroups.map((group) => {
-          const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
           return (
             <Box
               key={group.className}
@@ -1069,11 +1118,8 @@ function FabU() {
                   canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                 }
                 freeSkillLevels={freeSkillLevels}
-                onAddSkillLevels={
-                  mastered
-                    ? undefined
-                    : (skillName, levels) =>
-                        handleAddSkillLevels(group.className, skillName, levels)
+                onAddSkillLevels={(skillName, levels) =>
+                  handleAddSkillLevels(group.className, skillName, levels)
                 }
                 onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
                 onEditSkill={(oldName, updatedSkill) =>
@@ -1094,6 +1140,7 @@ function FabU() {
               borderRadius: '9px',
               px: 1.3,
               py: 5.8,
+              mx: 1.65,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
@@ -1198,7 +1245,6 @@ function FabU() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 0.4,
                 cursor: 'pointer',
                 boxShadow: fabUTokens.shadow.soft,
                 userSelect: 'none',
@@ -1212,7 +1258,7 @@ function FabU() {
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ width: 30, height: 14, display: 'block' }}
+                style={{ width: 30, height: 14, display: 'block', marginBottom: '5px' }}
               >
                 <line x1="29" y1="7" x2="6" y2="7" />
                 <polyline points="13 13 6 7 13 1" />

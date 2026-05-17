@@ -44,6 +44,7 @@ type Character = {
   spellGroups: SpellGroup[];
   equipment: EquipmentItem[];
   backpack: BackpackItem[];
+  traits: { identity: string; theme: string; origin: string };
 };
 
 type BackstoryPrompt = {
@@ -139,6 +140,7 @@ const CHARACTER_DEFAULTS: Character = {
   spellGroups: defaultSpellGroups,
   equipment: EQUIPMENT_DEFAULTS,
   backpack: BACKPACK_DEFAULTS,
+  traits: { identity: 'Transfer Student to UoE', theme: 'Belonging', origin: 'Infinita' },
 };
 
 function normalizeBackstoryPrompts(
