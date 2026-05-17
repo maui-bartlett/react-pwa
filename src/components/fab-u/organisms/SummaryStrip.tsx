@@ -23,6 +23,8 @@ type SummaryMetric = {
   onChange?: (value: number) => void;
   /** When set, the committed value is clamped to [0, maxValue]. */
   maxValue?: number;
+  /** Optional icon rendered at the trailing (right) edge of the pill */
+  trailingIcon?: ReactNode;
 };
 
 type SummaryStripProps = {
@@ -183,6 +185,13 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                           strokeWidth: 2.1,
                         }}
                       />
+                    ) : null}
+                    {!showZennitIcon && metric.trailingIcon ? (
+                      <Box
+                        sx={{ ml: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                      >
+                        {metric.trailingIcon}
+                      </Box>
                     ) : null}
                     {metric.valueSuffix ? (
                       <Typography

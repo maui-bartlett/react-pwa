@@ -15,7 +15,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { ArrowLeft, Check, CheckCircle, Pencil, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle, FlaskConical, Pencil, Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -720,48 +720,129 @@ function FabU() {
           </Box>
         </AttributesStatsCard>
 
-        <SurfaceCard label="Actions" title="Battle Actions">
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Attack', 'Cast', 'Guard', 'Inventory'].map((action) => (
-              <Button
-                key={action}
-                variant="contained"
-                onClick={(event) => {
-                  if (action === 'Attack') {
-                    setActiveCombatTab('gear');
-                    setPendingCombatGearScroll(true);
-                  }
-                  if (action === 'Cast') {
-                    setActiveCombatTab('spells');
-                    setPendingCombatSpellScroll(true);
-                  }
-                  if (action === 'Inventory') {
-                    const rect = event.currentTarget.getBoundingClientRect();
-                    setInventoryAnchorDir(rect.top > window.innerHeight / 2 ? 'above' : 'below');
-                    setInventoryAnchorEl(event.currentTarget);
-                  }
-                }}
+        <SurfaceCard label="Actions">
+          <Stack spacing={1.5}>
+            <Stack spacing={0.75}>
+              <Typography
+                variant="caption"
                 sx={{
-                  flex: '1 1 calc(50% - 4px)',
-                  width: 'calc(50% - 4px)',
-                  minWidth: 0,
-                  height: 40,
-                  borderRadius: '8px',
-                  textTransform: 'none',
+                  color: fabUTokens.color.textSecondary,
                   fontWeight: 700,
-                  fontSize: '0.78rem',
-                  bgcolor: fabUTokens.color.brand,
-                  color: '#fff',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    bgcolor: fabUTokens.color.brandStrong,
-                    boxShadow: 'none',
-                  },
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
                 }}
               >
-                {action}
-              </Button>
-            ))}
+                Battle Actions
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                {['Attack', 'Cast', 'Guard', 'Inventory'].map((action) => (
+                  <Button
+                    key={action}
+                    variant="contained"
+                    onClick={(event) => {
+                      if (action === 'Attack') {
+                        setActiveCombatTab('gear');
+                        setPendingCombatGearScroll(true);
+                      }
+                      if (action === 'Cast') {
+                        setActiveCombatTab('spells');
+                        setPendingCombatSpellScroll(true);
+                      }
+                      if (action === 'Inventory') {
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setInventoryAnchorDir(
+                          rect.top > window.innerHeight / 2 ? 'above' : 'below',
+                        );
+                        setInventoryAnchorEl(event.currentTarget);
+                      }
+                    }}
+                    sx={{
+                      flex: '1 1 calc(50% - 4px)',
+                      width: 'calc(50% - 4px)',
+                      minWidth: 0,
+                      height: 40,
+                      borderRadius: '8px',
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      bgcolor: fabUTokens.color.brand,
+                      color: '#fff',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        bgcolor: fabUTokens.color.brandStrong,
+                        boxShadow: 'none',
+                      },
+                    }}
+                  >
+                    {action}
+                  </Button>
+                ))}
+              </Stack>
+            </Stack>
+
+            <Stack spacing={0.75}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: fabUTokens.color.textSecondary,
+                  fontWeight: 700,
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Other Actions
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                <Button
+                  variant="contained"
+                  sx={{
+                    flex: '1 1 calc(50% - 4px)',
+                    width: 'calc(50% - 4px)',
+                    minWidth: 0,
+                    height: 40,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    bgcolor: fabUTokens.color.highlight,
+                    color: '#ffffff',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: fabUTokens.color.highlight,
+                      filter: 'brightness(0.88)',
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  Spend Fabula
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{
+                    flex: '1 1 calc(50% - 4px)',
+                    width: 'calc(50% - 4px)',
+                    minWidth: 0,
+                    height: 40,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    bgcolor: fabUTokens.color.success,
+                    color: '#ffffff',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: fabUTokens.color.success,
+                      filter: 'brightness(0.88)',
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  Progress Clock
+                </Button>
+              </Stack>
+            </Stack>
           </Stack>
         </SurfaceCard>
 
@@ -1079,7 +1160,15 @@ function FabU() {
         <SummaryStrip
           label="Inventory Points"
           metrics={[
-            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              pw: 'ip',
+              onChange: setIP,
+              trailingIcon: (
+                <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
+              ),
+            },
             { label: 'ZENIT', value: String(character.zennit), pw: 'zennit', onChange: setZennit },
           ]}
           middleAction={
@@ -1101,11 +1190,11 @@ function FabU() {
                 '&:active': { filter: 'brightness(0.88)' },
               }}
             >
-              <ArrowLeft size={16} color={fabUTokens.color.highlightFg} strokeWidth={2.5} />
+              <ArrowLeft size={16} color="#ffffff" strokeWidth={2.5} />
               <Typography
                 variant="caption"
                 sx={{
-                  color: fabUTokens.color.highlightFg,
+                  color: '#ffffff',
                   fontWeight: 700,
                   fontSize: '0.6rem',
                   letterSpacing: '0.05em',
