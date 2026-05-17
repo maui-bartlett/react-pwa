@@ -93,7 +93,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
             bgcolor: fabUTokens.isDark
               ? alpha(fabUTokens.color.brandStrong, 0.75)
               : alpha('#ffffff', 0.96),
-            color: fabUTokens.isDark ? fabUTokens.color.highlight : fabUTokens.color.brandStrong,
+            color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brandStrong,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -457,7 +457,9 @@ function BondsCard({
           const selected = activeBond?.types.includes(type) ?? false;
           const selectedColor = isNegativeBondType(type)
             ? fabUTokens.color.hp
-            : fabUTokens.color.brand;
+            : fabUTokens.isDark
+              ? fabUTokens.color.brandText
+              : fabUTokens.color.brand;
           return (
             <MenuItem
               key={type}
@@ -469,7 +471,11 @@ function BondsCard({
                 fontWeight: 600,
                 py: 0.75,
                 gap: 1,
-                color: selected ? selectedColor : '#1f2a26',
+                color: selected
+                  ? selectedColor
+                  : fabUTokens.isDark
+                    ? fabUTokens.color.textPrimary
+                    : '#1f2a26',
                 bgcolor: selected ? alpha(selectedColor, 0.08) : 'transparent',
                 '&:hover': { bgcolor: alpha(selectedColor, 0.1) },
               }}

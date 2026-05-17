@@ -100,6 +100,8 @@ function FabU() {
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
+  const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
+  const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -244,6 +246,22 @@ function FabU() {
     }, 50);
     return () => clearTimeout(timer);
   }, [activeTab, targetClassName]);
+
+  useEffect(() => {
+    if (!pendingCombatSpellScroll) return;
+    setPendingCombatSpellScroll(false);
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const spellsSection = document.querySelector('[data-section="combat-spells"]');
+      if (!scrollViewport || !spellsSection) return;
+      const rect = spellsSection.getBoundingClientRect();
+      const viewportRect = scrollViewport.getBoundingClientRect();
+      const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 16;
+      (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [pendingCombatSpellScroll]);
+
   const classPickerOpen = Boolean(classPickerAnchorEl);
 
   const openClassPicker = (event: MouseEvent<HTMLElement>) => {
@@ -654,8 +672,14 @@ function FabU() {
               <Button
                 key={action}
                 variant="contained"
-                onClick={() => {
-                  if (action === 'Cast') setActiveCombatTab('spells');
+                onClick={(event) => {
+                  if (action === 'Cast') {
+                    setActiveCombatTab('spells');
+                    setPendingCombatSpellScroll(true);
+                  }
+                  if (action === 'Inventory') {
+                    setInventoryAnchorEl(event.currentTarget);
+                  }
                 }}
                 sx={{
                   flex: '1 1 calc(50% - 4px)',
@@ -680,6 +704,99 @@ function FabU() {
             ))}
           </Stack>
         </SurfaceCard>
+
+        <Popover
+          open={Boolean(inventoryAnchorEl)}
+          anchorEl={inventoryAnchorEl}
+          onClose={() => setInventoryAnchorEl(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          marginThreshold={12}
+          disableRestoreFocus
+          PaperProps={{
+            sx: {
+              mt: '5px',
+              p: 1,
+              width: 200,
+              bgcolor: fabUTokens.color.surface,
+              backgroundImage: 'none',
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff26' : fabUTokens.color.border}`,
+              borderRadius: '12px',
+              boxShadow: fabUTokens.shadow.soft,
+            },
+          }}
+        >
+          <Stack spacing={0.75}>
+            {[
+              {
+                name: 'Remedy',
+                description: '-3 IP · +50 HP',
+                color: fabUTokens.color.hp,
+                onUse: () => {
+                  setIP(Math.max(0, character.inventoryPoints - 3));
+                  setCurrentHP(Math.min(character.totalHP, character.currentHP + 50));
+                  setInventoryAnchorEl(null);
+                },
+              },
+              {
+                name: 'Elixir',
+                description: '-3 IP · +50 MP',
+                color: fabUTokens.color.mp,
+                onUse: () => {
+                  setIP(Math.max(0, character.inventoryPoints - 3));
+                  setCurrentMP(Math.min(character.totalMP, character.currentMP + 50));
+                  setInventoryAnchorEl(null);
+                },
+              },
+              {
+                name: 'Tonic',
+                description: '-2 IP · Clear Status',
+                color: fabUTokens.color.success,
+                onUse: () => {
+                  setIP(Math.max(0, character.inventoryPoints - 2));
+                  setStatusEffects({ slow: false, dazed: false, weak: false, shaken: false });
+                  setInventoryAnchorEl(null);
+                },
+              },
+            ].map(({ name, description, color, onUse }) => (
+              <Box
+                key={name}
+                component="button"
+                type="button"
+                onClick={onUse}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  width: '100%',
+                  px: 1.5,
+                  py: 1.1,
+                  borderRadius: '9px',
+                  bgcolor: color,
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'filter 0.12s ease',
+                  '&:hover': { filter: 'brightness(0.88)' },
+                  '&:active': { filter: 'brightness(0.78)' },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.85rem', lineHeight: 1.3 }}
+                >
+                  {name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', lineHeight: 1.4 }}
+                >
+                  {description}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </Popover>
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
@@ -725,7 +842,7 @@ function FabU() {
         ) : null}
 
         {activeCombatTab === 'spells' ? (
-          <>
+          <Stack data-section="combat-spells" spacing={2.775}>
             {character.spellGroups.map((group) => (
               <SpellsTable
                 key={group.className}
@@ -740,7 +857,7 @@ function FabU() {
                 }
               />
             ))}
-          </>
+          </Stack>
         ) : null}
 
         {activeCombatTab === 'gear' ? (

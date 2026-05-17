@@ -22,6 +22,7 @@ import { Pencil } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
+import { scaledEditableTextStyle } from '../editableText';
 import { SpellRow } from '../types';
 
 type DraftSpell = {
@@ -106,10 +107,12 @@ function SpellsTable({
   }
 
   const inputSx = {
-    fontSize: '0.74rem',
     color: fabUTokens.color.textPrimary,
     width: '100%',
-    '& input': { p: 0 },
+    '& input': {
+      p: 0,
+      ...scaledEditableTextStyle(0.74, { stretch: true }),
+    },
   };
 
   const draftKeyDown =
@@ -243,7 +246,8 @@ function SpellsTable({
                             gap: 1.5,
                             py: 2,
                             px: 1.5,
-                            bgcolor: fabUTokens.color.brandSoft,
+                            bgcolor: 'transparent',
+                            border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.18)}`,
                             borderRadius: '6px',
                             my: 0.75,
                           }}
@@ -274,10 +278,16 @@ function SpellsTable({
                                     if (e.key === 'Escape') setEditingEffect(null);
                                   }}
                                   sx={{
-                                    fontSize: '0.72rem',
                                     color: fabUTokens.color.textPrimary,
                                     alignItems: 'flex-start',
-                                    '& textarea': { p: 0, lineHeight: 1.6 },
+                                    '& textarea': {
+                                      p: 0,
+                                      lineHeight: 1.6,
+                                      ...scaledEditableTextStyle(0.72, {
+                                        stretch: true,
+                                        lineHeight: 1.6,
+                                      }),
+                                    },
                                   }}
                                 />
                               ) : (
@@ -341,7 +351,7 @@ function SpellsTable({
                               flexShrink: 0,
                               overflow: 'visible',
                               bgcolor: fabUTokens.color.highlight,
-                              color: fabUTokens.color.highlightFg,
+                              color: '#ffffff',
                               fontSize: '0.68rem',
                               fontWeight: 700,
                               lineHeight: 1.2,

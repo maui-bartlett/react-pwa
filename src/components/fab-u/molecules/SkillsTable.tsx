@@ -18,6 +18,7 @@ import { alpha } from '@mui/material/styles';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
+import { scaledEditableTextStyle } from '../editableText';
 import { SkillRow } from '../types';
 
 type SkillsTableProps = {
@@ -219,10 +220,12 @@ function SkillsTable({
                         if (e.key === 'Escape') cancelDraftSkill();
                       }}
                       sx={{
-                        fontSize: '0.74rem',
                         color: fabUTokens.color.textPrimary,
                         width: '100%',
-                        '& input': { p: 0 },
+                        '& input': {
+                          p: 0,
+                          ...scaledEditableTextStyle(0.74, { stretch: true }),
+                        },
                       }}
                     />
                   </TableCell>
@@ -268,10 +271,12 @@ function SkillsTable({
                         if (e.key === 'Escape') cancelDraftSkill();
                       }}
                       sx={{
-                        fontSize: '0.74rem',
                         color: fabUTokens.color.textPrimary,
                         width: '100%',
-                        '& input': { p: 0 },
+                        '& input': {
+                          p: 0,
+                          ...scaledEditableTextStyle(0.74, { stretch: true }),
+                        },
                       }}
                     />
                   </TableCell>
