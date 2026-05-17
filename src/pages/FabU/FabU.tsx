@@ -295,6 +295,54 @@ function FabU() {
       ),
     }));
 
+  const handleDeleteSkill = (className: string, skillName: string) =>
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className
+          ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
+          : g,
+      ),
+    }));
+
+  const handleEditSkill = (
+    className: string,
+    oldName: string,
+    updatedSkill: import('@/components/fab-u').SkillRow,
+  ) =>
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className
+          ? { ...g, skills: g.skills.map((s) => (s.name === oldName ? updatedSkill : s)) }
+          : g,
+      ),
+    }));
+
+  const handleDeleteSpell = (className: string, spellName: string) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
+        g.className === className
+          ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
+          : g,
+      ),
+    }));
+
+  const handleEditSpell = (
+    className: string,
+    oldName: string,
+    updatedSpell: import('@/components/fab-u').SpellRow,
+  ) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
+        g.className === className
+          ? { ...g, spells: g.spells.map((s) => (s.name === oldName ? updatedSpell : s)) }
+          : g,
+      ),
+    }));
+
   const getMagicSkillLevel = (className: string): number => {
     const group = character.skillGroups.find((g) => g.className === className);
     if (!group) return 0;
@@ -835,6 +883,10 @@ function FabU() {
                         : (skillName, levels) =>
                             handleAddSkillLevels(group.className, skillName, levels)
                     }
+                    onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
+                    onEditSkill={(oldName, updatedSkill) =>
+                      handleEditSkill(group.className, oldName, updatedSkill)
+                    }
                   />
                 );
               })}
@@ -854,6 +906,10 @@ function FabU() {
                 onAddSpell={(spell) => handleAddSpell(group.className, spell)}
                 onUpdateSpellEffect={(spellName, effect) =>
                   handleUpdateSpellEffect(group.className, spellName, effect)
+                }
+                onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
+                onEditSpell={(oldName, updatedSpell) =>
+                  handleEditSpell(group.className, oldName, updatedSpell)
                 }
               />
             ))}
@@ -900,6 +956,10 @@ function FabU() {
                     : (skillName, levels) =>
                         handleAddSkillLevels(group.className, skillName, levels)
                 }
+                onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
+                onEditSkill={(oldName, updatedSkill) =>
+                  handleEditSkill(group.className, oldName, updatedSkill)
+                }
               />
             </Box>
           );
@@ -945,6 +1005,10 @@ function FabU() {
             onAddSpell={(spell) => handleAddSpell(group.className, spell)}
             onUpdateSpellEffect={(spellName, effect) =>
               handleUpdateSpellEffect(group.className, spellName, effect)
+            }
+            onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
+            onEditSpell={(oldName, updatedSpell) =>
+              handleEditSpell(group.className, oldName, updatedSpell)
             }
           />
         ))}
