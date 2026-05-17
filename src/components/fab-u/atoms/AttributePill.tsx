@@ -1,13 +1,11 @@
 import { useState } from 'react';
 
 import Box from '@mui/material/Box';
-import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
-import { scaledEditableControlStyle, scaledEditableTextStyle } from '../editableText';
 import { getToneStyles } from '../tokens';
 import { DieSize, Tone } from '../types';
 
@@ -19,25 +17,27 @@ function formatDie(die: DieSize, modifier: number): string {
   return `${die} - ${Math.abs(modifier)}`;
 }
 
+// Plain CSS — no scale transforms or sub-pixel margins that could shift layout
+// and trigger MUI Popover to reposition while typing.
 const selectStyle = (
   borderColor: string,
   bgColor: string,
   textColor: string,
-): React.CSSProperties =>
-  scaledEditableControlStyle(0.88, 30, {
-    fontFamily: 'inherit',
-    fontWeight: 700,
-    lineHeight: 1,
-    height: 30,
-    width: '100%',
-    boxSizing: 'border-box',
-    padding: '4px 8px',
-    borderRadius: 8,
-    border: `1px solid ${borderColor}`,
-    background: bgColor,
-    color: textColor,
-    outline: 'none',
-  });
+): React.CSSProperties => ({
+  fontFamily: 'inherit',
+  fontWeight: 700,
+  fontSize: '1rem',
+  lineHeight: 1,
+  height: 30,
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '4px 8px',
+  borderRadius: 8,
+  border: `1px solid ${borderColor}`,
+  background: bgColor,
+  color: textColor,
+  outline: 'none',
+});
 
 type AttributePillProps = {
   label: string;
@@ -63,29 +63,31 @@ function AttributePill({
   popoverHorizontal = 'center',
 }: AttributePillProps) {
   const fabUTokens = useFabUTokens();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [draftMod, setDraftMod] = useState('');
+  const [open, setOpen] = useState(false);
+  const [anchorPos, setAnchorPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [draftTemp, setDraftTemp] = useState<DieSize | null>(null);
   const toneStyles = getToneStyles(tone);
   const editable = !!(onChangeDie || onChangeModifier);
-  const open = Boolean(anchorEl);
 
   function handleOpen(e: React.MouseEvent<HTMLElement>) {
     if (!editable) return;
-    setDraftMod(modifier === 0 ? '' : String(modifier));
     setDraftTemp(temp ?? null);
-    setAnchorEl(e.currentTarget);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const left =
+      popoverHorizontal === 'left'
+        ? rect.left
+        : popoverHorizontal === 'right'
+          ? rect.right
+          : rect.left + rect.width / 2;
+    setAnchorPos({ top: rect.bottom, left });
+    setOpen(true);
   }
 
   function handleClose() {
-    if (onChangeModifier) {
-      const n = parseInt(draftMod, 10);
-      onChangeModifier(isNaN(n) ? 0 : n);
-    }
     if (onChangeTemp) {
       onChangeTemp(draftTemp);
     }
-    setAnchorEl(null);
+    setOpen(false);
   }
 
   const fieldLabel = (text: string) => (
@@ -112,6 +114,7 @@ function AttributePill({
           border: `1px solid ${open ? fabUTokens.color.textSecondary : toneStyles.borderColor}`,
           borderRadius: '10px',
           backgroundColor: fabUTokens.color.surface,
+          boxShadow: fabUTokens.shadow.soft,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box',
@@ -156,14 +159,16 @@ function AttributePill({
 
       <Popover
         open={open}
-        anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: popoverHorizontal }}
+        anchorReference="anchorPosition"
+        anchorPosition={anchorPos}
         transformOrigin={{ vertical: 'top', horizontal: popoverHorizontal }}
         marginThreshold={12}
         disableRestoreFocus
         PaperProps={{
+          'data-pw': 'attr-popup',
           sx: {
+            mt: '5px',
             p: 1.5,
             // Vertical column layout — stack Base / Mod / Temp fields
             display: 'flex',
@@ -173,7 +178,8 @@ function AttributePill({
             width: 160,
             maxWidth: 'min(90vw, 200px)',
             bgcolor: fabUTokens.color.surface,
-            border: `1px solid ${fabUTokens.color.border}`,
+            backgroundImage: 'none',
+            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
             borderRadius: '12px',
             boxShadow: fabUTokens.shadow.soft,
           },
@@ -200,56 +206,25 @@ function AttributePill({
           </select>
         </Stack>
 
-        {/* Mod */}
+        {/* Mod — select 0–10, fires immediately (no draft state needed) */}
         <Stack spacing={0.5}>
           {fieldLabel('Mod')}
-          <InputBase
-            data-pw="attr-mod-input-shell"
-            value={draftMod}
-            placeholder="0"
-            inputProps={{
-              inputMode: 'numeric',
-              'data-pw': 'attr-mod-input',
-              style: {
-                width: '100%',
-                textAlign: 'center',
-                fontWeight: 700,
-                ...scaledEditableTextStyle(0.88, {
-                  lineHeight: 1,
-                  stretch: true,
-                  transformOrigin: 'center center',
-                }),
-                lineHeight: 1,
-                height: '100%',
-                boxSizing: 'border-box',
-                padding: 0,
-                color: fabUTokens.color.textPrimary,
-              },
-            }}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^0-9-]/g, '');
-              const cleaned = raw.startsWith('-')
-                ? '-' + raw.slice(1).replace(/-/g, '')
-                : raw.replace(/-/g, '');
-              setDraftMod(cleaned);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleClose();
-              if (e.key === 'Escape') setAnchorEl(null);
-            }}
-            sx={{
-              border: `1px solid ${fabUTokens.color.brand}`,
-              borderRadius: '8px',
-              boxSizing: 'border-box',
-              height: 30,
-              width: '100%',
-              alignItems: 'center',
-              px: 0.75,
-              py: 0.5,
-              bgcolor: fabUTokens.color.surface,
-              '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
-            }}
-          />
+          <select
+            data-pw="attr-mod-select"
+            value={modifier}
+            onChange={(e) => onChangeModifier?.(parseInt(e.target.value, 10))}
+            style={selectStyle(
+              fabUTokens.color.brand,
+              fabUTokens.color.surface,
+              fabUTokens.color.textPrimary,
+            )}
+          >
+            {Array.from({ length: 11 }, (_, i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
         </Stack>
 
         {/* Temp */}

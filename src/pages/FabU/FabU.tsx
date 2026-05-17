@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import type { MouseEvent } from 'react';
+import { useEffect, useState } from 'react';
 
+import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Popover from '@mui/material/Popover';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -12,7 +15,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { Check, Pencil, Sparkles } from 'lucide-react';
+import { Check, CheckCircle, FlaskConical, Pencil, Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -42,6 +45,8 @@ import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
+import { selectableClasses } from './selectableClasses';
+import { skillGroups as defaultSkillGroups } from './skills';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Bonds', value: 'bonds' },
@@ -92,9 +97,15 @@ function FabU() {
     setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
   const [activeTab, setActiveTab] = useState<FabUTab>('overview');
   const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
+  const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
+  const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
+  const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
+  const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
+  const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
+  const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -123,6 +134,11 @@ function FabU() {
     });
   const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+  // Spend 100 Zennit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
+  const handleBuyIP = () =>
+    setCharacter((c) =>
+      c.zennit >= 10 ? { ...c, zennit: c.zennit - 10, inventoryPoints: c.inventoryPoints + 1 } : c,
+    );
   const toggleBondType = (id: string, type: BondType) =>
     setCharacter((c) => ({
       ...c,
@@ -151,6 +167,21 @@ function FabU() {
     }));
   const removeBond = (id: string) =>
     setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
+  const renameBond = (id: string, newName: string) =>
+    setCharacter((c) => ({
+      ...c,
+      bonds: c.bonds.map((b) => (b.id === id ? { ...b, characterName: newName } : b)),
+    }));
+  const removeClass = (index: number) => {
+    const cls = character.classes[index];
+    if (!cls) return;
+    setCharacter((c) => ({
+      ...c,
+      classes: c.classes.filter((_, i) => i !== index),
+      skillGroups: c.skillGroups.filter((g) => g.className !== cls.name),
+      spellGroups: c.spellGroups.filter((g) => g.className !== cls.name),
+    }));
+  };
   const updateBackstoryPrompt = (index: number, prompt: string) =>
     setCharacter((c) => ({
       ...c,
@@ -185,11 +216,6 @@ function FabU() {
     triggerSpellCastBurst();
   };
 
-  const handleSkillClick = (skillName: string) => {
-    if (skillName !== 'Entropic Magic') return;
-    setActiveTab('spells');
-  };
-
   const skillLevelTotalsByClass = character.skillGroups.reduce<Record<string, number>>(
     (totals, group) => ({
       ...totals,
@@ -206,17 +232,234 @@ function FabU() {
   );
   const canAddMoreSkills = character.level > totalSkillLevels;
   const freeSkillLevels = Math.max(0, character.level - totalSkillLevels);
+  const unmasteredClassCount = character.classes.filter(
+    (cls) => (skillLevelTotalsByClass[cls.name] ?? 0) < 10,
+  ).length;
+  const canAddClass = canAddMoreSkills && unmasteredClassCount < 3;
+  const selectedClassNames = new Set(character.classes.map((cls) => cls.name));
 
-  const handleAddSkill = (className: string) => {
+  const navigateToClassSkills = (index: number) => {
+    const cls = character.classes[index];
+    if (!cls) return;
+    setActiveTab('skills');
+    setTargetClassName(cls.name);
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'skills' || !targetClassName) return;
+    const timer = setTimeout(() => {
+      document
+        .querySelector(`[data-class-group="${targetClassName}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTargetClassName(null);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [activeTab, targetClassName]);
+
+  useEffect(() => {
+    if (!pendingCombatSpellScroll) return;
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const spellsSection = document.querySelector('[data-section="combat-spells"]');
+      if (scrollViewport && spellsSection) {
+        const rect = spellsSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingCombatSpellScroll(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingCombatSpellScroll]);
+
+  useEffect(() => {
+    if (!pendingCombatGearScroll) return;
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const gearSection = document.querySelector('[data-section="combat-gear"]');
+      if (scrollViewport && gearSection) {
+        const rect = gearSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingCombatGearScroll(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingCombatGearScroll]);
+
+  const classPickerOpen = Boolean(classPickerAnchorEl);
+
+  const openClassPicker = (event: MouseEvent<HTMLElement>) => {
+    setClassPickerAnchorEl(event.currentTarget);
+  };
+
+  const closeClassPicker = () => {
+    setClassPickerAnchorEl(null);
+  };
+
+  const selectClass = (className: string) => {
+    setCharacter((c) => {
+      if (c.classes.some((cls) => cls.name === className)) return c;
+
+      return {
+        ...c,
+        classes: [...c.classes, { name: className, level: 0, subtitle: 'No skills recorded yet' }],
+        skillGroups: c.skillGroups.some((group) => group.className === className)
+          ? c.skillGroups
+          : [...c.skillGroups, { className, skills: [] }],
+      };
+    });
+    closeClassPicker();
+  };
+
+  const handleAddSkill = (className: string, skill: import('@/components/fab-u').SkillRow) =>
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className ? { ...g, skills: [...g.skills, skill] } : g,
+      ),
+    }));
+
+  const handleDeleteSkill = (className: string, skillName: string) =>
     setCharacter((c) => ({
       ...c,
       skillGroups: c.skillGroups.map((g) =>
         g.className === className
-          ? { ...g, skills: [...g.skills, { name: 'New Skill', level: '1', effect: '' }] }
+          ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
           : g,
       ),
     }));
+
+  const handleEditSkill = (
+    className: string,
+    oldName: string,
+    updatedSkill: import('@/components/fab-u').SkillRow,
+  ) =>
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className
+          ? { ...g, skills: g.skills.map((s) => (s.name === oldName ? updatedSkill : s)) }
+          : g,
+      ),
+    }));
+
+  const handleUpdateSkillDescription = (
+    className: string,
+    skillName: string,
+    description: string,
+  ) =>
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className
+          ? {
+              ...g,
+              skills: g.skills.map((s) => (s.name === skillName ? { ...s, description } : s)),
+            }
+          : g,
+      ),
+    }));
+
+  const handleDeleteSpell = (className: string, spellName: string) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
+        g.className === className
+          ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
+          : g,
+      ),
+    }));
+
+  const handleEditSpell = (
+    className: string,
+    oldName: string,
+    updatedSpell: import('@/components/fab-u').SpellRow,
+  ) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
+        g.className === className
+          ? { ...g, spells: g.spells.map((s) => (s.name === oldName ? updatedSpell : s)) }
+          : g,
+      ),
+    }));
+
+  const getMagicSkillLevel = (className: string): number => {
+    const group = character.skillGroups.find((g) => g.className === className);
+    if (!group) return 0;
+    const defaultGroup = defaultSkillGroups.find((g) => g.className === className);
+    const magicSkill = group.skills.find((s) => {
+      const fallbackMax = defaultGroup?.skills.find((ds) => ds.name === s.name)?.maxLevel ?? 5;
+      return (s.maxLevel ?? fallbackMax) > 5;
+    });
+    if (!magicSkill) return 0;
+    return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
   };
+
+  const handleDeleteEquipment = (index: number) => {
+    setCharacter((prev) => ({
+      ...prev,
+      equipment: prev.equipment.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleUpdateEquipment = (
+    index: number,
+    updated: import('@/components/fab-u').EquipmentItem,
+  ) => {
+    setCharacter((prev) => ({
+      ...prev,
+      equipment: prev.equipment.map((item, i) => (i === index ? updated : item)),
+    }));
+  };
+
+  const handleDeleteBackpackItem = (index: number) => {
+    setCharacter((prev) => ({
+      ...prev,
+      backpack: prev.backpack.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleEditBackpackItem = (index: number, updated: { title: string; subtitle: string }) => {
+    setCharacter((prev) => ({
+      ...prev,
+      backpack: prev.backpack.map((item, i) => (i === index ? { ...item, ...updated } : item)),
+    }));
+  };
+
+  const handleAddBackpackItem = () => {
+    setCharacter((prev) => ({
+      ...prev,
+      backpack: [...prev.backpack, { id: String(Date.now()), title: 'New Item', subtitle: '' }],
+    }));
+  };
+
+  const handleAddEquipmentItem = () => {
+    setCharacter((prev) => ({
+      ...prev,
+      equipment: [...prev.equipment, { name: 'New Item', slot: 'Accessory', description: '' }],
+    }));
+  };
+
+  const handleAddSpell = (className: string, spell: import('@/components/fab-u').SpellRow) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
+        g.className === className ? { ...g, spells: [...g.spells, spell] } : g,
+      ),
+    }));
+
+  const handleUpdateSpellEffect = (className: string, spellName: string, effect: string) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
+        g.className === className
+          ? { ...g, spells: g.spells.map((s) => (s.name === spellName ? { ...s, effect } : s)) }
+          : g,
+      ),
+    }));
   const handleAddSkillLevels = (className: string, skillName: string, levels: number) => {
     setCharacter((c) => {
       const allocatedLevels = c.skillGroups.reduce(
@@ -292,6 +535,30 @@ function FabU() {
     }));
   }
 
+  function renderProgressStrip() {
+    return (
+      <SummaryStrip
+        label="Progress"
+        metrics={[
+          {
+            label: 'FABULA POINTS',
+            value: String(character.fabulaPoints),
+            pw: 'fp',
+            onChange: setFP,
+          },
+          {
+            label: 'XP',
+            value: String(character.currentXP),
+            valueSuffix: ` / ${character.totalXP}`,
+            pw: 'ov-xp',
+            onChange: setCurrentXP,
+          },
+          { label: 'LVL', value: String(character.level), pw: 'ov-level', onChange: setLevel },
+        ]}
+      />
+    );
+  }
+
   function renderOverview() {
     return (
       <>
@@ -353,9 +620,14 @@ function FabU() {
           bottomRow={makeAttrRows()}
         />
 
+        {renderProgressStrip()}
+
         <DetailListCard
           label="Classes"
-          addLabel="Class"
+          addLabel={canAddClass ? 'Class' : undefined}
+          onAdd={canAddClass ? openClassPicker : undefined}
+          onItemClick={navigateToClassSkills}
+          onRemoveItem={removeClass}
           items={character.classes.map((cls) => ({
             title: cls.name,
             subtitle: cls.subtitle,
@@ -368,25 +640,7 @@ function FabU() {
           onToggleType={toggleBondType}
           onAddBond={addBond}
           onRemoveBond={removeBond}
-        />
-
-        <SummaryStrip
-          metrics={[
-            {
-              label: 'Fabula Points',
-              value: String(character.fabulaPoints),
-              pw: 'fp',
-              onChange: setFP,
-            },
-            {
-              label: 'XP',
-              value: String(character.currentXP),
-              valueSuffix: ` / ${character.totalXP}`,
-              pw: 'ov-xp',
-              onChange: setCurrentXP,
-            },
-            { label: 'Level', value: String(character.level), pw: 'ov-level', onChange: setLevel },
-          ]}
+          onRenameBond={renameBond}
         />
       </>
     );
@@ -469,7 +723,7 @@ function FabU() {
           <Box
             sx={{
               borderTop: `0.5px solid ${fabUTokens.isDark ? fabUTokens.color.border : alpha(fabUTokens.color.border, 0.3)}`,
-              mt: '40px',
+              mt: '45px',
               pt: 2.25,
               pb: 1,
             }}
@@ -478,38 +732,233 @@ function FabU() {
           </Box>
         </AttributesStatsCard>
 
-        <SurfaceCard label="Actions" title="Battle Actions">
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
-              <Button
-                key={action}
-                variant="contained"
-                onClick={() => {
-                  if (action === 'Cast') setActiveCombatTab('spells');
-                }}
+        <SurfaceCard label="Actions">
+          <Stack spacing={1.5}>
+            <Stack spacing={0.75}>
+              <Typography
+                variant="caption"
                 sx={{
-                  flex: '1 1 calc(50% - 4px)',
-                  width: 'calc(50% - 4px)',
-                  minWidth: 0,
-                  height: 40,
-                  borderRadius: '8px',
-                  textTransform: 'none',
+                  color: fabUTokens.color.textSecondary,
                   fontWeight: 700,
-                  fontSize: '0.78rem',
-                  bgcolor: fabUTokens.color.brand,
-                  color: '#fff',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    bgcolor: fabUTokens.color.brandStrong,
-                    boxShadow: 'none',
-                  },
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
                 }}
               >
-                {action}
-              </Button>
-            ))}
+                Battle Actions
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                {['Attack', 'Cast', 'Guard', 'Inventory'].map((action) => (
+                  <Button
+                    key={action}
+                    variant="contained"
+                    onClick={(event) => {
+                      if (action === 'Attack') {
+                        setActiveCombatTab('gear');
+                        setPendingCombatGearScroll(true);
+                      }
+                      if (action === 'Cast') {
+                        setActiveCombatTab('spells');
+                        setPendingCombatSpellScroll(true);
+                      }
+                      if (action === 'Inventory') {
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setInventoryAnchorDir(
+                          rect.top > window.innerHeight / 2 ? 'above' : 'below',
+                        );
+                        setInventoryAnchorEl(event.currentTarget);
+                      }
+                    }}
+                    sx={{
+                      flex: '1 1 calc(50% - 4px)',
+                      width: 'calc(50% - 4px)',
+                      minWidth: 0,
+                      height: 40,
+                      borderRadius: '8px',
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      bgcolor: fabUTokens.color.brandText,
+                      color: '#fff',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        bgcolor: fabUTokens.color.brandText,
+                        filter: 'brightness(0.88)',
+                        boxShadow: 'none',
+                      },
+                    }}
+                  >
+                    {action}
+                  </Button>
+                ))}
+              </Stack>
+            </Stack>
+
+            <Stack spacing={0.75}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: fabUTokens.color.textSecondary,
+                  fontWeight: 700,
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Other Actions
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                <Button
+                  variant="contained"
+                  sx={{
+                    flex: '1 1 calc(50% - 4px)',
+                    width: 'calc(50% - 4px)',
+                    minWidth: 0,
+                    height: 40,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    bgcolor: fabUTokens.color.highlight,
+                    color: '#ffffff',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: fabUTokens.color.highlight,
+                      filter: 'brightness(0.88)',
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  Spend Fabula
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{
+                    flex: '1 1 calc(50% - 4px)',
+                    width: 'calc(50% - 4px)',
+                    minWidth: 0,
+                    height: 40,
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    bgcolor: fabUTokens.color.brandText,
+                    color: '#ffffff',
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: fabUTokens.color.brandText,
+                      filter: 'brightness(0.88)',
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+                  Progress Clock
+                </Button>
+              </Stack>
+            </Stack>
           </Stack>
         </SurfaceCard>
+
+        <Popover
+          open={Boolean(inventoryAnchorEl)}
+          anchorEl={inventoryAnchorEl}
+          onClose={() => setInventoryAnchorEl(null)}
+          anchorOrigin={
+            inventoryAnchorDir === 'above'
+              ? { vertical: 'top', horizontal: 'right' }
+              : { vertical: 'bottom', horizontal: 'right' }
+          }
+          transformOrigin={
+            inventoryAnchorDir === 'above'
+              ? { vertical: 'bottom', horizontal: 'right' }
+              : { vertical: 'top', horizontal: 'right' }
+          }
+          marginThreshold={12}
+          disableRestoreFocus
+          PaperProps={{
+            sx: {
+              ...(inventoryAnchorDir === 'above' ? { mb: '5px' } : { mt: '5px' }),
+              p: 1,
+              width: 200,
+              bgcolor: fabUTokens.color.surface,
+              backgroundImage: 'none',
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff26' : fabUTokens.color.border}`,
+              borderRadius: '12px',
+              boxShadow: fabUTokens.shadow.soft,
+            },
+          }}
+        >
+          <Stack spacing={0.75}>
+            {[
+              {
+                name: 'Remedy',
+                description: '-3 IP · +50 HP',
+                color: fabUTokens.color.hp,
+                onUse: () => {
+                  setIP(Math.max(0, character.inventoryPoints - 3));
+                  setCurrentHP(Math.min(character.totalHP, character.currentHP + 50));
+                  setInventoryAnchorEl(null);
+                },
+              },
+              {
+                name: 'Elixir',
+                description: '-3 IP · +50 MP',
+                color: fabUTokens.color.mp,
+                onUse: () => {
+                  setIP(Math.max(0, character.inventoryPoints - 3));
+                  setCurrentMP(Math.min(character.totalMP, character.currentMP + 50));
+                  setInventoryAnchorEl(null);
+                },
+              },
+              {
+                name: 'Tonic',
+                description: '-2 IP · Clear Status',
+                color: fabUTokens.color.success,
+                onUse: () => {
+                  setIP(Math.max(0, character.inventoryPoints - 2));
+                  setStatusEffects({ slow: false, dazed: false, weak: false, shaken: false });
+                  setInventoryAnchorEl(null);
+                },
+              },
+            ].map(({ name, description, color, onUse }) => (
+              <Box
+                key={name}
+                component="button"
+                type="button"
+                onClick={onUse}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  width: '100%',
+                  px: 1.5,
+                  py: 1.1,
+                  borderRadius: '9px',
+                  bgcolor: color,
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'filter 0.12s ease',
+                  '&:hover': { filter: 'brightness(0.88)' },
+                  '&:active': { filter: 'brightness(0.78)' },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.85rem', lineHeight: 1.3 }}
+                >
+                  {name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', lineHeight: 1.4 }}
+                >
+                  {description}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </Popover>
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
@@ -519,6 +968,7 @@ function FabU() {
             onToggleType={toggleBondType}
             onAddBond={addBond}
             onRemoveBond={removeBond}
+            onRenameBond={renameBond}
           />
         ) : null}
 
@@ -526,26 +976,41 @@ function FabU() {
           <>
             {character.skillGroups
               .filter((g) => g.className !== 'Tinkerer')
-              .map((group) => (
-                <SkillsTable
-                  key={group.className}
-                  label={`${group.className} Skills`}
-                  title={`${group.className} Skills`}
-                  rows={group.skills}
-                  onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
-                  clickableSkills={['Entropic Magic']}
-                  onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
-                  freeSkillLevels={freeSkillLevels}
-                  onAddSkillLevels={(skillName, levels) =>
-                    handleAddSkillLevels(group.className, skillName, levels)
-                  }
-                />
-              ))}
+              .map((group) => {
+                const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
+                return (
+                  <SkillsTable
+                    key={group.className}
+                    label={`${group.className} Skills`}
+                    title={`${group.className} Skills`}
+                    rows={group.skills}
+                    onAddSkill={
+                      canAddMoreSkills
+                        ? (skill) => handleAddSkill(group.className, skill)
+                        : undefined
+                    }
+                    freeSkillLevels={freeSkillLevels}
+                    onAddSkillLevels={
+                      mastered
+                        ? undefined
+                        : (skillName, levels) =>
+                            handleAddSkillLevels(group.className, skillName, levels)
+                    }
+                    onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
+                    onEditSkill={(oldName, updatedSkill) =>
+                      handleEditSkill(group.className, oldName, updatedSkill)
+                    }
+                    onUpdateSkillDescription={(skillName, description) =>
+                      handleUpdateSkillDescription(group.className, skillName, description)
+                    }
+                  />
+                );
+              })}
           </>
         ) : null}
 
         {activeCombatTab === 'spells' ? (
-          <>
+          <Stack data-section="combat-spells" spacing={2.775}>
             {character.spellGroups.map((group) => (
               <SpellsTable
                 key={group.className}
@@ -553,18 +1018,32 @@ function FabU() {
                 title={`${group.className} Spells`}
                 rows={group.spells}
                 onCastSpell={handleCastSpell}
+                totalMagicLevels={getMagicSkillLevel(group.className)}
+                onAddSpell={(spell) => handleAddSpell(group.className, spell)}
+                onUpdateSpellEffect={(spellName, effect) =>
+                  handleUpdateSpellEffect(group.className, spellName, effect)
+                }
+                onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
+                onEditSpell={(oldName, updatedSpell) =>
+                  handleEditSpell(group.className, oldName, updatedSpell)
+                }
               />
             ))}
-          </>
+          </Stack>
         ) : null}
 
         {activeCombatTab === 'gear' ? (
-          <EquipmentCard
-            label="Equipment"
-            title=""
-            items={character.equipment}
-            emptyLabel="Accessory"
-          />
+          <Box data-section="combat-gear">
+            <EquipmentCard
+              label="Equipment"
+              title=""
+              items={character.equipment}
+              emptyLabel="Accessory"
+              onDeleteItem={handleDeleteEquipment}
+              onUpdateItem={handleUpdateEquipment}
+              onAddItem={handleAddEquipmentItem}
+            />
+          </Box>
         ) : null}
       </>
     );
@@ -573,36 +1052,62 @@ function FabU() {
   function renderSkills() {
     return (
       <>
-        <SummaryStrip
-          label="Progress"
-          metrics={[
-            { label: 'LVL', value: String(character.level), pw: 'sk-level', onChange: setLevel },
-            {
-              label: 'XP',
-              value: String(character.currentXP),
-              valueSuffix: ` / ${character.totalXP}`,
-              pw: 'sk-xp',
-              onChange: setCurrentXP,
-            },
-            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
-            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
-          ]}
-        />
-        {character.skillGroups.map((group) => (
-          <SkillsTable
-            key={group.className}
-            label={`${group.className} Skills`}
-            title={`${group.className} Skills`}
-            rows={group.skills}
-            onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
-            clickableSkills={['Entropic Magic']}
-            onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
-            freeSkillLevels={freeSkillLevels}
-            onAddSkillLevels={(skillName, levels) =>
-              handleAddSkillLevels(group.className, skillName, levels)
-            }
-          />
-        ))}
+        {renderProgressStrip()}
+        {character.skillGroups.map((group) => {
+          const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
+          return (
+            <Box
+              key={group.className}
+              data-class-group={group.className}
+              sx={{ scrollMarginTop: '15px' }}
+            >
+              <SkillsTable
+                label={`${group.className} Skills`}
+                title={`${group.className} Skills`}
+                rows={group.skills}
+                onAddSkill={
+                  canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
+                }
+                freeSkillLevels={freeSkillLevels}
+                onAddSkillLevels={
+                  mastered
+                    ? undefined
+                    : (skillName, levels) =>
+                        handleAddSkillLevels(group.className, skillName, levels)
+                }
+                onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
+                onEditSkill={(oldName, updatedSkill) =>
+                  handleEditSkill(group.className, oldName, updatedSkill)
+                }
+                onUpdateSkillDescription={(skillName, description) =>
+                  handleUpdateSkillDescription(group.className, skillName, description)
+                }
+              />
+            </Box>
+          );
+        })}
+        {canAddClass ? (
+          <Box
+            onClick={(e) => openClassPicker(e as React.MouseEvent<HTMLElement>)}
+            sx={{
+              border: `1px dashed ${fabUTokens.color.highlight}`,
+              borderRadius: '9px',
+              px: 1.3,
+              py: 5.8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: fabUTokens.color.highlight,
+              bgcolor: 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            <AddIcon fontSize="small" />
+            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+              Class
+            </Typography>
+          </Box>
+        ) : null}
       </>
     );
   }
@@ -640,6 +1145,15 @@ function FabU() {
             title={`${group.className} Spells`}
             rows={group.spells}
             onCastSpell={handleCastSpell}
+            totalMagicLevels={getMagicSkillLevel(group.className)}
+            onAddSpell={(spell) => handleAddSpell(group.className, spell)}
+            onUpdateSpellEffect={(spellName, effect) =>
+              handleUpdateSpellEffect(group.className, spellName, effect)
+            }
+            onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
+            onEditSpell={(oldName, updatedSpell) =>
+              handleEditSpell(group.className, oldName, updatedSpell)
+            }
           />
         ))}
       </>
@@ -654,27 +1168,78 @@ function FabU() {
           title=""
           items={character.equipment}
           emptyLabel="Accessory"
+          onDeleteItem={handleDeleteEquipment}
+          onUpdateItem={handleUpdateEquipment}
+          onAddItem={handleAddEquipmentItem}
         />
         <SummaryStrip
           label="Inventory Points"
           metrics={[
-            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              pw: 'ip',
+              onChange: setIP,
+              trailingIcon: (
+                <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
+              ),
+            },
             { label: 'ZENIT', value: String(character.zennit), pw: 'zennit', onChange: setZennit },
           ]}
+          middleAction={
+            <Box
+              onClick={handleBuyIP}
+              sx={{
+                bgcolor: fabUTokens.color.highlight,
+                borderRadius: '9px',
+                height: '100%',
+                minHeight: 52,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.4,
+                cursor: 'pointer',
+                boxShadow: fabUTokens.shadow.soft,
+                userSelect: 'none',
+                '&:active': { filter: 'brightness(0.88)' },
+              }}
+            >
+              <svg
+                viewBox="0 0 30 14"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ width: 30, height: 14, display: 'block' }}
+              >
+                <line x1="29" y1="7" x2="6" y2="7" />
+                <polyline points="13 13 6 7 13 1" />
+              </svg>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.2,
+                }}
+              >
+                Buy IP
+              </Typography>
+            </Box>
+          }
         />
         <DetailListCard
           label="Backpack"
           addLabel="Item"
-          items={[
-            {
-              title: 'Green Crystal',
-              subtitle: 'a crystal that acts as a compass, guiding us toward our goal.',
-            },
-            {
-              title: 'Grimoire',
-              subtitle: 'a magical book named Noir. Origins unknown.',
-            },
-          ]}
+          items={character.backpack.map((b) => ({ title: b.title, subtitle: b.subtitle }))}
+          onRemoveItem={handleDeleteBackpackItem}
+          onEditItem={handleEditBackpackItem}
+          onAdd={() => handleAddBackpackItem()}
         />
       </>
     );
@@ -685,10 +1250,11 @@ function FabU() {
       '& .MuiOutlinedInput-root': {
         fontSize: '0.84rem',
         lineHeight: 1.7,
-        color: fabUTokens.color.textSecondary,
+        color: fabUTokens.isDark ? fabUTokens.color.textPrimary : fabUTokens.color.textSecondary,
         bgcolor: fabUTokens.color.surface,
         borderRadius: '10px',
         boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+        alignItems: 'center',
         '& fieldset': {
           borderColor: fabUTokens.color.border,
           borderRadius: '10px',
@@ -705,11 +1271,12 @@ function FabU() {
         ...scaledEditableTextStyle(0.84, {
           lineHeight: 1.7,
           stretch: true,
-          transformOrigin: 'left top',
+          transformOrigin: 'left center',
         }),
-        py: `${1.05 / 0.84}rem`,
-        px: `${1.2 / 0.84}rem`,
-        color: fabUTokens.color.textSecondary,
+        py: `${1.05 / 0.84 - 0.625}rem`,
+        px: `${1.2 / 0.84 - 0.625}rem`,
+        color: fabUTokens.isDark ? fabUTokens.color.textPrimary : fabUTokens.color.textSecondary,
+        alignSelf: 'center',
       },
     };
 
@@ -765,8 +1332,10 @@ function FabU() {
                         }),
                         py: `${0.72 / 0.84}rem`,
                         px: `${1 / 0.84}rem`,
-                        // highlight = brand (#315c4d) in light mode, yellow (#c5a557) in dark
-                        color: fabUTokens.color.highlight,
+                        // brandText = brand green in light, lightened green in dark for AA contrast
+                        color: fabUTokens.isDark
+                          ? fabUTokens.color.highlight
+                          : fabUTokens.color.brandText,
                         fontWeight: 700,
                       },
                     }}
@@ -775,8 +1344,10 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      // highlight = brand in light, yellow in dark — matches the Notes pill
-                      color: fabUTokens.color.highlight,
+                      // brandText = brand green in light, lightened green in dark for AA contrast
+                      color: fabUTokens.isDark
+                        ? fabUTokens.color.highlight
+                        : fabUTokens.color.brandText,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
@@ -933,6 +1504,80 @@ function FabU() {
             }
           >
             {content}
+            <Popover
+              open={classPickerOpen}
+              anchorEl={classPickerAnchorEl}
+              onClose={closeClassPicker}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              marginThreshold={12}
+              disableRestoreFocus
+              PaperProps={{
+                'data-pw': 'class-picker-popover',
+                sx: {
+                  mt: '5px',
+                  p: 1,
+                  width: 232,
+                  maxWidth: 'min(90vw, 280px)',
+                  maxHeight: 360,
+                  overflowY: 'auto',
+                  bgcolor: fabUTokens.color.surface,
+                  backgroundImage: 'none',
+                  border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+                  borderRadius: '12px',
+                  boxShadow: fabUTokens.shadow.soft,
+                },
+              }}
+            >
+              <Stack spacing={0.5}>
+                {[
+                  ...selectableClasses.filter((c) => selectedClassNames.has(c.name)),
+                  ...selectableClasses.filter((c) => !selectedClassNames.has(c.name)),
+                ].map((selectableClass) => {
+                  const isSelected = selectedClassNames.has(selectableClass.name);
+
+                  return (
+                    <Button
+                      key={selectableClass.name}
+                      data-pw="selectable-class-option"
+                      disabled={isSelected}
+                      onClick={() => selectClass(selectableClass.name)}
+                      sx={{
+                        justifyContent: 'space-between',
+                        minHeight: 36,
+                        px: 1.2,
+                        py: 0.75,
+                        borderRadius: '8px',
+                        color: isSelected
+                          ? fabUTokens.color.textSecondary
+                          : fabUTokens.color.textPrimary,
+                        bgcolor: isSelected ? fabUTokens.color.surfaceMuted : 'transparent',
+                        textTransform: 'none',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        boxShadow: 'none',
+                        '&:hover': {
+                          bgcolor: fabUTokens.color.surfaceMuted,
+                          boxShadow: 'none',
+                        },
+                        '&.Mui-disabled': {
+                          color: fabUTokens.color.textSecondary,
+                          opacity: 1,
+                        },
+                      }}
+                    >
+                      <span>{selectableClass.name}</span>
+                      {isSelected ? (
+                        <CheckCircle
+                          size={15}
+                          style={{ color: fabUTokens.color.brand, flexShrink: 0 }}
+                        />
+                      ) : null}
+                    </Button>
+                  );
+                })}
+              </Stack>
+            </Popover>
           </MobileScreen>
         </Stack>
         <Snackbar

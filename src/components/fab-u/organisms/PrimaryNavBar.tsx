@@ -54,11 +54,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
               borderRadius: '7px',
               px: 0.22,
               py: 0.68,
-              backgroundColor: active
-                ? fabUTokens.isDark
-                  ? alpha(fabUTokens.color.highlight, 0.15)
-                  : alpha(fabUTokens.color.brandSoft, 0.95)
-                : 'transparent',
+              backgroundColor: active ? alpha(fabUTokens.color.highlight, 0.15) : 'transparent',
             }}
           >
             <Stack alignItems="center" spacing={0.32}>

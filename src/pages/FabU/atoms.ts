@@ -43,11 +43,18 @@ type Character = {
   skillGroups: SkillGroup[];
   spellGroups: SpellGroup[];
   equipment: EquipmentItem[];
+  backpack: BackpackItem[];
 };
 
 type BackstoryPrompt = {
   prompt: string;
   response: string;
+};
+
+type BackpackItem = {
+  id: string;
+  title: string;
+  subtitle: string;
 };
 
 const CLASS_DEFAULTS: ClassEntry[] = [
@@ -72,6 +79,15 @@ const BACKSTORY_PROMPT_DEFAULTS: BackstoryPrompt[] = [
     response:
       "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
   },
+];
+
+const BACKPACK_DEFAULTS: BackpackItem[] = [
+  {
+    id: 'crystal',
+    title: 'Green Crystal',
+    subtitle: 'a crystal that acts as a compass, guiding us toward our goal.',
+  },
+  { id: 'grimoire', title: 'Grimoire', subtitle: 'a magical book named Noir. Origins unknown.' },
 ];
 
 const EQUIPMENT_DEFAULTS: EquipmentItem[] = [
@@ -122,6 +138,7 @@ const CHARACTER_DEFAULTS: Character = {
   skillGroups: defaultSkillGroups,
   spellGroups: defaultSpellGroups,
   equipment: EQUIPMENT_DEFAULTS,
+  backpack: BACKPACK_DEFAULTS,
 };
 
 function normalizeBackstoryPrompts(
@@ -154,6 +171,24 @@ function normalizeBackstoryPrompts(
   });
 }
 
+function normalizeBackpack(storedBackpack: unknown): BackpackItem[] {
+  if (!Array.isArray(storedBackpack)) return BACKPACK_DEFAULTS;
+  const valid = storedBackpack.filter(
+    (item): item is BackpackItem =>
+      item &&
+      typeof item === 'object' &&
+      typeof (item as Partial<BackpackItem>).title === 'string' &&
+      typeof (item as Partial<BackpackItem>).subtitle === 'string',
+  );
+  return valid.length > 0
+    ? valid.map((item) => ({
+        id: item.id ?? String(Math.random()),
+        title: item.title,
+        subtitle: item.subtitle,
+      }))
+    : BACKPACK_DEFAULTS;
+}
+
 function normalizeEquipment(storedEquipment: unknown): EquipmentItem[] {
   if (!Array.isArray(storedEquipment)) return EQUIPMENT_DEFAULTS;
 
@@ -181,11 +216,29 @@ const migratingCharacterStorage = {
         } catch {
           /* ignore */
         }
+        // Merge maxLevel from defaults into stored skillGroups so upgrades (e.g. Entropic Magic → 10)
+        // are picked up even when old localStorage data is missing the field.
+        const mergedSkillGroups: SkillGroup[] = (
+          parsed.skillGroups ?? initialValue.skillGroups
+        ).map((group: SkillGroup) => {
+          const defaultGroup = defaultSkillGroups.find((dg) => dg.className === group.className);
+          return {
+            ...group,
+            skills: group.skills.map((skill) => {
+              const defaultSkill = defaultGroup?.skills.find((ds) => ds.name === skill.name);
+              return defaultSkill?.maxLevel != null
+                ? { ...skill, maxLevel: defaultSkill.maxLevel }
+                : skill;
+            }),
+          };
+        });
         return {
           ...initialValue,
           ...parsed,
+          skillGroups: mergedSkillGroups,
           backstoryPrompts: normalizeBackstoryPrompts(parsed.backstoryPrompts, oldAnswers),
           equipment: normalizeEquipment(parsed.equipment),
+          backpack: normalizeBackpack(parsed.backpack),
         };
       }
     } catch {
@@ -220,6 +273,9 @@ const migratingCharacterStorage = {
   },
 };
 
+/** Maximum character level in Fabula Ultima. Not displayed in the UI. */
+const MAX_CHARACTER_LEVEL = 50;
+
 const characterState = atomWithStorage<Character>(
   'fab-u-character',
   CHARACTER_DEFAULTS,
@@ -243,5 +299,5 @@ const derivedStatusEffectsState = atom((get) => {
   };
 });
 
-export { characterState, derivedStatusEffectsState, statusEffectsState };
-export type { BackstoryPrompt, Character, ClassEntry };
+export { characterState, derivedStatusEffectsState, statusEffectsState, MAX_CHARACTER_LEVEL };
+export type { BackpackItem, BackstoryPrompt, Character, ClassEntry };

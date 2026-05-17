@@ -159,20 +159,46 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
         <Stack
           direction="row"
           alignItems="center"
-          sx={{ minWidth: 0, flex: 1, gap: 0.75, flexWrap: 'wrap' }}
+          sx={{ minWidth: 0, flex: 1, gap: 0.75, flexWrap: 'nowrap' }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              color: fabUTokens.color.textPrimary,
-              fontWeight: 700,
-              fontSize: '1rem',
-              lineHeight: 1.2,
-              mr: '12px',
-            }}
-          >
-            Status Effects
-          </Typography>
+          <Box sx={{ position: 'relative', flexShrink: 0, ml: '5px', mr: '10px' }}>
+            {/* Stacked — visible when collapsed */}
+            <Typography
+              variant="h6"
+              sx={{
+                color: fabUTokens.color.textPrimary,
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                lineHeight: 1.2,
+                whiteSpace: 'pre-line',
+                opacity: detailMounted ? 0 : 1,
+                transition: detailMounted ? 'opacity 120ms ease' : 'opacity 120ms ease 80ms',
+                userSelect: 'none',
+              }}
+            >
+              {'Status\nEffects'}
+            </Typography>
+            {/* Inline — visible when expanded */}
+            <Typography
+              aria-hidden={!detailMounted}
+              variant="h6"
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                color: fabUTokens.color.textPrimary,
+                fontWeight: 700,
+                fontSize: '0.92rem',
+                lineHeight: 1.2,
+                whiteSpace: 'nowrap',
+                opacity: detailMounted ? 1 : 0,
+                transition: detailMounted ? 'opacity 120ms ease 80ms' : 'opacity 120ms ease',
+                userSelect: 'none',
+              }}
+            >
+              Status Effects
+            </Typography>
+          </Box>
           {topLevelStatuses.map((status) => {
             const selected = !!activeEffects[status.id];
             return (
@@ -191,7 +217,8 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                   color: selected ? '#ffffff' : fabUTokens.color.textPrimary,
                   px: 0.8,
                   py: 0,
-                  minHeight: 18,
+                  minHeight: 26,
+                  minWidth: 52,
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -219,6 +246,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
           aria-hidden="true"
           sx={{
             flexShrink: 0,
+            mr: '9px',
             color: fabUTokens.color.textSecondary,
             transform: detailMounted ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 180ms ease',

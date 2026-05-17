@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, ReactNode, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import InputBase from '@mui/material/InputBase';
@@ -23,14 +23,18 @@ type SummaryMetric = {
   onChange?: (value: number) => void;
   /** When set, the committed value is clamped to [0, maxValue]. */
   maxValue?: number;
+  /** Optional icon rendered at the trailing (right) edge of the pill */
+  trailingIcon?: ReactNode;
 };
 
 type SummaryStripProps = {
   metrics: SummaryMetric[];
   label?: string;
+  /** Optional element rendered as a middle column between the first and second metric */
+  middleAction?: ReactNode;
 };
 
-function SummaryStrip({ metrics, label }: SummaryStripProps) {
+function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
   const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState<{ label: string; draft: string } | null>(null);
 
@@ -53,15 +57,19 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))`,
+          gridTemplateColumns: middleAction
+            ? `repeat(3, minmax(0, 1fr))`
+            : `repeat(${metrics.length}, minmax(0, 1fr))`,
           gap: 1,
         }}
       >
-        {metrics.map((metric) => {
+        {metrics.map((metric, metricIndex) => {
+          const insertMiddleAfter = middleAction && metricIndex === 0;
           const isEditing = editing?.label === metric.label;
           const editable = !!metric.onChange;
           const showZennitIcon = metric.pw === 'zennit';
-          return (
+          const isXpMetric = metric.label === 'XP';
+          const metricBox = (
             <Box
               key={metric.label}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
@@ -70,6 +78,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                 border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
                 borderRadius: '9px',
                 bgcolor: fabUTokens.color.surface,
+                boxShadow: fabUTokens.shadow.soft,
                 display: 'flex',
                 alignItems: 'center',
                 boxSizing: 'border-box',
@@ -104,7 +113,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '2px',
+                      gap: isXpMetric ? 0 : '2px',
                       width: '100%',
                     }}
                   >
@@ -135,9 +144,10 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                             ...scaledEditableTextStyle(0.98, { lineHeight: 1.04 }),
                             lineHeight: 1.04,
                             color: fabUTokens.color.textPrimary,
-                            width: metric.valueSuffix
-                              ? '2.5ch'
-                              : `${Math.max(editing!.draft.length, 1) + 0.5}ch`,
+                            width:
+                              metric.valueSuffix && !isXpMetric
+                                ? '2.5ch'
+                                : `${Math.max(editing!.draft.length, 1) + 0.5}ch`,
                             minWidth: '1.5ch',
                           },
                         }}
@@ -150,8 +160,14 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,
-                          // Match edit-mode input width to prevent slash jump
-                          ...(metric.valueSuffix ? { minWidth: '2.5ch' } : {}),
+                          // Match edit-mode input width to prevent slash jump.
+                          // XP uses a dynamic ch width keyed to value length so
+                          // the slash stays put when edit mode opens.
+                          ...(metric.valueSuffix
+                            ? isXpMetric
+                              ? { minWidth: `${Math.max(metric.value.length, 1) + 0.5}ch` }
+                              : { minWidth: '2.5ch' }
+                            : {}),
                         }}
                       >
                         {metric.value}
@@ -170,11 +186,19 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                         }}
                       />
                     ) : null}
+                    {!showZennitIcon && metric.trailingIcon ? (
+                      <Box
+                        sx={{ ml: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                      >
+                        {metric.trailingIcon}
+                      </Box>
+                    ) : null}
                     {metric.valueSuffix ? (
                       <Typography
                         data-pw={metric.pw ? `metric-${metric.pw}-suffix` : undefined}
                         variant="body1"
                         sx={{
+                          ml: '5px',
                           color: fabUTokens.color.textSecondary,
                           fontWeight: 700,
                           fontSize: '0.98rem',
@@ -189,6 +213,14 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                 </Stack>
               </Stack>
             </Box>
+          );
+          return insertMiddleAfter ? (
+            <Fragment key={metric.label}>
+              {metricBox}
+              <Box>{middleAction}</Box>
+            </Fragment>
+          ) : (
+            metricBox
           );
         })}
       </Box>

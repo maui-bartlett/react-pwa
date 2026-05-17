@@ -179,6 +179,7 @@ function StatPill({
           }`,
           borderRadius: '10px',
           backgroundColor: fabUTokens.color.surface,
+          boxShadow: fabUTokens.shadow.soft,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box',
@@ -262,6 +263,7 @@ function StatPill({
                     }}
                     variant="h6"
                     sx={{
+                      ml: '5px',
                       color: fabUTokens.color.textSecondary,
                       fontWeight: 700,
                       fontSize: inline ? '0.96rem' : '0.98rem',
@@ -295,9 +297,12 @@ function StatPill({
         onClose={closeBaseTempEditor}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        marginThreshold={12}
         disableRestoreFocus
         PaperProps={{
+          'data-pw': 'statpill-popup',
           sx: {
+            mt: '5px',
             p: 1.5,
             display: 'flex',
             flexDirection: 'column',
@@ -305,7 +310,8 @@ function StatPill({
             width: 160,
             maxWidth: 'min(90vw, 200px)',
             bgcolor: fabUTokens.color.surface,
-            border: `1px solid ${fabUTokens.color.border}`,
+            backgroundImage: 'none',
+            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
             borderRadius: '12px',
             boxShadow: fabUTokens.shadow.soft,
           },

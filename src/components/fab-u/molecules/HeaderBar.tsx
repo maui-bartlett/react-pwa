@@ -90,10 +90,8 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
             minWidth: compact ? 78 : 88,
             minHeight: compact ? 30 : 32,
             borderRadius: '7px',
-            bgcolor: fabUTokens.isDark
-              ? alpha(fabUTokens.color.brandStrong, 0.75)
-              : alpha('#ffffff', 0.96),
-            color: fabUTokens.isDark ? fabUTokens.color.highlight : fabUTokens.color.brandStrong,
+            bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : alpha('#ffffff', 0.96),
+            color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brandStrong,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -1,21 +1,43 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 
+import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
+import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
+
+import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
+import { scaledEditableTextStyle } from '../editableText';
 import { SpellRow } from '../types';
+
+const ACTION_WIDTH = 128;
+const SNAP_THRESHOLD = 50;
+const DELETE_RED = '#d32f2f';
+
+type DraftSpell = {
+  name: string;
+  cost: string;
+  target: string;
+  duration: 'Scene' | 'Instant';
+};
+
+type EditingSpellState = {
+  originalName: string;
+  name: string;
+  cost: string;
+  target: string;
+  duration: 'Scene' | 'Instant';
+};
 
 type SpellsTableProps = {
   rows: SpellRow[];
@@ -23,7 +45,521 @@ type SpellsTableProps = {
   label?: string;
   showTitle?: boolean;
   onCastSpell?: (spellName: string, mpCost: string) => void;
+  /** Total levels in the magic skill — enables label format "Name • N/total" and the + Spell button */
+  totalMagicLevels?: number;
+  onAddSpell?: (spell: SpellRow) => void;
+  onUpdateSpellEffect?: (spellName: string, effect: string) => void;
+  onDeleteSpell?: (spellName: string) => void;
+  onEditSpell?: (oldName: string, updatedSpell: SpellRow) => void;
 };
+
+type SwipeableSpellRowProps = {
+  row: SpellRow;
+  isOpen: boolean;
+  onToggle: () => void;
+  onCastSpell?: (spellName: string, mpCost: string) => void;
+  onUpdateSpellEffect?: (spellName: string, effect: string) => void;
+  onDelete?: () => void;
+  onStartEdit: () => void;
+  isEditing: boolean;
+  editDraft: EditingSpellState | null;
+  onEditDraftChange: (draft: EditingSpellState) => void;
+  onCommitEdit: () => void;
+  onRevertEdit: () => void;
+};
+
+function SwipeableSpellRow({
+  row,
+  isOpen,
+  onToggle,
+  onCastSpell,
+  onUpdateSpellEffect,
+  onDelete,
+  onStartEdit,
+  isEditing,
+  editDraft,
+  onEditDraftChange,
+  onCommitEdit,
+  onRevertEdit,
+}: SwipeableSpellRowProps) {
+  const fabUTokens = useFabUTokens();
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [editingEffect, setEditingEffect] = useState(false);
+  const [effectDraft, setEffectDraft] = useState('');
+  const rowElRef = useRef<HTMLElement | null>(null);
+  const committedRef = useRef(false);
+
+  const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
+  const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+  const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
+
+  function triggerRemove() {
+    setRemoving(true);
+    setSnapX(0);
+    setCurrentDeltaX(0);
+    setTimeout(() => onDelete?.(), 450);
+  }
+
+  function startEditingEffect() {
+    setEditingEffect(true);
+    setEffectDraft(row.effect);
+  }
+
+  function commitEffectEdit() {
+    if (!onUpdateSpellEffect) return;
+    onUpdateSpellEffect(row.name, effectDraft.trim());
+    setEditingEffect(false);
+  }
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
+      setCurrentDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setSwiping(false);
+      if (dir === 'Left' && absX > SNAP_THRESHOLD && snapX === 0) {
+        setSnapX(-ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > SNAP_THRESHOLD && snapX !== 0) {
+        setSnapX(0);
+      }
+      setCurrentDeltaX(0);
+      setTimeout(() => {
+        committedRef.current = false;
+      }, 50);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  useEffect(() => {
+    const el = rowElRef.current;
+    if (!el) return;
+
+    const onTouchStart = () => {
+      committedRef.current = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!committedRef.current || !e.cancelable) return;
+      e.preventDefault();
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+    };
+  }, []);
+
+  const setRef = (el: HTMLElement | null) => {
+    swipeHandlers.ref(el);
+    rowElRef.current = el;
+  };
+
+  const cellSx = { fontSize: '0.74rem', color: fabUTokens.color.textPrimary };
+
+  return (
+    <Box
+      sx={{
+        borderBottom: `1px solid ${fabUTokens.color.border}`,
+        overflow: removing ? 'hidden' : 'visible',
+        maxHeight: removing ? 0 : 'none',
+        opacity: removing ? 0 : 1,
+        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+      }}
+    >
+      {/* Swipeable main row section */}
+      <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Action channel */}
+        {channelVisible && (
+          <Box
+            sx={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: ACTION_WIDTH,
+              display: 'flex',
+              zIndex: 0,
+            }}
+          >
+            <Box
+              data-pw="spell-row-delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerRemove();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: DELETE_RED,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Trash2 size={18} color="white" />
+            </Box>
+            <Box
+              data-pw="spell-row-edit"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSnapX(0);
+                setCurrentDeltaX(0);
+                onStartEdit();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: fabUTokens.color.brand,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow:
+                  'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
+              }}
+            >
+              <Pencil size={18} color="white" />
+            </Box>
+          </Box>
+        )}
+
+        {/* Main row — translates on swipe */}
+        {isEditing && editDraft ? (
+          /* Edit mode */
+          <Box
+            data-pw="spell-row"
+            sx={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              px: 1.2,
+              py: 0.7,
+              height: 46,
+              bgcolor: fabUTokens.color.surface,
+              zIndex: 1,
+              gap: 0.5,
+            }}
+          >
+            <Box sx={{ flex: 2, minWidth: 0 }}>
+              <InputBase
+                autoFocus
+                value={editDraft.name}
+                onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
+                }}
+                placeholder="Spell name"
+                sx={{
+                  color: fabUTokens.color.textPrimary,
+                  width: '100%',
+                  '& input': {
+                    p: 0,
+                    fontWeight: 700,
+                    ...scaledEditableTextStyle(0.74, { stretch: true }),
+                  },
+                }}
+              />
+            </Box>
+            <Box sx={{ width: 56, flexShrink: 0 }}>
+              <InputBase
+                value={editDraft.cost}
+                onChange={(e) => onEditDraftChange({ ...editDraft, cost: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
+                }}
+                placeholder="0 MP"
+                sx={{
+                  color: fabUTokens.color.textPrimary,
+                  width: '100%',
+                  '& input': { p: 0, ...scaledEditableTextStyle(0.74, { stretch: true }) },
+                }}
+              />
+            </Box>
+            <Box sx={{ width: 48, flexShrink: 0 }}>
+              <InputBase
+                value={editDraft.target}
+                onChange={(e) => onEditDraftChange({ ...editDraft, target: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
+                }}
+                placeholder="1"
+                sx={{
+                  color: fabUTokens.color.textPrimary,
+                  width: '100%',
+                  '& input': { p: 0, ...scaledEditableTextStyle(0.74, { stretch: true }) },
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, display: 'flex', alignItems: 'center' }}>
+              <select
+                value={editDraft.duration}
+                onChange={(e) =>
+                  onEditDraftChange({
+                    ...editDraft,
+                    duration: e.target.value as 'Scene' | 'Instant',
+                  })
+                }
+                style={{
+                  fontSize: '0.74rem',
+                  color: fabUTokens.color.textPrimary,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  flex: 1,
+                  minWidth: 0,
+                  colorScheme: fabUTokens.isDark ? 'dark' : undefined,
+                }}
+              >
+                <option value="Instant">Instant</option>
+                <option value="Scene">Scene</option>
+              </select>
+            </Box>
+          </Box>
+        ) : (
+          /* Normal mode */
+          <Box
+            data-pw="spell-row"
+            {...swipeHandlers}
+            ref={setRef}
+            onClick={() => {
+              if (!committedRef.current) onToggle();
+            }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: 1.2,
+              height: 46,
+              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surface,
+              boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
+              position: 'relative',
+              zIndex: 1,
+              transform: `translateX(${visualX}px)`,
+              transition: swiping ? 'none' : 'transform 0.22s ease',
+              cursor: 'pointer',
+              touchAction: 'pan-y',
+              userSelect: 'none',
+              '&:hover': {
+                bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
+              },
+            }}
+          >
+            <Box
+              sx={{
+                flex: 2,
+                minWidth: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                overflow: 'hidden',
+              }}
+            >
+              {isOpen ? (
+                <KeyboardArrowUpIcon
+                  fontSize="small"
+                  sx={{ color: fabUTokens.color.brandFg, flexShrink: 0 }}
+                />
+              ) : (
+                <KeyboardArrowDownIcon
+                  fontSize="small"
+                  sx={{ color: fabUTokens.color.textSecondary, flexShrink: 0 }}
+                />
+              )}
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 700,
+                  color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  fontSize: '0.74rem',
+                }}
+              >
+                {row.name}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                width: 56,
+                flexShrink: 0,
+                ...cellSx,
+                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+              }}
+            >
+              {row.cost}
+            </Box>
+            <Box
+              sx={{
+                width: 48,
+                flexShrink: 0,
+                ...cellSx,
+                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+              }}
+            >
+              {row.target}
+            </Box>
+            <Box
+              sx={{
+                flex: 1.5,
+                minWidth: 0,
+                pl: 1.5,
+                ...cellSx,
+                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+              }}
+            >
+              {row.duration}
+            </Box>
+          </Box>
+        )}
+      </Box>
+
+      {/* Expand panel */}
+      {!isEditing && (
+        <Collapse in={isOpen} timeout="auto" unmountOnExit>
+          <Box sx={{ px: 1.2, pb: 0 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) 76px',
+                alignItems: 'start',
+                gap: 1.5,
+                py: 2,
+                px: 1.5,
+                bgcolor: 'transparent',
+                border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.18)}`,
+                borderRadius: '6px',
+                my: 0.75,
+              }}
+            >
+              {/* Effect box with pencil/check edit button */}
+              <Box sx={{ position: 'relative' }}>
+                <Box
+                  sx={{
+                    border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.28)}`,
+                    borderRadius: '6px',
+                    px: 1,
+                    py: 0.75,
+                    minHeight: 42,
+                    bgcolor: fabUTokens.isDark
+                      ? alpha(fabUTokens.color.surface, 0.4)
+                      : alpha(fabUTokens.color.surface, 0.6),
+                  }}
+                >
+                  {editingEffect ? (
+                    <InputBase
+                      autoFocus
+                      multiline
+                      fullWidth
+                      value={effectDraft}
+                      onChange={(e) => setEffectDraft(e.target.value)}
+                      onBlur={commitEffectEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setEditingEffect(false);
+                      }}
+                      sx={{
+                        color: fabUTokens.color.textPrimary,
+                        alignItems: 'flex-start',
+                        '& textarea': {
+                          p: 0,
+                          lineHeight: 1.6,
+                          ...scaledEditableTextStyle(0.72, {
+                            stretch: true,
+                            lineHeight: 1.6,
+                          }),
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: '0.72rem',
+                        lineHeight: 1.6,
+                        fontStyle: row.effect ? 'normal' : 'italic',
+                        color: row.effect
+                          ? fabUTokens.color.textPrimary
+                          : fabUTokens.color.textSecondary,
+                      }}
+                    >
+                      {row.effect || 'No description'}
+                    </Typography>
+                  )}
+                </Box>
+                {onUpdateSpellEffect ? (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (editingEffect) commitEffectEdit();
+                      else startEditingEffect();
+                    }}
+                    sx={{
+                      position: 'absolute',
+                      top: -10,
+                      right: -10,
+                      width: 22,
+                      height: 22,
+                      bgcolor: fabUTokens.color.surface,
+                      border: `1px solid ${fabUTokens.color.border}`,
+                      color: fabUTokens.color.textSecondary,
+                      '&:hover': { color: fabUTokens.color.brandText },
+                    }}
+                  >
+                    {editingEffect ? <CheckIcon sx={{ fontSize: 12 }} /> : <Pencil size={11} />}
+                  </IconButton>
+                ) : null}
+              </Box>
+
+              {/* Cast button */}
+              <Button
+                variant="contained"
+                size="small"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCastSpell?.(row.name, row.cost);
+                }}
+                sx={{
+                  justifySelf: 'end',
+                  width: 68,
+                  minWidth: 68,
+                  minHeight: 40,
+                  flexShrink: 0,
+                  overflow: 'visible',
+                  bgcolor: fabUTokens.color.highlight,
+                  color: '#ffffff',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: '#b09040', boxShadow: 'none' },
+                }}
+              >
+                Cast
+              </Button>
+            </Box>
+          </Box>
+        </Collapse>
+      )}
+    </Box>
+  );
+}
 
 function SpellsTable({
   rows,
@@ -31,187 +567,322 @@ function SpellsTable({
   label,
   showTitle = false,
   onCastSpell,
+  totalMagicLevels,
+  onAddSpell,
+  onUpdateSpellEffect,
+  onDeleteSpell,
+  onEditSpell,
 }: SpellsTableProps) {
   const fabUTokens = useFabUTokens();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [draftSpell, setDraftSpell] = useState<DraftSpell | null>(null);
+  const [editingSpell, setEditingSpell] = useState<EditingSpellState | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const originalSpellDataRef = useRef<SpellRow | null>(null);
+
+  const displayLabel =
+    totalMagicLevels !== undefined
+      ? `${label ?? title} • ${rows.length}/${totalMagicLevels}`
+      : (label ?? title);
+
+  const showAddSpellButton =
+    !!onAddSpell && totalMagicLevels !== undefined && rows.length < totalMagicLevels && !draftSpell;
 
   const toggleRow = (name: string) => {
     setExpandedRow((prev) => (prev === name ? null : name));
   };
 
+  function startDraft() {
+    setDraftSpell({ name: '', cost: '', target: '', duration: 'Instant' });
+    window.requestAnimationFrame(() => nameInputRef.current?.focus());
+  }
+
+  function commitDraftSpell() {
+    if (!draftSpell || !onAddSpell) return;
+    onAddSpell({
+      name: draftSpell.name.trim() || 'New Spell',
+      cost: draftSpell.cost.trim() || '0 MP',
+      target: draftSpell.target.trim() || '1',
+      duration: draftSpell.duration,
+      effect: '',
+    });
+    setDraftSpell(null);
+  }
+
+  function cancelDraft() {
+    setDraftSpell(null);
+  }
+
+  function startEditingSpell(row: SpellRow) {
+    originalSpellDataRef.current = row;
+    setExpandedRow(null);
+    setEditingSpell({
+      originalName: row.name,
+      name: row.name,
+      cost: row.cost,
+      target: row.target,
+      duration: row.duration,
+    });
+  }
+
+  function commitSpellEdit() {
+    setEditingSpell(null);
+  }
+
+  function revertSpellEdit() {
+    const original = originalSpellDataRef.current;
+    if (original && onEditSpell && editingSpell) {
+      onEditSpell(editingSpell.originalName, original);
+    }
+    setEditingSpell(null);
+  }
+
+  const inputSx = {
+    color: fabUTokens.color.textPrimary,
+    width: '100%',
+    '& input': {
+      p: 0,
+      ...scaledEditableTextStyle(0.74, { stretch: true }),
+    },
+  };
+
+  const draftKeyDown =
+    (isLast = false) =>
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') commitDraftSpell();
+      if (e.key === 'Escape') cancelDraft();
+      if (e.key === 'Tab' && isLast) {
+        e.preventDefault();
+        commitDraftSpell();
+      }
+    };
+
+  const headerCellSx = {
+    color: fabUTokens.color.textSecondary,
+    fontSize: '0.62rem',
+    fontWeight: 700,
+    letterSpacing: '0.045em',
+    textTransform: 'uppercase' as const,
+  };
+
   return (
-    <SurfaceCard label={label ?? title} title={showTitle ? title : undefined}>
-      <TableContainer
+    <SurfaceCard
+      label={displayLabel}
+      title={showTitle ? title : undefined}
+      actions={
+        editingSpell ? (
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => commitSpellEdit()}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <CheckCircle size={28} color="#4caf50" />
+            </Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => revertSpellEdit()}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <XCircle size={28} color="#d32f2f" />
+            </Box>
+          </Box>
+        ) : undefined
+      }
+      actionsPosition="inline"
+    >
+      <Box
         sx={{
           border: `1px solid ${fabUTokens.color.border}`,
           borderRadius: '9px',
-          overflowX: 'auto',
+          overflow: 'hidden',
         }}
       >
-        <Table
-          size="small"
+        {/* Header */}
+        <Box
           sx={{
-            '& .MuiTableCell-root': {
-              borderColor: fabUTokens.color.border,
-              py: 0.95,
-              px: 1.2,
-              fontSize: '0.74rem',
-              color: fabUTokens.color.textPrimary,
-            },
-            '& .MuiTableCell-head': {
-              color: fabUTokens.color.textSecondary,
-              fontSize: '0.62rem',
-              fontWeight: 700,
-              letterSpacing: '0.045em',
-              textTransform: 'uppercase',
-            },
+            display: 'flex',
+            alignItems: 'center',
+            px: 1.2,
+            py: 0.75,
+            bgcolor: fabUTokens.color.surfaceMuted,
+            borderBottom: `1px solid ${fabUTokens.color.border}`,
           }}
         >
-          <TableHead sx={{ bgcolor: fabUTokens.color.surfaceMuted }}>
-            <TableRow>
-              <TableCell>Spell</TableCell>
-              <TableCell>MP</TableCell>
-              <TableCell>Target</TableCell>
-              <TableCell>Duration</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row) => {
-              const isOpen = expandedRow === row.name;
-              return (
-                <Fragment key={row.name}>
-                  <TableRow
-                    data-pw="spell-row"
-                    onClick={() => toggleRow(row.name)}
-                    sx={{
-                      height: 46,
-                      cursor: 'pointer',
-                      bgcolor: isOpen ? fabUTokens.color.brand : 'transparent',
-                      '&:hover': {
-                        bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
-                      },
-                      '& .MuiTableCell-root': {
-                        color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
-                      },
-                    }}
-                  >
-                    <TableCell>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {isOpen ? (
-                          <KeyboardArrowUpIcon
-                            fontSize="small"
-                            sx={{
-                              color: fabUTokens.color.brandFg,
-                              flexShrink: 0,
-                            }}
-                          />
-                        ) : (
-                          <KeyboardArrowDownIcon
-                            fontSize="small"
-                            sx={{ color: fabUTokens.color.textSecondary, flexShrink: 0 }}
-                          />
-                        )}
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 700,
-                            color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {row.name}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>{row.cost}</TableCell>
-                    <TableCell>{row.target}</TableCell>
-                    <TableCell>{row.duration}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      sx={{
-                        '&&': {
-                          px: 1.2,
-                          py: 0,
-                          borderBottom: isOpen ? undefined : 'none',
-                          lineHeight: isOpen ? undefined : 0,
-                          fontSize: isOpen ? undefined : 0,
-                        },
-                      }}
-                    >
-                      <Collapse in={isOpen} timeout="auto">
-                        <Box
-                          sx={{
-                            display: 'grid',
-                            gridTemplateColumns: 'minmax(0, 1fr) 76px',
-                            alignItems: 'center',
-                            gap: 1.5,
-                            py: 2.5,
-                            px: 1.5,
-                            bgcolor: fabUTokens.color.brandSoft,
-                            borderRadius: '6px',
-                            my: 0.75,
-                          }}
-                        >
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              flex: 1,
-                              fontSize: '0.72rem',
-                              color: fabUTokens.color.textPrimary,
-                            }}
-                          >
-                            {row.effect}
-                          </Typography>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onCastSpell?.(row.name, row.cost);
-                            }}
-                            sx={{
-                              justifySelf: 'end',
-                              width: 68,
-                              minWidth: 68,
-                              minHeight: 40,
-                              flexShrink: 0,
-                              overflow: 'visible',
-                              bgcolor: fabUTokens.color.brand,
-                              color: fabUTokens.color.brandFg,
-                              fontSize: '0.68rem',
-                              fontWeight: 700,
-                              lineHeight: 1.2,
-                              textTransform: 'none',
-                              boxShadow: 'none',
-                              '&:hover': {
-                                bgcolor: fabUTokens.color.brandStrong,
-                                boxShadow: 'none',
-                              },
-                            }}
-                          >
-                            Cast
-                          </Button>
-                        </Box>
-                      </Collapse>
-                    </TableCell>
-                  </TableRow>
-                </Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
+          <Box sx={{ width: 56, flexShrink: 0, ...headerCellSx }}>Cost</Box>
+          <Box sx={{ width: 48, flexShrink: 0, ...headerCellSx }}>Target</Box>
+          <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, ...headerCellSx }}>Duration</Box>
+        </Box>
+
+        {/* Spell rows */}
+        {rows.map((row) => {
+          const isRowEditing = editingSpell?.originalName === row.name;
+          return (
+            <Fragment key={row.name}>
+              <SwipeableSpellRow
+                row={row}
+                isOpen={expandedRow === row.name}
+                onToggle={() => toggleRow(row.name)}
+                onCastSpell={onCastSpell}
+                onUpdateSpellEffect={onUpdateSpellEffect}
+                onDelete={onDeleteSpell ? () => onDeleteSpell(row.name) : undefined}
+                onStartEdit={() => startEditingSpell(row)}
+                isEditing={isRowEditing}
+                editDraft={isRowEditing ? editingSpell : null}
+                onEditDraftChange={(draft) => {
+                  setEditingSpell(draft);
+                  if (onEditSpell) {
+                    onEditSpell(draft.originalName, {
+                      name: draft.name.trim() || draft.originalName,
+                      cost: draft.cost.trim() || '0 MP',
+                      target: draft.target.trim() || '1',
+                      duration: draft.duration,
+                      effect: rows.find((r) => r.name === draft.originalName)?.effect ?? '',
+                    });
+                  }
+                }}
+                onCommitEdit={commitSpellEdit}
+                onRevertEdit={revertSpellEdit}
+              />
+            </Fragment>
+          );
+        })}
+
+        {/* Draft new spell row */}
+        {draftSpell && (
+          <Box
+            data-pw="spell-draft-row"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: 1.2,
+              py: 0.7,
+              height: 46,
+              bgcolor: fabUTokens.color.surface,
+              gap: 0.5,
+            }}
+          >
+            <Box sx={{ flex: 2, minWidth: 0 }}>
+              <InputBase
+                inputRef={nameInputRef}
+                value={draftSpell.name}
+                onChange={(e) => setDraftSpell((d) => (d ? { ...d, name: e.target.value } : d))}
+                placeholder="Spell name"
+                onKeyDown={draftKeyDown()}
+                sx={inputSx}
+              />
+            </Box>
+            <Box sx={{ width: 56, flexShrink: 0 }}>
+              <InputBase
+                value={draftSpell.cost}
+                onChange={(e) => setDraftSpell((d) => (d ? { ...d, cost: e.target.value } : d))}
+                placeholder="0 MP"
+                onKeyDown={draftKeyDown()}
+                sx={inputSx}
+              />
+            </Box>
+            <Box sx={{ width: 48, flexShrink: 0 }}>
+              <InputBase
+                value={draftSpell.target}
+                onChange={(e) => setDraftSpell((d) => (d ? { ...d, target: e.target.value } : d))}
+                placeholder="1"
+                onKeyDown={draftKeyDown()}
+                sx={inputSx}
+              />
+            </Box>
+            <Box
+              sx={{
+                flex: 1.5,
+                minWidth: 0,
+                pl: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+              <select
+                value={draftSpell.duration}
+                onChange={(e) =>
+                  setDraftSpell((d) =>
+                    d ? { ...d, duration: e.target.value as 'Scene' | 'Instant' } : d,
+                  )
+                }
+                onKeyDown={draftKeyDown(true)}
+                style={{
+                  fontSize: '0.74rem',
+                  color: fabUTokens.color.textPrimary,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  flex: 1,
+                  minWidth: 0,
+                  colorScheme: fabUTokens.isDark ? 'dark' : undefined,
+                }}
+              >
+                <option value="Instant">Instant</option>
+                <option value="Scene">Scene</option>
+              </select>
+              <IconButton
+                size="small"
+                onClick={commitDraftSpell}
+                sx={{
+                  color: fabUTokens.color.brand,
+                  p: 0.25,
+                  flexShrink: 0,
+                  '&:hover': { color: fabUTokens.color.brandStrong },
+                }}
+              >
+                <CheckIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+      </Box>
+
+      {/* + Spell button */}
+      {showAddSpellButton ? (
+        <Box
+          data-pw="add-spell-button"
+          onClick={startDraft}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1,
+            py: 0.6,
+            minHeight: 41,
+            cursor: 'pointer',
+            color: fabUTokens.color.highlight,
+            border: `1px dashed ${fabUTokens.color.highlight}`,
+            borderRadius: '8px',
+            bgcolor: 'transparent',
+          }}
+        >
+          <AddIcon sx={{ fontSize: '1rem' }} />
+          <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.74rem' }}>
+            Spell
+          </Typography>
+        </Box>
+      ) : null}
     </SurfaceCard>
   );
 }

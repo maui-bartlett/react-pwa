@@ -69,6 +69,8 @@ export type SkillRow = {
   level?: string;
   maxLevel?: number;
   effect: string;
+  /** Full description shown in the accordion expand panel. */
+  description?: string;
 };
 
 export type SpellRow = {
