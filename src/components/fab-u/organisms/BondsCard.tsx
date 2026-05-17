@@ -116,12 +116,8 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchOriginRef.current || !e.cancelable) return;
-      const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
-      const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
-      if (committedRef.current || (dx > dy && dx >= 35)) {
-        e.preventDefault();
-      }
+      if (!committedRef.current || !e.cancelable) return;
+      e.preventDefault();
     };
 
     el.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -373,51 +369,51 @@ function BondsCard({
 
         {/* ── Add-bond row ── */}
         {adding ? (
-          <Box
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            justifyContent="space-between"
+            gap={1}
             sx={{
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
-              px: 1.3,
-              py: 1.45,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              color: fabUTokens.color.highlight,
-              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
+              px: 1.25,
+              py: 0.85,
+              bgcolor: alpha(fabUTokens.color.highlight, 0.08),
             }}
           >
-            <AddIcon fontSize="small" />
-            <InputBase
-              inputRef={inputRef}
-              data-pw="bond-name-input"
-              inputProps={{ 'data-pw': 'bond-name-input' }}
-              autoFocus
-              fullWidth
-              placeholder="Bond"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={commitAdding}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.currentTarget.blur();
-                }
-                if (e.key === 'Escape') {
-                  cancelAdding();
-                }
-              }}
-              sx={{
-                flex: 1,
-                minWidth: 0,
-                '& input': {
-                  p: 0,
-                  ...scaledEditableTextStyle(0.84, { lineHeight: 1.5, stretch: true }),
-                  color: fabUTokens.color.textPrimary,
-                  lineHeight: 1.5,
-                  '&::placeholder': { color: fabUTokens.color.textSecondary, opacity: 1 },
-                },
-              }}
-            />
-          </Box>
+            <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
+              <InputBase
+                inputRef={inputRef}
+                data-pw="bond-name-input"
+                inputProps={{ 'data-pw': 'bond-name-input' }}
+                autoFocus
+                placeholder="Name"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commitAdding}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                  if (e.key === 'Escape') {
+                    cancelAdding();
+                  }
+                }}
+                sx={{
+                  '& input': {
+                    p: 0,
+                    fontWeight: 700,
+                    ...scaledEditableTextStyle(0.9, { lineHeight: 1.5, stretch: true }),
+                    color: fabUTokens.color.textPrimary,
+                    lineHeight: 1.5,
+                    '&::placeholder': { color: fabUTokens.color.highlight, opacity: 1 },
+                  },
+                }}
+              />
+              <Box sx={{ minHeight: 18 }} />
+            </Stack>
+          </Stack>
         ) : (
           <Box
             data-pw="bond-add-new"

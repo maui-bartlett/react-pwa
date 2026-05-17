@@ -48,7 +48,6 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
-  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const committedRef = useRef(false);
 
   const visualX = Math.max(-actionWidth, Math.min(0, snapX + currentDeltaX));
@@ -89,18 +88,13 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
     const el = rowElRef.current;
     if (!el) return;
 
-    const onTouchStart = (e: TouchEvent) => {
-      touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    const onTouchStart = () => {
       committedRef.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchOriginRef.current || !e.cancelable) return;
-      const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
-      const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
-      if (committedRef.current || (dx > dy && dx >= 35)) {
-        e.preventDefault();
-      }
+      if (!committedRef.current || !e.cancelable) return;
+      e.preventDefault();
     };
 
     el.addEventListener('touchstart', onTouchStart, { passive: true });

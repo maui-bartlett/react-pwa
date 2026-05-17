@@ -83,7 +83,6 @@ function SwipeableSkillRow({
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
-  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const committedRef = useRef(false);
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
@@ -124,18 +123,13 @@ function SwipeableSkillRow({
     const el = rowElRef.current;
     if (!el) return;
 
-    const onTouchStart = (e: TouchEvent) => {
-      touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    const onTouchStart = () => {
       committedRef.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchOriginRef.current || !e.cancelable) return;
-      const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
-      const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
-      if (committedRef.current || (dx > dy && dx >= 35)) {
-        e.preventDefault();
-      }
+      if (!committedRef.current || !e.cancelable) return;
+      e.preventDefault();
     };
 
     el.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -230,19 +224,6 @@ function SwipeableSkillRow({
               },
             }}
           />
-        </Box>
-        <Box sx={{ width: 38, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-          <IconButton
-            size="small"
-            onClick={onCommitEdit}
-            sx={{
-              p: 0.5,
-              color: fabUTokens.color.brand,
-              '&:hover': { color: fabUTokens.color.brandStrong },
-            }}
-          >
-            <CheckIcon sx={{ fontSize: 16 }} />
-          </IconButton>
         </Box>
       </Box>
     );
@@ -460,12 +441,6 @@ function SkillsTable({
   }
 
   function commitSkillEdit() {
-    if (!editingSkill || !onEditSkill) return;
-    onEditSkill(editingSkill.originalName, {
-      name: editingSkill.name.trim() || editingSkill.originalName,
-      level: editingSkill.level,
-      effect: editingSkill.effect.trim(),
-    });
     setEditingSkill(null);
   }
 
@@ -522,7 +497,16 @@ function SkillsTable({
                 row={row}
                 isEditing={isEditing}
                 editDraft={isEditing ? editingSkill : null}
-                onEditDraftChange={(draft) => setEditingSkill(draft)}
+                onEditDraftChange={(draft) => {
+                  setEditingSkill(draft);
+                  if (onEditSkill) {
+                    onEditSkill(draft.originalName, {
+                      name: draft.name.trim() || draft.originalName,
+                      level: draft.level,
+                      effect: draft.effect.trim(),
+                    });
+                  }
+                }}
                 onCommitEdit={commitSkillEdit}
                 onCancelEdit={() => setEditingSkill(null)}
                 onStartEdit={() => startEditingSkill(row)}

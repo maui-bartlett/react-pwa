@@ -84,7 +84,7 @@ const darkFabUTokens: FabUTokens = {
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // same as brand — matches the top header bar green
     labelFg: '#ffffff', // white text on dark-green pill
-    highlight: '#c5a557', // yellow accent in dark mode
+    highlight: '#be9040', // amber — matches light mode tone
     highlightFg: '#1a2e26',
     hp: '#c06355',
     mp: '#547bcb',

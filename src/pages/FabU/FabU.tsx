@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react';
 import { useEffect, useState } from 'react';
 
+import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
@@ -45,6 +46,7 @@ import { ThemeMode } from '@/theme/types';
 
 import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
 import { selectableClasses } from './selectableClasses';
+import { skillGroups as defaultSkillGroups } from './skills';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Bonds', value: 'bonds' },
@@ -264,7 +266,7 @@ function FabU() {
       const viewportRect = scrollViewport.getBoundingClientRect();
       const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
       (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-    }, 50);
+    }, 100);
     return () => clearTimeout(timer);
   }, [pendingCombatSpellScroll]);
 
@@ -279,7 +281,7 @@ function FabU() {
       const viewportRect = scrollViewport.getBoundingClientRect();
       const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
       (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-    }, 50);
+    }, 100);
     return () => clearTimeout(timer);
   }, [pendingCombatGearScroll]);
 
@@ -367,7 +369,11 @@ function FabU() {
   const getMagicSkillLevel = (className: string): number => {
     const group = character.skillGroups.find((g) => g.className === className);
     if (!group) return 0;
-    const magicSkill = group.skills.find((s) => (s.maxLevel ?? 5) > 5);
+    const defaultGroup = defaultSkillGroups.find((g) => g.className === className);
+    const magicSkill = group.skills.find((s) => {
+      const fallbackMax = defaultGroup?.skills.find((ds) => ds.name === s.name)?.maxLevel ?? 5;
+      return (s.maxLevel ?? fallbackMax) > 5;
+    });
     if (!magicSkill) return 0;
     return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
   };
@@ -564,81 +570,6 @@ function FabU() {
           }))}
         />
 
-        <Popover
-          open={classPickerOpen}
-          anchorEl={classPickerAnchorEl}
-          onClose={closeClassPicker}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          marginThreshold={12}
-          disableRestoreFocus
-          PaperProps={{
-            'data-pw': 'class-picker-popover',
-            sx: {
-              mt: '5px',
-              p: 1,
-              width: 232,
-              maxWidth: 'min(90vw, 280px)',
-              maxHeight: 360,
-              overflowY: 'auto',
-              bgcolor: fabUTokens.color.surface,
-              backgroundImage: 'none',
-              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
-              borderRadius: '12px',
-              boxShadow: fabUTokens.shadow.soft,
-            },
-          }}
-        >
-          <Stack spacing={0.5}>
-            {[
-              ...selectableClasses.filter((c) => selectedClassNames.has(c.name)),
-              ...selectableClasses.filter((c) => !selectedClassNames.has(c.name)),
-            ].map((selectableClass) => {
-              const isSelected = selectedClassNames.has(selectableClass.name);
-
-              return (
-                <Button
-                  key={selectableClass.name}
-                  data-pw="selectable-class-option"
-                  disabled={isSelected}
-                  onClick={() => selectClass(selectableClass.name)}
-                  sx={{
-                    justifyContent: 'space-between',
-                    minHeight: 36,
-                    px: 1.2,
-                    py: 0.75,
-                    borderRadius: '8px',
-                    color: isSelected
-                      ? fabUTokens.color.textSecondary
-                      : fabUTokens.color.textPrimary,
-                    bgcolor: isSelected ? fabUTokens.color.surfaceMuted : 'transparent',
-                    textTransform: 'none',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    boxShadow: 'none',
-                    '&:hover': {
-                      bgcolor: fabUTokens.color.surfaceMuted,
-                      boxShadow: 'none',
-                    },
-                    '&.Mui-disabled': {
-                      color: fabUTokens.color.textSecondary,
-                      opacity: 1,
-                    },
-                  }}
-                >
-                  <span>{selectableClass.name}</span>
-                  {isSelected ? (
-                    <CheckCircle
-                      size={15}
-                      style={{ color: fabUTokens.color.brand, flexShrink: 0 }}
-                    />
-                  ) : null}
-                </Button>
-              );
-            })}
-          </Stack>
-        </Popover>
-
         <BondsCard
           bonds={character.bonds}
           onToggleType={toggleBondType}
@@ -783,14 +714,13 @@ function FabU() {
           open={Boolean(inventoryAnchorEl)}
           anchorEl={inventoryAnchorEl}
           onClose={() => setInventoryAnchorEl(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           marginThreshold={12}
           disableRestoreFocus
-          disablePortal
           PaperProps={{
             sx: {
-              mt: '5px',
+              mb: '5px',
               p: 1,
               width: 200,
               bgcolor: fabUTokens.color.surface,
@@ -994,6 +924,28 @@ function FabU() {
             </Box>
           );
         })}
+        {canAddClass ? (
+          <Box
+            onClick={(e) => openClassPicker(e as React.MouseEvent<HTMLElement>)}
+            sx={{
+              border: `1px dashed ${fabUTokens.color.highlight}`,
+              borderRadius: '9px',
+              px: 1.3,
+              py: 2.9,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: fabUTokens.color.highlight,
+              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
+              cursor: 'pointer',
+            }}
+          >
+            <AddIcon fontSize="small" />
+            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+              Class
+            </Typography>
+          </Box>
+        ) : null}
       </>
     );
   }
@@ -1339,6 +1291,80 @@ function FabU() {
             }
           >
             {content}
+            <Popover
+              open={classPickerOpen}
+              anchorEl={classPickerAnchorEl}
+              onClose={closeClassPicker}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              marginThreshold={12}
+              disableRestoreFocus
+              PaperProps={{
+                'data-pw': 'class-picker-popover',
+                sx: {
+                  mt: '5px',
+                  p: 1,
+                  width: 232,
+                  maxWidth: 'min(90vw, 280px)',
+                  maxHeight: 360,
+                  overflowY: 'auto',
+                  bgcolor: fabUTokens.color.surface,
+                  backgroundImage: 'none',
+                  border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+                  borderRadius: '12px',
+                  boxShadow: fabUTokens.shadow.soft,
+                },
+              }}
+            >
+              <Stack spacing={0.5}>
+                {[
+                  ...selectableClasses.filter((c) => selectedClassNames.has(c.name)),
+                  ...selectableClasses.filter((c) => !selectedClassNames.has(c.name)),
+                ].map((selectableClass) => {
+                  const isSelected = selectedClassNames.has(selectableClass.name);
+
+                  return (
+                    <Button
+                      key={selectableClass.name}
+                      data-pw="selectable-class-option"
+                      disabled={isSelected}
+                      onClick={() => selectClass(selectableClass.name)}
+                      sx={{
+                        justifyContent: 'space-between',
+                        minHeight: 36,
+                        px: 1.2,
+                        py: 0.75,
+                        borderRadius: '8px',
+                        color: isSelected
+                          ? fabUTokens.color.textSecondary
+                          : fabUTokens.color.textPrimary,
+                        bgcolor: isSelected ? fabUTokens.color.surfaceMuted : 'transparent',
+                        textTransform: 'none',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        boxShadow: 'none',
+                        '&:hover': {
+                          bgcolor: fabUTokens.color.surfaceMuted,
+                          boxShadow: 'none',
+                        },
+                        '&.Mui-disabled': {
+                          color: fabUTokens.color.textSecondary,
+                          opacity: 1,
+                        },
+                      }}
+                    >
+                      <span>{selectableClass.name}</span>
+                      {isSelected ? (
+                        <CheckCircle
+                          size={15}
+                          style={{ color: fabUTokens.color.brand, flexShrink: 0 }}
+                        />
+                      ) : null}
+                    </Button>
+                  );
+                })}
+              </Stack>
+            </Popover>
           </MobileScreen>
         </Stack>
         <Snackbar

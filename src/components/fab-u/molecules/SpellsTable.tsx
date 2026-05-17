@@ -90,7 +90,6 @@ function SwipeableSpellRow({
   const [editingEffect, setEditingEffect] = useState(false);
   const [effectDraft, setEffectDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
-  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const committedRef = useRef(false);
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
@@ -142,18 +141,13 @@ function SwipeableSpellRow({
     const el = rowElRef.current;
     if (!el) return;
 
-    const onTouchStart = (e: TouchEvent) => {
-      touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    const onTouchStart = () => {
       committedRef.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchOriginRef.current || !e.cancelable) return;
-      const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
-      const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
-      if (committedRef.current || (dx > dy && dx >= 35)) {
-        e.preventDefault();
-      }
+      if (!committedRef.current || !e.cancelable) return;
+      e.preventDefault();
     };
 
     el.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -305,16 +299,7 @@ function SwipeableSpellRow({
                 }}
               />
             </Box>
-            <Box
-              sx={{
-                flex: 1.5,
-                minWidth: 0,
-                pl: 1.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
+            <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, display: 'flex', alignItems: 'center' }}>
               <select
                 value={editDraft.duration}
                 onChange={(e) =>
@@ -339,18 +324,6 @@ function SwipeableSpellRow({
                 <option value="Instant">Instant</option>
                 <option value="Scene">Scene</option>
               </select>
-              <IconButton
-                size="small"
-                onClick={onCommitEdit}
-                sx={{
-                  p: 0.25,
-                  flexShrink: 0,
-                  color: fabUTokens.color.brand,
-                  '&:hover': { color: fabUTokens.color.brandStrong },
-                }}
-              >
-                <CheckIcon sx={{ fontSize: 16 }} />
-              </IconButton>
             </Box>
           </Box>
         ) : (
@@ -645,14 +618,6 @@ function SpellsTable({
   }
 
   function commitSpellEdit() {
-    if (!editingSpell || !onEditSpell) return;
-    onEditSpell(editingSpell.originalName, {
-      name: editingSpell.name.trim() || editingSpell.originalName,
-      cost: editingSpell.cost.trim() || '0 MP',
-      target: editingSpell.target.trim() || '1',
-      duration: editingSpell.duration,
-      effect: rows.find((r) => r.name === editingSpell.originalName)?.effect ?? '',
-    });
     setEditingSpell(null);
   }
 
@@ -725,7 +690,18 @@ function SpellsTable({
                 onStartEdit={() => startEditingSpell(row)}
                 isEditing={isRowEditing}
                 editDraft={isRowEditing ? editingSpell : null}
-                onEditDraftChange={(draft) => setEditingSpell(draft)}
+                onEditDraftChange={(draft) => {
+                  setEditingSpell(draft);
+                  if (onEditSpell) {
+                    onEditSpell(draft.originalName, {
+                      name: draft.name.trim() || draft.originalName,
+                      cost: draft.cost.trim() || '0 MP',
+                      target: draft.target.trim() || '1',
+                      duration: draft.duration,
+                      effect: rows.find((r) => r.name === draft.originalName)?.effect ?? '',
+                    });
+                  }
+                }}
                 onCommitEdit={commitSpellEdit}
                 onCancelEdit={() => setEditingSpell(null)}
               />
