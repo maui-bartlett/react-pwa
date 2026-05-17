@@ -24,7 +24,7 @@ import { SkillRow } from '../types';
 const ACTION_WIDTH = 128;
 const DESC_ACTION_WIDTH = 64;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#d32f2f';
+const DELETE_RED = '#9f5450';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
 
 type SkillsTableProps = {
@@ -701,7 +701,7 @@ function SkillsTable({
                   alignItems: 'center',
                 }}
               >
-                <XCircle size={28} color="#d32f2f" />
+                <XCircle size={28} color="#9f5450" />
               </Box>
             </Box>
           ) : undefined

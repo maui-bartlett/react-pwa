@@ -31,7 +31,7 @@ const ALL_BOND_TYPES: BondType[] = [
 
 const ACTION_WIDTH = 128;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#d32f2f';
+const DELETE_RED = '#9f5450';
 const NEGATIVE_BOND_TYPES = new Set<BondType>(['Inferiority', 'Mistrust', 'Hatred']);
 
 function isNegativeBondType(type: BondType) {
