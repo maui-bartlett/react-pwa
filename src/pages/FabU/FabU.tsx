@@ -137,9 +137,7 @@ function FabU() {
   // Spend 100 Zennit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
   const handleBuyIP = () =>
     setCharacter((c) =>
-      c.zennit >= 100
-        ? { ...c, zennit: c.zennit - 100, inventoryPoints: c.inventoryPoints + 1 }
-        : c,
+      c.zennit >= 10 ? { ...c, zennit: c.zennit - 10, inventoryPoints: c.inventoryPoints + 1 } : c,
     );
   const toggleBondType = (id: string, type: BondType) =>
     setCharacter((c) => ({
@@ -1088,7 +1086,7 @@ function FabU() {
             <Box
               onClick={handleBuyIP}
               sx={{
-                bgcolor: fabUTokens.color.brand,
+                bgcolor: fabUTokens.color.highlight,
                 borderRadius: '9px',
                 height: '100%',
                 minHeight: 52,
@@ -1103,11 +1101,11 @@ function FabU() {
                 '&:active': { filter: 'brightness(0.88)' },
               }}
             >
-              <ArrowLeft size={16} color="#ffffff" strokeWidth={2.5} />
+              <ArrowLeft size={16} color={fabUTokens.color.highlightFg} strokeWidth={2.5} />
               <Typography
                 variant="caption"
                 sx={{
-                  color: '#ffffff',
+                  color: fabUTokens.color.highlightFg,
                   fontWeight: 700,
                   fontSize: '0.6rem',
                   letterSpacing: '0.05em',

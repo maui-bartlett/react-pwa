@@ -188,30 +188,12 @@ function SwipeableSkillRow({
           />
         </Box>
         <Box sx={{ width: 40, flexShrink: 0 }}>
-          <select
-            value={editDraft.level}
-            onChange={(e) => onEditDraftChange({ ...editDraft, level: e.target.value })}
-            style={{
-              fontSize: '0.74rem',
-              color: fabUTokens.color.textPrimary,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              width: '100%',
-              padding: 0,
-              colorScheme: fabUTokens.isDark ? 'dark' : undefined,
-            }}
+          <Typography
+            variant="body2"
+            sx={{ fontSize: '0.74rem', color: fabUTokens.color.textSecondary }}
           >
-            {Array.from({ length: (row.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL) + 1 }, (_, i) => i).map(
-              (lvl) => (
-                <option key={lvl} value={String(lvl)}>
-                  {lvl}
-                </option>
-              ),
-            )}
-          </select>
+            {editDraft.level}
+          </Typography>
         </Box>
         <Box sx={{ flex: 2.5, minWidth: 0 }}>
           <InputBase
