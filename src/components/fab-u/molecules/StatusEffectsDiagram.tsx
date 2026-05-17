@@ -246,7 +246,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
           aria-hidden="true"
           sx={{
             flexShrink: 0,
-            mr: '5px',
+            mr: '9px',
             color: fabUTokens.color.textSecondary,
             transform: detailMounted ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 180ms ease',

@@ -1,12 +1,11 @@
 import { useState } from 'react';
 
 import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import InputBase from '@mui/material/InputBase';
-import Popover from '@mui/material/Popover';
-import Stack from '@mui/material/Stack';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -14,6 +13,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -48,8 +48,10 @@ function SkillsTable({
   onAddSkillLevels,
 }: SkillsTableProps) {
   const fabUTokens = useFabUTokens();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [levelDraft, setLevelDraft] = useState<{ skillName: string; value: string } | null>(null);
+  const [menuState, setMenuState] = useState<{
+    anchorEl: HTMLElement;
+    skillName: string;
+  } | null>(null);
 
   const tableTotal = rows.reduce((sum, row) => {
     const n = parseInt(row.level ?? '0', 10);
@@ -57,7 +59,7 @@ function SkillsTable({
   }, 0);
   const headingLabel = `${label ?? title} • ${tableTotal}/10`;
   const showAddSkillButton = !!onAddSkill && tableTotal < 10;
-  const activeSkill = levelDraft ? rows.find((row) => row.name === levelDraft.skillName) : null;
+  const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
   const activeSkillLevel = activeSkill ? parseInt(activeSkill.level ?? '0', 10) : 0;
   const activeSkillMax = activeSkill?.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
   const activeSkillAvailable = Math.min(
@@ -65,22 +67,20 @@ function SkillsTable({
     freeSkillLevels,
   );
 
-  function openLevelPopover(e: React.MouseEvent<HTMLElement>, skillName: string) {
-    setLevelDraft({ skillName, value: '1' });
-    setAnchorEl(e.currentTarget);
+  function openLevelMenu(e: React.MouseEvent<HTMLElement>, skillName: string) {
+    setMenuState({ anchorEl: e.currentTarget, skillName });
   }
 
-  function closeLevelPopover() {
-    setAnchorEl(null);
-    setLevelDraft(null);
+  function closeLevelMenu() {
+    setMenuState(null);
   }
 
-  function commitLevelDraft() {
-    if (!levelDraft || !onAddSkillLevels || activeSkillAvailable <= 0) return;
-    const parsed = parseInt(levelDraft.value, 10);
-    const levels = Math.min(Math.max(1, isNaN(parsed) ? 1 : parsed), activeSkillAvailable);
-    onAddSkillLevels(levelDraft.skillName, levels);
-    closeLevelPopover();
+  function selectLevel(targetLevel: number) {
+    if (!menuState || !onAddSkillLevels || !activeSkill) return;
+    const currentLevel = parseInt(activeSkill.level ?? '0', 10);
+    const delta = targetLevel - currentLevel;
+    if (delta > 0) onAddSkillLevels(menuState.skillName, delta);
+    closeLevelMenu();
   }
 
   return (
@@ -162,7 +162,7 @@ function SkillsTable({
                             aria-label={`Add levels to ${row.name}`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              openLevelPopover(e, row.name);
+                              openLevelMenu(e, row.name);
                             }}
                             sx={{
                               mr: '5px',
@@ -212,140 +212,71 @@ function SkillsTable({
         ) : null}
       </SurfaceCard>
 
-      {/* Add-level popover — portaled, anchors below the + button */}
-      <Popover
-        open={Boolean(anchorEl) && Boolean(activeSkill)}
-        anchorEl={anchorEl}
-        onClose={closeLevelPopover}
+      {/* Level pick list — styled after BondsCard type menu */}
+      <Menu
+        anchorEl={menuState?.anchorEl ?? null}
+        open={!!menuState}
+        onClose={closeLevelMenu}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         marginThreshold={12}
-        disableRestoreFocus
-        PaperProps={{
-          'data-pw': 'add-level-popup',
-          sx: {
-            mt: '5px',
-            p: 1.5,
-            width: 180,
-            maxWidth: 'min(90vw, 220px)',
-            bgcolor: fabUTokens.color.surface,
-            backgroundImage: 'none',
-            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
-            borderRadius: '12px',
-            boxShadow: fabUTokens.shadow.soft,
-          },
+        slotProps={{
+          paper: {
+            'data-pw': 'add-level-menu',
+            sx: {
+              mt: '5px',
+              bgcolor: fabUTokens.color.surface,
+              backgroundImage: 'none',
+              borderRadius: '10px',
+              boxShadow: '0 4px 16px rgba(31, 42, 38, 0.14)',
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+              minWidth: 100,
+            },
+          } as Record<string, unknown>,
         }}
       >
-        {activeSkill && (
-          <Stack spacing={1.25}>
-            {/* Header */}
-            <Stack spacing={0.25}>
-              <Typography
-                variant="caption"
+        {activeSkill &&
+          Array.from(
+            { length: (activeSkill.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL) + 1 },
+            (_, i) => i,
+          ).map((level) => {
+            const currentLevel = parseInt(activeSkill.level ?? '0', 10);
+            const isSelected = level === currentLevel;
+            const canSelect = level > currentLevel && level <= currentLevel + activeSkillAvailable;
+            const isDisabled = !isSelected && !canSelect;
+            return (
+              <MenuItem
+                key={level}
+                data-pw={`skill-level-option-${level}`}
+                disabled={isDisabled}
+                onClick={() => {
+                  if (!isSelected && canSelect) selectLevel(level);
+                }}
                 sx={{
-                  color: fabUTokens.color.textSecondary,
-                  fontSize: '0.6rem',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  py: 0.75,
+                  gap: 1,
+                  color: isSelected
+                    ? fabUTokens.color.brand
+                    : isDisabled
+                      ? fabUTokens.color.textSecondary
+                      : fabUTokens.color.textPrimary,
+                  bgcolor: isSelected ? alpha(fabUTokens.color.brand, 0.08) : 'transparent',
+                  '&:hover': { bgcolor: alpha(fabUTokens.color.brand, 0.1) },
+                  '&.Mui-disabled': { opacity: 0.4 },
                 }}
               >
-                Add levels
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.82rem' }}
-              >
-                {activeSkill.name}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.65rem' }}
-              >
-                max {activeSkillAvailable} available
-              </Typography>
-            </Stack>
-
-            {/* Numeric input */}
-            <InputBase
-              value={levelDraft?.value ?? '1'}
-              autoFocus
-              inputProps={{
-                'aria-label': `Levels to add to ${activeSkill.name}`,
-                inputMode: 'numeric',
-                min: 1,
-                max: activeSkillAvailable,
-                style: {
-                  width: '100%',
-                  textAlign: 'center',
-                  fontWeight: 700,
-                  fontSize: '1.1rem',
-                  color: fabUTokens.color.textPrimary,
-                  padding: 0,
-                  boxSizing: 'border-box',
-                },
-              }}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9]/g, '');
-                setLevelDraft({ skillName: activeSkill.name, value });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitLevelDraft();
-                if (e.key === 'Escape') closeLevelPopover();
-              }}
-              sx={{
-                border: `1px solid ${fabUTokens.color.brand}`,
-                borderRadius: '8px',
-                boxSizing: 'border-box',
-                height: 36,
-                width: '100%',
-                alignItems: 'center',
-                px: 0.75,
-                '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
-              }}
-            />
-
-            {/* Actions */}
-            <Stack direction="column" spacing={0.75}>
-              <Button
-                size="small"
-                variant="contained"
-                onClick={commitLevelDraft}
-                disabled={activeSkillAvailable <= 0}
-                sx={{
-                  bgcolor: fabUTokens.color.brand,
-                  color: '#fff',
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: fabUTokens.color.brandStrong, boxShadow: 'none' },
-                  '&.Mui-disabled': {
-                    bgcolor: fabUTokens.color.border,
-                    color: fabUTokens.color.textSecondary,
-                  },
-                }}
-              >
-                Add
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={closeLevelPopover}
-                sx={{
-                  color: fabUTokens.color.textSecondary,
-                  borderColor: fabUTokens.color.border,
-                  boxShadow: 'none',
-                  '&:hover': {
-                    borderColor: fabUTokens.color.textSecondary,
-                    bgcolor: 'transparent',
-                    boxShadow: 'none',
-                  },
-                }}
-              >
-                Cancel
-              </Button>
-            </Stack>
-          </Stack>
-        )}
-      </Popover>
+                <Box sx={{ width: 16, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {isSelected ? (
+                    <CheckIcon sx={{ fontSize: 14, color: fabUTokens.color.brand }} />
+                  ) : null}
+                </Box>
+                {level}
+              </MenuItem>
+            );
+          })}
+      </Menu>
     </>
   );
 }
