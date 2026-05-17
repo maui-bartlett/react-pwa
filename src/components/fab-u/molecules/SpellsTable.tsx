@@ -11,7 +11,6 @@ import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
 
 import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 
@@ -21,8 +20,9 @@ import { scaledEditableTextStyle } from '../editableText';
 import { SpellRow } from '../types';
 
 const ACTION_WIDTH = 128;
+const DESC_ACTION_WIDTH = 64;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#d32f2f';
+const DELETE_RED = '#9f5450';
 
 type DraftSpell = {
   name: string;
@@ -83,18 +83,31 @@ function SwipeableSpellRow({
   onRevertEdit,
 }: SwipeableSpellRowProps) {
   const fabUTokens = useFabUTokens();
+
+  // Row swipe state
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [editingEffect, setEditingEffect] = useState(false);
-  const [effectDraft, setEffectDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
+
+  // Accordion description swipe state
+  const [descSnapX, setDescSnapX] = useState(0);
+  const [descDeltaX, setDescDeltaX] = useState(0);
+  const [descSwiping, setDescSwiping] = useState(false);
+  const descElRef = useRef<HTMLElement | null>(null);
+
+  // Description inline edit state
+  const [editingEffect, setEditingEffect] = useState(false);
+  const [effectDraft, setEffectDraft] = useState('');
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
+
+  const descVisualX = Math.max(-DESC_ACTION_WIDTH, Math.min(0, descSnapX + descDeltaX));
+  const descChannelVisible = descSnapX !== 0 || (descSwiping && descDeltaX < -5);
 
   function triggerRemove() {
     setRemoving(true);
@@ -104,6 +117,8 @@ function SwipeableSpellRow({
   }
 
   function startEditingEffect() {
+    setDescSnapX(0);
+    setDescDeltaX(0);
     setEditingEffect(true);
     setEffectDraft(row.effect);
   }
@@ -139,6 +154,34 @@ function SwipeableSpellRow({
     preventScrollOnSwipe: false,
     touchEventOptions: { passive: true },
   });
+
+  // Accordion description swipe handlers
+  const descSwipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setDescSwiping(true);
+      }
+      setDescDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setDescSwiping(false);
+      if (dir === 'Left' && absX > SNAP_THRESHOLD && descSnapX === 0) {
+        setDescSnapX(-DESC_ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > SNAP_THRESHOLD && descSnapX !== 0) {
+        setDescSnapX(0);
+      }
+      setDescDeltaX(0);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  const descSetRef = (el: HTMLElement | null) => {
+    descSwipeHandlers.ref(el);
+    descElRef.current = el;
+  };
 
   useEffect(() => {
     const el = rowElRef.current;
@@ -435,30 +478,73 @@ function SwipeableSpellRow({
           <Box sx={{ px: 1.2, pb: 0 }}>
             <Box
               sx={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) 76px',
-                alignItems: 'start',
+                display: 'flex',
+                alignItems: 'flex-start',
                 gap: 1.5,
-                py: 2,
-                px: 1.5,
-                bgcolor: 'transparent',
-                border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.18)}`,
-                borderRadius: '6px',
                 my: 0.75,
               }}
             >
-              {/* Effect box with pencil/check edit button */}
-              <Box sx={{ position: 'relative' }}>
+              {/* Swipeable description — same style as skill row */}
+              <Box
+                sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  borderRadius: '9px',
+                }}
+              >
+                {/* Edit channel */}
+                {descChannelVisible && onUpdateSpellEffect && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: DESC_ACTION_WIDTH,
+                      display: 'flex',
+                      zIndex: 0,
+                    }}
+                  >
+                    <Box
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEditingEffect();
+                      }}
+                      sx={{
+                        flex: 1,
+                        bgcolor: '#3d7060',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow:
+                          'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
+                      }}
+                    >
+                      <Pencil size={18} color="white" />
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Description content — translates on swipe */}
                 <Box
+                  {...(onUpdateSpellEffect ? descSwipeHandlers : {})}
+                  ref={descSetRef}
                   sx={{
-                    border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.28)}`,
-                    borderRadius: '6px',
-                    px: 1,
-                    py: 0.75,
+                    position: 'relative',
+                    zIndex: 1,
+                    transform: `translateX(${descVisualX}px)`,
+                    transition: descSwiping ? 'none' : 'transform 0.22s ease',
+                    touchAction: 'pan-y',
+                    userSelect: 'none',
+                    py: 1.25,
+                    px: 1.5,
+                    bgcolor: fabUTokens.color.surface,
+                    borderRadius: descVisualX < 0 ? '9px 0 0 9px' : '9px',
                     minHeight: 42,
-                    bgcolor: fabUTokens.isDark
-                      ? alpha(fabUTokens.color.surface, 0.4)
-                      : alpha(fabUTokens.color.surface, 0.6),
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
                   {editingEffect ? (
@@ -477,11 +563,9 @@ function SwipeableSpellRow({
                         alignItems: 'flex-start',
                         '& textarea': {
                           p: 0,
-                          lineHeight: 1.6,
-                          ...scaledEditableTextStyle(0.72, {
-                            stretch: true,
-                            lineHeight: 1.6,
-                          }),
+                          lineHeight: 1.5,
+                          ...scaledEditableTextStyle(0.84, { stretch: true, lineHeight: 1.5 }),
+                          color: fabUTokens.color.textPrimary,
                         },
                       }}
                     />
@@ -489,41 +573,16 @@ function SwipeableSpellRow({
                     <Typography
                       variant="body2"
                       sx={{
-                        fontSize: '0.72rem',
-                        lineHeight: 1.6,
-                        fontStyle: row.effect ? 'normal' : 'italic',
-                        color: row.effect
-                          ? fabUTokens.color.textPrimary
-                          : fabUTokens.color.textSecondary,
+                        fontSize: '0.84rem',
+                        lineHeight: 1.5,
+                        color: fabUTokens.color.textPrimary,
+                        fontStyle: !row.effect ? 'italic' : 'normal',
                       }}
                     >
-                      {row.effect || 'No description'}
+                      {row.effect || 'Swipe left to add description'}
                     </Typography>
                   )}
                 </Box>
-                {onUpdateSpellEffect ? (
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (editingEffect) commitEffectEdit();
-                      else startEditingEffect();
-                    }}
-                    sx={{
-                      position: 'absolute',
-                      top: -10,
-                      right: -10,
-                      width: 22,
-                      height: 22,
-                      bgcolor: fabUTokens.color.surface,
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      color: fabUTokens.color.textSecondary,
-                      '&:hover': { color: fabUTokens.color.brandText },
-                    }}
-                  >
-                    {editingEffect ? <CheckIcon sx={{ fontSize: 12 }} /> : <Pencil size={11} />}
-                  </IconButton>
-                ) : null}
               </Box>
 
               {/* Cast button */}
@@ -535,11 +594,11 @@ function SwipeableSpellRow({
                   onCastSpell?.(row.name, row.cost);
                 }}
                 sx={{
-                  justifySelf: 'end',
+                  flexShrink: 0,
+                  alignSelf: 'flex-start',
                   width: 68,
                   minWidth: 68,
                   minHeight: 40,
-                  flexShrink: 0,
                   overflow: 'visible',
                   bgcolor: fabUTokens.color.highlight,
                   color: '#ffffff',
@@ -700,7 +759,7 @@ function SpellsTable({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={28} color="#d32f2f" />
+              <XCircle size={28} color="#9f5450" />
             </Box>
           </Box>
         ) : undefined
