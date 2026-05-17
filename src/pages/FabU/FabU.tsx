@@ -1154,7 +1154,7 @@ function FabU() {
               borderRadius: '9px',
               px: 1.3,
               py: 5.8,
-              mx: 1.65,
+              mx: 1.775,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
