@@ -64,6 +64,7 @@ function AttributePill({
 }: AttributePillProps) {
   const fabUTokens = useFabUTokens();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [anchorPos, setAnchorPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [draftMod, setDraftMod] = useState('');
   const [draftTemp, setDraftTemp] = useState<DieSize | null>(null);
   const toneStyles = getToneStyles(tone);
@@ -74,6 +75,16 @@ function AttributePill({
     if (!editable) return;
     setDraftMod(modifier === 0 ? '' : String(modifier));
     setDraftTemp(temp ?? null);
+    // Freeze anchor position at open time so typing/deleting inside the
+    // Popover never triggers MUI's updatePosition() and causes a jump.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const left =
+      popoverHorizontal === 'left'
+        ? rect.left
+        : popoverHorizontal === 'right'
+          ? rect.right
+          : rect.left + rect.width / 2;
+    setAnchorPos({ top: rect.bottom, left });
     setAnchorEl(e.currentTarget);
   }
 
@@ -158,7 +169,8 @@ function AttributePill({
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: popoverHorizontal }}
+        anchorReference="anchorPosition"
+        anchorPosition={anchorPos}
         transformOrigin={{ vertical: 'top', horizontal: popoverHorizontal }}
         marginThreshold={12}
         disableRestoreFocus
