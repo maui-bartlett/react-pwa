@@ -4,6 +4,7 @@ import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
 import Box from '@mui/material/Box';
+import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -12,6 +13,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
+import { scaledEditableTextStyle } from '../editableText';
 
 const SNAP_THRESHOLD = 50;
 const DELETE_RED = '#d32f2f';
@@ -31,6 +33,7 @@ type DetailListCardProps = {
   onAdd?: (event: MouseEvent<HTMLElement>) => void;
   onRemoveItem?: (index: number) => void;
   onItemClick?: (index: number) => void;
+  onEditItem?: (index: number, updated: { title: string; subtitle: string }) => void;
 };
 
 type SwipeableRowProps = {
@@ -38,15 +41,20 @@ type SwipeableRowProps = {
   index: number;
   onRemove: (index: number) => void;
   onItemClick?: (index: number) => void;
+  onEditItem?: (index: number, updated: { title: string; subtitle: string }) => void;
 };
 
-function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps) {
+function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: SwipeableRowProps) {
   const fabUTokens = useFabUTokens();
-  const actionWidth = onItemClick ? 128 : 64;
+  const hasEditAction = !!(onItemClick || onEditItem);
+  const actionWidth = hasEditAction ? 128 : 64;
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [subtitleDraft, setSubtitleDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -60,6 +68,26 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
     setSnapX(0);
     setCurrentDeltaX(0);
     setTimeout(() => onRemove(index), 450);
+  }
+
+  function startEdit() {
+    setSnapX(0);
+    setCurrentDeltaX(0);
+    setTitleDraft(item.title);
+    setSubtitleDraft(item.subtitle);
+    setEditingTitle(true);
+  }
+
+  function commitEdit() {
+    onEditItem?.(index, {
+      title: titleDraft.trim() || item.title,
+      subtitle: subtitleDraft.trim(),
+    });
+    setEditingTitle(false);
+  }
+
+  function cancelEdit() {
+    setEditingTitle(false);
   }
 
   const swipeHandlers = useSwipeable({
@@ -120,10 +148,14 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
       sx={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '9px',
+        borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        transition: removing
+          ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s'
+          : swiping
+            ? 'none'
+            : 'border-radius 0.22s ease',
       }}
     >
       {/* Action channel */}
@@ -155,13 +187,17 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
           >
             <Trash2 size={18} color="white" />
           </Box>
-          {onItemClick ? (
+          {hasEditAction ? (
             <Box
               onClick={(e) => {
                 e.stopPropagation();
-                setSnapX(0);
-                setCurrentDeltaX(0);
-                onItemClick(index);
+                if (onEditItem) {
+                  startEdit();
+                } else {
+                  setSnapX(0);
+                  setCurrentDeltaX(0);
+                  onItemClick?.(index);
+                }
               }}
               sx={{
                 flex: 1,
@@ -205,18 +241,69 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
         }}
       >
         <Stack spacing={0.35}>
-          <Typography
-            variant="body2"
-            sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
-          >
-            {item.title}
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.68rem', lineHeight: 1.4 }}
-          >
-            {item.subtitle}
-          </Typography>
+          {editingTitle ? (
+            <>
+              <InputBase
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => {
+                  setTitleDraft(e.target.value);
+                  onEditItem?.(index, {
+                    title: e.target.value.trim() || item.title,
+                    subtitle: subtitleDraft.trim(),
+                  });
+                }}
+                onBlur={commitEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                  if (e.key === 'Escape') cancelEdit();
+                }}
+                sx={{
+                  '& input': {
+                    p: 0,
+                    fontWeight: 700,
+                    ...scaledEditableTextStyle(0.9, { lineHeight: 1.5, stretch: true }),
+                    color: fabUTokens.color.textPrimary,
+                  },
+                }}
+              />
+              <InputBase
+                value={subtitleDraft}
+                onChange={(e) => {
+                  setSubtitleDraft(e.target.value);
+                  onEditItem?.(index, {
+                    title: titleDraft.trim() || item.title,
+                    subtitle: e.target.value.trim(),
+                  });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') cancelEdit();
+                }}
+                sx={{
+                  '& input': {
+                    p: 0,
+                    ...scaledEditableTextStyle(0.68, { lineHeight: 1.4, stretch: true }),
+                    color: fabUTokens.color.textSecondary,
+                  },
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Typography
+                variant="body2"
+                sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
+              >
+                {item.title}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.68rem', lineHeight: 1.4 }}
+              >
+                {item.subtitle}
+              </Typography>
+            </>
+          )}
         </Stack>
         {item.trailing ? (
           <Typography
@@ -245,6 +332,7 @@ function DetailListCard({
   onAdd,
   onRemoveItem,
   onItemClick,
+  onEditItem,
 }: DetailListCardProps) {
   const fabUTokens = useFabUTokens();
   const handleAddKeyDown = (event: KeyboardEvent<HTMLElement>) => {
@@ -264,6 +352,7 @@ function DetailListCard({
               index={index}
               onRemove={onRemoveItem}
               onItemClick={onItemClick}
+              onEditItem={onEditItem}
             />
           ) : (
             <Stack

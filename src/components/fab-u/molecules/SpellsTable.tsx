@@ -248,54 +248,6 @@ function SwipeableSpellRow({
               gap: 0.5,
             }}
           >
-            {/* Floating confirm/cancel bar */}
-            <Box
-              sx={{
-                position: 'absolute',
-                top: -28,
-                right: 8,
-                zIndex: 10,
-                display: 'flex',
-                gap: 0.5,
-              }}
-            >
-              <Box
-                component="button"
-                type="button"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  onCommitEdit();
-                }}
-                sx={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <CheckCircle size={22} color="#4caf50" />
-              </Box>
-              <Box
-                component="button"
-                type="button"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  onRevertEdit();
-                }}
-                sx={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <XCircle size={22} color="#d32f2f" />
-              </Box>
-            </Box>
             <Box sx={{ flex: 2, minWidth: 0 }}>
               <InputBase
                 autoFocus
@@ -710,7 +662,47 @@ function SpellsTable({
   };
 
   return (
-    <SurfaceCard label={displayLabel} title={showTitle ? title : undefined}>
+    <SurfaceCard
+      label={displayLabel}
+      title={showTitle ? title : undefined}
+      actions={
+        editingSpell ? (
+          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => commitSpellEdit()}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <CheckCircle size={20} color="#4caf50" />
+            </Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => revertSpellEdit()}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <XCircle size={20} color="#d32f2f" />
+            </Box>
+          </Box>
+        ) : undefined
+      }
+      actionsPosition="inline"
+    >
       <Box
         sx={{
           border: `1px solid ${fabUTokens.color.border}`,

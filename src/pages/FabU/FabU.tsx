@@ -381,6 +381,51 @@ function FabU() {
     return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
   };
 
+  const handleDeleteEquipment = (index: number) => {
+    setCharacter((prev) => ({
+      ...prev,
+      equipment: prev.equipment.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleUpdateEquipment = (
+    index: number,
+    updated: import('@/components/fab-u').EquipmentItem,
+  ) => {
+    setCharacter((prev) => ({
+      ...prev,
+      equipment: prev.equipment.map((item, i) => (i === index ? updated : item)),
+    }));
+  };
+
+  const handleDeleteBackpackItem = (index: number) => {
+    setCharacter((prev) => ({
+      ...prev,
+      backpack: prev.backpack.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleEditBackpackItem = (index: number, updated: { title: string; subtitle: string }) => {
+    setCharacter((prev) => ({
+      ...prev,
+      backpack: prev.backpack.map((item, i) => (i === index ? { ...item, ...updated } : item)),
+    }));
+  };
+
+  const handleAddBackpackItem = () => {
+    setCharacter((prev) => ({
+      ...prev,
+      backpack: [...prev.backpack, { id: String(Date.now()), title: 'New Item', subtitle: '' }],
+    }));
+  };
+
+  const handleAddEquipmentItem = () => {
+    setCharacter((prev) => ({
+      ...prev,
+      equipment: [...prev.equipment, { name: 'New Item', slot: 'Accessory', description: '' }],
+    }));
+  };
+
   const handleAddSpell = (className: string, spell: import('@/components/fab-u').SpellRow) =>
     setCharacter((c) => ({
       ...c,
@@ -894,6 +939,9 @@ function FabU() {
               title=""
               items={character.equipment}
               emptyLabel="Accessory"
+              onDeleteItem={handleDeleteEquipment}
+              onUpdateItem={handleUpdateEquipment}
+              onAddItem={handleAddEquipmentItem}
             />
           </Box>
         ) : null}
@@ -944,7 +992,7 @@ function FabU() {
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
-              py: 2.9,
+              py: 5.8,
               display: 'flex',
               alignItems: 'center',
               gap: 1,
@@ -1019,6 +1067,9 @@ function FabU() {
           title=""
           items={character.equipment}
           emptyLabel="Accessory"
+          onDeleteItem={handleDeleteEquipment}
+          onUpdateItem={handleUpdateEquipment}
+          onAddItem={handleAddEquipmentItem}
         />
         <SummaryStrip
           label="Inventory Points"
@@ -1030,16 +1081,10 @@ function FabU() {
         <DetailListCard
           label="Backpack"
           addLabel="Item"
-          items={[
-            {
-              title: 'Green Crystal',
-              subtitle: 'a crystal that acts as a compass, guiding us toward our goal.',
-            },
-            {
-              title: 'Grimoire',
-              subtitle: 'a magical book named Noir. Origins unknown.',
-            },
-          ]}
+          items={character.backpack.map((b) => ({ title: b.title, subtitle: b.subtitle }))}
+          onRemoveItem={handleDeleteBackpackItem}
+          onEditItem={handleEditBackpackItem}
+          onAdd={() => handleAddBackpackItem()}
         />
       </>
     );

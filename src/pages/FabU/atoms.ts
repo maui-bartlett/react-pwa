@@ -43,11 +43,18 @@ type Character = {
   skillGroups: SkillGroup[];
   spellGroups: SpellGroup[];
   equipment: EquipmentItem[];
+  backpack: BackpackItem[];
 };
 
 type BackstoryPrompt = {
   prompt: string;
   response: string;
+};
+
+type BackpackItem = {
+  id: string;
+  title: string;
+  subtitle: string;
 };
 
 const CLASS_DEFAULTS: ClassEntry[] = [
@@ -72,6 +79,15 @@ const BACKSTORY_PROMPT_DEFAULTS: BackstoryPrompt[] = [
     response:
       "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
   },
+];
+
+const BACKPACK_DEFAULTS: BackpackItem[] = [
+  {
+    id: 'crystal',
+    title: 'Green Crystal',
+    subtitle: 'a crystal that acts as a compass, guiding us toward our goal.',
+  },
+  { id: 'grimoire', title: 'Grimoire', subtitle: 'a magical book named Noir. Origins unknown.' },
 ];
 
 const EQUIPMENT_DEFAULTS: EquipmentItem[] = [
@@ -122,6 +138,7 @@ const CHARACTER_DEFAULTS: Character = {
   skillGroups: defaultSkillGroups,
   spellGroups: defaultSpellGroups,
   equipment: EQUIPMENT_DEFAULTS,
+  backpack: BACKPACK_DEFAULTS,
 };
 
 function normalizeBackstoryPrompts(
@@ -152,6 +169,24 @@ function normalizeBackstoryPrompts(
       response: typeof answer === 'string' ? answer : defaultPrompt.response,
     };
   });
+}
+
+function normalizeBackpack(storedBackpack: unknown): BackpackItem[] {
+  if (!Array.isArray(storedBackpack)) return BACKPACK_DEFAULTS;
+  const valid = storedBackpack.filter(
+    (item): item is BackpackItem =>
+      item &&
+      typeof item === 'object' &&
+      typeof (item as Partial<BackpackItem>).title === 'string' &&
+      typeof (item as Partial<BackpackItem>).subtitle === 'string',
+  );
+  return valid.length > 0
+    ? valid.map((item) => ({
+        id: item.id ?? String(Math.random()),
+        title: item.title,
+        subtitle: item.subtitle,
+      }))
+    : BACKPACK_DEFAULTS;
 }
 
 function normalizeEquipment(storedEquipment: unknown): EquipmentItem[] {
@@ -203,6 +238,7 @@ const migratingCharacterStorage = {
           skillGroups: mergedSkillGroups,
           backstoryPrompts: normalizeBackstoryPrompts(parsed.backstoryPrompts, oldAnswers),
           equipment: normalizeEquipment(parsed.equipment),
+          backpack: normalizeBackpack(parsed.backpack),
         };
       }
     } catch {
@@ -264,4 +300,4 @@ const derivedStatusEffectsState = atom((get) => {
 });
 
 export { characterState, derivedStatusEffectsState, statusEffectsState, MAX_CHARACTER_LEVEL };
-export type { BackstoryPrompt, Character, ClassEntry };
+export type { BackpackItem, BackstoryPrompt, Character, ClassEntry };

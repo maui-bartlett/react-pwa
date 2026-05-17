@@ -143,10 +143,14 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
       sx={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '9px',
+        borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        transition: removing
+          ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s'
+          : swiping
+            ? 'none'
+            : 'border-radius 0.22s ease',
       }}
     >
       {/* Action channel */}
