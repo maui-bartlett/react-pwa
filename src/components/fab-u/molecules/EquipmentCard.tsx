@@ -8,7 +8,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -32,19 +32,35 @@ type EquipmentCardProps = {
 type EquipmentRowProps = {
   item: EquipmentItem;
   index: number;
+  isEditing: boolean;
+  nameDraft: string;
+  descDraft: string;
+  onNameChange: (v: string) => void;
+  onDescChange: (v: string) => void;
+  onStartEdit: () => void;
+  onCommitEdit: () => void;
+  onRevertEdit: () => void;
   onDelete?: (index: number) => void;
-  onUpdate?: (index: number, updated: EquipmentItem) => void;
 };
 
-function EquipmentRow({ item, index, onDelete, onUpdate }: EquipmentRowProps) {
+function EquipmentRow({
+  item,
+  index,
+  isEditing,
+  nameDraft,
+  descDraft,
+  onNameChange,
+  onDescChange,
+  onStartEdit,
+  onCommitEdit,
+  onRevertEdit,
+  onDelete,
+}: EquipmentRowProps) {
   const fabUTokens = useFabUTokens();
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [nameDraft, setNameDraft] = useState('');
-  const [descDraft, setDescDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -63,9 +79,7 @@ function EquipmentRow({ item, index, onDelete, onUpdate }: EquipmentRowProps) {
   function startEdit() {
     setSnapX(0);
     setCurrentDeltaX(0);
-    setNameDraft(item.name);
-    setDescDraft(item.description);
-    setEditing(true);
+    onStartEdit();
   }
 
   const swipeHandlers = useSwipeable({
@@ -120,13 +134,14 @@ function EquipmentRow({ item, index, onDelete, onUpdate }: EquipmentRowProps) {
     rowElRef.current = el;
   };
 
-  if (editing) {
+  if (isEditing) {
     return (
       <Box
         sx={{
           position: 'relative',
           overflow: 'hidden',
           borderRadius: '9px',
+          boxShadow: fabUTokens.shadow.soft,
           maxHeight: removing ? 0 : '200px',
           opacity: removing ? 0 : 1,
           transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
@@ -134,7 +149,7 @@ function EquipmentRow({ item, index, onDelete, onUpdate }: EquipmentRowProps) {
       >
         <Box
           sx={{
-            border: `1px solid ${fabUTokens.color.border}`,
+            border: `1px solid ${fabUTokens.color.textSecondary}`,
             borderRadius: '9px',
             px: 1.3,
             py: 0.95,
@@ -147,14 +162,10 @@ function EquipmentRow({ item, index, onDelete, onUpdate }: EquipmentRowProps) {
               <InputBase
                 autoFocus
                 value={nameDraft}
-                onChange={(e) => {
-                  setNameDraft(e.target.value);
-                  onUpdate?.(index, { ...item, name: e.target.value, description: descDraft });
-                }}
-                onBlur={() => setEditing(false)}
+                onChange={(e) => onNameChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') setEditing(false);
-                  if (e.key === 'Escape') setEditing(false);
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
                 }}
                 sx={{
                   flex: 1,
@@ -182,13 +193,11 @@ function EquipmentRow({ item, index, onDelete, onUpdate }: EquipmentRowProps) {
             </Stack>
             <InputBase
               value={descDraft}
-              onChange={(e) => {
-                setDescDraft(e.target.value);
-                onUpdate?.(index, { ...item, name: nameDraft, description: e.target.value });
-              }}
+              onChange={(e) => onDescChange(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') setEditing(false);
+                if (e.key === 'Escape') onRevertEdit();
               }}
+              placeholder="Description"
               sx={{
                 '& input': {
                   p: 0,
@@ -209,6 +218,7 @@ function EquipmentRow({ item, index, onDelete, onUpdate }: EquipmentRowProps) {
         position: 'relative',
         overflow: 'hidden',
         borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
+        boxShadow: fabUTokens.shadow.soft,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
         transition: removing
@@ -352,16 +362,87 @@ function EquipmentCard({
   onAddItem,
 }: EquipmentCardProps) {
   const fabUTokens = useFabUTokens();
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [nameDraft, setNameDraft] = useState('');
+  const [descDraft, setDescDraft] = useState('');
+
+  function startEdit(index: number) {
+    setNameDraft(items[index].name);
+    setDescDraft(items[index].description);
+    setEditingIndex(index);
+  }
+
+  function commitEdit() {
+    if (editingIndex === null) return;
+    onUpdateItem?.(editingIndex, {
+      ...items[editingIndex],
+      name: nameDraft,
+      description: descDraft,
+    });
+    setEditingIndex(null);
+  }
+
+  function revertEdit() {
+    setEditingIndex(null);
+  }
+
   return (
-    <SurfaceCard label={label} title={title || undefined}>
+    <SurfaceCard
+      label={label}
+      title={title || undefined}
+      actions={
+        editingIndex !== null ? (
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <Box
+              component="button"
+              type="button"
+              onClick={commitEdit}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <CheckCircle size={24} color="#4caf50" />
+            </Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={revertEdit}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <XCircle size={24} color="#d32f2f" />
+            </Box>
+          </Box>
+        ) : undefined
+      }
+      actionsPosition="inline"
+    >
       <Stack spacing={1.05}>
         {items.map((item, index) => (
           <EquipmentRow
             key={`${item.slot}-${item.name}-${index}`}
             item={item}
             index={index}
+            isEditing={editingIndex === index}
+            nameDraft={editingIndex === index ? nameDraft : item.name}
+            descDraft={editingIndex === index ? descDraft : item.description}
+            onNameChange={setNameDraft}
+            onDescChange={setDescDraft}
+            onStartEdit={() => startEdit(index)}
+            onCommitEdit={commitEdit}
+            onRevertEdit={revertEdit}
             onDelete={onDeleteItem}
-            onUpdate={onUpdateItem}
           />
         ))}
 

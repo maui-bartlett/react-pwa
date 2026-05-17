@@ -476,7 +476,7 @@ function SkillsTable({
         subtitle={subtitle}
         actions={
           editingSkill ? (
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
               <Box
                 component="button"
                 type="button"
@@ -490,7 +490,7 @@ function SkillsTable({
                   alignItems: 'center',
                 }}
               >
-                <CheckCircle size={20} color="#4caf50" />
+                <CheckCircle size={24} color="#4caf50" />
               </Box>
               <Box
                 component="button"
@@ -505,7 +505,7 @@ function SkillsTable({
                   alignItems: 'center',
                 }}
               >
-                <XCircle size={20} color="#d32f2f" />
+                <XCircle size={24} color="#d32f2f" />
               </Box>
             </Box>
           ) : undefined
@@ -749,14 +749,14 @@ function SkillsTable({
                   gap: 1,
                   color: isSelected
                     ? fabUTokens.isDark
-                      ? fabUTokens.color.brand
+                      ? fabUTokens.color.brandText
                       : '#ffffff'
                     : isDisabled
                       ? fabUTokens.color.textSecondary
                       : fabUTokens.color.textPrimary,
                   bgcolor: isSelected
                     ? fabUTokens.isDark
-                      ? alpha(fabUTokens.color.brand, 0.08)
+                      ? alpha(fabUTokens.color.brandText, 0.08)
                       : fabUTokens.color.brand
                     : 'transparent',
                   '&:hover': { bgcolor: alpha(fabUTokens.color.brand, 0.1) },
@@ -768,7 +768,7 @@ function SkillsTable({
                     <CheckIcon
                       sx={{
                         fontSize: 14,
-                        color: fabUTokens.isDark ? fabUTokens.color.brand : '#ffffff',
+                        color: fabUTokens.isDark ? fabUTokens.color.brandText : '#ffffff',
                       }}
                     />
                   ) : null}

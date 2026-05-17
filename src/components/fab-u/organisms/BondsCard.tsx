@@ -144,6 +144,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
         position: 'relative',
         overflow: 'hidden',
         borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
+        boxShadow: fabUTokens.shadow.soft,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
         transition: removing

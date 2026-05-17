@@ -667,7 +667,7 @@ function SpellsTable({
       title={showTitle ? title : undefined}
       actions={
         editingSpell ? (
-          <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
             <Box
               component="button"
               type="button"
@@ -681,7 +681,7 @@ function SpellsTable({
                 alignItems: 'center',
               }}
             >
-              <CheckCircle size={20} color="#4caf50" />
+              <CheckCircle size={24} color="#4caf50" />
             </Box>
             <Box
               component="button"
@@ -696,7 +696,7 @@ function SpellsTable({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={20} color="#d32f2f" />
+              <XCircle size={24} color="#d32f2f" />
             </Box>
           </Box>
         ) : undefined

@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -39,22 +39,39 @@ type DetailListCardProps = {
 type SwipeableRowProps = {
   item: DetailListItem;
   index: number;
+  isEditing: boolean;
+  titleDraft: string;
+  subtitleDraft: string;
+  onTitleChange: (v: string) => void;
+  onSubtitleChange: (v: string) => void;
+  /** Called after swipe closes. Use for inline edit start OR navigation fallback. */
+  onEditChannelClick?: () => void;
+  onCommitEdit: () => void;
+  onRevertEdit: () => void;
   onRemove: (index: number) => void;
   onItemClick?: (index: number) => void;
-  onEditItem?: (index: number, updated: { title: string; subtitle: string }) => void;
 };
 
-function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: SwipeableRowProps) {
+function SwipeableRow({
+  item,
+  index,
+  isEditing,
+  titleDraft,
+  subtitleDraft,
+  onTitleChange,
+  onSubtitleChange,
+  onEditChannelClick,
+  onCommitEdit,
+  onRevertEdit,
+  onRemove,
+  onItemClick,
+}: SwipeableRowProps) {
   const fabUTokens = useFabUTokens();
-  const hasEditAction = !!(onItemClick || onEditItem);
-  const actionWidth = hasEditAction ? 128 : 64;
+  const actionWidth = onEditChannelClick ? 128 : 64;
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState('');
-  const [subtitleDraft, setSubtitleDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -70,24 +87,10 @@ function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: Swipea
     setTimeout(() => onRemove(index), 450);
   }
 
-  function startEdit() {
+  function handleEditChannel() {
     setSnapX(0);
     setCurrentDeltaX(0);
-    setTitleDraft(item.title);
-    setSubtitleDraft(item.subtitle);
-    setEditingTitle(true);
-  }
-
-  function commitEdit() {
-    onEditItem?.(index, {
-      title: titleDraft.trim() || item.title,
-      subtitle: subtitleDraft.trim(),
-    });
-    setEditingTitle(false);
-  }
-
-  function cancelEdit() {
-    setEditingTitle(false);
+    onEditChannelClick?.();
   }
 
   const swipeHandlers = useSwipeable({
@@ -149,6 +152,7 @@ function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: Swipea
         position: 'relative',
         overflow: 'hidden',
         borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
+        boxShadow: fabUTokens.shadow.soft,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
         transition: removing
@@ -187,17 +191,11 @@ function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: Swipea
           >
             <Trash2 size={18} color="white" />
           </Box>
-          {hasEditAction ? (
+          {onEditChannelClick ? (
             <Box
               onClick={(e) => {
                 e.stopPropagation();
-                if (onEditItem) {
-                  startEdit();
-                } else {
-                  setSnapX(0);
-                  setCurrentDeltaX(0);
-                  onItemClick?.(index);
-                }
+                handleEditChannel();
               }}
               sx={{
                 flex: 1,
@@ -227,7 +225,7 @@ function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: Swipea
         sx={{
           position: 'relative',
           zIndex: 1,
-          border: `1px solid ${fabUTokens.color.border}`,
+          border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
           borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
           px: 1.25,
           py: 1,
@@ -241,22 +239,15 @@ function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: Swipea
         }}
       >
         <Stack spacing={0.35}>
-          {editingTitle ? (
+          {isEditing ? (
             <>
               <InputBase
                 autoFocus
                 value={titleDraft}
-                onChange={(e) => {
-                  setTitleDraft(e.target.value);
-                  onEditItem?.(index, {
-                    title: e.target.value.trim() || item.title,
-                    subtitle: subtitleDraft.trim(),
-                  });
-                }}
-                onBlur={commitEdit}
+                onChange={(e) => onTitleChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.currentTarget.blur();
-                  if (e.key === 'Escape') cancelEdit();
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
                 }}
                 sx={{
                   '& input': {
@@ -269,15 +260,9 @@ function SwipeableRow({ item, index, onRemove, onItemClick, onEditItem }: Swipea
               />
               <InputBase
                 value={subtitleDraft}
-                onChange={(e) => {
-                  setSubtitleDraft(e.target.value);
-                  onEditItem?.(index, {
-                    title: titleDraft.trim() || item.title,
-                    subtitle: e.target.value.trim(),
-                  });
-                }}
+                onChange={(e) => onSubtitleChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Escape') cancelEdit();
+                  if (e.key === 'Escape') onRevertEdit();
                 }}
                 sx={{
                   '& input': {
@@ -335,6 +320,29 @@ function DetailListCard({
   onEditItem,
 }: DetailListCardProps) {
   const fabUTokens = useFabUTokens();
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [subtitleDraft, setSubtitleDraft] = useState('');
+
+  function startEdit(index: number) {
+    setTitleDraft(items[index].title);
+    setSubtitleDraft(items[index].subtitle);
+    setEditingIndex(index);
+  }
+
+  function commitEdit() {
+    if (editingIndex === null) return;
+    onEditItem?.(editingIndex, {
+      title: titleDraft.trim() || items[editingIndex].title,
+      subtitle: subtitleDraft.trim(),
+    });
+    setEditingIndex(null);
+  }
+
+  function revertEdit() {
+    setEditingIndex(null);
+  }
+
   const handleAddKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (!onAdd || (event.key !== 'Enter' && event.key !== ' ')) return;
     event.preventDefault();
@@ -342,7 +350,48 @@ function DetailListCard({
   };
 
   return (
-    <SurfaceCard label={label} title={title} subtitle={subtitle}>
+    <SurfaceCard
+      label={label}
+      title={title}
+      subtitle={subtitle}
+      actions={
+        editingIndex !== null && onEditItem ? (
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <Box
+              component="button"
+              type="button"
+              onClick={commitEdit}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <CheckCircle size={24} color="#4caf50" />
+            </Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={revertEdit}
+              sx={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <XCircle size={24} color="#d32f2f" />
+            </Box>
+          </Box>
+        ) : undefined
+      }
+      actionsPosition="inline"
+    >
       <Stack spacing={1}>
         {items.map((item, index) =>
           onRemoveItem ? (
@@ -350,9 +399,22 @@ function DetailListCard({
               key={`${item.title}-${item.subtitle}`}
               item={item}
               index={index}
+              isEditing={editingIndex === index}
+              titleDraft={editingIndex === index ? titleDraft : item.title}
+              subtitleDraft={editingIndex === index ? subtitleDraft : item.subtitle}
+              onTitleChange={setTitleDraft}
+              onSubtitleChange={setSubtitleDraft}
+              onEditChannelClick={
+                onEditItem
+                  ? () => startEdit(index)
+                  : onItemClick
+                    ? () => onItemClick(index)
+                    : undefined
+              }
+              onCommitEdit={commitEdit}
+              onRevertEdit={revertEdit}
               onRemove={onRemoveItem}
               onItemClick={onItemClick}
-              onEditItem={onEditItem}
             />
           ) : (
             <Stack
@@ -368,7 +430,7 @@ function DetailListCard({
                 px: 1.25,
                 py: 1,
                 bgcolor: fabUTokens.color.surface,
-                boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+                boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), ${fabUTokens.shadow.soft}`,
                 cursor: onItemClick ? 'pointer' : 'default',
               }}
             >
