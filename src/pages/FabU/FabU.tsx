@@ -216,11 +216,6 @@ function FabU() {
     triggerSpellCastBurst();
   };
 
-  const handleSkillClick = (skillName: string) => {
-    if (skillName !== 'Entropic Magic') return;
-    setActiveTab('spells');
-  };
-
   const skillLevelTotalsByClass = character.skillGroups.reduce<Record<string, number>>(
     (totals, group) => ({
       ...totals,
@@ -346,6 +341,23 @@ function FabU() {
       skillGroups: c.skillGroups.map((g) =>
         g.className === className
           ? { ...g, skills: g.skills.map((s) => (s.name === oldName ? updatedSkill : s)) }
+          : g,
+      ),
+    }));
+
+  const handleUpdateSkillDescription = (
+    className: string,
+    skillName: string,
+    description: string,
+  ) =>
+    setCharacter((c) => ({
+      ...c,
+      skillGroups: c.skillGroups.map((g) =>
+        g.className === className
+          ? {
+              ...g,
+              skills: g.skills.map((s) => (s.name === skillName ? { ...s, description } : s)),
+            }
           : g,
       ),
     }));
@@ -971,8 +983,6 @@ function FabU() {
                     label={`${group.className} Skills`}
                     title={`${group.className} Skills`}
                     rows={group.skills}
-                    onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
-                    clickableSkills={['Entropic Magic']}
                     onAddSkill={
                       canAddMoreSkills
                         ? (skill) => handleAddSkill(group.className, skill)
@@ -988,6 +998,9 @@ function FabU() {
                     onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
                     onEditSkill={(oldName, updatedSkill) =>
                       handleEditSkill(group.className, oldName, updatedSkill)
+                    }
+                    onUpdateSkillDescription={(skillName, description) =>
+                      handleUpdateSkillDescription(group.className, skillName, description)
                     }
                   />
                 );
@@ -1051,8 +1064,6 @@ function FabU() {
                 label={`${group.className} Skills`}
                 title={`${group.className} Skills`}
                 rows={group.skills}
-                onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
-                clickableSkills={['Entropic Magic']}
                 onAddSkill={
                   canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                 }
@@ -1066,6 +1077,9 @@ function FabU() {
                 onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
                 onEditSkill={(oldName, updatedSkill) =>
                   handleEditSkill(group.className, oldName, updatedSkill)
+                }
+                onUpdateSkillDescription={(skillName, description) =>
+                  handleUpdateSkillDescription(group.className, skillName, description)
                 }
               />
             </Box>

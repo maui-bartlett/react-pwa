@@ -3,7 +3,10 @@ import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Box from '@mui/material/Box';
+import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Menu from '@mui/material/Menu';
@@ -29,14 +32,14 @@ type SkillsTableProps = {
   subtitle?: string;
   label?: string;
   showTitle?: boolean;
-  onSkillClick?: (skillName: string) => void;
-  clickableSkills?: string[];
   /** When provided, a "+ Skill" button appears if this table's total levels < 10 */
   onAddSkill?: (skill: SkillRow) => void;
   freeSkillLevels?: number;
   onAddSkillLevels?: (skillName: string, levels: number) => void;
   onDeleteSkill?: (skillName: string) => void;
   onEditSkill?: (oldName: string, updatedSkill: SkillRow) => void;
+  /** Called when the user edits the full description in the accordion panel */
+  onUpdateSkillDescription?: (skillName: string, description: string) => void;
 };
 
 type EditingSkillState = {
@@ -48,6 +51,8 @@ type EditingSkillState = {
 
 type SwipeableSkillRowProps = {
   row: SkillRow;
+  isOpen: boolean;
+  onToggle: () => void;
   isEditing: boolean;
   editDraft: EditingSkillState | null;
   onEditDraftChange: (draft: EditingSkillState) => void;
@@ -55,15 +60,16 @@ type SwipeableSkillRowProps = {
   onRevertEdit: () => void;
   onStartEdit: () => void;
   onDelete?: () => void;
-  clickable: boolean;
-  onSkillClick: () => void;
   hasAddLevels: boolean;
   canAddLevels: boolean;
   onOpenLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
+  onUpdateSkillDescription?: (skillName: string, description: string) => void;
 };
 
 function SwipeableSkillRow({
   row,
+  isOpen,
+  onToggle,
   isEditing,
   editDraft,
   onEditDraftChange,
@@ -71,17 +77,18 @@ function SwipeableSkillRow({
   onRevertEdit,
   onStartEdit,
   onDelete,
-  clickable,
-  onSkillClick,
   hasAddLevels,
   canAddLevels,
   onOpenLevelMenu,
+  onUpdateSkillDescription,
 }: SwipeableSkillRowProps) {
   const fabUTokens = useFabUTokens();
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -94,6 +101,17 @@ function SwipeableSkillRow({
     setSnapX(0);
     setCurrentDeltaX(0);
     setTimeout(() => onDelete?.(), 450);
+  }
+
+  function startEditingDescription() {
+    setEditingDescription(true);
+    setDescriptionDraft(row.description ?? '');
+  }
+
+  function commitDescriptionEdit() {
+    if (!onUpdateSkillDescription) return;
+    onUpdateSkillDescription(row.name, descriptionDraft.trim());
+    setEditingDescription(false);
   }
 
   const swipeHandlers = useSwipeable({
@@ -150,208 +168,358 @@ function SwipeableSkillRow({
 
   const cellTextSx = { fontSize: '0.74rem', color: fabUTokens.color.textPrimary };
 
-  if (isEditing && editDraft) {
-    return (
-      <Box
-        data-pw="skill-table-row"
-        sx={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          px: 1.2,
-          py: 0.7,
-          minHeight: 46,
-          borderBottom: `1px solid ${fabUTokens.color.border}`,
-          bgcolor: fabUTokens.color.surface,
-          gap: 0.5,
-        }}
-      >
-        <Box sx={{ flex: 1.5, minWidth: 0 }}>
-          <InputBase
-            autoFocus
-            value={editDraft.name}
-            onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onCommitEdit();
-              if (e.key === 'Escape') onRevertEdit();
-            }}
-            placeholder="Skill name"
-            sx={{
-              color: fabUTokens.color.textPrimary,
-              width: '100%',
-              '& input': {
-                p: 0,
-                fontWeight: 700,
-                ...scaledEditableTextStyle(0.74, { stretch: true }),
-              },
-            }}
-          />
-        </Box>
-        <Box sx={{ width: 40, flexShrink: 0 }}>
-          <Typography
-            variant="body2"
-            sx={{ fontSize: '0.74rem', color: fabUTokens.color.textSecondary }}
-          >
-            {editDraft.level}
-          </Typography>
-        </Box>
-        <Box sx={{ flex: 2.5, minWidth: 0 }}>
-          <InputBase
-            value={editDraft.effect}
-            onChange={(e) => onEditDraftChange({ ...editDraft, effect: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onCommitEdit();
-              if (e.key === 'Escape') onRevertEdit();
-            }}
-            placeholder="Effect"
-            sx={{
-              color: fabUTokens.color.textPrimary,
-              width: '100%',
-              '& input': {
-                p: 0,
-                ...scaledEditableTextStyle(0.74, { stretch: true }),
-              },
-            }}
-          />
-        </Box>
-      </Box>
-    );
-  }
-
   return (
     <Box
       data-pw="skill-table-row"
       sx={{
-        position: 'relative',
-        overflow: 'hidden',
         borderBottom: `1px solid ${fabUTokens.color.border}`,
-        maxHeight: removing ? 0 : '200px',
+        overflow: removing ? 'hidden' : 'visible',
+        maxHeight: removing ? 0 : 'none',
         opacity: removing ? 0 : 1,
         transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
       }}
     >
-      {/* Action channel */}
-      {channelVisible && (
-        <Box
-          sx={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: ACTION_WIDTH,
-            display: 'flex',
-            zIndex: 0,
-          }}
-        >
+      {/* Swipeable main row section */}
+      <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Action channel */}
+        {channelVisible && (
           <Box
-            data-pw="skill-row-delete"
-            onClick={(e) => {
-              e.stopPropagation();
-              triggerRemove();
-            }}
             sx={{
-              flex: 1,
-              bgcolor: DELETE_RED,
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: ACTION_WIDTH,
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
+              zIndex: 0,
             }}
           >
-            <Trash2 size={18} color="white" />
+            <Box
+              data-pw="skill-row-delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerRemove();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: DELETE_RED,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Trash2 size={18} color="white" />
+            </Box>
+            <Box
+              data-pw="skill-row-edit"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSnapX(0);
+                setCurrentDeltaX(0);
+                onStartEdit();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: fabUTokens.color.brand,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Pencil size={18} color="white" />
+            </Box>
           </Box>
-          <Box
-            data-pw="skill-row-edit"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSnapX(0);
-              setCurrentDeltaX(0);
-              onStartEdit();
-            }}
-            sx={{
-              flex: 1,
-              bgcolor: fabUTokens.color.brand,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <Pencil size={18} color="white" />
-          </Box>
-        </Box>
-      )}
+        )}
 
-      {/* Swipeable content */}
-      <Box
-        {...swipeHandlers}
-        ref={setRef}
-        onClick={() => {
-          if (!committedRef.current && clickable) onSkillClick();
-        }}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          px: 1.2,
-          py: 0.95,
-          minHeight: 46,
-          bgcolor: fabUTokens.color.surface,
-          position: 'relative',
-          zIndex: 1,
-          boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
-          transform: `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease',
-          cursor: clickable ? 'pointer' : 'default',
-          touchAction: 'pan-y',
-          userSelect: 'none',
-          '&:hover': { bgcolor: clickable ? fabUTokens.color.surfaceMuted : undefined },
-        }}
-      >
-        <Box sx={{ flex: 1.5, minWidth: 0 }}>
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: 700, color: fabUTokens.color.textPrimary, fontSize: '0.74rem' }}
-          >
-            {row.name}
-          </Typography>
-        </Box>
-        <Box sx={{ width: 40, flexShrink: 0, ...cellTextSx }}>{row.level ?? '—'}</Box>
-        <Box sx={{ flex: 2.5, minWidth: 0, ...cellTextSx }}>{row.effect}</Box>
-        {hasAddLevels ? (
+        {/* Main row */}
+        {isEditing && editDraft ? (
+          /* Edit mode — name and summary editable, level read-only */
           <Box
             sx={{
-              width: 38,
-              flexShrink: 0,
+              position: 'relative',
               display: 'flex',
-              justifyContent: 'flex-end',
-              pr: '6px',
+              alignItems: 'center',
+              px: 1.2,
+              py: 0.7,
+              minHeight: 46,
+              bgcolor: fabUTokens.color.surface,
+              zIndex: 1,
+              gap: 0.5,
             }}
           >
-            {canAddLevels ? (
-              <IconButton
-                size="small"
-                data-pw={`skill-add-level-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
-                aria-label={`Add levels to ${row.name}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenLevelMenu(e);
+            <Box sx={{ flex: 1.5, minWidth: 0 }}>
+              <InputBase
+                autoFocus
+                value={editDraft.name}
+                onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
                 }}
+                placeholder="Skill name"
                 sx={{
-                  p: 0.5,
-                  borderRadius: '50%',
-                  color: fabUTokens.color.textSecondary,
-                  '&:hover': {
-                    color: fabUTokens.color.brandText,
-                    bgcolor: 'rgba(49, 92, 77, 0.1)',
+                  color: fabUTokens.color.textPrimary,
+                  width: '100%',
+                  '& input': {
+                    p: 0,
+                    fontWeight: 700,
+                    ...scaledEditableTextStyle(0.74, { stretch: true }),
                   },
                 }}
+              />
+            </Box>
+            <Box sx={{ flex: 2.5, minWidth: 0 }}>
+              <InputBase
+                value={editDraft.effect}
+                onChange={(e) => onEditDraftChange({ ...editDraft, effect: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
+                }}
+                placeholder="Summary"
+                sx={{
+                  color: fabUTokens.color.textPrimary,
+                  width: '100%',
+                  '& input': {
+                    p: 0,
+                    ...scaledEditableTextStyle(0.74, { stretch: true }),
+                  },
+                }}
+              />
+            </Box>
+            <Box sx={{ width: 40, flexShrink: 0 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontSize: '0.74rem', color: fabUTokens.color.textSecondary }}
               >
-                <AddIcon fontSize="small" />
-              </IconButton>
+                {editDraft.level}
+              </Typography>
+            </Box>
+          </Box>
+        ) : (
+          /* Normal mode — fully clickable for accordion toggle */
+          <Box
+            {...swipeHandlers}
+            ref={setRef}
+            onClick={() => {
+              if (!committedRef.current) onToggle();
+            }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: 1.2,
+              height: 46,
+              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surface,
+              boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
+              position: 'relative',
+              zIndex: 1,
+              transform: `translateX(${visualX}px)`,
+              transition: swiping ? 'none' : 'transform 0.22s ease',
+              cursor: 'pointer',
+              touchAction: 'pan-y',
+              userSelect: 'none',
+              '&:hover': {
+                bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
+              },
+            }}
+          >
+            {/* Skill name with chevron */}
+            <Box
+              sx={{
+                flex: 1.5,
+                minWidth: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                overflow: 'hidden',
+              }}
+            >
+              {isOpen ? (
+                <KeyboardArrowUpIcon
+                  fontSize="small"
+                  sx={{ color: fabUTokens.color.brandFg, flexShrink: 0 }}
+                />
+              ) : (
+                <KeyboardArrowDownIcon
+                  fontSize="small"
+                  sx={{ color: fabUTokens.color.textSecondary, flexShrink: 0 }}
+                />
+              )}
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 700,
+                  color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+                  fontSize: '0.74rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {row.name}
+              </Typography>
+            </Box>
+            {/* Summary (effect) */}
+            <Box
+              sx={{
+                flex: 2.5,
+                minWidth: 0,
+                ...cellTextSx,
+                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {row.effect}
+            </Box>
+            {/* LVL */}
+            <Box
+              sx={{
+                width: 40,
+                flexShrink: 0,
+                ...cellTextSx,
+                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+              }}
+            >
+              {row.level ?? '—'}
+            </Box>
+            {/* Add-levels button */}
+            {hasAddLevels ? (
+              <Box
+                sx={{
+                  width: 38,
+                  flexShrink: 0,
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  pr: '6px',
+                }}
+              >
+                {canAddLevels ? (
+                  <IconButton
+                    size="small"
+                    data-pw={`skill-add-level-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    aria-label={`Add levels to ${row.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenLevelMenu(e);
+                    }}
+                    sx={{
+                      p: 0.5,
+                      borderRadius: '50%',
+                      color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textSecondary,
+                      '&:hover': {
+                        color: fabUTokens.color.brandText,
+                        bgcolor: 'rgba(49, 92, 77, 0.1)',
+                      },
+                    }}
+                  >
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                ) : null}
+              </Box>
             ) : null}
           </Box>
-        ) : null}
+        )}
       </Box>
+
+      {/* Accordion expand panel */}
+      {!isEditing && (
+        <Collapse in={isOpen} timeout="auto" unmountOnExit>
+          <Box sx={{ px: 1.2, pb: 0 }}>
+            <Box
+              sx={{
+                py: 2,
+                px: 1.5,
+                my: 0.75,
+                border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.18)}`,
+                borderRadius: '6px',
+              }}
+            >
+              <Box sx={{ position: 'relative' }}>
+                <Box
+                  sx={{
+                    border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.28)}`,
+                    borderRadius: '6px',
+                    px: 1,
+                    py: 0.75,
+                    minHeight: 42,
+                    bgcolor: fabUTokens.isDark
+                      ? alpha(fabUTokens.color.surface, 0.4)
+                      : alpha(fabUTokens.color.surface, 0.6),
+                  }}
+                >
+                  {editingDescription ? (
+                    <InputBase
+                      autoFocus
+                      multiline
+                      fullWidth
+                      value={descriptionDraft}
+                      onChange={(e) => setDescriptionDraft(e.target.value)}
+                      onBlur={commitDescriptionEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setEditingDescription(false);
+                      }}
+                      sx={{
+                        color: fabUTokens.color.textPrimary,
+                        alignItems: 'flex-start',
+                        '& textarea': {
+                          p: 0,
+                          lineHeight: 1.6,
+                          ...scaledEditableTextStyle(0.72, { stretch: true, lineHeight: 1.6 }),
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: '0.72rem',
+                        lineHeight: 1.6,
+                        fontStyle: row.description ? 'normal' : 'italic',
+                        color: row.description
+                          ? fabUTokens.color.textPrimary
+                          : fabUTokens.color.textSecondary,
+                      }}
+                    >
+                      {row.description || 'No description'}
+                    </Typography>
+                  )}
+                </Box>
+                {onUpdateSkillDescription ? (
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (editingDescription) commitDescriptionEdit();
+                      else startEditingDescription();
+                    }}
+                    sx={{
+                      position: 'absolute',
+                      top: -10,
+                      right: -10,
+                      width: 22,
+                      height: 22,
+                      bgcolor: fabUTokens.color.surface,
+                      border: `1px solid ${fabUTokens.color.border}`,
+                      color: fabUTokens.color.textSecondary,
+                      '&:hover': { color: fabUTokens.color.brandText },
+                    }}
+                  >
+                    {editingDescription ? (
+                      <CheckIcon sx={{ fontSize: 12 }} />
+                    ) : (
+                      <Pencil size={11} />
+                    )}
+                  </IconButton>
+                ) : null}
+              </Box>
+            </Box>
+          </Box>
+        </Collapse>
+      )}
     </Box>
   );
 }
@@ -362,15 +530,15 @@ function SkillsTable({
   subtitle,
   label,
   showTitle = false,
-  onSkillClick,
-  clickableSkills,
   onAddSkill,
   freeSkillLevels = 0,
   onAddSkillLevels,
   onDeleteSkill,
   onEditSkill,
+  onUpdateSkillDescription,
 }: SkillsTableProps) {
   const fabUTokens = useFabUTokens();
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [menuState, setMenuState] = useState<{ anchorEl: HTMLElement; skillName: string } | null>(
     null,
   );
@@ -395,6 +563,10 @@ function SkillsTable({
     Math.max(0, activeSkillMax - (isNaN(activeSkillLevel) ? 0 : activeSkillLevel)),
     freeSkillLevels,
   );
+
+  function toggleRow(name: string) {
+    setExpandedRow((prev) => (prev === name ? null : name));
+  }
 
   function openLevelMenu(e: React.MouseEvent<HTMLElement>, skillName: string) {
     setMenuState({ anchorEl: e.currentTarget, skillName });
@@ -515,15 +687,13 @@ function SkillsTable({
             }}
           >
             <Box sx={{ flex: 1.5, minWidth: 0, ...headerCellSx }}>Skill</Box>
+            <Box sx={{ flex: 2.5, minWidth: 0, ...headerCellSx }}>Summary</Box>
             <Box sx={{ width: 40, flexShrink: 0, ...headerCellSx }}>LVL</Box>
-            <Box sx={{ flex: 2.5, minWidth: 0, ...headerCellSx }}>Effect</Box>
             {onAddSkillLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
           </Box>
 
           {/* Data rows */}
           {rows.map((row) => {
-            const clickable =
-              !!onSkillClick && (!clickableSkills || clickableSkills.includes(row.name));
             const level = parseInt(row.level ?? '0', 10);
             const maxLevel = row.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
             const availableForSkill = Math.min(
@@ -536,6 +706,8 @@ function SkillsTable({
               <SwipeableSkillRow
                 key={row.name}
                 row={row}
+                isOpen={expandedRow === row.name}
+                onToggle={() => toggleRow(row.name)}
                 isEditing={isEditing}
                 editDraft={isEditing ? editingSkill : null}
                 onEditDraftChange={(draft) => {
@@ -545,6 +717,7 @@ function SkillsTable({
                       name: draft.name.trim() || draft.originalName,
                       level: draft.level,
                       effect: draft.effect.trim(),
+                      description: row.description,
                     });
                   }
                 }}
@@ -552,11 +725,10 @@ function SkillsTable({
                 onRevertEdit={revertSkillEdit}
                 onStartEdit={() => startEditingSkill(row)}
                 onDelete={onDeleteSkill ? () => onDeleteSkill(row.name) : undefined}
-                clickable={clickable}
-                onSkillClick={() => onSkillClick?.(row.name)}
                 hasAddLevels={!!onAddSkillLevels}
                 canAddLevels={canAddLevels}
                 onOpenLevelMenu={(e) => openLevelMenu(e, row.name)}
+                onUpdateSkillDescription={onUpdateSkillDescription}
               />
             );
           })}
@@ -581,6 +753,26 @@ function SkillsTable({
                   value={draftSkill.name}
                   onChange={(e) => setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))}
                   placeholder="Skill name"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitDraftSkill();
+                    if (e.key === 'Escape') setDraftSkill(null);
+                  }}
+                  sx={{
+                    color: fabUTokens.color.textPrimary,
+                    width: '100%',
+                    '& input': {
+                      p: 0,
+                      fontWeight: 700,
+                      ...scaledEditableTextStyle(0.74, { stretch: true }),
+                    },
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: 2.5, minWidth: 0 }}>
+                <InputBase
+                  value={draftSkill.effect}
+                  onChange={(e) => setDraftSkill((d) => (d ? { ...d, effect: e.target.value } : d))}
+                  placeholder="Summary"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') commitDraftSkill();
                     if (e.key === 'Escape') setDraftSkill(null);
@@ -622,25 +814,6 @@ function SkillsTable({
                     </option>
                   ))}
                 </select>
-              </Box>
-              <Box sx={{ flex: 2.5, minWidth: 0 }}>
-                <InputBase
-                  value={draftSkill.effect}
-                  onChange={(e) => setDraftSkill((d) => (d ? { ...d, effect: e.target.value } : d))}
-                  placeholder="Effect"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitDraftSkill();
-                    if (e.key === 'Escape') setDraftSkill(null);
-                  }}
-                  sx={{
-                    color: fabUTokens.color.textPrimary,
-                    width: '100%',
-                    '& input': {
-                      p: 0,
-                      ...scaledEditableTextStyle(0.74, { stretch: true }),
-                    },
-                  }}
-                />
               </Box>
               <Box sx={{ width: 38, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                 <IconButton
