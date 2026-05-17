@@ -184,6 +184,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
             }}
           >
             <Trash2 size={18} color="white" />
@@ -221,7 +222,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
           position: 'relative',
           zIndex: 1,
           border: `1px solid ${fabUTokens.color.border}`,
-          borderRadius: '9px',
+          borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
           px: 1.25,
           py: 0.85,
           bgcolor: fabUTokens.color.surface,

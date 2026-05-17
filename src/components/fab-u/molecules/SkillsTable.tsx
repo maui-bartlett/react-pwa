@@ -249,6 +249,7 @@ function SwipeableSkillRow({
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
+                boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
               }}
             >
               <Trash2 size={18} color="white" />
@@ -509,7 +510,7 @@ function SwipeableSkillRow({
                   py: 1.25,
                   px: 1.5,
                   bgcolor: fabUTokens.color.surface,
-                  borderRadius: '9px',
+                  borderRadius: descVisualX < 0 ? '9px 0 0 9px' : '9px',
                   minHeight: 42,
                   display: 'flex',
                   alignItems: 'center',

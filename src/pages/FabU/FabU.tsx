@@ -16,7 +16,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { Check, CheckCircle, FlaskConical, Pencil, Sparkles } from 'lucide-react';
+import { Check, CheckCircle, FlaskConical, Pencil, Sparkles, Timer } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -828,11 +828,11 @@ function FabU() {
                       textTransform: 'none',
                       fontWeight: 700,
                       fontSize: '0.78rem',
-                      bgcolor: fabUTokens.color.brandText,
+                      bgcolor: '#3d7060',
                       color: '#fff',
                       boxShadow: 'none',
                       '&:hover': {
-                        bgcolor: fabUTokens.color.brandText,
+                        bgcolor: '#3d7060',
                         filter: 'brightness(0.88)',
                         boxShadow: 'none',
                       },
@@ -879,7 +879,10 @@ function FabU() {
                     },
                   }}
                 >
-                  Spend Fabula
+                  <Stack direction="row" alignItems="center" gap={0.75}>
+                    Spend Fabula
+                    <Sparkles size={14} />
+                  </Stack>
                 </Button>
                 <Button
                   variant="contained"
@@ -902,7 +905,10 @@ function FabU() {
                     },
                   }}
                 >
-                  Progress Clock
+                  <Stack direction="row" alignItems="center" gap={0.75}>
+                    Progress Clock
+                    <Timer size={14} />
+                  </Stack>
                 </Button>
               </Stack>
             </Stack>
