@@ -7,7 +7,6 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
-import { scaledEditableControlStyle } from '../editableText';
 import { getToneStyles } from '../tokens';
 import { DieSize, Tone } from '../types';
 
@@ -19,25 +18,27 @@ function formatDie(die: DieSize, modifier: number): string {
   return `${die} - ${Math.abs(modifier)}`;
 }
 
+// Plain CSS — no scale transforms or sub-pixel margins that could shift layout
+// and trigger MUI Popover to reposition while typing.
 const selectStyle = (
   borderColor: string,
   bgColor: string,
   textColor: string,
-): React.CSSProperties =>
-  scaledEditableControlStyle(0.88, 30, {
-    fontFamily: 'inherit',
-    fontWeight: 700,
-    lineHeight: 1,
-    height: 30,
-    width: '100%',
-    boxSizing: 'border-box',
-    padding: '4px 8px',
-    borderRadius: 8,
-    border: `1px solid ${borderColor}`,
-    background: bgColor,
-    color: textColor,
-    outline: 'none',
-  });
+): React.CSSProperties => ({
+  fontFamily: 'inherit',
+  fontWeight: 700,
+  fontSize: '1rem',
+  lineHeight: 1,
+  height: 30,
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '4px 8px',
+  borderRadius: 8,
+  border: `1px solid ${borderColor}`,
+  background: bgColor,
+  color: textColor,
+  outline: 'none',
+});
 
 type AttributePillProps = {
   label: string;
@@ -63,20 +64,20 @@ function AttributePill({
   popoverHorizontal = 'center',
 }: AttributePillProps) {
   const fabUTokens = useFabUTokens();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
   const [anchorPos, setAnchorPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [draftMod, setDraftMod] = useState('');
   const [draftTemp, setDraftTemp] = useState<DieSize | null>(null);
   const toneStyles = getToneStyles(tone);
   const editable = !!(onChangeDie || onChangeModifier);
-  const open = Boolean(anchorEl);
 
   function handleOpen(e: React.MouseEvent<HTMLElement>) {
     if (!editable) return;
     setDraftMod(modifier === 0 ? '' : String(modifier));
     setDraftTemp(temp ?? null);
-    // Freeze anchor position at open time so typing/deleting inside the
-    // Popover never triggers MUI's updatePosition() and causes a jump.
+    // Freeze anchor position at open time. anchorEl is intentionally NOT passed
+    // to the Popover — MUI attaches a ResizeObserver to anchorEl even when
+    // anchorReference="anchorPosition", causing a reposition on every keystroke.
     const rect = e.currentTarget.getBoundingClientRect();
     const left =
       popoverHorizontal === 'left'
@@ -85,7 +86,7 @@ function AttributePill({
           ? rect.right
           : rect.left + rect.width / 2;
     setAnchorPos({ top: rect.bottom, left });
-    setAnchorEl(e.currentTarget);
+    setOpen(true);
   }
 
   function handleClose() {
@@ -96,7 +97,7 @@ function AttributePill({
     if (onChangeTemp) {
       onChangeTemp(draftTemp);
     }
-    setAnchorEl(null);
+    setOpen(false);
   }
 
   const fieldLabel = (text: string) => (
@@ -167,7 +168,6 @@ function AttributePill({
 
       <Popover
         open={open}
-        anchorEl={anchorEl}
         onClose={handleClose}
         anchorReference="anchorPosition"
         anchorPosition={anchorPos}
@@ -246,7 +246,7 @@ function AttributePill({
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleClose();
-              if (e.key === 'Escape') setAnchorEl(null);
+              if (e.key === 'Escape') setOpen(false);
             }}
             sx={{
               border: `1px solid ${fabUTokens.color.brand}`,

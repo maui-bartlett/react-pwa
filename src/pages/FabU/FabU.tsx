@@ -919,8 +919,8 @@ function FabU() {
                         }),
                         py: `${0.72 / 0.84}rem`,
                         px: `${1 / 0.84}rem`,
-                        // highlight = brand (#315c4d) in light mode, yellow (#c5a557) in dark
-                        color: fabUTokens.color.highlight,
+                        // brandText = brand green in light, lightened green in dark for AA contrast
+                        color: fabUTokens.color.brandText,
                         fontWeight: 700,
                       },
                     }}
@@ -929,8 +929,8 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      // highlight = brand in light, yellow in dark — matches the Notes pill
-                      color: fabUTokens.color.highlight,
+                      // brandText = brand green in light, lightened green in dark for AA contrast
+                      color: fabUTokens.color.brandText,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
