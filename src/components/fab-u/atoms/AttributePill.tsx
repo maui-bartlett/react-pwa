@@ -7,7 +7,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { useFabUTokens } from '../ThemeContext';
-import { scaledEditableControlStyle, scaledEditableTextStyle } from '../editableText';
+import { scaledEditableControlStyle } from '../editableText';
 import { getToneStyles } from '../tokens';
 import { DieSize, Tone } from '../types';
 
@@ -217,10 +217,7 @@ function AttributePill({
                 width: '100%',
                 textAlign: 'center',
                 fontWeight: 700,
-                ...scaledEditableTextStyle(0.88, {
-                  lineHeight: 1,
-                  transformOrigin: 'center center',
-                }),
+                fontSize: '1rem',
                 lineHeight: 1,
                 height: '100%',
                 boxSizing: 'border-box',

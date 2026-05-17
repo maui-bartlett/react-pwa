@@ -359,7 +359,12 @@ function FabU() {
       <SummaryStrip
         label="Progress"
         metrics={[
-          { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
+          {
+            label: 'FABULA POINTS',
+            value: String(character.fabulaPoints),
+            pw: 'fp',
+            onChange: setFP,
+          },
           {
             label: 'XP',
             value: String(character.currentXP),

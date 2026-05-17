@@ -41,15 +41,15 @@ type FabUTokens = {
 const fabUTokens: FabUTokens = {
   isDark: false,
   color: {
-    canvas: '#efe8dc',
+    canvas: '#dfe8e3', // was '#efe8dc' — cooler green-grey, removes warm cream
     surface: '#ffffff',
-    surfaceMuted: '#f6f0e6',
-    border: '#c9d0c3',
-    textPrimary: '#1d2723',
-    textSecondary: '#56625d',
+    surfaceMuted: '#edf2ef', // was '#f6f0e6' — cooler, less cream
+    border: '#aec0b7', // was '#c9d0c3' — darker for more contrast
+    textPrimary: '#111b18', // was '#1d2723' — deeper for higher contrast
+    textSecondary: '#455550', // was '#56625d' — darker for better readability
     brand: '#315c4d',
     brandStrong: '#26493d',
-    brandSoft: '#e3ebe2',
+    brandSoft: '#e0ebe5',
     brandText: '#315c4d', // same as brand in light mode
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // section header pill fill
@@ -64,7 +64,7 @@ const fabUTokens: FabUTokens = {
     neutral: '#888f88',
   },
   radius: { pill: 999, sm: 9, md: 13, lg: 16 },
-  shadow: { soft: '0 4px 14px rgba(31, 42, 38, 0.045)' },
+  shadow: { soft: '0 4px 14px rgba(31, 42, 38, 0.09)' }, // was 0.045 — stronger card shadow
 };
 
 /** Dark-mode tokens. */
