@@ -60,7 +60,6 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH; // 0 (closed) → 1 (fully open)
-  const rightRadius = `${9 * (1 - swipeFraction)}px`;
 
   function triggerRemove() {
     setRemoving(true);
@@ -152,15 +151,11 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
       sx={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
+        borderRadius: '9px',
         boxShadow: fabUTokens.shadow.soft,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
-        transition: removing
-          ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s'
-          : swiping
-            ? 'none'
-            : 'border-radius 0.22s ease',
+        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
       }}
     >
       {/* Action channel */}
@@ -206,6 +201,8 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              boxShadow:
+                'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
             }}
           >
             <Pencil size={18} color="white" />
@@ -224,13 +221,13 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
           position: 'relative',
           zIndex: 1,
           border: `1px solid ${fabUTokens.color.border}`,
-          borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
+          borderRadius: '9px',
           px: 1.25,
           py: 0.85,
           bgcolor: fabUTokens.color.surface,
           boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
           transform: editingName ? 'none' : `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease, border-radius 0.22s ease',
+          transition: swiping ? 'none' : 'transform 0.22s ease',
           touchAction: editingName ? 'auto' : 'pan-y',
           userSelect: 'none',
         }}
@@ -457,7 +454,7 @@ function BondsCard({
               alignItems: 'center',
               gap: 1,
               color: fabUTokens.color.highlight,
-              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
+              bgcolor: 'transparent',
               cursor: 'pointer',
             }}
           >

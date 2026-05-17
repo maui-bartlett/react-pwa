@@ -22,6 +22,7 @@ import { scaledEditableTextStyle } from '../editableText';
 import { SkillRow } from '../types';
 
 const ACTION_WIDTH = 128;
+const DESC_ACTION_WIDTH = 64;
 const SNAP_THRESHOLD = 50;
 const DELETE_RED = '#d32f2f';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
@@ -46,7 +47,6 @@ type EditingSkillState = {
   originalName: string;
   name: string;
   level: string;
-  effect: string;
 };
 
 type SwipeableSkillRowProps = {
@@ -83,18 +83,31 @@ function SwipeableSkillRow({
   onUpdateSkillDescription,
 }: SwipeableSkillRowProps) {
   const fabUTokens = useFabUTokens();
+
+  // Row swipe state
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [editingDescription, setEditingDescription] = useState(false);
-  const [descriptionDraft, setDescriptionDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
+
+  // Accordion description swipe state
+  const [descSnapX, setDescSnapX] = useState(0);
+  const [descDeltaX, setDescDeltaX] = useState(0);
+  const [descSwiping, setDescSwiping] = useState(false);
+  const descElRef = useRef<HTMLElement | null>(null);
+
+  // Description inline edit state
+  const [descEditActive, setDescEditActive] = useState(false);
+  const [descDraft, setDescDraft] = useState('');
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
+
+  const descVisualX = Math.max(-DESC_ACTION_WIDTH, Math.min(0, descSnapX + descDeltaX));
+  const descChannelVisible = descSnapX !== 0 || (descSwiping && descDeltaX < -5);
 
   function triggerRemove() {
     setRemoving(true);
@@ -103,17 +116,7 @@ function SwipeableSkillRow({
     setTimeout(() => onDelete?.(), 450);
   }
 
-  function startEditingDescription() {
-    setEditingDescription(true);
-    setDescriptionDraft(row.description ?? '');
-  }
-
-  function commitDescriptionEdit() {
-    if (!onUpdateSkillDescription) return;
-    onUpdateSkillDescription(row.name, descriptionDraft.trim());
-    setEditingDescription(false);
-  }
-
+  // Row swipe handlers
   const swipeHandlers = useSwipeable({
     onSwiping: ({ deltaX, deltaY }) => {
       if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
@@ -140,6 +143,30 @@ function SwipeableSkillRow({
     touchEventOptions: { passive: true },
   });
 
+  // Accordion swipe handlers
+  const descSwipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setDescSwiping(true);
+      }
+      setDescDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setDescSwiping(false);
+      if (dir === 'Left' && absX > SNAP_THRESHOLD && descSnapX === 0) {
+        setDescSnapX(-DESC_ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > SNAP_THRESHOLD && descSnapX !== 0) {
+        setDescSnapX(0);
+      }
+      setDescDeltaX(0);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  // Touch event prevention for row scroll conflict
   useEffect(() => {
     const el = rowElRef.current;
     if (!el) return;
@@ -161,9 +188,24 @@ function SwipeableSkillRow({
     };
   }, []);
 
+  // Reset desc swipe & edit when accordion closes
+  useEffect(() => {
+    if (!isOpen) {
+      setDescSnapX(0);
+      setDescDeltaX(0);
+      setDescSwiping(false);
+      setDescEditActive(false);
+    }
+  }, [isOpen]);
+
   const setRef = (el: HTMLElement | null) => {
     swipeHandlers.ref(el);
     rowElRef.current = el;
+  };
+
+  const descSetRef = (el: HTMLElement | null) => {
+    descSwipeHandlers.ref(el);
+    descElRef.current = el;
   };
 
   const cellTextSx = { fontSize: '0.74rem', color: fabUTokens.color.textPrimary };
@@ -226,6 +268,8 @@ function SwipeableSkillRow({
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
+                boxShadow:
+                  'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
               }}
             >
               <Pencil size={18} color="white" />
@@ -235,7 +279,7 @@ function SwipeableSkillRow({
 
         {/* Main row */}
         {isEditing && editDraft ? (
-          /* Edit mode — name and summary editable, level read-only */
+          /* Edit mode — name editable, level read-only */
           <Box
             sx={{
               position: 'relative',
@@ -249,7 +293,7 @@ function SwipeableSkillRow({
               gap: 0.5,
             }}
           >
-            <Box sx={{ flex: 1.5, minWidth: 0 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <InputBase
                 autoFocus
                 value={editDraft.name}
@@ -270,26 +314,14 @@ function SwipeableSkillRow({
                 }}
               />
             </Box>
-            <Box sx={{ flex: 2.5, minWidth: 0 }}>
-              <InputBase
-                value={editDraft.effect}
-                onChange={(e) => onEditDraftChange({ ...editDraft, effect: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onCommitEdit();
-                  if (e.key === 'Escape') onRevertEdit();
-                }}
-                placeholder="Summary"
-                sx={{
-                  color: fabUTokens.color.textPrimary,
-                  width: '100%',
-                  '& input': {
-                    p: 0,
-                    ...scaledEditableTextStyle(0.74, { stretch: true }),
-                  },
-                }}
-              />
-            </Box>
-            <Box sx={{ width: 40, flexShrink: 0 }}>
+            <Box
+              sx={{
+                width: 40,
+                flexShrink: 0,
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
               <Typography
                 variant="body2"
                 sx={{ fontSize: '0.74rem', color: fabUTokens.color.textSecondary }}
@@ -297,9 +329,10 @@ function SwipeableSkillRow({
                 {editDraft.level}
               </Typography>
             </Box>
+            {hasAddLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
           </Box>
         ) : (
-          /* Normal mode — fully clickable for accordion toggle */
+          /* Normal mode */
           <Box
             {...swipeHandlers}
             ref={setRef}
@@ -328,7 +361,7 @@ function SwipeableSkillRow({
             {/* Skill name with chevron */}
             <Box
               sx={{
-                flex: 1.5,
+                flex: 1,
                 minWidth: 0,
                 display: 'flex',
                 alignItems: 'center',
@@ -361,27 +394,15 @@ function SwipeableSkillRow({
                 {row.name}
               </Typography>
             </Box>
-            {/* Summary (effect) */}
-            <Box
-              sx={{
-                flex: 2.5,
-                minWidth: 0,
-                ...cellTextSx,
-                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {row.effect}
-            </Box>
-            {/* LVL */}
+            {/* LVL — right-aligned */}
             <Box
               sx={{
                 width: 40,
                 flexShrink: 0,
+                textAlign: 'right',
                 ...cellTextSx,
-                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
+                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.brandText,
+                fontWeight: 700,
               }}
             >
               {row.level ?? '—'}
@@ -425,96 +446,112 @@ function SwipeableSkillRow({
         )}
       </Box>
 
-      {/* Accordion expand panel */}
+      {/* Accordion expand panel — swipeable, edit-only channel */}
       {!isEditing && (
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
           <Box sx={{ px: 1.2, pb: 0 }}>
             <Box
               sx={{
-                py: 2,
-                px: 1.5,
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: '9px',
                 my: 0.75,
-                border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.18)}`,
-                borderRadius: '6px',
               }}
             >
-              <Box sx={{ position: 'relative' }}>
+              {/* Desc action channel (edit only) */}
+              {descChannelVisible && (
                 <Box
                   sx={{
-                    border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.28)}`,
-                    borderRadius: '6px',
-                    px: 1,
-                    py: 0.75,
-                    minHeight: 42,
-                    bgcolor: fabUTokens.isDark
-                      ? alpha(fabUTokens.color.surface, 0.4)
-                      : alpha(fabUTokens.color.surface, 0.6),
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: DESC_ACTION_WIDTH,
+                    display: 'flex',
+                    zIndex: 0,
                   }}
                 >
-                  {editingDescription ? (
-                    <InputBase
-                      autoFocus
-                      multiline
-                      fullWidth
-                      value={descriptionDraft}
-                      onChange={(e) => setDescriptionDraft(e.target.value)}
-                      onBlur={commitDescriptionEdit}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') setEditingDescription(false);
-                      }}
-                      sx={{
-                        color: fabUTokens.color.textPrimary,
-                        alignItems: 'flex-start',
-                        '& textarea': {
-                          p: 0,
-                          lineHeight: 1.6,
-                          ...scaledEditableTextStyle(0.72, { stretch: true, lineHeight: 1.6 }),
-                        },
-                      }}
-                    />
-                  ) : (
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: '0.72rem',
-                        lineHeight: 1.6,
-                        fontStyle: row.description ? 'normal' : 'italic',
-                        color: row.description
-                          ? fabUTokens.color.textPrimary
-                          : fabUTokens.color.textSecondary,
-                      }}
-                    >
-                      {row.description || 'No description'}
-                    </Typography>
-                  )}
-                </Box>
-                {onUpdateSkillDescription ? (
-                  <IconButton
-                    size="small"
+                  <Box
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (editingDescription) commitDescriptionEdit();
-                      else startEditingDescription();
+                      setDescSnapX(0);
+                      setDescDeltaX(0);
+                      setDescDraft(row.description ?? row.effect ?? '');
+                      setDescEditActive(true);
                     }}
                     sx={{
-                      position: 'absolute',
-                      top: -10,
-                      right: -10,
-                      width: 22,
-                      height: 22,
-                      bgcolor: fabUTokens.color.surface,
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      color: fabUTokens.color.textSecondary,
-                      '&:hover': { color: fabUTokens.color.brandText },
+                      flex: 1,
+                      bgcolor: fabUTokens.color.brand,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow:
+                        'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
                     }}
                   >
-                    {editingDescription ? (
-                      <CheckIcon sx={{ fontSize: 12 }} />
-                    ) : (
-                      <Pencil size={11} />
-                    )}
-                  </IconButton>
-                ) : null}
+                    <Pencil size={18} color="white" />
+                  </Box>
+                </Box>
+              )}
+
+              {/* Desc content — translates on swipe */}
+              <Box
+                {...descSwipeHandlers}
+                ref={descSetRef}
+                sx={{
+                  position: 'relative',
+                  zIndex: 1,
+                  transform: `translateX(${descVisualX}px)`,
+                  transition: descSwiping ? 'none' : 'transform 0.22s ease',
+                  touchAction: 'pan-y',
+                  userSelect: 'none',
+                  py: 1.25,
+                  px: 1.5,
+                  bgcolor: fabUTokens.color.surface,
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: '9px',
+                  minHeight: 42,
+                }}
+              >
+                {descEditActive ? (
+                  <InputBase
+                    autoFocus
+                    multiline
+                    fullWidth
+                    value={descDraft}
+                    onChange={(e) => setDescDraft(e.target.value)}
+                    onBlur={() => {
+                      onUpdateSkillDescription?.(row.name, descDraft.trim());
+                      setDescEditActive(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setDescEditActive(false);
+                    }}
+                    sx={{
+                      color: fabUTokens.color.textPrimary,
+                      alignItems: 'flex-start',
+                      '& textarea': {
+                        p: 0,
+                        lineHeight: 1.5,
+                        ...scaledEditableTextStyle(0.74, { stretch: true, lineHeight: 1.5 }),
+                        color: fabUTokens.color.textPrimary,
+                      },
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: '0.74rem',
+                      lineHeight: 1.5,
+                      color: fabUTokens.color.textPrimary,
+                      fontStyle: !row.description && !row.effect ? 'italic' : 'normal',
+                    }}
+                  >
+                    {(row.description ?? row.effect) || 'Swipe left to add description'}
+                  </Typography>
+                )}
               </Box>
             </Box>
           </Box>
@@ -545,7 +582,6 @@ function SkillsTable({
   const [draftSkill, setDraftSkill] = useState<{
     name: string;
     level: string;
-    effect: string;
   } | null>(null);
   const [editingSkill, setEditingSkill] = useState<EditingSkillState | null>(null);
   const originalSkillDataRef = useRef<SkillRow | null>(null);
@@ -589,7 +625,7 @@ function SkillsTable({
     onAddSkill({
       name: draftSkill.name.trim() || 'New Skill',
       level: draftSkill.level || '0',
-      effect: draftSkill.effect.trim(),
+      effect: '',
     });
     setDraftSkill(null);
   }
@@ -600,7 +636,6 @@ function SkillsTable({
       originalName: row.name,
       name: row.name,
       level: row.level ?? '0',
-      effect: row.effect,
     });
   }
 
@@ -686,9 +721,8 @@ function SkillsTable({
               borderBottom: `1px solid ${fabUTokens.color.border}`,
             }}
           >
-            <Box sx={{ flex: 1.5, minWidth: 0, ...headerCellSx }}>Skill</Box>
-            <Box sx={{ flex: 2.5, minWidth: 0, ...headerCellSx }}>Summary</Box>
-            <Box sx={{ width: 40, flexShrink: 0, ...headerCellSx }}>LVL</Box>
+            <Box sx={{ flex: 1, minWidth: 0, ...headerCellSx }}>Skill</Box>
+            <Box sx={{ width: 40, flexShrink: 0, textAlign: 'right', ...headerCellSx }}>LVL</Box>
             {onAddSkillLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
           </Box>
 
@@ -716,7 +750,7 @@ function SkillsTable({
                     onEditSkill(draft.originalName, {
                       name: draft.name.trim() || draft.originalName,
                       level: draft.level,
-                      effect: draft.effect.trim(),
+                      effect: row.effect,
                       description: row.description,
                     });
                   }
@@ -747,7 +781,7 @@ function SkillsTable({
                 gap: 0.5,
               }}
             >
-              <Box sx={{ flex: 1.5, minWidth: 0 }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
                 <InputBase
                   autoFocus
                   value={draftSkill.name}
@@ -763,25 +797,6 @@ function SkillsTable({
                     '& input': {
                       p: 0,
                       fontWeight: 700,
-                      ...scaledEditableTextStyle(0.74, { stretch: true }),
-                    },
-                  }}
-                />
-              </Box>
-              <Box sx={{ flex: 2.5, minWidth: 0 }}>
-                <InputBase
-                  value={draftSkill.effect}
-                  onChange={(e) => setDraftSkill((d) => (d ? { ...d, effect: e.target.value } : d))}
-                  placeholder="Summary"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitDraftSkill();
-                    if (e.key === 'Escape') setDraftSkill(null);
-                  }}
-                  sx={{
-                    color: fabUTokens.color.textPrimary,
-                    width: '100%',
-                    '& input': {
-                      p: 0,
                       ...scaledEditableTextStyle(0.74, { stretch: true }),
                     },
                   }}
@@ -836,7 +851,7 @@ function SkillsTable({
         {showAddSkillButton ? (
           <Box
             data-pw="add-skill-button"
-            onClick={() => setDraftSkill({ name: '', level: '1', effect: '' })}
+            onClick={() => setDraftSkill({ name: '', level: '1' })}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -848,7 +863,7 @@ function SkillsTable({
               color: fabUTokens.color.highlight,
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '8px',
-              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
+              bgcolor: 'transparent',
             }}
           >
             <AddIcon sx={{ fontSize: '1rem' }} />
@@ -859,7 +874,7 @@ function SkillsTable({
         ) : null}
       </SurfaceCard>
 
-      {/* Level pick list — styled after BondsCard type menu */}
+      {/* Level pick list */}
       <Menu
         anchorEl={menuState?.anchorEl ?? null}
         open={!!menuState}

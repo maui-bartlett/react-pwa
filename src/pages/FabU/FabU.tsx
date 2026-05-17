@@ -15,7 +15,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { ArrowLeft, Check, CheckCircle, FlaskConical, Pencil, Sparkles } from 'lucide-react';
+import { Check, CheckCircle, FlaskConical, Pencil, Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -778,11 +778,12 @@ function FabU() {
                       textTransform: 'none',
                       fontWeight: 700,
                       fontSize: '0.78rem',
-                      bgcolor: fabUTokens.color.brand,
+                      bgcolor: fabUTokens.color.brandText,
                       color: '#fff',
                       boxShadow: 'none',
                       '&:hover': {
-                        bgcolor: fabUTokens.color.brandStrong,
+                        bgcolor: fabUTokens.color.brandText,
+                        filter: 'brightness(0.88)',
                         boxShadow: 'none',
                       },
                     }}
@@ -841,11 +842,11 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.color.success,
+                    bgcolor: fabUTokens.color.brandText,
                     color: '#ffffff',
                     boxShadow: 'none',
                     '&:hover': {
-                      bgcolor: fabUTokens.color.success,
+                      bgcolor: fabUTokens.color.brandText,
                       filter: 'brightness(0.88)',
                       boxShadow: 'none',
                     },
@@ -1097,7 +1098,7 @@ function FabU() {
               alignItems: 'center',
               gap: 1,
               color: fabUTokens.color.highlight,
-              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
+              bgcolor: 'transparent',
               cursor: 'pointer',
             }}
           >
@@ -1204,7 +1205,18 @@ function FabU() {
                 '&:active': { filter: 'brightness(0.88)' },
               }}
             >
-              <ArrowLeft size={16} color="#ffffff" strokeWidth={2.5} />
+              <svg
+                viewBox="0 0 30 14"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ width: 30, height: 14, display: 'block' }}
+              >
+                <line x1="29" y1="7" x2="6" y2="7" />
+                <polyline points="13 13 6 7 13 1" />
+              </svg>
               <Typography
                 variant="caption"
                 sx={{
