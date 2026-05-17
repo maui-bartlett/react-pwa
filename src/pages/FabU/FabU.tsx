@@ -258,30 +258,32 @@ function FabU() {
 
   useEffect(() => {
     if (!pendingCombatSpellScroll) return;
-    setPendingCombatSpellScroll(false);
     const timer = setTimeout(() => {
       const scrollViewport = document.querySelector('[data-pw="content-area"]');
       const spellsSection = document.querySelector('[data-section="combat-spells"]');
-      if (!scrollViewport || !spellsSection) return;
-      const rect = spellsSection.getBoundingClientRect();
-      const viewportRect = scrollViewport.getBoundingClientRect();
-      const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
-      (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      if (scrollViewport && spellsSection) {
+        const rect = spellsSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingCombatSpellScroll(false);
     }, 100);
     return () => clearTimeout(timer);
   }, [pendingCombatSpellScroll]);
 
   useEffect(() => {
     if (!pendingCombatGearScroll) return;
-    setPendingCombatGearScroll(false);
     const timer = setTimeout(() => {
       const scrollViewport = document.querySelector('[data-pw="content-area"]');
       const gearSection = document.querySelector('[data-section="combat-gear"]');
-      if (!scrollViewport || !gearSection) return;
-      const rect = gearSection.getBoundingClientRect();
-      const viewportRect = scrollViewport.getBoundingClientRect();
-      const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
-      (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      if (scrollViewport && gearSection) {
+        const rect = gearSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingCombatGearScroll(false);
     }, 100);
     return () => clearTimeout(timer);
   }, [pendingCombatGearScroll]);

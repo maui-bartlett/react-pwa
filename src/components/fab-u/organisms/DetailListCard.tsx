@@ -52,6 +52,8 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
 
   const visualX = Math.max(-actionWidth, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+  const swipeFraction = Math.abs(visualX) / actionWidth;
+  const rightRadius = `${9 * (1 - swipeFraction)}px`;
 
   function triggerRemove() {
     setRemoving(true);
@@ -190,13 +192,13 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
           position: 'relative',
           zIndex: 1,
           border: `1px solid ${fabUTokens.color.border}`,
-          borderRadius: '9px',
+          borderRadius: `9px ${rightRadius} ${rightRadius} 9px`,
           px: 1.25,
           py: 1,
           bgcolor: fabUTokens.color.surface,
           boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
           transform: `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease',
+          transition: swiping ? 'none' : 'transform 0.22s ease, border-radius 0.22s ease',
           touchAction: 'pan-y',
           userSelect: 'none',
           cursor: onItemClick ? 'pointer' : 'default',

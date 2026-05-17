@@ -181,9 +181,26 @@ const migratingCharacterStorage = {
         } catch {
           /* ignore */
         }
+        // Merge maxLevel from defaults into stored skillGroups so upgrades (e.g. Entropic Magic → 10)
+        // are picked up even when old localStorage data is missing the field.
+        const mergedSkillGroups: SkillGroup[] = (
+          parsed.skillGroups ?? initialValue.skillGroups
+        ).map((group: SkillGroup) => {
+          const defaultGroup = defaultSkillGroups.find((dg) => dg.className === group.className);
+          return {
+            ...group,
+            skills: group.skills.map((skill) => {
+              const defaultSkill = defaultGroup?.skills.find((ds) => ds.name === skill.name);
+              return defaultSkill?.maxLevel != null
+                ? { ...skill, maxLevel: defaultSkill.maxLevel }
+                : skill;
+            }),
+          };
+        });
         return {
           ...initialValue,
           ...parsed,
+          skillGroups: mergedSkillGroups,
           backstoryPrompts: normalizeBackstoryPrompts(parsed.backstoryPrompts, oldAnswers),
           equipment: normalizeEquipment(parsed.equipment),
         };

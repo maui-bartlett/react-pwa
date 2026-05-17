@@ -250,11 +250,13 @@ function SwipeableSkillRow({
               colorScheme: fabUTokens.isDark ? 'dark' : undefined,
             }}
           >
-            {Array.from({ length: DEFAULT_SKILL_MAX_LEVEL + 1 }, (_, i) => i).map((lvl) => (
-              <option key={lvl} value={String(lvl)}>
-                {lvl}
-              </option>
-            ))}
+            {Array.from({ length: (row.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL) + 1 }, (_, i) => i).map(
+              (lvl) => (
+                <option key={lvl} value={String(lvl)}>
+                  {lvl}
+                </option>
+              ),
+            )}
           </select>
         </Box>
         <Box sx={{ flex: 2.5, minWidth: 0 }}>
