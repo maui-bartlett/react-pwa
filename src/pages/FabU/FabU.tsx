@@ -102,6 +102,7 @@ function FabU() {
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
+  const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
   const [, setStatusEffects] = useAtom(statusEffectsState);
   const statusEffects = useAtomValue(derivedStatusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -256,11 +257,26 @@ function FabU() {
       if (!scrollViewport || !spellsSection) return;
       const rect = spellsSection.getBoundingClientRect();
       const viewportRect = scrollViewport.getBoundingClientRect();
-      const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 16;
+      const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
       (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
     }, 50);
     return () => clearTimeout(timer);
   }, [pendingCombatSpellScroll]);
+
+  useEffect(() => {
+    if (!pendingCombatGearScroll) return;
+    setPendingCombatGearScroll(false);
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const gearSection = document.querySelector('[data-section="combat-gear"]');
+      if (!scrollViewport || !gearSection) return;
+      const rect = gearSection.getBoundingClientRect();
+      const viewportRect = scrollViewport.getBoundingClientRect();
+      const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+      (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [pendingCombatGearScroll]);
 
   const classPickerOpen = Boolean(classPickerAnchorEl);
 
@@ -716,11 +732,15 @@ function FabU() {
 
         <SurfaceCard label="Actions" title="Battle Actions">
           <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Aim', 'Cast', 'Guard', 'Inventory'].map((action) => (
+            {['Attack', 'Cast', 'Guard', 'Inventory'].map((action) => (
               <Button
                 key={action}
                 variant="contained"
                 onClick={(event) => {
+                  if (action === 'Attack') {
+                    setActiveCombatTab('gear');
+                    setPendingCombatGearScroll(true);
+                  }
                   if (action === 'Cast') {
                     setActiveCombatTab('spells');
                     setPendingCombatSpellScroll(true);
@@ -761,6 +781,7 @@ function FabU() {
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           marginThreshold={12}
           disableRestoreFocus
+          disablePortal
           PaperProps={{
             sx: {
               mt: '5px',
@@ -917,12 +938,14 @@ function FabU() {
         ) : null}
 
         {activeCombatTab === 'gear' ? (
-          <EquipmentCard
-            label="Equipment"
-            title=""
-            items={character.equipment}
-            emptyLabel="Accessory"
-          />
+          <Box data-section="combat-gear">
+            <EquipmentCard
+              label="Equipment"
+              title=""
+              items={character.equipment}
+              emptyLabel="Accessory"
+            />
+          </Box>
         ) : null}
       </>
     );
@@ -1078,8 +1101,8 @@ function FabU() {
           stretch: true,
           transformOrigin: 'left center',
         }),
-        py: `${1.05 / 0.84}rem`,
-        px: `${1.2 / 0.84}rem`,
+        py: `${1.05 / 0.84 - 0.625}rem`,
+        px: `${1.2 / 0.84 - 0.625}rem`,
         color: fabUTokens.isDark ? fabUTokens.color.textPrimary : fabUTokens.color.textSecondary,
         alignSelf: 'center',
       },

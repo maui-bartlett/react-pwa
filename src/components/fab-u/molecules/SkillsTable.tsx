@@ -202,6 +202,7 @@ function SwipeableSkillRow({
               fontFamily: 'inherit',
               cursor: 'pointer',
               width: '100%',
+              colorScheme: fabUTokens.isDark ? 'dark' : undefined,
             }}
           >
             {Array.from({ length: DEFAULT_SKILL_MAX_LEVEL + 1 }, (_, i) => i).map((lvl) => (
@@ -299,7 +300,7 @@ function SwipeableSkillRow({
             }}
             sx={{
               flex: 1,
-              bgcolor: fabUTokens.color.textSecondary,
+              bgcolor: fabUTokens.color.brand,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -582,6 +583,7 @@ function SkillsTable({
                     fontFamily: 'inherit',
                     cursor: 'pointer',
                     width: '100%',
+                    colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                   }}
                 >
                   {Array.from(
@@ -705,18 +707,29 @@ function SkillsTable({
                   py: 0.75,
                   gap: 1,
                   color: isSelected
-                    ? fabUTokens.color.brand
+                    ? fabUTokens.isDark
+                      ? fabUTokens.color.brand
+                      : '#ffffff'
                     : isDisabled
                       ? fabUTokens.color.textSecondary
                       : fabUTokens.color.textPrimary,
-                  bgcolor: isSelected ? alpha(fabUTokens.color.brand, 0.08) : 'transparent',
+                  bgcolor: isSelected
+                    ? fabUTokens.isDark
+                      ? alpha(fabUTokens.color.brand, 0.08)
+                      : fabUTokens.color.brand
+                    : 'transparent',
                   '&:hover': { bgcolor: alpha(fabUTokens.color.brand, 0.1) },
                   '&.Mui-disabled': { opacity: 0.4 },
                 }}
               >
                 <Box sx={{ width: 16, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                   {isSelected ? (
-                    <CheckIcon sx={{ fontSize: 14, color: fabUTokens.color.brand }} />
+                    <CheckIcon
+                      sx={{
+                        fontSize: 14,
+                        color: fabUTokens.isDark ? fabUTokens.color.brand : '#ffffff',
+                      }}
+                    />
                   ) : null}
                 </Box>
                 {level}

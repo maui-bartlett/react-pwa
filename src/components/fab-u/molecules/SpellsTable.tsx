@@ -223,7 +223,7 @@ function SwipeableSpellRow({
               }}
               sx={{
                 flex: 1,
-                bgcolor: fabUTokens.color.textSecondary,
+                bgcolor: fabUTokens.color.brand,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -305,7 +305,16 @@ function SwipeableSpellRow({
                 }}
               />
             </Box>
-            <Box sx={{ flex: 1.5, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box
+              sx={{
+                flex: 1.5,
+                minWidth: 0,
+                pl: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
               <select
                 value={editDraft.duration}
                 onChange={(e) =>
@@ -324,6 +333,7 @@ function SwipeableSpellRow({
                   cursor: 'pointer',
                   flex: 1,
                   minWidth: 0,
+                  colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}
               >
                 <option value="Instant">Instant</option>
@@ -429,6 +439,7 @@ function SwipeableSpellRow({
               sx={{
                 flex: 1.5,
                 minWidth: 0,
+                pl: 1.5,
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
@@ -694,9 +705,9 @@ function SpellsTable({
           }}
         >
           <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
-          <Box sx={{ width: 56, flexShrink: 0, ...headerCellSx }}>MP</Box>
+          <Box sx={{ width: 56, flexShrink: 0, ...headerCellSx }}>Cost</Box>
           <Box sx={{ width: 48, flexShrink: 0, ...headerCellSx }}>Target</Box>
-          <Box sx={{ flex: 1.5, minWidth: 0, ...headerCellSx }}>Duration</Box>
+          <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, ...headerCellSx }}>Duration</Box>
         </Box>
 
         {/* Spell rows */}
@@ -764,7 +775,16 @@ function SpellsTable({
                 sx={inputSx}
               />
             </Box>
-            <Box sx={{ flex: 1.5, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box
+              sx={{
+                flex: 1.5,
+                minWidth: 0,
+                pl: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
               <select
                 value={draftSpell.duration}
                 onChange={(e) =>
@@ -783,6 +803,7 @@ function SpellsTable({
                   cursor: 'pointer',
                   flex: 1,
                   minWidth: 0,
+                  colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}
               >
                 <option value="Instant">Instant</option>

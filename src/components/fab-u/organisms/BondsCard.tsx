@@ -472,16 +472,26 @@ function BondsCard({
                 py: 0.75,
                 gap: 1,
                 color: selected
-                  ? selectedColor
+                  ? fabUTokens.isDark
+                    ? selectedColor
+                    : '#ffffff'
                   : fabUTokens.isDark
                     ? fabUTokens.color.textPrimary
                     : '#1f2a26',
-                bgcolor: selected ? alpha(selectedColor, 0.08) : 'transparent',
+                bgcolor: selected
+                  ? fabUTokens.isDark
+                    ? alpha(selectedColor, 0.08)
+                    : selectedColor
+                  : 'transparent',
                 '&:hover': { bgcolor: alpha(selectedColor, 0.1) },
               }}
             >
               <Box sx={{ width: 16, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                {selected ? <CheckIcon sx={{ fontSize: 14, color: selectedColor }} /> : null}
+                {selected ? (
+                  <CheckIcon
+                    sx={{ fontSize: 14, color: fabUTokens.isDark ? selectedColor : '#ffffff' }}
+                  />
+                ) : null}
               </Box>
               {type}
             </MenuItem>
