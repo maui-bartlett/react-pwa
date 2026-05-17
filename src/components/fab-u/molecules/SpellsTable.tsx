@@ -94,6 +94,7 @@ function SwipeableSpellRow({
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+  const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
 
   function triggerRemove() {
     setRemoving(true);
@@ -343,6 +344,7 @@ function SwipeableSpellRow({
               px: 1.2,
               height: 46,
               bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surface,
+              boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
               transform: `translateX(${visualX}px)`,

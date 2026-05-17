@@ -219,7 +219,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
           px: 1.25,
           py: 0.85,
           bgcolor: fabUTokens.color.surface,
-          boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+          boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
           transform: `translateX(${visualX}px)`,
           transition: swiping ? 'none' : 'transform 0.22s ease, border-radius 0.22s ease',
           touchAction: 'pan-y',

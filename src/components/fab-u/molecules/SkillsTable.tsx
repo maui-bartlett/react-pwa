@@ -87,6 +87,7 @@ function SwipeableSkillRow({
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+  const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
 
   function triggerRemove() {
     setRemoving(true);
@@ -315,6 +316,7 @@ function SwipeableSkillRow({
           bgcolor: fabUTokens.color.surface,
           position: 'relative',
           zIndex: 1,
+          boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
           transform: `translateX(${visualX}px)`,
           transition: swiping ? 'none' : 'transform 0.22s ease',
           cursor: clickable ? 'pointer' : 'default',
@@ -531,7 +533,7 @@ function SkillsTable({
             }}
           >
             <Box sx={{ flex: 1.5, minWidth: 0, ...headerCellSx }}>Skill</Box>
-            <Box sx={{ width: 40, flexShrink: 0, ...headerCellSx }}>LV</Box>
+            <Box sx={{ width: 40, flexShrink: 0, ...headerCellSx }}>LVL</Box>
             <Box sx={{ flex: 2.5, minWidth: 0, ...headerCellSx }}>Effect</Box>
             {onAddSkillLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
           </Box>
