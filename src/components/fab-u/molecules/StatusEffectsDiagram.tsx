@@ -166,13 +166,14 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
             sx={{
               color: fabUTokens.color.textPrimary,
               fontWeight: 700,
-              fontSize: '0.72rem',
+              fontSize: '0.8rem',
               lineHeight: 1.2,
-              mr: '6px',
-              whiteSpace: 'nowrap',
+              mr: '8px',
+              whiteSpace: 'pre-line',
+              flexShrink: 0,
             }}
           >
-            Status Effects
+            {'Status\nEffects'}
           </Typography>
           {topLevelStatuses.map((status) => {
             const selected = !!activeEffects[status.id];

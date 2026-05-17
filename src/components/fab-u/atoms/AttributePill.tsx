@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import Box from '@mui/material/Box';
-import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -66,18 +65,13 @@ function AttributePill({
   const fabUTokens = useFabUTokens();
   const [open, setOpen] = useState(false);
   const [anchorPos, setAnchorPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const [draftMod, setDraftMod] = useState('');
   const [draftTemp, setDraftTemp] = useState<DieSize | null>(null);
   const toneStyles = getToneStyles(tone);
   const editable = !!(onChangeDie || onChangeModifier);
 
   function handleOpen(e: React.MouseEvent<HTMLElement>) {
     if (!editable) return;
-    setDraftMod(modifier === 0 ? '' : String(modifier));
     setDraftTemp(temp ?? null);
-    // Freeze anchor position at open time. anchorEl is intentionally NOT passed
-    // to the Popover — MUI attaches a ResizeObserver to anchorEl even when
-    // anchorReference="anchorPosition", causing a reposition on every keystroke.
     const rect = e.currentTarget.getBoundingClientRect();
     const left =
       popoverHorizontal === 'left'
@@ -90,10 +84,6 @@ function AttributePill({
   }
 
   function handleClose() {
-    if (onChangeModifier) {
-      const n = parseInt(draftMod, 10);
-      onChangeModifier(isNaN(n) ? 0 : n);
-    }
     if (onChangeTemp) {
       onChangeTemp(draftTemp);
     }
@@ -215,52 +205,25 @@ function AttributePill({
           </select>
         </Stack>
 
-        {/* Mod */}
+        {/* Mod — select 0–10, fires immediately (no draft state needed) */}
         <Stack spacing={0.5}>
           {fieldLabel('Mod')}
-          <InputBase
-            data-pw="attr-mod-input-shell"
-            value={draftMod}
-            placeholder="0"
-            inputProps={{
-              inputMode: 'numeric',
-              'data-pw': 'attr-mod-input',
-              style: {
-                width: '100%',
-                textAlign: 'center',
-                fontWeight: 700,
-                fontSize: '1rem',
-                lineHeight: 1,
-                height: '100%',
-                boxSizing: 'border-box',
-                padding: 0,
-                color: fabUTokens.color.textPrimary,
-              },
-            }}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/[^0-9-]/g, '');
-              const cleaned = raw.startsWith('-')
-                ? '-' + raw.slice(1).replace(/-/g, '')
-                : raw.replace(/-/g, '');
-              setDraftMod(cleaned);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleClose();
-              if (e.key === 'Escape') setOpen(false);
-            }}
-            sx={{
-              border: `1px solid ${fabUTokens.color.brand}`,
-              borderRadius: '8px',
-              boxSizing: 'border-box',
-              height: 30,
-              width: '100%',
-              alignItems: 'center',
-              px: 0.75,
-              py: 0.5,
-              bgcolor: fabUTokens.color.surface,
-              '& input': { p: 0, height: '100%', boxSizing: 'border-box' },
-            }}
-          />
+          <select
+            data-pw="attr-mod-select"
+            value={modifier}
+            onChange={(e) => onChangeModifier?.(parseInt(e.target.value, 10))}
+            style={selectStyle(
+              fabUTokens.color.brand,
+              fabUTokens.color.surface,
+              fabUTokens.color.textPrimary,
+            )}
+          >
+            {Array.from({ length: 11 }, (_, i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
         </Stack>
 
         {/* Temp */}
