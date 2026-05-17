@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, ReactNode, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import InputBase from '@mui/material/InputBase';
@@ -28,9 +28,11 @@ type SummaryMetric = {
 type SummaryStripProps = {
   metrics: SummaryMetric[];
   label?: string;
+  /** Optional element rendered as a middle column between the first and second metric */
+  middleAction?: ReactNode;
 };
 
-function SummaryStrip({ metrics, label }: SummaryStripProps) {
+function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
   const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState<{ label: string; draft: string } | null>(null);
 
@@ -53,16 +55,19 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${metrics.length}, minmax(0, 1fr))`,
+          gridTemplateColumns: middleAction
+            ? `repeat(3, minmax(0, 1fr))`
+            : `repeat(${metrics.length}, minmax(0, 1fr))`,
           gap: 1,
         }}
       >
-        {metrics.map((metric) => {
+        {metrics.map((metric, metricIndex) => {
+          const insertMiddleAfter = middleAction && metricIndex === 0;
           const isEditing = editing?.label === metric.label;
           const editable = !!metric.onChange;
           const showZennitIcon = metric.pw === 'zennit';
           const isXpMetric = metric.label === 'XP';
-          return (
+          const metricBox = (
             <Box
               key={metric.label}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
@@ -71,6 +76,7 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                 border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
                 borderRadius: '9px',
                 bgcolor: fabUTokens.color.surface,
+                boxShadow: fabUTokens.shadow.soft,
                 display: 'flex',
                 alignItems: 'center',
                 boxSizing: 'border-box',
@@ -198,6 +204,14 @@ function SummaryStrip({ metrics, label }: SummaryStripProps) {
                 </Stack>
               </Stack>
             </Box>
+          );
+          return insertMiddleAfter ? (
+            <Fragment key={metric.label}>
+              {metricBox}
+              <Box>{middleAction}</Box>
+            </Fragment>
+          ) : (
+            metricBox
           );
         })}
       </Box>

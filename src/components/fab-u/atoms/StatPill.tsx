@@ -179,6 +179,7 @@ function StatPill({
           }`,
           borderRadius: '10px',
           backgroundColor: fabUTokens.color.surface,
+          boxShadow: fabUTokens.shadow.soft,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box',

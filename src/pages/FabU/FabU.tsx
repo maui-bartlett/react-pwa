@@ -15,7 +15,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { Check, CheckCircle, Pencil, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle, Pencil, Sparkles } from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -134,6 +134,13 @@ function FabU() {
     });
   const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+  // Spend 100 Zennit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
+  const handleBuyIP = () =>
+    setCharacter((c) =>
+      c.zennit >= 100
+        ? { ...c, zennit: c.zennit - 100, inventoryPoints: c.inventoryPoints + 1 }
+        : c,
+    );
   const toggleBondType = (id: string, type: BondType) =>
     setCharacter((c) => ({
       ...c,
@@ -1077,6 +1084,41 @@ function FabU() {
             { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
             { label: 'ZENIT', value: String(character.zennit), pw: 'zennit', onChange: setZennit },
           ]}
+          middleAction={
+            <Box
+              onClick={handleBuyIP}
+              sx={{
+                bgcolor: fabUTokens.color.brand,
+                borderRadius: '9px',
+                height: '100%',
+                minHeight: 52,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.4,
+                cursor: 'pointer',
+                boxShadow: fabUTokens.shadow.soft,
+                userSelect: 'none',
+                '&:active': { filter: 'brightness(0.88)' },
+              }}
+            >
+              <ArrowLeft size={16} color="#ffffff" strokeWidth={2.5} />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.2,
+                }}
+              >
+                Buy IP
+              </Typography>
+            </Box>
+          }
         />
         <DetailListCard
           label="Backpack"
