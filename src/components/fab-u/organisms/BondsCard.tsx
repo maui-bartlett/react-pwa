@@ -371,7 +371,7 @@ function BondsCard({
               alignItems: 'center',
               gap: 1,
               color: fabUTokens.color.highlight,
-              bgcolor: fabUTokens.color.surfaceMuted,
+              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
             }}
           >
             <AddIcon fontSize="small" />
@@ -419,7 +419,7 @@ function BondsCard({
               alignItems: 'center',
               gap: 1,
               color: fabUTokens.color.highlight,
-              bgcolor: fabUTokens.color.surfaceMuted,
+              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
               cursor: 'pointer',
             }}
           >

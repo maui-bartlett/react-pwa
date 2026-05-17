@@ -4,6 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Table from '@mui/material/Table';
@@ -28,7 +29,7 @@ type SkillsTableProps = {
   onSkillClick?: (skillName: string) => void;
   clickableSkills?: string[];
   /** When provided, a "+ Skill" button appears if this table's total levels < 10 */
-  onAddSkill?: () => void;
+  onAddSkill?: (skill: SkillRow) => void;
   freeSkillLevels?: number;
   onAddSkillLevels?: (skillName: string, levels: number) => void;
 };
@@ -52,13 +53,18 @@ function SkillsTable({
     anchorEl: HTMLElement;
     skillName: string;
   } | null>(null);
+  const [draftSkill, setDraftSkill] = useState<{
+    name: string;
+    level: string;
+    effect: string;
+  } | null>(null);
 
   const tableTotal = rows.reduce((sum, row) => {
     const n = parseInt(row.level ?? '0', 10);
     return sum + (isNaN(n) ? 0 : n);
   }, 0);
   const headingLabel = `${label ?? title} • ${tableTotal}/10`;
-  const showAddSkillButton = !!onAddSkill && tableTotal < 10;
+  const showAddSkillButton = !!onAddSkill && tableTotal < 10 && !draftSkill;
   const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
   const activeSkillLevel = activeSkill ? parseInt(activeSkill.level ?? '0', 10) : 0;
   const activeSkillMax = activeSkill?.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
@@ -81,6 +87,20 @@ function SkillsTable({
     const delta = targetLevel - currentLevel;
     if (delta > 0) onAddSkillLevels(menuState.skillName, delta);
     closeLevelMenu();
+  }
+
+  function commitDraftSkill() {
+    if (!draftSkill || !onAddSkill) return;
+    onAddSkill({
+      name: draftSkill.name.trim() || 'New Skill',
+      level: draftSkill.level || '0',
+      effect: draftSkill.effect.trim(),
+    });
+    setDraftSkill(null);
+  }
+
+  function cancelDraftSkill() {
+    setDraftSkill(null);
   }
 
   return (
@@ -184,13 +204,107 @@ function SkillsTable({
                   </TableRow>
                 );
               })}
+              {draftSkill && (
+                <TableRow data-pw="skill-draft-row">
+                  <TableCell>
+                    <InputBase
+                      autoFocus
+                      value={draftSkill.name}
+                      onChange={(e) =>
+                        setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))
+                      }
+                      placeholder="Skill name"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitDraftSkill();
+                        if (e.key === 'Escape') cancelDraftSkill();
+                      }}
+                      sx={{
+                        fontSize: '0.74rem',
+                        color: fabUTokens.color.textPrimary,
+                        width: '100%',
+                        '& input': { p: 0 },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ width: 52 }}>
+                    <select
+                      value={draftSkill.level}
+                      onChange={(e) =>
+                        setDraftSkill((d) => (d ? { ...d, level: e.target.value } : d))
+                      }
+                      style={{
+                        fontSize: '0.74rem',
+                        color: fabUTokens.color.textPrimary,
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                        cursor: 'pointer',
+                        width: '100%',
+                      }}
+                    >
+                      {Array.from(
+                        {
+                          length:
+                            Math.min(DEFAULT_SKILL_MAX_LEVEL, Math.max(1, freeSkillLevels)) + 1,
+                        },
+                        (_, i) => i,
+                      ).map((lvl) => (
+                        <option key={lvl} value={String(lvl)}>
+                          {lvl}
+                        </option>
+                      ))}
+                    </select>
+                  </TableCell>
+                  <TableCell>
+                    <InputBase
+                      value={draftSkill.effect}
+                      onChange={(e) =>
+                        setDraftSkill((d) => (d ? { ...d, effect: e.target.value } : d))
+                      }
+                      placeholder="Effect"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitDraftSkill();
+                        if (e.key === 'Escape') cancelDraftSkill();
+                      }}
+                      sx={{
+                        fontSize: '0.74rem',
+                        color: fabUTokens.color.textPrimary,
+                        width: '100%',
+                        '& input': { p: 0 },
+                      }}
+                    />
+                  </TableCell>
+                  {onAddSkillLevels ? (
+                    <TableCell align="right" sx={{ width: 38, px: '6px !important' }}>
+                      <IconButton
+                        size="small"
+                        onClick={commitDraftSkill}
+                        sx={{
+                          mr: '5px',
+                          p: 0.5,
+                          borderRadius: '50%',
+                          flexShrink: 0,
+                          color: fabUTokens.color.brand,
+                          '&:hover': {
+                            color: fabUTokens.color.brandStrong,
+                            bgcolor: 'rgba(49, 92, 77, 0.1)',
+                          },
+                        }}
+                      >
+                        <CheckIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </TableCell>
+                  ) : null}
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>
         {showAddSkillButton ? (
           <Box
             data-pw="add-skill-button"
-            onClick={onAddSkill}
+            onClick={() => setDraftSkill({ name: '', level: '1', effect: '' })}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -202,6 +316,7 @@ function SkillsTable({
               color: fabUTokens.color.highlight,
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '8px',
+              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
             }}
           >
             <AddIcon sx={{ fontSize: '1rem' }} />

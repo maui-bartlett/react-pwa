@@ -217,7 +217,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                   color: selected ? '#ffffff' : fabUTokens.color.textPrimary,
                   px: 0.8,
                   py: 0,
-                  minHeight: 18,
+                  minHeight: 26,
                   minWidth: 52,
                   display: 'inline-flex',
                   alignItems: 'center',

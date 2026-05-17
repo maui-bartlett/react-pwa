@@ -269,16 +269,39 @@ function FabU() {
     closeClassPicker();
   };
 
-  const handleAddSkill = (className: string) => {
+  const handleAddSkill = (className: string, skill: import('@/components/fab-u').SkillRow) =>
     setCharacter((c) => ({
       ...c,
       skillGroups: c.skillGroups.map((g) =>
+        g.className === className ? { ...g, skills: [...g.skills, skill] } : g,
+      ),
+    }));
+
+  const getMagicSkillLevel = (className: string): number => {
+    const group = character.skillGroups.find((g) => g.className === className);
+    if (!group) return 0;
+    const magicSkill = group.skills.find((s) => (s.maxLevel ?? 5) > 5);
+    if (!magicSkill) return 0;
+    return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
+  };
+
+  const handleAddSpell = (className: string, spell: import('@/components/fab-u').SpellRow) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
+        g.className === className ? { ...g, spells: [...g.spells, spell] } : g,
+      ),
+    }));
+
+  const handleUpdateSpellEffect = (className: string, spellName: string, effect: string) =>
+    setCharacter((c) => ({
+      ...c,
+      spellGroups: c.spellGroups.map((g) =>
         g.className === className
-          ? { ...g, skills: [...g.skills, { name: 'New Skill', level: '1', effect: '' }] }
+          ? { ...g, spells: g.spells.map((s) => (s.name === spellName ? { ...s, effect } : s)) }
           : g,
       ),
     }));
-  };
   const handleAddSkillLevels = (className: string, skillName: string, levels: number) => {
     setCharacter((c) => {
       const allocatedLevels = c.skillGroups.reduce(
@@ -684,7 +707,9 @@ function FabU() {
                     onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
                     clickableSkills={['Entropic Magic']}
                     onAddSkill={
-                      canAddMoreSkills ? () => handleAddSkill(group.className) : undefined
+                      canAddMoreSkills
+                        ? (skill) => handleAddSkill(group.className, skill)
+                        : undefined
                     }
                     freeSkillLevels={freeSkillLevels}
                     onAddSkillLevels={
@@ -708,6 +733,11 @@ function FabU() {
                 title={`${group.className} Spells`}
                 rows={group.spells}
                 onCastSpell={handleCastSpell}
+                totalMagicLevels={getMagicSkillLevel(group.className)}
+                onAddSpell={(spell) => handleAddSpell(group.className, spell)}
+                onUpdateSpellEffect={(spellName, effect) =>
+                  handleUpdateSpellEffect(group.className, spellName, effect)
+                }
               />
             ))}
           </>
@@ -743,7 +773,9 @@ function FabU() {
                 rows={group.skills}
                 onSkillClick={group.className === 'Entropist' ? handleSkillClick : undefined}
                 clickableSkills={['Entropic Magic']}
-                onAddSkill={canAddMoreSkills ? () => handleAddSkill(group.className) : undefined}
+                onAddSkill={
+                  canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
+                }
                 freeSkillLevels={freeSkillLevels}
                 onAddSkillLevels={
                   mastered
@@ -792,6 +824,11 @@ function FabU() {
             title={`${group.className} Spells`}
             rows={group.spells}
             onCastSpell={handleCastSpell}
+            totalMagicLevels={getMagicSkillLevel(group.className)}
+            onAddSpell={(spell) => handleAddSpell(group.className, spell)}
+            onUpdateSpellEffect={(spellName, effect) =>
+              handleUpdateSpellEffect(group.className, spellName, effect)
+            }
           />
         ))}
       </>
@@ -837,7 +874,7 @@ function FabU() {
       '& .MuiOutlinedInput-root': {
         fontSize: '0.84rem',
         lineHeight: 1.7,
-        color: fabUTokens.color.textSecondary,
+        color: fabUTokens.isDark ? fabUTokens.color.textPrimary : fabUTokens.color.textSecondary,
         bgcolor: fabUTokens.color.surface,
         borderRadius: '10px',
         boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
@@ -862,7 +899,7 @@ function FabU() {
         }),
         py: `${1.05 / 0.84}rem`,
         px: `${1.2 / 0.84}rem`,
-        color: fabUTokens.color.textSecondary,
+        color: fabUTokens.isDark ? fabUTokens.color.textPrimary : fabUTokens.color.textSecondary,
         alignSelf: 'center',
       },
     };
@@ -920,7 +957,9 @@ function FabU() {
                         py: `${0.72 / 0.84}rem`,
                         px: `${1 / 0.84}rem`,
                         // brandText = brand green in light, lightened green in dark for AA contrast
-                        color: fabUTokens.color.brandText,
+                        color: fabUTokens.isDark
+                          ? fabUTokens.color.highlight
+                          : fabUTokens.color.brandText,
                         fontWeight: 700,
                       },
                     }}
@@ -930,7 +969,9 @@ function FabU() {
                     variant="body2"
                     sx={{
                       // brandText = brand green in light, lightened green in dark for AA contrast
-                      color: fabUTokens.color.brandText,
+                      color: fabUTokens.isDark
+                        ? fabUTokens.color.highlight
+                        : fabUTokens.color.brandText,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
