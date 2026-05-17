@@ -13,7 +13,7 @@ import InputBase from '@mui/material/InputBase';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -65,7 +65,7 @@ type SwipeableSpellRowProps = {
   editDraft: EditingSpellState | null;
   onEditDraftChange: (draft: EditingSpellState) => void;
   onCommitEdit: () => void;
-  onCancelEdit: () => void;
+  onRevertEdit: () => void;
 };
 
 function SwipeableSpellRow({
@@ -80,7 +80,7 @@ function SwipeableSpellRow({
   editDraft,
   onEditDraftChange,
   onCommitEdit,
-  onCancelEdit,
+  onRevertEdit,
 }: SwipeableSpellRowProps) {
   const fabUTokens = useFabUTokens();
   const [snapX, setSnapX] = useState(0);
@@ -114,9 +114,11 @@ function SwipeableSpellRow({
   }
 
   const swipeHandlers = useSwipeable({
-    onSwiping: ({ deltaX }) => {
-      setSwiping(true);
-      committedRef.current = true;
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
       setCurrentDeltaX(deltaX);
     },
     onSwiped: ({ dir, absX }) => {
@@ -235,17 +237,65 @@ function SwipeableSpellRow({
           <Box
             data-pw="spell-row"
             sx={{
+              position: 'relative',
               display: 'flex',
               alignItems: 'center',
               px: 1.2,
               py: 0.7,
               height: 46,
               bgcolor: fabUTokens.color.surface,
-              position: 'relative',
               zIndex: 1,
               gap: 0.5,
             }}
           >
+            {/* Floating confirm/cancel bar */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: -28,
+                right: 8,
+                zIndex: 10,
+                display: 'flex',
+                gap: 0.5,
+              }}
+            >
+              <Box
+                component="button"
+                type="button"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onCommitEdit();
+                }}
+                sx={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <CheckCircle size={22} color="#4caf50" />
+              </Box>
+              <Box
+                component="button"
+                type="button"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onRevertEdit();
+                }}
+                sx={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <XCircle size={22} color="#d32f2f" />
+              </Box>
+            </Box>
             <Box sx={{ flex: 2, minWidth: 0 }}>
               <InputBase
                 autoFocus
@@ -253,7 +303,7 @@ function SwipeableSpellRow({
                 onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onCommitEdit();
-                  if (e.key === 'Escape') onCancelEdit();
+                  if (e.key === 'Escape') onRevertEdit();
                 }}
                 placeholder="Spell name"
                 sx={{
@@ -273,7 +323,7 @@ function SwipeableSpellRow({
                 onChange={(e) => onEditDraftChange({ ...editDraft, cost: e.target.value })}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onCommitEdit();
-                  if (e.key === 'Escape') onCancelEdit();
+                  if (e.key === 'Escape') onRevertEdit();
                 }}
                 placeholder="0 MP"
                 sx={{
@@ -289,7 +339,7 @@ function SwipeableSpellRow({
                 onChange={(e) => onEditDraftChange({ ...editDraft, target: e.target.value })}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onCommitEdit();
-                  if (e.key === 'Escape') onCancelEdit();
+                  if (e.key === 'Escape') onRevertEdit();
                 }}
                 placeholder="1"
                 sx={{
@@ -572,6 +622,7 @@ function SpellsTable({
   const [draftSpell, setDraftSpell] = useState<DraftSpell | null>(null);
   const [editingSpell, setEditingSpell] = useState<EditingSpellState | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const originalSpellDataRef = useRef<SpellRow | null>(null);
 
   const displayLabel =
     totalMagicLevels !== undefined
@@ -607,6 +658,7 @@ function SpellsTable({
   }
 
   function startEditingSpell(row: SpellRow) {
+    originalSpellDataRef.current = row;
     setExpandedRow(null);
     setEditingSpell({
       originalName: row.name,
@@ -618,6 +670,14 @@ function SpellsTable({
   }
 
   function commitSpellEdit() {
+    setEditingSpell(null);
+  }
+
+  function revertSpellEdit() {
+    const original = originalSpellDataRef.current;
+    if (original && onEditSpell && editingSpell) {
+      onEditSpell(editingSpell.originalName, original);
+    }
     setEditingSpell(null);
   }
 
@@ -703,7 +763,7 @@ function SpellsTable({
                   }
                 }}
                 onCommitEdit={commitSpellEdit}
-                onCancelEdit={() => setEditingSpell(null)}
+                onRevertEdit={revertSpellEdit}
               />
             </Fragment>
           );

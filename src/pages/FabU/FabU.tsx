@@ -103,6 +103,7 @@ function FabU() {
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
+  const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
   const [, setStatusEffects] = useAtom(statusEffectsState);
@@ -683,6 +684,8 @@ function FabU() {
                     setPendingCombatSpellScroll(true);
                   }
                   if (action === 'Inventory') {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setInventoryAnchorDir(rect.top > window.innerHeight / 2 ? 'above' : 'below');
                     setInventoryAnchorEl(event.currentTarget);
                   }
                 }}
@@ -714,13 +717,21 @@ function FabU() {
           open={Boolean(inventoryAnchorEl)}
           anchorEl={inventoryAnchorEl}
           onClose={() => setInventoryAnchorEl(null)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          anchorOrigin={
+            inventoryAnchorDir === 'above'
+              ? { vertical: 'top', horizontal: 'right' }
+              : { vertical: 'bottom', horizontal: 'right' }
+          }
+          transformOrigin={
+            inventoryAnchorDir === 'above'
+              ? { vertical: 'bottom', horizontal: 'right' }
+              : { vertical: 'top', horizontal: 'right' }
+          }
           marginThreshold={12}
           disableRestoreFocus
           PaperProps={{
             sx: {
-              mb: '5px',
+              ...(inventoryAnchorDir === 'above' ? { mb: '5px' } : { mt: '5px' }),
               p: 1,
               width: 200,
               bgcolor: fabUTokens.color.surface,

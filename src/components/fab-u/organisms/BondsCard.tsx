@@ -83,9 +83,11 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   }
 
   const swipeHandlers = useSwipeable({
-    onSwiping: ({ deltaX }) => {
-      setSwiping(true);
-      committedRef.current = true;
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
       setCurrentDeltaX(deltaX);
     },
     onSwiped: ({ dir, absX }) => {
@@ -413,6 +415,20 @@ function BondsCard({
               />
               <Box sx={{ minHeight: 18 }} />
             </Stack>
+            {/* Placeholder icon button — matches BondRow trailing IconButton to keep row height/width identical */}
+            <IconButton
+              size="small"
+              disabled
+              sx={{
+                color: 'transparent',
+                p: 0.5,
+                borderRadius: '50%',
+                flexShrink: 0,
+                visibility: 'hidden',
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
           </Stack>
         ) : (
           <Box

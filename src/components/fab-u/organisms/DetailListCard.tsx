@@ -61,9 +61,11 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
   }
 
   const swipeHandlers = useSwipeable({
-    onSwiping: ({ deltaX }) => {
-      setSwiping(true);
-      committedRef.current = true;
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
       setCurrentDeltaX(deltaX);
     },
     onSwiped: ({ dir, absX }) => {

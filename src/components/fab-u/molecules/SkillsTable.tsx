@@ -11,7 +11,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -52,7 +52,7 @@ type SwipeableSkillRowProps = {
   editDraft: EditingSkillState | null;
   onEditDraftChange: (draft: EditingSkillState) => void;
   onCommitEdit: () => void;
-  onCancelEdit: () => void;
+  onRevertEdit: () => void;
   onStartEdit: () => void;
   onDelete?: () => void;
   clickable: boolean;
@@ -68,7 +68,7 @@ function SwipeableSkillRow({
   editDraft,
   onEditDraftChange,
   onCommitEdit,
-  onCancelEdit,
+  onRevertEdit,
   onStartEdit,
   onDelete,
   clickable,
@@ -96,9 +96,11 @@ function SwipeableSkillRow({
   }
 
   const swipeHandlers = useSwipeable({
-    onSwiping: ({ deltaX }) => {
-      setSwiping(true);
-      committedRef.current = true;
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
       setCurrentDeltaX(deltaX);
     },
     onSwiped: ({ dir, absX }) => {
@@ -152,6 +154,7 @@ function SwipeableSkillRow({
       <Box
         data-pw="skill-table-row"
         sx={{
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
           px: 1.2,
@@ -162,6 +165,54 @@ function SwipeableSkillRow({
           gap: 0.5,
         }}
       >
+        {/* Floating confirm/cancel bar */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -28,
+            right: 8,
+            zIndex: 10,
+            display: 'flex',
+            gap: 0.5,
+          }}
+        >
+          <Box
+            component="button"
+            type="button"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onCommitEdit();
+            }}
+            sx={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <CheckCircle size={22} color="#4caf50" />
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onRevertEdit();
+            }}
+            sx={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <XCircle size={22} color="#d32f2f" />
+          </Box>
+        </Box>
         <Box sx={{ flex: 1.5, minWidth: 0 }}>
           <InputBase
             autoFocus
@@ -169,7 +220,7 @@ function SwipeableSkillRow({
             onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
             onKeyDown={(e) => {
               if (e.key === 'Enter') onCommitEdit();
-              if (e.key === 'Escape') onCancelEdit();
+              if (e.key === 'Escape') onRevertEdit();
             }}
             placeholder="Skill name"
             sx={{
@@ -212,7 +263,7 @@ function SwipeableSkillRow({
             onChange={(e) => onEditDraftChange({ ...editDraft, effect: e.target.value })}
             onKeyDown={(e) => {
               if (e.key === 'Enter') onCommitEdit();
-              if (e.key === 'Escape') onCancelEdit();
+              if (e.key === 'Escape') onRevertEdit();
             }}
             placeholder="Effect"
             sx={{
@@ -390,6 +441,7 @@ function SkillsTable({
     effect: string;
   } | null>(null);
   const [editingSkill, setEditingSkill] = useState<EditingSkillState | null>(null);
+  const originalSkillDataRef = useRef<SkillRow | null>(null);
 
   const tableTotal = rows.reduce((sum, row) => {
     const n = parseInt(row.level ?? '0', 10);
@@ -432,6 +484,7 @@ function SkillsTable({
   }
 
   function startEditingSkill(row: SkillRow) {
+    originalSkillDataRef.current = row;
     setEditingSkill({
       originalName: row.name,
       name: row.name,
@@ -441,6 +494,14 @@ function SkillsTable({
   }
 
   function commitSkillEdit() {
+    setEditingSkill(null);
+  }
+
+  function revertSkillEdit() {
+    const original = originalSkillDataRef.current;
+    if (original && onEditSkill && editingSkill) {
+      onEditSkill(editingSkill.originalName, original);
+    }
     setEditingSkill(null);
   }
 
@@ -508,7 +569,7 @@ function SkillsTable({
                   }
                 }}
                 onCommitEdit={commitSkillEdit}
-                onCancelEdit={() => setEditingSkill(null)}
+                onRevertEdit={revertSkillEdit}
                 onStartEdit={() => startEditingSkill(row)}
                 onDelete={onDeleteSkill ? () => onDeleteSkill(row.name) : undefined}
                 clickable={clickable}
