@@ -197,7 +197,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
             }}
             sx={{
               flex: 1,
-              bgcolor: fabUTokens.color.brand,
+              bgcolor: '#3d7060',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

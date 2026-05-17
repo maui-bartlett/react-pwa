@@ -37,6 +37,8 @@ type SkillsTableProps = {
   onAddSkill?: (skill: SkillRow) => void;
   freeSkillLevels?: number;
   onAddSkillLevels?: (skillName: string, levels: number) => void;
+  /** When true, the add-level button is hidden even if onAddSkillLevels is provided */
+  classMastered?: boolean;
   onDeleteSkill?: (skillName: string) => void;
   onEditSkill?: (oldName: string, updatedSkill: SkillRow) => void;
   /** Called when the user edits the full description in the accordion panel */
@@ -264,7 +266,7 @@ function SwipeableSkillRow({
               }}
               sx={{
                 flex: 1,
-                bgcolor: fabUTokens.color.brand,
+                bgcolor: '#3d7060',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -482,7 +484,7 @@ function SwipeableSkillRow({
                     }}
                     sx={{
                       flex: 1,
-                      bgcolor: fabUTokens.color.brand,
+                      bgcolor: '#3d7060',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -572,6 +574,7 @@ function SkillsTable({
   onAddSkill,
   freeSkillLevels = 0,
   onAddSkillLevels,
+  classMastered = false,
   onDeleteSkill,
   onEditSkill,
   onUpdateSkillDescription,
@@ -736,7 +739,7 @@ function SkillsTable({
               Math.max(0, maxLevel - (isNaN(level) ? 0 : level)),
               freeSkillLevels,
             );
-            const canAddLevels = !!onAddSkillLevels && availableForSkill > 0;
+            const canAddLevels = !!onAddSkillLevels && !classMastered && availableForSkill > 0;
             const isEditing = editingSkill?.originalName === row.name;
             return (
               <SwipeableSkillRow

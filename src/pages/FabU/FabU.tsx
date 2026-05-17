@@ -45,7 +45,12 @@ import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
-import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
+import {
+  MAX_CHARACTER_LEVEL,
+  characterState,
+  derivedStatusEffectsState,
+  statusEffectsState,
+} from './atoms';
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
 
@@ -130,11 +135,12 @@ function FabU() {
 
       return {
         ...c,
-        level: c.level + Math.floor(v / c.totalXP),
+        level: Math.min(c.level + Math.floor(v / c.totalXP), MAX_CHARACTER_LEVEL),
         currentXP: v % c.totalXP,
       };
     });
-  const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
+  const setLevel = (v: number) =>
+    setCharacter((c) => ({ ...c, level: Math.min(Math.max(1, v), MAX_CHARACTER_LEVEL) }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
   // Spend 100 Zennit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
   const handleBuyIP = () =>
@@ -557,7 +563,13 @@ function FabU() {
             pw: 'ov-xp',
             onChange: setCurrentXP,
           },
-          { label: 'LVL', value: String(character.level), pw: 'ov-level', onChange: setLevel },
+          {
+            label: 'LVL',
+            value: String(character.level),
+            pw: 'ov-level',
+            onChange: setLevel,
+            maxValue: MAX_CHARACTER_LEVEL,
+          },
         ]}
       />
     );
@@ -828,11 +840,11 @@ function FabU() {
                       textTransform: 'none',
                       fontWeight: 700,
                       fontSize: '0.78rem',
-                      bgcolor: '#3d7060',
+                      bgcolor: alpha('#3d7060', 0.82),
                       color: '#fff',
                       boxShadow: 'none',
                       '&:hover': {
-                        bgcolor: '#3d7060',
+                        bgcolor: alpha('#3d7060', 0.82),
                         filter: 'brightness(0.88)',
                         boxShadow: 'none',
                       },
@@ -1030,38 +1042,32 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <>
-            {character.skillGroups
-              .filter((g) => g.className !== 'Tinkerer')
-              .map((group) => {
-                const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
-                return (
-                  <SkillsTable
-                    key={group.className}
-                    label={`${group.className} Skills`}
-                    title={`${group.className} Skills`}
-                    rows={group.skills}
-                    onAddSkill={
-                      canAddMoreSkills
-                        ? (skill) => handleAddSkill(group.className, skill)
-                        : undefined
-                    }
-                    freeSkillLevels={freeSkillLevels}
-                    onAddSkillLevels={
-                      mastered
-                        ? undefined
-                        : (skillName, levels) =>
-                            handleAddSkillLevels(group.className, skillName, levels)
-                    }
-                    onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
-                    onEditSkill={(oldName, updatedSkill) =>
-                      handleEditSkill(group.className, oldName, updatedSkill)
-                    }
-                    onUpdateSkillDescription={(skillName, description) =>
-                      handleUpdateSkillDescription(group.className, skillName, description)
-                    }
-                  />
-                );
-              })}
+            {character.skillGroups.map((group) => {
+              const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
+              return (
+                <SkillsTable
+                  key={group.className}
+                  label={`${group.className} Skills`}
+                  title={`${group.className} Skills`}
+                  rows={group.skills}
+                  onAddSkill={
+                    canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
+                  }
+                  freeSkillLevels={freeSkillLevels}
+                  onAddSkillLevels={(skillName, levels) =>
+                    handleAddSkillLevels(group.className, skillName, levels)
+                  }
+                  classMastered={mastered}
+                  onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
+                  onEditSkill={(oldName, updatedSkill) =>
+                    handleEditSkill(group.className, oldName, updatedSkill)
+                  }
+                  onUpdateSkillDescription={(skillName, description) =>
+                    handleUpdateSkillDescription(group.className, skillName, description)
+                  }
+                />
+              );
+            })}
           </>
         ) : null}
 
@@ -1110,6 +1116,7 @@ function FabU() {
       <>
         {renderProgressStrip()}
         {character.skillGroups.map((group) => {
+          const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
           return (
             <Box
               key={group.className}
@@ -1127,6 +1134,7 @@ function FabU() {
                 onAddSkillLevels={(skillName, levels) =>
                   handleAddSkillLevels(group.className, skillName, levels)
                 }
+                classMastered={mastered}
                 onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
                 onEditSkill={(oldName, updatedSkill) =>
                   handleEditSkill(group.className, oldName, updatedSkill)
