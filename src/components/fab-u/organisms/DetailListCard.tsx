@@ -140,6 +140,15 @@ function SwipeableRow({
     };
   }, []);
 
+  // Reset swipe position when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      setSnapX(0);
+      setCurrentDeltaX(0);
+      setSwiping(false);
+    }
+  }, [isEditing]);
+
   const setRef = (el: HTMLElement | null) => {
     swipeHandlers.ref(el);
     rowElRef.current = el;
@@ -213,8 +222,8 @@ function SwipeableRow({
       )}
 
       <Stack
-        {...swipeHandlers}
-        ref={setRef}
+        {...(!isEditing ? swipeHandlers : {})}
+        ref={!isEditing ? setRef : undefined}
         direction="row"
         justifyContent="space-between"
         gap={2}
@@ -231,9 +240,9 @@ function SwipeableRow({
           py: 1,
           bgcolor: fabUTokens.color.surface,
           boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
-          transform: `translateX(${visualX}px)`,
+          transform: isEditing ? 'none' : `translateX(${visualX}px)`,
           transition: swiping ? 'none' : 'transform 0.22s ease, border-radius 0.22s ease',
-          touchAction: 'pan-y',
+          touchAction: isEditing ? 'auto' : 'pan-y',
           userSelect: 'none',
           cursor: onItemClick ? 'pointer' : 'default',
         }}
@@ -370,7 +379,7 @@ function DetailListCard({
                 alignItems: 'center',
               }}
             >
-              <CheckCircle size={24} color="#4caf50" />
+              <CheckCircle size={28} color="#4caf50" />
             </Box>
             <Box
               component="button"
@@ -385,7 +394,7 @@ function DetailListCard({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={24} color="#d32f2f" />
+              <XCircle size={28} color="#d32f2f" />
             </Box>
           </Box>
         ) : undefined

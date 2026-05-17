@@ -406,7 +406,7 @@ function EquipmentCard({
                 alignItems: 'center',
               }}
             >
-              <CheckCircle size={24} color="#4caf50" />
+              <CheckCircle size={28} color="#4caf50" />
             </Box>
             <Box
               component="button"
@@ -421,7 +421,7 @@ function EquipmentCard({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={24} color="#d32f2f" />
+              <XCircle size={28} color="#d32f2f" />
             </Box>
           </Box>
         ) : undefined
