@@ -166,9 +166,9 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
             sx={{
               color: fabUTokens.color.textPrimary,
               fontWeight: 700,
-              fontSize: '0.8rem',
+              fontSize: '0.92rem',
               lineHeight: 1.2,
-              mr: '8px',
+              mr: '16px',
               whiteSpace: 'pre-line',
               flexShrink: 0,
             }}
