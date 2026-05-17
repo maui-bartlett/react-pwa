@@ -165,15 +165,18 @@ function SkillsTable({
                               openLevelPopover(e, row.name);
                             }}
                             sx={{
-                              width: 26,
-                              height: 26,
                               mr: '5px',
-                              color: '#fff',
-                              bgcolor: fabUTokens.color.brand,
-                              '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                              p: 0.5,
+                              borderRadius: '50%',
+                              flexShrink: 0,
+                              color: fabUTokens.color.textSecondary,
+                              '&:hover': {
+                                color: fabUTokens.color.brandText,
+                                bgcolor: 'rgba(49, 92, 77, 0.1)',
+                              },
                             }}
                           >
-                            <AddIcon sx={{ fontSize: '1rem' }} />
+                            <AddIcon fontSize="small" />
                           </IconButton>
                         ) : null}
                       </TableCell>
