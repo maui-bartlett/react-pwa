@@ -159,6 +159,11 @@ function FabU() {
     }));
   const removeBond = (id: string) =>
     setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
+  const renameBond = (id: string, newName: string) =>
+    setCharacter((c) => ({
+      ...c,
+      bonds: c.bonds.map((b) => (b.id === id ? { ...b, characterName: newName } : b)),
+    }));
   const removeClass = (index: number) => {
     const cls = character.classes[index];
     if (!cls) return;
@@ -639,6 +644,7 @@ function FabU() {
           onToggleType={toggleBondType}
           onAddBond={addBond}
           onRemoveBond={removeBond}
+          onRenameBond={renameBond}
         />
       </>
     );

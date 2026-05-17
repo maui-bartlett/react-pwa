@@ -8,13 +8,12 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
 
-const COMMIT_THRESHOLD = 35;
-const COMMIT_THRESHOLD_EXTRA = 25;
+const SNAP_THRESHOLD = 50;
 const DELETE_RED = '#d32f2f';
 
 type DetailListItem = {
@@ -43,37 +42,42 @@ type SwipeableRowProps = {
 
 function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps) {
   const fabUTokens = useFabUTokens();
-  const [dragX, setDragX] = useState(0);
+  const actionWidth = onItemClick ? 128 : 64;
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const rowElRef = useRef<HTMLElement | null>(null);
-  const commitThresholdRef = useRef(COMMIT_THRESHOLD);
+  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const committedRef = useRef(false);
+
+  const visualX = Math.max(-actionWidth, Math.min(0, snapX + currentDeltaX));
+  const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
 
   function triggerRemove() {
     setRemoving(true);
+    setSnapX(0);
+    setCurrentDeltaX(0);
     setTimeout(() => onRemove(index), 450);
   }
 
   const swipeHandlers = useSwipeable({
     onSwiping: ({ deltaX }) => {
-      if (Math.abs(deltaX) < commitThresholdRef.current) return;
-      committedRef.current = true;
       setSwiping(true);
-      setDragX(Math.min(0, deltaX));
+      committedRef.current = true;
+      setCurrentDeltaX(deltaX);
     },
     onSwiped: ({ dir, absX }) => {
       setSwiping(false);
-      if (
-        committedRef.current &&
-        dir === 'Left' &&
-        absX >= commitThresholdRef.current + COMMIT_THRESHOLD_EXTRA
-      ) {
-        triggerRemove();
-      } else {
-        setDragX(0);
+      if (dir === 'Left' && absX > SNAP_THRESHOLD && snapX === 0) {
+        setSnapX(-actionWidth);
+      } else if (dir === 'Right' && absX > SNAP_THRESHOLD && snapX !== 0) {
+        setSnapX(0);
       }
+      setCurrentDeltaX(0);
+      setTimeout(() => {
+        committedRef.current = false;
+      }, 50);
     },
     trackMouse: true,
     delta: 10,
@@ -87,7 +91,6 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
 
     const onTouchStart = (e: TouchEvent) => {
       touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      commitThresholdRef.current = COMMIT_THRESHOLD;
       committedRef.current = false;
     };
 
@@ -95,7 +98,7 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
       if (!touchOriginRef.current || !e.cancelable) return;
       const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
       const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
-      if (committedRef.current || (dx > dy && dx >= commitThresholdRef.current)) {
+      if (committedRef.current || (dx > dy && dx >= 35)) {
         e.preventDefault();
       }
     };
@@ -113,20 +116,6 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
     rowElRef.current = el;
   };
 
-  const translateX = removing ? '-110%' : `${dragX}px`;
-  const rowTransition = swiping
-    ? 'none'
-    : removing
-      ? 'transform 0.15s ease'
-      : 'transform 0.22s ease';
-
-  const deleteThreshold = commitThresholdRef.current + COMMIT_THRESHOLD_EXTRA;
-  const progress = removing ? 1 : Math.min(Math.abs(dragX) / deleteThreshold, 1);
-  const trashOpacity = progress;
-  const trashScale = 0.6 + progress * 0.4;
-  const iconTransition = swiping ? 'none' : 'opacity 0.22s ease, transform 0.22s ease';
-  const showRedChannel = (swiping && dragX < 0) || removing;
-
   return (
     <Box
       data-pw="detail-list-row"
@@ -139,30 +128,55 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
         transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
       }}
     >
-      {showRedChannel && (
+      {/* Action channel */}
+      {channelVisible && (
         <Box
           sx={{
             position: 'absolute',
-            inset: 0,
-            bgcolor: DELETE_RED,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: actionWidth,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            pr: 1.5,
             zIndex: 0,
           }}
         >
           <Box
-            style={{
-              opacity: trashOpacity,
-              transform: `scale(${trashScale})`,
-              transition: iconTransition,
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerRemove();
+            }}
+            sx={{
+              flex: 1,
+              bgcolor: DELETE_RED,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
             }}
           >
             <Trash2 size={18} color="white" />
           </Box>
+          {onItemClick ? (
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                setSnapX(0);
+                setCurrentDeltaX(0);
+                onItemClick(index);
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: fabUTokens.color.brand,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Pencil size={18} color="white" />
+            </Box>
+          ) : null}
         </Box>
       )}
 
@@ -185,8 +199,8 @@ function SwipeableRow({ item, index, onRemove, onItemClick }: SwipeableRowProps)
           py: 1,
           bgcolor: fabUTokens.color.surface,
           boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
-          transform: `translateX(${translateX})`,
-          transition: rowTransition,
+          transform: `translateX(${visualX}px)`,
+          transition: swiping ? 'none' : 'transform 0.22s ease',
           touchAction: 'pan-y',
           userSelect: 'none',
           cursor: onItemClick ? 'pointer' : 'default',

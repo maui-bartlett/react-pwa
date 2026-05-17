@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
@@ -14,7 +13,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -30,7 +29,8 @@ const ALL_BOND_TYPES: BondType[] = [
   'Hatred',
 ];
 
-const COMMIT_THRESHOLD_EXTRA = 25; // extra px past commitThreshold to trigger delete (total = 60px)
+const ACTION_WIDTH = 128;
+const SNAP_THRESHOLD = 50;
 const DELETE_RED = '#d32f2f';
 const NEGATIVE_BOND_TYPES = new Set<BondType>(['Inferiority', 'Mistrust', 'Hatred']);
 
@@ -42,42 +42,63 @@ type BondRowProps = {
   bond: Bond;
   onOpenMenu: (e: React.MouseEvent<HTMLElement>, bondId: string) => void;
   onRemove: (bondId: string) => void;
-  isTouchDevice: boolean;
+  onRename: (bondId: string, newName: string) => void;
 };
 
-function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
+function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   const fabUTokens = useFabUTokens();
-  const [dragX, setDragX] = useState(0);
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
-  const commitThresholdRef = useRef(35);
+  const touchOriginRef = useRef<{ x: number; y: number } | null>(null);
   const committedRef = useRef(false);
+
+  const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
+  const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
 
   function triggerRemove() {
     setRemoving(true);
+    setSnapX(0);
+    setCurrentDeltaX(0);
     setTimeout(() => onRemove(bond.id), 450);
+  }
+
+  function startEdit() {
+    setSnapX(0);
+    setCurrentDeltaX(0);
+    setNameDraft(bond.characterName);
+    setEditingName(true);
+  }
+
+  function commitEdit() {
+    const name = nameDraft.trim();
+    if (name && name !== bond.characterName) {
+      onRename(bond.id, name);
+    }
+    setEditingName(false);
   }
 
   const swipeHandlers = useSwipeable({
     onSwiping: ({ deltaX }) => {
-      if (Math.abs(deltaX) < commitThresholdRef.current) return;
-      committedRef.current = true;
       setSwiping(true);
-      setDragX(Math.min(0, deltaX));
+      committedRef.current = true;
+      setCurrentDeltaX(deltaX);
     },
     onSwiped: ({ dir, absX }) => {
       setSwiping(false);
-      if (
-        committedRef.current &&
-        dir === 'Left' &&
-        absX >= commitThresholdRef.current + COMMIT_THRESHOLD_EXTRA
-      ) {
-        triggerRemove();
-      } else {
-        setDragX(0);
+      if (dir === 'Left' && absX > SNAP_THRESHOLD && snapX === 0) {
+        setSnapX(-ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > SNAP_THRESHOLD && snapX !== 0) {
+        setSnapX(0);
       }
+      setCurrentDeltaX(0);
+      setTimeout(() => {
+        committedRef.current = false;
+      }, 50);
     },
     trackMouse: true,
     delta: 10,
@@ -85,16 +106,12 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
     touchEventOptions: { passive: true },
   });
 
-  // Non-passive touchmove listener: only block scroll when gesture is horizontal.
-  // react-swipeable's built-in preventScrollOnSwipe calls preventDefault regardless
-  // of direction, which blocks vertical page scroll when the finger starts on a row.
   useEffect(() => {
     const el = rowElRef.current;
     if (!el) return;
 
     const onTouchStart = (e: TouchEvent) => {
       touchOriginRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      commitThresholdRef.current = 35;
       committedRef.current = false;
     };
 
@@ -102,7 +119,7 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
       if (!touchOriginRef.current || !e.cancelable) return;
       const dx = Math.abs(e.touches[0].clientX - touchOriginRef.current.x);
       const dy = Math.abs(e.touches[0].clientY - touchOriginRef.current.y);
-      if (committedRef.current || (dx > dy && dx >= commitThresholdRef.current)) {
+      if (committedRef.current || (dx > dy && dx >= 35)) {
         e.preventDefault();
       }
     };
@@ -115,26 +132,10 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
     };
   }, []);
 
-  // Combine react-swipeable's ref with our local ref for the touch listener.
   const setRef = (el: HTMLElement | null) => {
     swipeHandlers.ref(el);
     rowElRef.current = el;
   };
-
-  const translateX = removing ? '-110%' : `${dragX}px`;
-  const rowTransition = swiping
-    ? 'none'
-    : removing
-      ? 'transform 0.15s ease'
-      : 'transform 0.22s ease';
-
-  // Progress drives the red channel's trash icon fade + scale.
-  const deleteThreshold = commitThresholdRef.current + COMMIT_THRESHOLD_EXTRA;
-  const progress = removing ? 1 : Math.min(Math.abs(dragX) / deleteThreshold, 1);
-  const trashOpacity = progress;
-  const trashScale = 0.6 + progress * 0.4;
-  const iconTransition = swiping ? 'none' : 'opacity 0.22s ease, transform 0.22s ease';
-  const showRedChannel = (swiping && dragX < 0) || removing;
 
   return (
     <Box
@@ -148,32 +149,52 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
         transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
       }}
     >
-      {/* Red delete channel — sits below the card, revealed as it slides left */}
-      {showRedChannel && (
+      {/* Action channel */}
+      {channelVisible && (
         <Box
-          data-pw={`bond-red-channel-${bond.id}`}
           sx={{
             position: 'absolute',
-            inset: 0,
-            bgcolor: DELETE_RED,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: ACTION_WIDTH,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            pr: 1.5,
             zIndex: 0,
           }}
         >
           <Box
-            data-pw={`bond-trash-${bond.id}`}
-            style={{
-              opacity: trashOpacity,
-              transform: `scale(${trashScale})`,
-              transition: iconTransition,
+            data-pw={`bond-delete-${bond.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerRemove();
+            }}
+            sx={{
+              flex: 1,
+              bgcolor: DELETE_RED,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
             }}
           >
             <Trash2 size={18} color="white" />
+          </Box>
+          <Box
+            data-pw={`bond-edit-${bond.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              startEdit();
+            }}
+            sx={{
+              flex: 1,
+              bgcolor: fabUTokens.color.brand,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Pencil size={18} color="white" />
           </Box>
         </Box>
       )}
@@ -194,20 +215,41 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
           py: 0.85,
           bgcolor: fabUTokens.color.surface,
           boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
-          transform: `translateX(${translateX})`,
-          transition: rowTransition,
+          transform: `translateX(${visualX}px)`,
+          transition: swiping ? 'none' : 'transform 0.22s ease',
           touchAction: 'pan-y',
           userSelect: 'none',
-          '&:hover .bond-delete-icon': { opacity: 1 },
         }}
       >
         <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
-          <Typography
-            variant="body2"
-            sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
-          >
-            {bond.characterName}
-          </Typography>
+          {editingName ? (
+            <InputBase
+              autoFocus
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur();
+                if (e.key === 'Escape') setEditingName(false);
+              }}
+              sx={{
+                '& input': {
+                  p: 0,
+                  fontWeight: 700,
+                  ...scaledEditableTextStyle(0.9, { lineHeight: 1.5, stretch: true }),
+                  color: fabUTokens.color.textPrimary,
+                  lineHeight: 1.5,
+                },
+              }}
+            />
+          ) : (
+            <Typography
+              variant="body2"
+              sx={{ color: fabUTokens.color.textPrimary, fontWeight: 700, fontSize: '0.9rem' }}
+            >
+              {bond.characterName}
+            </Typography>
+          )}
           {bond.types.length > 0 ? (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {bond.types.map((t) => (
@@ -253,31 +295,6 @@ function BondRow({ bond, onOpenMenu, onRemove, isTouchDevice }: BondRowProps) {
         >
           <AddIcon fontSize="small" />
         </IconButton>
-        {!isTouchDevice && (
-          <IconButton
-            className="bond-delete-icon"
-            data-pw={`bond-delete-${bond.id}`}
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              triggerRemove();
-            }}
-            sx={{
-              opacity: 0,
-              color: 'rgba(180, 50, 50, 0.6)',
-              p: 0.5,
-              borderRadius: '50%',
-              flexShrink: 0,
-              transition: 'opacity 0.15s',
-              '&:hover': {
-                color: 'rgba(180, 50, 50, 0.9)',
-                bgcolor: 'rgba(180, 50, 50, 0.08)',
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
       </Stack>
     </Box>
   );
@@ -288,6 +305,7 @@ type BondsCardProps = {
   onToggleType: (bondId: string, type: BondType) => void;
   onAddBond: (characterName: string) => void;
   onRemoveBond: (bondId: string) => void;
+  onRenameBond: (bondId: string, newName: string) => void;
   label?: string;
 };
 
@@ -296,6 +314,7 @@ function BondsCard({
   onToggleType,
   onAddBond,
   onRemoveBond,
+  onRenameBond,
   label = 'Bonds',
 }: BondsCardProps) {
   const fabUTokens = useFabUTokens();
@@ -303,13 +322,6 @@ function BondsCard({
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const isTouchDevice = useMemo(
-    () =>
-      typeof window !== 'undefined' &&
-      window.matchMedia('(hover: none) and (pointer: coarse)').matches,
-    [],
-  );
 
   function openMenu(e: React.MouseEvent<HTMLElement>, bondId: string) {
     e.stopPropagation();
@@ -355,7 +367,7 @@ function BondsCard({
             bond={bond}
             onOpenMenu={openMenu}
             onRemove={onRemoveBond}
-            isTouchDevice={isTouchDevice}
+            onRename={onRenameBond}
           />
         ))}
 
