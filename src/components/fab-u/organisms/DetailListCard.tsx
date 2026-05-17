@@ -6,6 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { Trash2 } from 'lucide-react';
 
@@ -320,7 +321,7 @@ function DetailListCard({
               alignItems: 'center',
               gap: 1,
               color: fabUTokens.color.highlight,
-              bgcolor: fabUTokens.color.surfaceMuted,
+              bgcolor: alpha(fabUTokens.color.highlight, 0.12),
               cursor: 'pointer',
             }}
           >
