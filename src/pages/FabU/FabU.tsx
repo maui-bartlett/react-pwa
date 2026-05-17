@@ -881,6 +881,7 @@ function FabU() {
             onToggleType={toggleBondType}
             onAddBond={addBond}
             onRemoveBond={removeBond}
+            onRenameBond={renameBond}
           />
         ) : null}
 
