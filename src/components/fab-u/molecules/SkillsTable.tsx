@@ -871,7 +871,7 @@ function SkillsTable({
               color: fabUTokens.color.highlight,
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '8px',
-              bgcolor: 'transparent',
+              bgcolor: fabUTokens.color.surface,
             }}
           >
             <AddIcon sx={{ fontSize: '1rem' }} />

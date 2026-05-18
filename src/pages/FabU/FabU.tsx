@@ -1201,7 +1201,7 @@ function FabU() {
                 transform: 'translateY(-50%)',
                 display: 'inline-flex',
                 borderRadius: '7px',
-                bgcolor: fabUTokens.color.highlight,
+                bgcolor: fabUTokens.color.labelBg,
                 px: 1.05,
                 py: 0.36,
                 pointerEvents: 'none',
@@ -1210,12 +1210,11 @@ function FabU() {
               <Typography
                 variant="caption"
                 sx={{
-                  color: '#ffffff',
+                  color: fabUTokens.color.labelFg,
                   fontWeight: 700,
                   fontSize: '0.6rem',
                   letterSpacing: '0.055em',
                   textTransform: 'uppercase',
-                  lineHeight: 1,
                 }}
               >
                 + Class • 0 / 10
@@ -1229,7 +1228,7 @@ function FabU() {
                 borderRadius: '7px',
                 left: 10,
                 right: 10,
-                height: 92,
+                height: 82,
                 top: '50%',
                 transform: 'translateY(calc(-50% + 10px))',
                 opacity: 0.45,

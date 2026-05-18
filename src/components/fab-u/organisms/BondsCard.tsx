@@ -457,7 +457,7 @@ function BondsCard({
               alignItems: 'center',
               gap: 1,
               color: fabUTokens.color.highlight,
-              bgcolor: 'transparent',
+              bgcolor: fabUTokens.color.surface,
               cursor: 'pointer',
             }}
           >

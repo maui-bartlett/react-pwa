@@ -477,7 +477,7 @@ function SwipeableSpellRow({
       {/* Expand panel */}
       {!isEditing && (
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
-          <Box sx={{ px: 1.2, pb: 0 }}>
+          <Box sx={{ px: 1.2, pb: 0, bgcolor: fabUTokens.color.surface }}>
             <Box
               sx={{
                 display: 'flex',
@@ -937,7 +937,7 @@ function SpellsTable({
             color: fabUTokens.color.highlight,
             border: `1px dashed ${fabUTokens.color.highlight}`,
             borderRadius: '8px',
-            bgcolor: 'transparent',
+            bgcolor: fabUTokens.color.surface,
           }}
         >
           <AddIcon sx={{ fontSize: '1rem' }} />
