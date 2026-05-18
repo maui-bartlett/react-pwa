@@ -899,7 +899,7 @@ function SkillsTable({
               backgroundImage: 'none',
               borderRadius: '10px',
               boxShadow: '0 4px 16px rgba(31, 42, 38, 0.14)',
-              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
               minWidth: 100,
             },
           } as Record<string, unknown>,

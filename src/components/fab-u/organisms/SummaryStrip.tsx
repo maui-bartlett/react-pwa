@@ -83,7 +83,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
               sx={{
                 border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : tc ? alpha(tc, 0.5) : fabUTokens.color.border}`,
                 borderRadius: '9px',
-                bgcolor: fabUTokens.color.pillSurface,
+                bgcolor: tc && fabUTokens.isDark ? alpha(tc, 0.07) : fabUTokens.color.pillSurface,
                 boxShadow: fabUTokens.shadow.card,
                 display: 'flex',
                 alignItems: 'center',

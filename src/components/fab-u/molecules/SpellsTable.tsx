@@ -609,7 +609,7 @@ function SwipeableSpellRow({
                   textTransform: 'none',
                   boxShadow: 'none',
                   mr: 1,
-                  border: '1px solid rgba(255,255,255,0.5)',
+                  border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.65)'}`,
                   '&:hover': { bgcolor: '#b09040', boxShadow: 'none' },
                 }}
               >

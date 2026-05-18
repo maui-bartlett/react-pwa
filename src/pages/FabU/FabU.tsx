@@ -849,7 +849,7 @@ function FabU() {
                       bgcolor: '#3d7060',
                       color: '#fff',
                       boxShadow: 'none',
-                      border: '1px solid rgba(255,255,255,0.45)',
+                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'}`,
                       '&:hover': {
                         bgcolor: '#3d7060',
                         filter: 'brightness(0.88)',
@@ -891,6 +891,7 @@ function FabU() {
                     bgcolor: fabUTokens.color.highlight,
                     color: '#ffffff',
                     boxShadow: 'none',
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'}`,
                     '&:hover': {
                       bgcolor: fabUTokens.color.highlight,
                       filter: 'brightness(0.88)',
@@ -917,6 +918,7 @@ function FabU() {
                     bgcolor: fabUTokens.color.success,
                     color: '#ffffff',
                     boxShadow: 'none',
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'}`,
                     '&:hover': {
                       bgcolor: fabUTokens.color.success,
                       filter: 'brightness(0.88)',
@@ -1188,7 +1190,7 @@ function FabU() {
               <Typography
                 variant="caption"
                 sx={{
-                  color: fabUTokens.color.highlightFg,
+                  color: '#ffffff',
                   fontWeight: 700,
                   fontSize: '0.6rem',
                   letterSpacing: '0.055em',
@@ -1209,22 +1211,37 @@ function FabU() {
                 right: 10,
                 height: 92,
                 top: '50%',
-                transform: 'translateY(-50%)',
+                transform: 'translateY(calc(-50% + 10px))',
                 opacity: 0.45,
                 pointerEvents: 'none',
               }}
             />
-            <Typography
-              sx={{
-                fontSize: '2rem',
-                fontWeight: 700,
-                lineHeight: 1,
-                position: 'relative',
-                zIndex: 1,
-              }}
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.6}
+              sx={{ position: 'relative', zIndex: 1 }}
             >
-              +
-            </Typography>
+              <Typography
+                sx={{
+                  fontSize: '1.5rem',
+                  fontWeight: 200,
+                  lineHeight: 1,
+                }}
+              >
+                +
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  letterSpacing: '0.03em',
+                }}
+              >
+                Class
+              </Typography>
+            </Stack>
           </Box>
         ) : null}
       </>
