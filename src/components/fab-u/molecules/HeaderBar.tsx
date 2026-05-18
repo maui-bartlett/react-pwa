@@ -25,7 +25,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       direction="row"
       alignItems={compact ? 'center' : 'flex-start'}
       justifyContent="space-between"
-      spacing={2}
+      spacing={compact ? 2 : 1}
       sx={{
         bgcolor: fabUTokens.color.brand,
         border: `1px solid ${alpha('#ffffff', 0.12)}`,
@@ -87,7 +87,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
           data-pw="header-action"
           sx={{
             alignSelf: compact ? 'center' : 'flex-start',
-            minWidth: compact ? 78 : 88,
+            minWidth: compact ? 78 : 72,
             minHeight: compact ? 30 : 32,
             borderRadius: '7px',
             bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : alpha('#ffffff', 0.96),

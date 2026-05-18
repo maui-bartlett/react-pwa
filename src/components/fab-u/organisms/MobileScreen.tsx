@@ -67,7 +67,6 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
         },
         borderRadius: '14px',
         border: `1px solid ${fabUTokens.color.border}`,
-        bgcolor: fabUTokens.color.canvas,
         boxShadow: '0 5px 18px rgba(31, 42, 38, 0.05)',
         overflow: 'hidden',
       }}
@@ -75,7 +74,6 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
       <Stack
         sx={{
           height: '100%',
-          bgcolor: fabUTokens.color.canvas,
         }}
       >
         <Box
@@ -98,6 +96,7 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
             minHeight: 0,
             overflowY: 'auto',
             overscrollBehavior: 'contain',
+            bgcolor: fabUTokens.color.canvas,
           }}
         >
           <Stack ref={contentRef} spacing={2.775}>

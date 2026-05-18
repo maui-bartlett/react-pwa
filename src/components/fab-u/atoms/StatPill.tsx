@@ -187,7 +187,8 @@ function StatPill({
             editing || popoverOpen ? fabUTokens.color.textSecondary : toneStyles.borderColor
           }`,
           borderRadius: '10px',
-          backgroundColor: fabUTokens.color.pillSurface,
+          backgroundColor:
+            toneColor && fabUTokens.isDark ? alpha(toneColor, 0.07) : fabUTokens.color.pillSurface,
           boxShadow: fabUTokens.shadow.card,
           display: 'flex',
           alignItems: 'center',
