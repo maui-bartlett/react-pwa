@@ -395,7 +395,7 @@ function BondsCard({
               borderRadius: '9px',
               px: 1.25,
               py: 0.85,
-              bgcolor: alpha(fabUTokens.color.highlight, 0.08),
+              bgcolor: fabUTokens.color.surface,
             }}
           >
             <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>

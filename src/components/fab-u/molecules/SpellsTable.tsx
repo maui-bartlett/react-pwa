@@ -720,7 +720,7 @@ function SpellsTable({
     };
 
   const headerCellSx = {
-    color: fabUTokens.color.textSecondary,
+    color: '#ffffff',
     fontSize: '0.62rem',
     fontWeight: 700,
     letterSpacing: '0.045em',
@@ -784,8 +784,8 @@ function SpellsTable({
             alignItems: 'center',
             px: 1.2,
             py: 0.75,
-            bgcolor: fabUTokens.color.surfaceMuted,
-            borderBottom: `1px solid ${fabUTokens.color.border}`,
+            bgcolor: fabUTokens.color.brand,
+            borderBottom: `1px solid rgba(0,0,0,0.15)`,
           }}
         >
           <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
