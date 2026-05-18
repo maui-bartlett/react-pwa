@@ -483,7 +483,7 @@ function SwipeableSpellRow({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1.5,
-                my: 0.75,
+                py: 0.75,
               }}
             >
               {/* Swipeable description — same style as skill row */}
@@ -609,7 +609,7 @@ function SwipeableSpellRow({
                   textTransform: 'none',
                   boxShadow: 'none',
                   mr: 1,
-                  border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.65)'}`,
+                  border: '1.5px solid rgba(180,180,180,0.6)',
                   '&:hover': { bgcolor: '#b09040', boxShadow: 'none' },
                 }}
               >

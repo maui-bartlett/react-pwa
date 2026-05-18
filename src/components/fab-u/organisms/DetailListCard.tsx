@@ -33,6 +33,7 @@ type DetailListCardProps = {
   onRemoveItem?: (index: number) => void;
   onItemClick?: (index: number) => void;
   onEditItem?: (index: number, updated: { title: string; subtitle: string }) => void;
+  hideDelete?: boolean;
 };
 
 type SwipeableRowProps = {
@@ -49,6 +50,7 @@ type SwipeableRowProps = {
   onRevertEdit: () => void;
   onRemove: (index: number) => void;
   onItemClick?: (index: number) => void;
+  hideDelete?: boolean;
 };
 
 function SwipeableRow({
@@ -64,11 +66,12 @@ function SwipeableRow({
   onRevertEdit,
   onRemove,
   onItemClick,
+  hideDelete,
 }: SwipeableRowProps) {
   const fabUTokens = useFabUTokens();
   const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
   const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
-  const actionWidth = onEditChannelClick ? 128 : 64;
+  const actionWidth = hideDelete ? (onEditChannelClick ? 64 : 0) : onEditChannelClick ? 128 : 64;
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
@@ -180,23 +183,25 @@ function SwipeableRow({
             zIndex: 0,
           }}
         >
-          <Box
-            onClick={(e) => {
-              e.stopPropagation();
-              triggerRemove();
-            }}
-            sx={{
-              flex: 1,
-              bgcolor: deleteColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
-            }}
-          >
-            <Trash2 size={18} color="white" />
-          </Box>
+          {!hideDelete && (
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerRemove();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: deleteColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
+              }}
+            >
+              <Trash2 size={18} color="white" />
+            </Box>
+          )}
           {onEditChannelClick ? (
             <Box
               onClick={(e) => {
@@ -326,6 +331,7 @@ function DetailListCard({
   onRemoveItem,
   onItemClick,
   onEditItem,
+  hideDelete,
 }: DetailListCardProps) {
   const fabUTokens = useFabUTokens();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -402,7 +408,7 @@ function DetailListCard({
     >
       <Stack spacing={1}>
         {items.map((item, index) =>
-          onRemoveItem ? (
+          onRemoveItem || onEditItem ? (
             <SwipeableRow
               key={`${item.title}-${item.subtitle}`}
               item={item}
@@ -421,8 +427,9 @@ function DetailListCard({
               }
               onCommitEdit={commitEdit}
               onRevertEdit={revertEdit}
-              onRemove={onRemoveItem}
+              onRemove={onRemoveItem ?? (() => {})}
               onItemClick={onItemClick}
+              hideDelete={hideDelete}
             />
           ) : (
             <Stack

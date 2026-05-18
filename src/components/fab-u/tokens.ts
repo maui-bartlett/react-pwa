@@ -59,7 +59,7 @@ const fabUTokens: FabUTokens = {
     brand: '#315c4d',
     brandStrong: '#26493d',
     brandSoft: '#e0ebe5',
-    brandText: '#315c4d', // same as brand in light mode
+    brandText: '#7fae9a', // same as dark mode — distinctive green visible in both modes
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // section header pill fill — same green as top header bar
     labelFg: '#ffffff', // white text on green pill

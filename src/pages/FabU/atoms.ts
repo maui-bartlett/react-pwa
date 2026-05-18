@@ -1,4 +1,3 @@
-import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 
 import type { Attribute, Bond, CombatSubTab, EquipmentItem, FabUTab } from '@/components/fab-u';
@@ -354,21 +353,13 @@ const characterState = atomWithStorage<Character>(
   migratingCharacterStorage,
 );
 
-// Only user-toggleable effects are stored; enraged/poisoned are derived.
 const statusEffectsState = atomWithStorage<Record<string, boolean>>('fab-u-status-effects', {
   slow: false,
   dazed: false,
   weak: false,
   shaken: false,
-});
-
-const derivedStatusEffectsState = atom((get) => {
-  const e = get(statusEffectsState);
-  return {
-    ...e,
-    enraged: !!(e.slow && e.dazed),
-    poisoned: !!(e.weak && e.shaken),
-  };
+  enraged: false,
+  poisoned: false,
 });
 
 /** Last active main tab — persisted so the app reopens on the same screen. */
@@ -381,7 +372,6 @@ export {
   activeTabState,
   activeCombatTabState,
   characterState,
-  derivedStatusEffectsState,
   statusEffectsState,
   MAX_CHARACTER_LEVEL,
 };

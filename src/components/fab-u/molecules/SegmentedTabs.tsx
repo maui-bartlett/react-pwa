@@ -35,7 +35,7 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
             sx={{
               borderRadius: '10px',
               borderColor: active ? fabUTokens.color.brand : fabUTokens.color.border,
-              bgcolor: active ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
+              bgcolor: active ? fabUTokens.color.brand : fabUTokens.color.surface,
               color: active ? '#fff' : fabUTokens.color.textSecondary,
               textTransform: 'none',
               fontWeight: 700,
@@ -44,11 +44,11 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
               minHeight: 34,
               px: 1.25,
               whiteSpace: 'nowrap',
-              boxShadow: 'none',
+              boxShadow: fabUTokens.shadow.card,
               '&:hover': {
                 borderColor: fabUTokens.color.brand,
                 bgcolor: active ? fabUTokens.color.brandStrong : fabUTokens.color.brandSoft,
-                boxShadow: 'none',
+                boxShadow: fabUTokens.shadow.card,
               },
             }}
           >

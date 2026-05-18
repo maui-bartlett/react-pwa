@@ -6,7 +6,6 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
@@ -49,7 +48,6 @@ import {
   activeCombatTabState,
   activeTabState,
   characterState,
-  derivedStatusEffectsState,
   statusEffectsState,
 } from './atoms';
 import { selectableClasses } from './selectableClasses';
@@ -106,7 +104,6 @@ function FabU() {
   const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
   const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
-  const [isEditingTraits, setIsEditingTraits] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
@@ -114,8 +111,7 @@ function FabU() {
   const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
-  const [, setStatusEffects] = useAtom(statusEffectsState);
-  const statusEffects = useAtomValue(derivedStatusEffectsState);
+  const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -578,7 +574,7 @@ function FabU() {
             valueSuffix: ` / ${character.totalXP}`,
             pw: 'ov-xp',
             onChange: setCurrentXP,
-            valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.brandText,
+            valueColor: fabUTokens.color.brandText,
           },
           {
             label: 'LVL',
@@ -586,7 +582,7 @@ function FabU() {
             pw: 'ov-level',
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
-            valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.brandText,
+            valueColor: fabUTokens.color.brandText,
           },
         ]}
       />
@@ -596,80 +592,24 @@ function FabU() {
   function renderOverview() {
     return (
       <>
-        <SurfaceCard
-          label="Traits"
-          actionsPosition="absolute"
-          actions={
-            <IconButton
-              aria-label={isEditingTraits ? 'Save trait changes' : 'Edit traits'}
-              size="small"
-              onClick={() => setIsEditingTraits((v) => !v)}
-              sx={{
-                width: 30,
-                height: 30,
-                color: fabUTokens.color.brand,
-                border: `1px solid ${fabUTokens.color.border}`,
-                bgcolor: fabUTokens.color.surface,
-                '&:hover': {
-                  bgcolor: fabUTokens.color.surfaceMuted,
-                },
-              }}
-            >
-              {isEditingTraits ? <Check size={16} /> : <Pencil size={15} />}
-            </IconButton>
-          }
-        >
-          <Stack spacing={1} sx={{ pl: 1.18 }}>
-            {(
-              [
-                ['IDENTITY', 'identity'],
-                ['THEME', 'theme'],
-                ['ORIGIN', 'origin'],
-              ] as [string, 'identity' | 'theme' | 'origin'][]
-            ).map(([label, key]) => {
-              const displayValue =
-                key === 'identity' ? (character.traits.identity[0] ?? '') : character.traits[key];
-              return (
-                <Stack
-                  key={label}
-                  direction="row"
-                  justifyContent="space-between"
-                  gap={2}
-                  alignItems="center"
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, minWidth: 76 }}
-                  >
-                    {label}
-                  </Typography>
-                  {isEditingTraits ? (
-                    <InputBase
-                      value={displayValue}
-                      onChange={(e) => updateTrait(key, e.target.value)}
-                      sx={{
-                        flex: 1,
-                        '& input': {
-                          p: 0,
-                          textAlign: 'right',
-                          ...scaledEditableTextStyle(0.875, { lineHeight: 1.5, stretch: true }),
-                          color: fabUTokens.color.textPrimary,
-                        },
-                      }}
-                    />
-                  ) : (
-                    <Typography
-                      variant="body2"
-                      sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}
-                    >
-                      {displayValue}
-                    </Typography>
-                  )}
-                </Stack>
-              );
-            })}
-          </Stack>
-        </SurfaceCard>
+        <DetailListCard
+          label="Identity"
+          hideDelete
+          onEditItem={(_, updated) => updateTrait('identity', updated.title)}
+          items={[{ title: character.traits.identity[0] ?? '', subtitle: '' }]}
+        />
+        <DetailListCard
+          label="Theme"
+          hideDelete
+          onEditItem={(_, updated) => updateTrait('theme', updated.title)}
+          items={[{ title: character.traits.theme, subtitle: '' }]}
+        />
+        <DetailListCard
+          label="Origin"
+          hideDelete
+          onEditItem={(_, updated) => updateTrait('origin', updated.title)}
+          items={[{ title: character.traits.origin, subtitle: '' }]}
+        />
 
         <AttributesStatsCard
           middleRow={[
@@ -742,7 +682,7 @@ function FabU() {
               value: String(character.defense),
               valueSuffix:
                 character.defenseTemp === null ? undefined : `(${character.defenseTemp})`,
-              tone: 'success' as const,
+              toneColor: fabUTokens.color.hp,
               onChange: setDefense,
               onChangeSuffix: setDefenseTemp,
               pw: 'cb-defense',
@@ -752,7 +692,7 @@ function FabU() {
               value: String(character.magicDefense),
               valueSuffix:
                 character.magicDefenseTemp === null ? undefined : `(${character.magicDefenseTemp})`,
-              tone: 'success' as const,
+              toneColor: fabUTokens.color.mp,
               onChange: setMagicDefense,
               onChangeSuffix: setMagicDefenseTemp,
               pw: 'cb-magic-defense',
@@ -868,12 +808,12 @@ function FabU() {
                       fontSize: '0.78rem',
                       bgcolor: '#3d7060',
                       color: '#fff',
-                      boxShadow: 'none',
-                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
+                      boxShadow: fabUTokens.shadow.card,
+                      border: '1px solid rgba(180,180,180,0.6)',
                       '&:hover': {
                         bgcolor: '#3d7060',
                         filter: 'brightness(0.88)',
-                        boxShadow: 'none',
+                        boxShadow: fabUTokens.shadow.card,
                       },
                     }}
                   >
@@ -910,12 +850,12 @@ function FabU() {
                     fontSize: '0.78rem',
                     bgcolor: fabUTokens.color.highlight,
                     color: '#ffffff',
-                    boxShadow: 'none',
-                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'}`,
+                    boxShadow: fabUTokens.shadow.card,
+                    border: '1px solid rgba(180,180,180,0.6)',
                     '&:hover': {
                       bgcolor: fabUTokens.color.highlight,
                       filter: 'brightness(0.88)',
-                      boxShadow: 'none',
+                      boxShadow: fabUTokens.shadow.card,
                     },
                   }}
                 >
@@ -937,12 +877,12 @@ function FabU() {
                     fontSize: '0.78rem',
                     bgcolor: fabUTokens.color.success,
                     color: '#ffffff',
-                    boxShadow: 'none',
-                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'}`,
+                    boxShadow: fabUTokens.shadow.card,
+                    border: '1px solid rgba(180,180,180,0.6)',
                     '&:hover': {
                       bgcolor: fabUTokens.color.success,
                       filter: 'brightness(0.88)',
-                      boxShadow: 'none',
+                      boxShadow: fabUTokens.shadow.card,
                     },
                   }}
                 >
@@ -1013,7 +953,14 @@ function FabU() {
                 color: fabUTokens.color.success,
                 onUse: () => {
                   setIP(Math.max(0, character.inventoryPoints - 2));
-                  setStatusEffects({ slow: false, dazed: false, weak: false, shaken: false });
+                  setStatusEffects({
+                    slow: false,
+                    dazed: false,
+                    weak: false,
+                    shaken: false,
+                    enraged: false,
+                    poisoned: false,
+                  });
                   setInventoryAnchorEl(null);
                 },
               },
@@ -1201,7 +1148,7 @@ function FabU() {
                 transform: 'translateY(-50%)',
                 display: 'inline-flex',
                 borderRadius: '7px',
-                bgcolor: fabUTokens.color.labelBg,
+                bgcolor: fabUTokens.color.highlight,
                 px: 1.05,
                 py: 0.36,
                 pointerEvents: 'none',
@@ -1229,8 +1176,9 @@ function FabU() {
                 left: 10,
                 right: 10,
                 height: 82,
-                top: '50%',
-                transform: 'translateY(calc(-50% + 10px))',
+                bottom: 10,
+                top: 'auto',
+                transform: 'none',
                 opacity: 0.45,
                 pointerEvents: 'none',
               }}
