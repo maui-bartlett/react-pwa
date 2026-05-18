@@ -6,6 +6,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
@@ -112,6 +113,8 @@ function FabU() {
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
   const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
+  const [editingTrait, setEditingTrait] = useState<'identity' | 'theme' | 'origin' | null>(null);
+  const [traitDraft, setTraitDraft] = useState('');
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -574,7 +577,7 @@ function FabU() {
             valueSuffix: ` / ${character.totalXP}`,
             pw: 'ov-xp',
             onChange: setCurrentXP,
-            valueColor: fabUTokens.color.brandText,
+            valueColor: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
           },
           {
             label: 'LVL',
@@ -582,34 +585,113 @@ function FabU() {
             pw: 'ov-level',
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
-            valueColor: fabUTokens.color.brandText,
+            valueColor: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
           },
         ]}
       />
     );
   }
 
+  function startEditTrait(key: 'identity' | 'theme' | 'origin', currentValue: string) {
+    setTraitDraft(currentValue);
+    setEditingTrait(key);
+  }
+  function commitEditTrait() {
+    if (!editingTrait) return;
+    updateTrait(editingTrait, traitDraft);
+    setEditingTrait(null);
+  }
+  function revertEditTrait() {
+    setEditingTrait(null);
+  }
+
   function renderOverview() {
     return (
       <>
-        <DetailListCard
-          label="Identity"
-          hideDelete
-          onEditItem={(_, updated) => updateTrait('identity', updated.title)}
-          items={[{ title: character.traits.identity[0] ?? '', subtitle: '' }]}
-        />
-        <DetailListCard
-          label="Theme"
-          hideDelete
-          onEditItem={(_, updated) => updateTrait('theme', updated.title)}
-          items={[{ title: character.traits.theme, subtitle: '' }]}
-        />
-        <DetailListCard
-          label="Origin"
-          hideDelete
-          onEditItem={(_, updated) => updateTrait('origin', updated.title)}
-          items={[{ title: character.traits.origin, subtitle: '' }]}
-        />
+        <SurfaceCard label="Traits">
+          <Stack spacing={1}>
+            {(
+              [
+                {
+                  key: 'identity' as const,
+                  label: 'Identity',
+                  value: character.traits.identity[0] ?? '',
+                },
+                { key: 'theme' as const, label: 'Theme', value: character.traits.theme },
+                { key: 'origin' as const, label: 'Belonging', value: character.traits.origin },
+              ] as const
+            ).map(({ key, label, value }) => (
+              <Box
+                key={key}
+                onClick={() => {
+                  if (editingTrait !== key) startEditTrait(key, value);
+                }}
+                sx={{
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: '9px',
+                  px: 1.25,
+                  py: 0.9,
+                  bgcolor: fabUTokens.color.pillSurface,
+                  boxShadow: `${fabUTokens.shadow.card}, inset 3px 0 0 rgba(49, 92, 77, 0.12)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                  cursor: 'pointer',
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: fabUTokens.color.textSecondary,
+                    fontWeight: 700,
+                    fontSize: '0.6rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  {label}
+                </Typography>
+                {editingTrait === key ? (
+                  <InputBase
+                    autoFocus
+                    value={traitDraft}
+                    onChange={(e) => setTraitDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitEditTrait();
+                      if (e.key === 'Escape') revertEditTrait();
+                    }}
+                    onBlur={commitEditTrait}
+                    sx={{
+                      flex: 1,
+                      '& input': {
+                        p: 0,
+                        textAlign: 'right',
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        color: fabUTokens.color.textPrimary,
+                      },
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    sx={{
+                      flex: 1,
+                      textAlign: 'right',
+                      fontSize: '0.9rem',
+                      fontWeight: 700,
+                      color: fabUTokens.color.textPrimary,
+                    }}
+                  >
+                    {value}
+                  </Typography>
+                )}
+              </Box>
+            ))}
+          </Stack>
+        </SurfaceCard>
 
         <AttributesStatsCard
           middleRow={[
@@ -618,22 +700,20 @@ function FabU() {
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'danger' as const,
+              toneColor: fabUTokens.color.hp,
               onChange: setCurrentHP,
               maxValue: totalHP,
               pw: 'ov-hp',
-              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
               value: String(character.currentMP),
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'accent' as const,
+              toneColor: fabUTokens.color.mp,
               onChange: setCurrentMP,
               maxValue: totalMP,
               pw: 'ov-mp',
-              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
             {
               label: 'IP',
@@ -725,22 +805,20 @@ function FabU() {
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'danger' as const,
+              toneColor: fabUTokens.color.hp,
               onChange: setCurrentHP,
               maxValue: totalHP,
               pw: 'cb-hp',
-              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
               value: String(character.currentMP),
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'accent' as const,
+              toneColor: fabUTokens.color.mp,
               onChange: setCurrentMP,
               maxValue: totalMP,
               pw: 'cb-mp',
-              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
@@ -809,7 +887,7 @@ function FabU() {
                       bgcolor: '#3d7060',
                       color: '#fff',
                       boxShadow: fabUTokens.shadow.card,
-                      border: '1px solid rgba(180,180,180,0.6)',
+                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
                       '&:hover': {
                         bgcolor: '#3d7060',
                         filter: 'brightness(0.88)',
@@ -851,7 +929,7 @@ function FabU() {
                     bgcolor: fabUTokens.color.highlight,
                     color: '#ffffff',
                     boxShadow: fabUTokens.shadow.card,
-                    border: '1px solid rgba(180,180,180,0.6)',
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
                     '&:hover': {
                       bgcolor: fabUTokens.color.highlight,
                       filter: 'brightness(0.88)',
@@ -878,7 +956,7 @@ function FabU() {
                     bgcolor: fabUTokens.color.success,
                     color: '#ffffff',
                     boxShadow: fabUTokens.shadow.card,
-                    border: '1px solid rgba(180,180,180,0.6)',
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
                     '&:hover': {
                       bgcolor: fabUTokens.color.success,
                       filter: 'brightness(0.88)',
@@ -1171,15 +1249,14 @@ function FabU() {
             <Box
               sx={{
                 position: 'absolute',
-                border: `1px dashed ${fabUTokens.color.highlight}`,
+                border: `1px dashed ${alpha(fabUTokens.color.highlight, 0.45)}`,
                 borderRadius: '7px',
                 left: 10,
                 right: 10,
                 height: 82,
-                bottom: 10,
+                bottom: 20,
                 top: 'auto',
                 transform: 'none',
-                opacity: 0.45,
                 pointerEvents: 'none',
               }}
             />
@@ -1187,7 +1264,15 @@ function FabU() {
               direction="row"
               alignItems="center"
               spacing={0.6}
-              sx={{ position: 'relative', zIndex: 1 }}
+              sx={{
+                position: 'absolute',
+                bottom: 20,
+                left: 10,
+                right: 10,
+                height: 82,
+                justifyContent: 'center',
+                zIndex: 1,
+              }}
             >
               <Typography
                 sx={{
@@ -1235,7 +1320,7 @@ function FabU() {
               pw: 'hp',
               onChange: setCurrentHP,
               maxValue: totalHP,
-              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
+              toneColor: fabUTokens.color.hp,
             },
             {
               label: 'MP',
@@ -1244,7 +1329,7 @@ function FabU() {
               pw: 'mp',
               onChange: setCurrentMP,
               maxValue: totalMP,
-              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
+              toneColor: fabUTokens.color.mp,
             },
             {
               label: 'IP',

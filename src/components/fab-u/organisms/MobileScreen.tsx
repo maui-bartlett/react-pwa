@@ -82,7 +82,6 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
             pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
             pb: 1.5,
             flexShrink: 0,
-            bgcolor: fabUTokens.color.canvas,
           }}
         >
           {header}

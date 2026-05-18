@@ -307,7 +307,7 @@ function SwipeableRow({
           <Typography
             variant="caption"
             sx={{
-              color: fabUTokens.color.brandText,
+              color: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
               fontWeight: 700,
               fontSize: '0.68rem',
               whiteSpace: 'nowrap',

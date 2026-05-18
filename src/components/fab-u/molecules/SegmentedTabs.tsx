@@ -17,10 +17,9 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
       direction="row"
       spacing={1}
       sx={{
-        overflowX: 'auto',
+        overflow: 'visible',
         pb: 0.5,
-        '&::-webkit-scrollbar': { display: 'none' },
-        scrollbarWidth: 'none',
+        pt: 0.5,
       }}
     >
       {options.map((option) => {
