@@ -5,6 +5,8 @@ import { Tone } from './types';
 type FabUColorTokens = {
   canvas: string;
   surface: string;
+  /** Light green-tinted background used for SurfaceCards (light mode only; same as surface in dark). */
+  surfaceCard: string;
   /** Slightly darkened surface used for pills/cards (distinct from canvas in dark mode). */
   pillSurface: string;
   surfaceMuted: string;
@@ -43,8 +45,9 @@ type FabUTokens = {
 const fabUTokens: FabUTokens = {
   isDark: false,
   color: {
-    canvas: '#dfe8e3', // was '#efe8dc' — cooler green-grey, removes warm cream
+    canvas: '#f3f8f5', // near-white with just a hint of green
     surface: '#ffffff',
+    surfaceCard: '#ecf2ee', // soft light-green tint for SurfaceCards
     pillSurface: '#ffffff', // same as surface in light mode; pills look lifted via shadow.card
     surfaceMuted: '#edf2ef', // was '#f6f0e6' — cooler, less cream
     border: '#aec0b7', // was '#c9d0c3' — darker for more contrast
@@ -79,6 +82,7 @@ const darkFabUTokens: FabUTokens = {
   color: {
     canvas: '#0e110e',
     surface: '#131613',
+    surfaceCard: '#131613', // same as surface in dark mode — no separate tinting needed
     pillSurface: '#111311', // slightly darker than surface — subtle dark fill for pills/cards
     surfaceMuted: '#1a1e18',
     border: '#263530',

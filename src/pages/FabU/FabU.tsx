@@ -869,7 +869,7 @@ function FabU() {
                       bgcolor: '#3d7060',
                       color: '#fff',
                       boxShadow: 'none',
-                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'}`,
+                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.highlight}`,
                       '&:hover': {
                         bgcolor: '#3d7060',
                         filter: 'brightness(0.88)',
