@@ -824,7 +824,7 @@ function FabU() {
               onEdit={(v) => updateTrait('theme', v)}
             />
             <SwipeableTraitRow
-              label="Belonging"
+              label="Origin"
               value={character.traits.origin}
               onEdit={(v) => updateTrait('origin', v)}
             />
@@ -1391,7 +1391,7 @@ function FabU() {
                 borderRadius: '7px',
                 left: 10,
                 right: 10,
-                top: 37,
+                top: 22,
                 bottom: 10,
                 pointerEvents: 'none',
               }}
@@ -1402,7 +1402,7 @@ function FabU() {
               spacing={0.6}
               sx={{
                 position: 'absolute',
-                top: 37,
+                top: 22,
                 bottom: 10,
                 left: 10,
                 right: 10,

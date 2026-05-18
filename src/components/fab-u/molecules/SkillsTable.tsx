@@ -454,7 +454,7 @@ function SwipeableSkillRow({
       {/* Accordion expand panel — swipeable, edit-only channel */}
       {!isEditing && (
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
-          <Box sx={{ px: 1.2, py: 0.75 }}>
+          <Box sx={{ px: 1.2, py: 0.75, bgcolor: fabUTokens.color.surface }}>
             <Box
               sx={{
                 position: 'relative',
