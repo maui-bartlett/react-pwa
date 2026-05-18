@@ -1147,27 +1147,25 @@ function FabU() {
           );
         })}
         {canAddClass ? (
-          <Box sx={{ px: '14.2px' }}>
-            <Box
-              onClick={(e) => openClassPicker(e as React.MouseEvent<HTMLElement>)}
-              sx={{
-                border: `1px dashed ${fabUTokens.color.highlight}`,
-                borderRadius: '9px',
-                px: 1.3,
-                py: 5.8,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                color: fabUTokens.color.highlight,
-                bgcolor: fabUTokens.color.surface,
-                cursor: 'pointer',
-              }}
-            >
-              <AddIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                Class
-              </Typography>
-            </Box>
+          <Box
+            onClick={(e) => openClassPicker(e as React.MouseEvent<HTMLElement>)}
+            sx={{
+              border: `1px dashed ${fabUTokens.color.highlight}`,
+              borderRadius: '9px',
+              px: 1.3,
+              py: 4.55,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              color: fabUTokens.color.highlight,
+              bgcolor: fabUTokens.color.surface,
+              cursor: 'pointer',
+            }}
+          >
+            <AddIcon fontSize="small" />
+            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+              Class
+            </Typography>
           </Box>
         ) : null}
       </>
