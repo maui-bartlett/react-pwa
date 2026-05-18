@@ -2,7 +2,7 @@ import { ComponentType } from 'react';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import BackpackOutlinedIcon from '@mui/icons-material/BackpackOutlined';
-import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
 import { SvgIconProps } from '@mui/material/SvgIcon';
@@ -19,7 +19,7 @@ type PrimaryNavBarProps = {
 };
 
 const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIconProps> }> = [
-  { label: 'Overview', value: 'overview', icon: GridViewOutlinedIcon },
+  { label: 'Character', value: 'overview', icon: PersonOutlinedIcon },
   { label: 'Combat', value: 'combat', icon: SwordIcon },
   { label: 'Skills', value: 'skills', icon: DiamondIcon },
   { label: 'Spells', value: 'spells', icon: AutoAwesomeOutlinedIcon },

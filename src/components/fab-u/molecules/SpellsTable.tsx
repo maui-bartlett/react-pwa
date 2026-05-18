@@ -608,6 +608,8 @@ function SwipeableSpellRow({
                   lineHeight: 1.2,
                   textTransform: 'none',
                   boxShadow: 'none',
+                  mr: 1,
+                  border: '1px solid rgba(255,255,255,0.5)',
                   '&:hover': { bgcolor: '#b09040', boxShadow: 'none' },
                 }}
               >

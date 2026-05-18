@@ -48,6 +48,8 @@ export type StatPillData = {
   /** When set, the committed suffix value is clamped to [0, maxValueSuffix]. */
   maxValueSuffix?: number;
   pw?: string;
+  /** When provided, overrides the tone-derived border/label color with this explicit color. */
+  toneColor?: string;
 };
 
 export type AttributeRow = {

@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { Coins } from 'lucide-react';
 
@@ -25,6 +26,8 @@ type SummaryMetric = {
   maxValue?: number;
   /** Optional icon rendered at the trailing (right) edge of the pill */
   trailingIcon?: ReactNode;
+  /** When provided, overrides the default border/background/label color with this accent color. */
+  toneColor?: string;
 };
 
 type SummaryStripProps = {
@@ -69,15 +72,16 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
           const editable = !!metric.onChange;
           const showZennitIcon = metric.pw === 'zennit';
           const isXpMetric = metric.label === 'XP';
+          const tc = metric.toneColor;
           const metricBox = (
             <Box
               key={metric.label}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
               onClick={() => !isEditing && openEdit(metric)}
               sx={{
-                border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+                border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : tc ? alpha(tc, 0.5) : fabUTokens.color.border}`,
                 borderRadius: '9px',
-                bgcolor: fabUTokens.color.surface,
+                bgcolor: tc ? alpha(tc, 0.06) : fabUTokens.color.surface,
                 boxShadow: fabUTokens.shadow.soft,
                 display: 'flex',
                 alignItems: 'center',
@@ -99,7 +103,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: fabUTokens.color.textSecondary,
+                      color: tc ?? fabUTokens.color.textSecondary,
                       fontWeight: 700,
                       fontSize: '0.6rem',
                       letterSpacing: '0.05em',

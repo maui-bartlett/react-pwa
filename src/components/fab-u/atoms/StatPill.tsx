@@ -5,6 +5,7 @@ import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { useFabUTokens } from '../ThemeContext';
 import { scaledEditableTextStyle } from '../editableText';
@@ -25,6 +26,7 @@ function StatPill({
   maxValue,
   maxValueSuffix,
   pw,
+  toneColor,
 }: StatPillData) {
   const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState(false);
@@ -32,7 +34,13 @@ function StatPill({
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [draft, setDraft] = useState('');
   const [suffixDraft, setSuffixDraft] = useState('');
-  const toneStyles = getToneStyles(tone);
+  const toneStyles = toneColor
+    ? {
+        borderColor: alpha(toneColor, 0.5),
+        backgroundColor: alpha(toneColor, 0.08),
+        color: toneColor,
+      }
+    : getToneStyles(tone);
   const inline = layout === 'inline';
   const editable = !!onChange;
   const hasBaseTempEditor = !!(onChange && onChangeSuffix);

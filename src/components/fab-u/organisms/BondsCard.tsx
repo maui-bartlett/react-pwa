@@ -462,7 +462,7 @@ function BondsCard({
             }}
           >
             <AddIcon fontSize="small" />
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+            <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
               Bond
             </Typography>
           </Box>

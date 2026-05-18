@@ -69,7 +69,7 @@ const screenMeta: Record<
 > = {
   overview: {
     title: 'Radovan "Rad" Milinic',
-    subtitle: 'Transfer Student to UoE · Political refugee · Origin: Infinita',
+    subtitle: 'Transfer Student to UoE · Political refugee',
     actionLabel: '',
   },
   skills: {
@@ -79,17 +79,17 @@ const screenMeta: Record<
   },
   spells: {
     title: 'Spells & Arcana',
-    subtitle: 'Entropist magic, rituals, cast actions, and spell tables',
+    subtitle: 'Magic, resources, and rituals',
     actionLabel: 'Spells',
   },
   gear: {
     title: 'Gear & Inventory',
-    subtitle: 'Equipment, inventory points, backpack, and zenit',
+    subtitle: 'Equipment, backpack, and zenit',
     actionLabel: 'Gear',
   },
   notes: {
     title: 'Character Notes',
-    subtitle: 'Backstory prompts and campaign-facing notes',
+    subtitle: 'Backstory prompts and campaign notes',
     actionLabel: 'Notes',
   },
 };
@@ -554,6 +554,7 @@ function FabU() {
             value: String(character.fabulaPoints),
             pw: 'fp',
             onChange: setFP,
+            toneColor: fabUTokens.color.highlight,
           },
           {
             label: 'XP',
@@ -673,9 +674,9 @@ function FabU() {
             {
               label: 'IP',
               value: String(character.inventoryPoints),
-              tone: 'warning' as const,
               onChange: setIP,
               pw: 'ov-ip',
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
           ]}
           bottomRow={makeAttrRows()}
@@ -744,16 +745,16 @@ function FabU() {
             {
               label: 'FP',
               value: String(character.fabulaPoints),
-              tone: 'neutral' as const,
               onChange: setFP,
               pw: 'cb-fp',
+              toneColor: fabUTokens.color.highlight,
             },
             {
               label: 'IP',
               value: String(character.inventoryPoints),
-              tone: 'warning' as const,
               onChange: setIP,
               pw: 'cb-ip',
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
             {
               label: 'HP',
@@ -839,11 +840,12 @@ function FabU() {
                       textTransform: 'none',
                       fontWeight: 700,
                       fontSize: '0.78rem',
-                      bgcolor: alpha('#3d7060', 0.82),
+                      bgcolor: '#3d7060',
                       color: '#fff',
                       boxShadow: 'none',
+                      border: '1px solid rgba(255,255,255,0.45)',
                       '&:hover': {
-                        bgcolor: alpha('#3d7060', 0.82),
+                        bgcolor: '#3d7060',
                         filter: 'brightness(0.88)',
                         boxShadow: 'none',
                       },
@@ -949,7 +951,7 @@ function FabU() {
               width: 200,
               bgcolor: fabUTokens.color.surface,
               backgroundImage: 'none',
-              border: `1px solid ${fabUTokens.isDark ? '#ffffff26' : fabUTokens.color.border}`,
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
               borderRadius: '12px',
               boxShadow: fabUTokens.shadow.soft,
             },
@@ -1153,7 +1155,7 @@ function FabU() {
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
-              py: 4.55,
+              py: 5.75,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1188,10 +1190,35 @@ function FabU() {
                   lineHeight: 1,
                 }}
               >
-                {`+ Class • ${totalSkillLevels} / ${character.level}`}
+                + Class • 0 / 10
               </Typography>
             </Box>
-            <Typography sx={{ fontSize: '2rem', fontWeight: 300, lineHeight: 1 }}>+</Typography>
+            {/* Inner dashed box — sized to a SkillsTable with header + 1 skill row */}
+            <Box
+              sx={{
+                position: 'absolute',
+                border: `1px dashed ${fabUTokens.color.highlight}`,
+                borderRadius: '7px',
+                left: 10,
+                right: 10,
+                height: 92,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                opacity: 0.45,
+                pointerEvents: 'none',
+              }}
+            />
+            <Typography
+              sx={{
+                fontSize: '2rem',
+                fontWeight: 700,
+                lineHeight: 1,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              +
+            </Typography>
           </Box>
         ) : null}
       </>
@@ -1204,7 +1231,13 @@ function FabU() {
         <SummaryStrip
           label="Resources"
           metrics={[
-            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
+            {
+              label: 'FP',
+              value: String(character.fabulaPoints),
+              pw: 'fp',
+              onChange: setFP,
+              toneColor: fabUTokens.color.highlight,
+            },
             {
               label: 'HP',
               value: String(character.currentHP),
@@ -1221,7 +1254,13 @@ function FabU() {
               onChange: setCurrentMP,
               maxValue: character.totalMP,
             },
-            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              pw: 'ip',
+              onChange: setIP,
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
+            },
           ]}
         />
         {character.spellGroups.map((group) => (
@@ -1266,6 +1305,7 @@ function FabU() {
               value: String(character.inventoryPoints),
               pw: 'ip',
               onChange: setIP,
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
               trailingIcon: (
                 <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
               ),
@@ -1476,7 +1516,7 @@ function FabU() {
   const eyebrow =
     activeTab === 'overview' ? (
       <>
-        Fabula <Sparkles size={10} /> Ultima
+        Fabula <Sparkles size={10} color="#FFD700" /> Ultima
       </>
     ) : (
       `Rad • LVL ${character.level}`

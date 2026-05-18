@@ -73,7 +73,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
             variant="body2"
             sx={{
               color: 'rgba(255,255,255,0.8)',
-              maxWidth: compact ? 140 : 230,
+              maxWidth: compact ? 140 : 'none',
               fontSize: compact ? '0.69rem' : '0.78rem',
               lineHeight: 1.32,
             }}
