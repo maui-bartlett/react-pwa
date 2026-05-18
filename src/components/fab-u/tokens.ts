@@ -47,7 +47,7 @@ type FabUTokens = {
 const fabUTokens: FabUTokens = {
   isDark: false,
   color: {
-    page: '#f8fbf9', // almost white — very faint green tint; outer app wrapper
+    page: '#ffffff', // pure white outer app wrapper
     canvas: '#f3f8f5', // scroll-content backdrop — slightly more green than page
     surface: '#ffffff',
     surfaceCard: '#ecf2ee', // soft light-green tint for SurfaceCards
