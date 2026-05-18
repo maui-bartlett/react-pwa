@@ -1,7 +1,6 @@
 import type { MouseEvent } from 'react';
 import { useEffect, useState } from 'react';
 
-import AddIcon from '@mui/icons-material/Add';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
@@ -1157,7 +1156,7 @@ function FabU() {
               py: 4.55,
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
+              justifyContent: 'center',
               color: fabUTokens.color.highlight,
               bgcolor: fabUTokens.color.surface,
               cursor: 'pointer',
@@ -1189,13 +1188,10 @@ function FabU() {
                   lineHeight: 1,
                 }}
               >
-                Class
+                {`+ Class • ${totalSkillLevels} / ${character.level}`}
               </Typography>
             </Box>
-            <AddIcon fontSize="small" />
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-              Class
-            </Typography>
+            <Typography sx={{ fontSize: '2rem', fontWeight: 300, lineHeight: 1 }}>+</Typography>
           </Box>
         ) : null}
       </>

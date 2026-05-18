@@ -83,6 +83,8 @@ function SwipeableSpellRow({
   onRevertEdit,
 }: SwipeableSpellRowProps) {
   const fabUTokens = useFabUTokens();
+  const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
 
   // Row swipe state
   const [snapX, setSnapX] = useState(0);
@@ -244,7 +246,7 @@ function SwipeableSpellRow({
               }}
               sx={{
                 flex: 1,
-                bgcolor: DELETE_RED,
+                bgcolor: deleteColor,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -513,7 +515,7 @@ function SwipeableSpellRow({
                       }}
                       sx={{
                         flex: 1,
-                        bgcolor: '#3d7060',
+                        bgcolor: editColor,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -542,7 +544,7 @@ function SwipeableSpellRow({
                     px: 1.5,
                     bgcolor: fabUTokens.color.surface,
                     borderRadius: descVisualX < 0 ? '9px 0 0 9px' : '9px',
-                    minHeight: 42,
+                    minHeight: 60,
                     display: 'flex',
                     alignItems: 'center',
                   }}

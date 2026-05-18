@@ -56,6 +56,8 @@ function EquipmentRow({
   onDelete,
 }: EquipmentRowProps) {
   const fabUTokens = useFabUTokens();
+  const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
@@ -242,7 +244,7 @@ function EquipmentRow({
             }}
             sx={{
               flex: 1,
-              bgcolor: DELETE_RED,
+              bgcolor: deleteColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -259,7 +261,7 @@ function EquipmentRow({
             }}
             sx={{
               flex: 1,
-              bgcolor: '#3d7060',
+              bgcolor: editColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
