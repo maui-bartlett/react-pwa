@@ -869,7 +869,7 @@ function FabU() {
                       bgcolor: '#3d7060',
                       color: '#fff',
                       boxShadow: 'none',
-                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.highlight}`,
+                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
                       '&:hover': {
                         bgcolor: '#3d7060',
                         filter: 'brightness(0.88)',
@@ -1663,7 +1663,7 @@ function FabU() {
             minHeight: '100dvh',
             height: '100dvh',
             overflow: 'hidden',
-            bgcolor: fabUTokens.color.canvas,
+            bgcolor: fabUTokens.color.page,
             pt: { xs: 'max(20px, calc(env(safe-area-inset-top) + 12px))', md: 3 },
             pb: { xs: 2, md: 3 },
             px: 1.5,

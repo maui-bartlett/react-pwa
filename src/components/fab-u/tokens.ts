@@ -3,6 +3,8 @@ import { alpha } from '@mui/material/styles';
 import { Tone } from './types';
 
 type FabUColorTokens = {
+  /** Full-page outer background — nearly white in light mode, deepest dark in dark mode. */
+  page: string;
   canvas: string;
   surface: string;
   /** Light green-tinted background used for SurfaceCards (light mode only; same as surface in dark). */
@@ -45,7 +47,8 @@ type FabUTokens = {
 const fabUTokens: FabUTokens = {
   isDark: false,
   color: {
-    canvas: '#f3f8f5', // near-white with just a hint of green
+    page: '#f8fbf9', // almost white — very faint green tint; outer app wrapper
+    canvas: '#f3f8f5', // scroll-content backdrop — slightly more green than page
     surface: '#ffffff',
     surfaceCard: '#ecf2ee', // soft light-green tint for SurfaceCards
     pillSurface: '#ffffff', // same as surface in light mode; pills look lifted via shadow.card
@@ -80,6 +83,7 @@ const fabUTokens: FabUTokens = {
 const darkFabUTokens: FabUTokens = {
   isDark: true,
   color: {
+    page: '#090c09', // deepest dark — slightly deeper than canvas for the outer wrapper
     canvas: '#0e110e',
     surface: '#131613',
     surfaceCard: '#131613', // same as surface in dark mode — no separate tinting needed
