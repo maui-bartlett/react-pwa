@@ -16,7 +16,7 @@ import { EquipmentItem } from '../types';
 
 const ACTION_WIDTH = 128;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#9f5450';
+const DELETE_RED = '#a84e49';
 
 type EquipmentCardProps = {
   title?: string;
@@ -418,7 +418,7 @@ function EquipmentCard({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={28} color="#9f5450" />
+              <XCircle size={28} color="#a84e49" />
             </Box>
           </Box>
         ) : undefined

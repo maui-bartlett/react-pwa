@@ -22,7 +22,7 @@ import { SpellRow } from '../types';
 const ACTION_WIDTH = 128;
 const DESC_ACTION_WIDTH = 64;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#9f5450';
+const DELETE_RED = '#a84e49';
 
 type DraftSpell = {
   name: string;
@@ -758,7 +758,7 @@ function SpellsTable({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={28} color="#9f5450" />
+              <XCircle size={28} color="#a84e49" />
             </Box>
           </Box>
         ) : undefined

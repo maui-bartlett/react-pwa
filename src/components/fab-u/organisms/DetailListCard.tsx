@@ -15,7 +15,7 @@ import { SurfaceCard } from '../atoms';
 import { scaledEditableTextStyle } from '../editableText';
 
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#9f5450';
+const DELETE_RED = '#a84e49';
 
 type DetailListItem = {
   title: string;
@@ -391,7 +391,7 @@ function DetailListCard({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={28} color="#9f5450" />
+              <XCircle size={28} color="#a84e49" />
             </Box>
           </Box>
         ) : undefined
