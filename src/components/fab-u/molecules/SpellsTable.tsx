@@ -479,7 +479,7 @@ function SwipeableSpellRow({
             <Box
               sx={{
                 display: 'flex',
-                alignItems: 'flex-start',
+                alignItems: 'center',
                 gap: 1.5,
                 my: 0.75,
               }}
@@ -595,7 +595,6 @@ function SwipeableSpellRow({
                 }}
                 sx={{
                   flexShrink: 0,
-                  alignSelf: 'flex-start',
                   width: 68,
                   minWidth: 68,
                   minHeight: 40,
