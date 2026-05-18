@@ -46,6 +46,8 @@ import { ThemeMode } from '@/theme/types';
 
 import {
   MAX_CHARACTER_LEVEL,
+  activeCombatTabState,
+  activeTabState,
   characterState,
   derivedStatusEffectsState,
   statusEffectsState,
@@ -100,8 +102,8 @@ function FabU() {
   const fabUTokens = themeMode === ThemeMode.DARK ? darkFabUTokens : lightFabUTokens;
   const toggleTheme = () =>
     setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
-  const [activeTab, setActiveTab] = useState<FabUTab>('overview');
-  const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
+  const [activeTab, setActiveTab] = useAtom(activeTabState);
+  const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
   const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [isEditingTraits, setIsEditingTraits] = useState(false);
@@ -141,6 +143,14 @@ function FabU() {
   const setLevel = (v: number) =>
     setCharacter((c) => ({ ...c, level: Math.min(Math.max(1, v), MAX_CHARACTER_LEVEL) }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+
+  // Die-value lookup used to derive max HP and MP from attributes + level + bonus
+  const DIE_VALUES: Record<string, number> = { d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
+  const totalHP =
+    (DIE_VALUES[character.attributes.might.die] ?? 8) * 5 + character.level + character.hpBonus;
+  const totalMP =
+    (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + character.mpBonus;
+
   // Spend 100 Zennit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
   const handleBuyIP = () =>
     setCharacter((c) =>
@@ -190,7 +200,13 @@ function FabU() {
     }));
   };
   const updateTrait = (key: 'identity' | 'theme' | 'origin', value: string) =>
-    setCharacter((c) => ({ ...c, traits: { ...c.traits, [key]: value } }));
+    setCharacter((c) => ({
+      ...c,
+      traits: {
+        ...c.traits,
+        [key]: key === 'identity' ? [value, ...c.traits.identity.slice(1)] : value,
+      },
+    }));
   const updateBackstoryPrompt = (index: number, prompt: string) =>
     setCharacter((c) => ({
       ...c,
@@ -610,44 +626,48 @@ function FabU() {
                 ['THEME', 'theme'],
                 ['ORIGIN', 'origin'],
               ] as [string, 'identity' | 'theme' | 'origin'][]
-            ).map(([label, key]) => (
-              <Stack
-                key={label}
-                direction="row"
-                justifyContent="space-between"
-                gap={2}
-                alignItems="center"
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, minWidth: 76 }}
+            ).map(([label, key]) => {
+              const displayValue =
+                key === 'identity' ? (character.traits.identity[0] ?? '') : character.traits[key];
+              return (
+                <Stack
+                  key={label}
+                  direction="row"
+                  justifyContent="space-between"
+                  gap={2}
+                  alignItems="center"
                 >
-                  {label}
-                </Typography>
-                {isEditingTraits ? (
-                  <InputBase
-                    value={character.traits[key]}
-                    onChange={(e) => updateTrait(key, e.target.value)}
-                    sx={{
-                      flex: 1,
-                      '& input': {
-                        p: 0,
-                        textAlign: 'right',
-                        ...scaledEditableTextStyle(0.875, { lineHeight: 1.5, stretch: true }),
-                        color: fabUTokens.color.textPrimary,
-                      },
-                    }}
-                  />
-                ) : (
                   <Typography
-                    variant="body2"
-                    sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}
+                    variant="caption"
+                    sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, minWidth: 76 }}
                   >
-                    {character.traits[key]}
+                    {label}
                   </Typography>
-                )}
-              </Stack>
-            ))}
+                  {isEditingTraits ? (
+                    <InputBase
+                      value={displayValue}
+                      onChange={(e) => updateTrait(key, e.target.value)}
+                      sx={{
+                        flex: 1,
+                        '& input': {
+                          p: 0,
+                          textAlign: 'right',
+                          ...scaledEditableTextStyle(0.875, { lineHeight: 1.5, stretch: true }),
+                          color: fabUTokens.color.textPrimary,
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Typography
+                      variant="body2"
+                      sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}
+                    >
+                      {displayValue}
+                    </Typography>
+                  )}
+                </Stack>
+              );
+            })}
           </Stack>
         </SurfaceCard>
 
@@ -656,22 +676,22 @@ function FabU() {
             {
               label: 'HP',
               value: String(character.currentHP),
-              valueSuffix: ` / ${character.totalHP}`,
+              valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               tone: 'danger' as const,
               onChange: setCurrentHP,
-              maxValue: character.totalHP,
+              maxValue: totalHP,
               pw: 'ov-hp',
               valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
               value: String(character.currentMP),
-              valueSuffix: ` / ${character.totalMP}`,
+              valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               tone: 'accent' as const,
               onChange: setCurrentMP,
-              maxValue: character.totalMP,
+              maxValue: totalMP,
               pw: 'ov-mp',
               valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
@@ -763,22 +783,22 @@ function FabU() {
             {
               label: 'HP',
               value: String(character.currentHP),
-              valueSuffix: ` / ${character.totalHP}`,
+              valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               tone: 'danger' as const,
               onChange: setCurrentHP,
-              maxValue: character.totalHP,
+              maxValue: totalHP,
               pw: 'cb-hp',
               valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
               value: String(character.currentMP),
-              valueSuffix: ` / ${character.totalMP}`,
+              valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               tone: 'accent' as const,
               onChange: setCurrentMP,
-              maxValue: character.totalMP,
+              maxValue: totalMP,
               pw: 'cb-mp',
               valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
@@ -973,7 +993,7 @@ function FabU() {
                 color: fabUTokens.color.hp,
                 onUse: () => {
                   setIP(Math.max(0, character.inventoryPoints - 3));
-                  setCurrentHP(Math.min(character.totalHP, character.currentHP + 50));
+                  setCurrentHP(Math.min(totalHP, character.currentHP + 50));
                   setInventoryAnchorEl(null);
                 },
               },
@@ -983,7 +1003,7 @@ function FabU() {
                 color: fabUTokens.color.mp,
                 onUse: () => {
                   setIP(Math.max(0, character.inventoryPoints - 3));
-                  setCurrentMP(Math.min(character.totalMP, character.currentMP + 50));
+                  setCurrentMP(Math.min(totalMP, character.currentMP + 50));
                   setInventoryAnchorEl(null);
                 },
               },
@@ -1264,19 +1284,19 @@ function FabU() {
             {
               label: 'HP',
               value: String(character.currentHP),
-              valueSuffix: ` / ${character.totalHP}`,
+              valueSuffix: ` / ${totalHP}`,
               pw: 'hp',
               onChange: setCurrentHP,
-              maxValue: character.totalHP,
+              maxValue: totalHP,
               valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
               value: String(character.currentMP),
-              valueSuffix: ` / ${character.totalMP}`,
+              valueSuffix: ` / ${totalMP}`,
               pw: 'mp',
               onChange: setCurrentMP,
-              maxValue: character.totalMP,
+              maxValue: totalMP,
               valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
             {
@@ -1544,7 +1564,7 @@ function FabU() {
         Fabula <Sparkles size={10} color={fabUTokens.color.highlight} /> Ultima
       </>
     ) : (
-      `Rad • LVL ${character.level}`
+      `${character.nickName} • LVL ${character.level}`
     );
 
   const header = (() => {
@@ -1560,12 +1580,18 @@ function FabU() {
     }
 
     const meta = screenMeta[activeTab];
+    const headerTitle =
+      activeTab === 'overview'
+        ? `${character.firstName} "${character.nickName}" ${character.lastName}`
+        : meta.title;
+    const headerSubtitle =
+      activeTab === 'overview' ? character.traits.identity.join(' · ') : meta.subtitle;
 
     return (
       <HeaderBar
         eyebrow={eyebrow}
-        title={meta.title}
-        subtitle={meta.subtitle}
+        title={headerTitle}
+        subtitle={headerSubtitle}
         actionLabel={activeTab === 'overview' ? `LVL ${character.level}` : meta.actionLabel}
       />
     );
