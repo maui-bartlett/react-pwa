@@ -50,6 +50,8 @@ export type StatPillData = {
   pw?: string;
   /** When provided, overrides the tone-derived border/label color with this explicit color. */
   toneColor?: string;
+  /** When provided, overrides the value text color (display mode only, not edit inputs). */
+  valueColor?: string;
 };
 
 export type AttributeRow = {

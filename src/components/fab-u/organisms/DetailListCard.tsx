@@ -161,7 +161,7 @@ function SwipeableRow({
         position: 'relative',
         overflow: 'hidden',
         borderRadius: '9px',
-        boxShadow: fabUTokens.shadow.soft,
+        boxShadow: fabUTokens.shadow.card,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
         transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
@@ -237,7 +237,7 @@ function SwipeableRow({
           borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
           px: 1.25,
           py: 1,
-          bgcolor: fabUTokens.color.surface,
+          bgcolor: fabUTokens.color.pillSurface,
           boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
           transform: isEditing ? 'none' : `translateX(${visualX}px)`,
           transition: swiping ? 'none' : 'transform 0.22s ease',
@@ -437,8 +437,8 @@ function DetailListCard({
                 borderRadius: '9px',
                 px: 1.25,
                 py: 1,
-                bgcolor: fabUTokens.color.surface,
-                boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), ${fabUTokens.shadow.soft}`,
+                bgcolor: fabUTokens.color.pillSurface,
+                boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), ${fabUTokens.shadow.card}`,
                 cursor: onItemClick ? 'pointer' : 'default',
               }}
             >

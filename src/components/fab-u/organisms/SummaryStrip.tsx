@@ -28,6 +28,8 @@ type SummaryMetric = {
   trailingIcon?: ReactNode;
   /** When provided, overrides the default border/background/label color with this accent color. */
   toneColor?: string;
+  /** When provided, overrides the value text color (display mode only). */
+  valueColor?: string;
 };
 
 type SummaryStripProps = {
@@ -81,8 +83,8 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
               sx={{
                 border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : tc ? alpha(tc, 0.5) : fabUTokens.color.border}`,
                 borderRadius: '9px',
-                bgcolor: tc ? alpha(tc, 0.06) : fabUTokens.color.surface,
-                boxShadow: fabUTokens.shadow.soft,
+                bgcolor: fabUTokens.color.pillSurface,
+                boxShadow: fabUTokens.shadow.card,
                 display: 'flex',
                 alignItems: 'center',
                 boxSizing: 'border-box',
@@ -160,7 +162,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                       <Typography
                         variant="body1"
                         sx={{
-                          color: fabUTokens.color.textPrimary,
+                          color: metric.valueColor ?? fabUTokens.color.textPrimary,
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,

@@ -36,7 +36,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
         boxShadow: '0 6px 14px rgba(30, 49, 40, 0.08)',
       }}
     >
-      <Stack spacing={compact ? 0.16 : 0.3}>
+      <Stack spacing={compact ? 0.16 : 0.3} sx={{ flex: 1, minWidth: 0 }}>
         {eyebrow ? (
           <Typography
             data-pw="header-eyebrow"

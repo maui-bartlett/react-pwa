@@ -27,6 +27,7 @@ function StatPill({
   maxValueSuffix,
   pw,
   toneColor,
+  valueColor,
 }: StatPillData) {
   const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState(false);
@@ -153,7 +154,7 @@ function StatPill({
       <Typography
         variant="h6"
         sx={{
-          color: fabUTokens.color.textPrimary,
+          color: valueColor ?? fabUTokens.color.textPrimary,
           fontWeight: 700,
           fontSize: inline ? '0.96rem' : '0.98rem',
           lineHeight: 1.04,
@@ -186,8 +187,8 @@ function StatPill({
             editing || popoverOpen ? fabUTokens.color.textSecondary : toneStyles.borderColor
           }`,
           borderRadius: '10px',
-          backgroundColor: fabUTokens.color.surface,
-          boxShadow: fabUTokens.shadow.soft,
+          backgroundColor: fabUTokens.color.pillSurface,
+          boxShadow: fabUTokens.shadow.card,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box',

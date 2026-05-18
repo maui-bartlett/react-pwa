@@ -5,6 +5,8 @@ import { Tone } from './types';
 type FabUColorTokens = {
   canvas: string;
   surface: string;
+  /** Slightly darkened surface used for pills/cards (distinct from canvas in dark mode). */
+  pillSurface: string;
   surfaceMuted: string;
   border: string;
   textPrimary: string;
@@ -34,7 +36,7 @@ type FabUTokens = {
   isDark: boolean;
   color: FabUColorTokens;
   radius: { pill: number; sm: number; md: number; lg: number };
-  shadow: { soft: string };
+  shadow: { soft: string; card: string };
 };
 
 /** Light-mode tokens (default). */
@@ -43,6 +45,7 @@ const fabUTokens: FabUTokens = {
   color: {
     canvas: '#dfe8e3', // was '#efe8dc' — cooler green-grey, removes warm cream
     surface: '#ffffff',
+    pillSurface: '#ffffff', // same as surface in light mode; pills look lifted via shadow.card
     surfaceMuted: '#edf2ef', // was '#f6f0e6' — cooler, less cream
     border: '#aec0b7', // was '#c9d0c3' — darker for more contrast
     textPrimary: '#111b18', // was '#1d2723' — deeper for higher contrast
@@ -64,7 +67,10 @@ const fabUTokens: FabUTokens = {
     neutral: '#888f88',
   },
   radius: { pill: 999, sm: 9, md: 13, lg: 16 },
-  shadow: { soft: '0 4px 14px rgba(31, 42, 38, 0.09)' }, // was 0.045 — stronger card shadow
+  shadow: {
+    soft: '0 4px 14px rgba(31, 42, 38, 0.09)', // was 0.045 — stronger card shadow
+    card: '0 4px 14px rgba(31, 42, 38, 0.15)', // pills & non-SurfaceCard elements in light mode
+  },
 };
 
 /** Dark-mode tokens. */
@@ -73,6 +79,7 @@ const darkFabUTokens: FabUTokens = {
   color: {
     canvas: '#0e110e',
     surface: '#131613',
+    pillSurface: '#111311', // slightly darker than surface — subtle dark fill for pills/cards
     surfaceMuted: '#1a1e18',
     border: '#263530',
     textPrimary: '#e8e4d8',
@@ -94,7 +101,10 @@ const darkFabUTokens: FabUTokens = {
     neutral: '#888f88',
   },
   radius: { pill: 999, sm: 9, md: 13, lg: 16 },
-  shadow: { soft: '0 4px 14px rgba(0, 0, 0, 0.5)' },
+  shadow: {
+    soft: '0 4px 14px rgba(0, 0, 0, 0.5)',
+    card: '0 4px 14px rgba(0, 0, 0, 0.5)', // same as soft in dark mode
+  },
 };
 
 function getToneStyles(tone: Tone = 'neutral') {

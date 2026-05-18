@@ -141,7 +141,7 @@ function EquipmentRow({
           position: 'relative',
           overflow: 'hidden',
           borderRadius: '9px',
-          boxShadow: fabUTokens.shadow.soft,
+          boxShadow: fabUTokens.shadow.card,
           maxHeight: removing ? 0 : '200px',
           opacity: removing ? 0 : 1,
           transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
@@ -153,7 +153,7 @@ function EquipmentRow({
             borderRadius: '9px',
             px: 1.3,
             py: 0.95,
-            bgcolor: fabUTokens.color.surface,
+            bgcolor: fabUTokens.color.pillSurface,
             boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
           }}
         >
@@ -218,7 +218,7 @@ function EquipmentRow({
         position: 'relative',
         overflow: 'hidden',
         borderRadius: '9px',
-        boxShadow: fabUTokens.shadow.soft,
+        boxShadow: fabUTokens.shadow.card,
         maxHeight: removing ? 0 : '200px',
         opacity: removing ? 0 : 1,
         transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',

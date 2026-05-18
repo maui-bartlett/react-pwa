@@ -291,7 +291,7 @@ function SwipeableSpellRow({
               px: 1.2,
               py: 0.7,
               height: 46,
-              bgcolor: fabUTokens.color.surface,
+              bgcolor: fabUTokens.color.pillSurface,
               zIndex: 1,
               gap: 0.5,
             }}
@@ -390,7 +390,7 @@ function SwipeableSpellRow({
               alignItems: 'center',
               px: 1.2,
               height: 46,
-              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surface,
+              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.pillSurface,
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
@@ -542,7 +542,7 @@ function SwipeableSpellRow({
                     userSelect: 'none',
                     py: 1.25,
                     px: 1.5,
-                    bgcolor: fabUTokens.color.surface,
+                    bgcolor: fabUTokens.color.pillSurface,
                     borderRadius: descVisualX < 0 ? '9px 0 0 9px' : '9px',
                     minHeight: 60,
                     display: 'flex',
@@ -774,6 +774,7 @@ function SpellsTable({
           border: `1px solid ${fabUTokens.color.border}`,
           borderRadius: '9px',
           overflow: 'hidden',
+          boxShadow: fabUTokens.shadow.card,
         }}
       >
         {/* Header */}
@@ -837,7 +838,7 @@ function SpellsTable({
               px: 1.2,
               py: 0.7,
               height: 46,
-              bgcolor: fabUTokens.color.surface,
+              bgcolor: fabUTokens.color.pillSurface,
               gap: 0.5,
             }}
           >

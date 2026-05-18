@@ -562,6 +562,7 @@ function FabU() {
             valueSuffix: ` / ${character.totalXP}`,
             pw: 'ov-xp',
             onChange: setCurrentXP,
+            valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.brandText,
           },
           {
             label: 'LVL',
@@ -569,6 +570,7 @@ function FabU() {
             pw: 'ov-level',
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
+            valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.brandText,
           },
         ]}
       />
@@ -660,6 +662,7 @@ function FabU() {
               onChange: setCurrentHP,
               maxValue: character.totalHP,
               pw: 'ov-hp',
+              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
@@ -670,6 +673,7 @@ function FabU() {
               onChange: setCurrentMP,
               maxValue: character.totalMP,
               pw: 'ov-mp',
+              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
             {
               label: 'IP',
@@ -765,6 +769,7 @@ function FabU() {
               onChange: setCurrentHP,
               maxValue: character.totalHP,
               pw: 'cb-hp',
+              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
@@ -775,6 +780,7 @@ function FabU() {
               onChange: setCurrentMP,
               maxValue: character.totalMP,
               pw: 'cb-mp',
+              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
           ]}
           topRowTemplate="repeat(3, minmax(0, 1fr))"
@@ -1245,6 +1251,7 @@ function FabU() {
               pw: 'hp',
               onChange: setCurrentHP,
               maxValue: character.totalHP,
+              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.hp,
             },
             {
               label: 'MP',
@@ -1253,6 +1260,7 @@ function FabU() {
               pw: 'mp',
               onChange: setCurrentMP,
               maxValue: character.totalMP,
+              valueColor: fabUTokens.isDark ? undefined : fabUTokens.color.mp,
             },
             {
               label: 'IP',
