@@ -784,7 +784,7 @@ function SpellsTable({
             alignItems: 'center',
             px: 1.2,
             py: 0.75,
-            bgcolor: fabUTokens.color.brand,
+            bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : '#1a2e26',
             borderBottom: `1px solid rgba(0,0,0,0.15)`,
           }}
         >
