@@ -35,7 +35,11 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
               borderRadius: '10px',
               borderColor: active ? fabUTokens.color.brand : fabUTokens.color.border,
               bgcolor: active ? fabUTokens.color.brand : fabUTokens.color.surface,
-              color: active ? '#fff' : fabUTokens.color.textSecondary,
+              color: active
+                ? '#fff'
+                : fabUTokens.isDark
+                  ? '#ffffff'
+                  : fabUTokens.color.textSecondary,
               textTransform: 'none',
               fontWeight: 700,
               fontSize: '0.76rem',

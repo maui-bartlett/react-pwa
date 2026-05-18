@@ -74,6 +74,7 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
       <Stack
         sx={{
           height: '100%',
+          bgcolor: fabUTokens.color.canvas,
         }}
       >
         <Box

@@ -454,13 +454,12 @@ function SwipeableSkillRow({
       {/* Accordion expand panel — swipeable, edit-only channel */}
       {!isEditing && (
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
-          <Box sx={{ px: 1.2, pb: 0 }}>
+          <Box sx={{ px: 1.2, py: 0.75 }}>
             <Box
               sx={{
                 position: 'relative',
                 overflow: 'hidden',
                 borderRadius: '9px',
-                my: 0.75,
               }}
             >
               {/* Desc action channel (edit only) */}

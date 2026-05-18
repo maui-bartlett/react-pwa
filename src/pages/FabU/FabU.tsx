@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -39,6 +40,7 @@ import {
   TabOption,
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
+  useFabUTokens,
 } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { themeModeState } from '@/theme/atoms';
@@ -95,6 +97,192 @@ const screenMeta: Record<
   },
 };
 
+const TRAIT_ACTION_WIDTH = 64;
+
+type SwipeableTraitRowProps = {
+  label: string;
+  value: string;
+  onEdit: (value: string) => void;
+};
+
+function SwipeableTraitRow({ label, value, onEdit }: SwipeableTraitRowProps) {
+  const fabUTokens = useFabUTokens();
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const rowElRef = useRef<HTMLElement | null>(null);
+  const committedRef = useRef(false);
+
+  const visualX = Math.max(-TRAIT_ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
+  const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+
+  function startEdit() {
+    setSnapX(0);
+    setCurrentDeltaX(0);
+    setDraft(value);
+    setIsEditing(true);
+  }
+
+  function commit() {
+    onEdit(draft);
+    setIsEditing(false);
+  }
+
+  function revert() {
+    setIsEditing(false);
+  }
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
+      setCurrentDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setSwiping(false);
+      if (dir === 'Left' && absX > 50 && snapX === 0) {
+        setSnapX(-TRAIT_ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > 50 && snapX !== 0) {
+        setSnapX(0);
+      }
+      setCurrentDeltaX(0);
+      setTimeout(() => {
+        committedRef.current = false;
+      }, 50);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      setSnapX(0);
+      setCurrentDeltaX(0);
+      setSwiping(false);
+    }
+  }, [isEditing]);
+
+  const setRef = (el: HTMLElement | null) => {
+    swipeHandlers.ref(el);
+    rowElRef.current = el;
+  };
+
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: '9px',
+        boxShadow: fabUTokens.shadow.card,
+      }}
+    >
+      {channelVisible && (
+        <Box
+          onClick={(e) => {
+            e.stopPropagation();
+            startEdit();
+          }}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: TRAIT_ACTION_WIDTH,
+            bgcolor: editColor,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 0,
+            boxShadow:
+              'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
+          }}
+        >
+          <Pencil size={18} color="white" />
+        </Box>
+      )}
+      <Stack
+        {...(!isEditing ? swipeHandlers : {})}
+        ref={!isEditing ? setRef : undefined}
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        gap={2}
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+          borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
+          px: 1.25,
+          py: 0.9,
+          bgcolor: fabUTokens.color.pillSurface,
+          boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+          transform: isEditing ? 'none' : `translateX(${visualX}px)`,
+          transition: swiping ? 'none' : 'transform 0.22s ease',
+          touchAction: isEditing ? 'auto' : 'pan-y',
+          userSelect: 'none',
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            color: fabUTokens.color.textSecondary,
+            fontWeight: 700,
+            fontSize: '0.72rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          {label}
+        </Typography>
+        {isEditing ? (
+          <InputBase
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commit();
+              if (e.key === 'Escape') revert();
+            }}
+            onBlur={commit}
+            sx={{
+              flex: 1,
+              '& input': {
+                p: 0,
+                textAlign: 'right',
+                fontSize: '0.82rem',
+                fontWeight: 400,
+                color: fabUTokens.color.textPrimary,
+              },
+            }}
+          />
+        ) : (
+          <Typography
+            sx={{
+              flex: 1,
+              textAlign: 'right',
+              fontSize: '0.82rem',
+              fontWeight: 400,
+              color: fabUTokens.color.textPrimary,
+            }}
+          >
+            {value}
+          </Typography>
+        )}
+      </Stack>
+    </Box>
+  );
+}
+
 function FabU() {
   const themeMode = useAtomValue(themeModeState);
   const [, setThemeMode] = useAtom(themeModeState);
@@ -113,8 +301,6 @@ function FabU() {
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
   const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
-  const [editingTrait, setEditingTrait] = useState<'identity' | 'theme' | 'origin' | null>(null);
-  const [traitDraft, setTraitDraft] = useState('');
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -203,7 +389,13 @@ function FabU() {
       ...c,
       traits: {
         ...c.traits,
-        [key]: key === 'identity' ? [value, ...c.traits.identity.slice(1)] : value,
+        [key]:
+          key === 'identity'
+            ? value
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : value,
       },
     }));
   const updateBackstoryPrompt = (index: number, prompt: string) =>
@@ -616,104 +808,26 @@ function FabU() {
     );
   }
 
-  function startEditTrait(key: 'identity' | 'theme' | 'origin', currentValue: string) {
-    setTraitDraft(currentValue);
-    setEditingTrait(key);
-  }
-  function commitEditTrait() {
-    if (!editingTrait) return;
-    updateTrait(editingTrait, traitDraft);
-    setEditingTrait(null);
-  }
-  function revertEditTrait() {
-    setEditingTrait(null);
-  }
-
   function renderOverview() {
     return (
       <>
         <SurfaceCard label="Traits">
           <Stack spacing={1}>
-            {(
-              [
-                {
-                  key: 'identity' as const,
-                  label: 'Identity',
-                  value: character.traits.identity[0] ?? '',
-                },
-                { key: 'theme' as const, label: 'Theme', value: character.traits.theme },
-                { key: 'origin' as const, label: 'Belonging', value: character.traits.origin },
-              ] as const
-            ).map(({ key, label, value }) => (
-              <Box
-                key={key}
-                onClick={() => {
-                  if (editingTrait !== key) startEditTrait(key, value);
-                }}
-                sx={{
-                  border: `1px solid ${fabUTokens.color.border}`,
-                  borderRadius: '9px',
-                  px: 1.25,
-                  py: 0.9,
-                  bgcolor: fabUTokens.color.pillSurface,
-                  boxShadow: `${fabUTokens.shadow.card}, inset 3px 0 0 rgba(49, 92, 77, 0.12)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 2,
-                  cursor: 'pointer',
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: fabUTokens.color.textSecondary,
-                    fontWeight: 700,
-                    fontSize: '0.6rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  {label}
-                </Typography>
-                {editingTrait === key ? (
-                  <InputBase
-                    autoFocus
-                    value={traitDraft}
-                    onChange={(e) => setTraitDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitEditTrait();
-                      if (e.key === 'Escape') revertEditTrait();
-                    }}
-                    onBlur={commitEditTrait}
-                    sx={{
-                      flex: 1,
-                      '& input': {
-                        p: 0,
-                        textAlign: 'right',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        color: fabUTokens.color.textPrimary,
-                      },
-                    }}
-                  />
-                ) : (
-                  <Typography
-                    sx={{
-                      flex: 1,
-                      textAlign: 'right',
-                      fontSize: '0.9rem',
-                      fontWeight: 700,
-                      color: fabUTokens.color.textPrimary,
-                    }}
-                  >
-                    {value}
-                  </Typography>
-                )}
-              </Box>
-            ))}
+            <SwipeableTraitRow
+              label="Identity"
+              value={character.traits.identity.join(', ')}
+              onEdit={(v) => updateTrait('identity', v)}
+            />
+            <SwipeableTraitRow
+              label="Theme"
+              value={character.traits.theme}
+              onEdit={(v) => updateTrait('theme', v)}
+            />
+            <SwipeableTraitRow
+              label="Belonging"
+              value={character.traits.origin}
+              onEdit={(v) => updateTrait('origin', v)}
+            />
           </Stack>
         </SurfaceCard>
 
@@ -1232,7 +1346,7 @@ function FabU() {
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
-              py: 5.75,
+              minHeight: 129,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1269,7 +1383,7 @@ function FabU() {
                 + Class • 0 / 10
               </Typography>
             </Box>
-            {/* Inner dashed box — sized to a SkillsTable with header + 1 skill row */}
+            {/* Inner dashed box */}
             <Box
               sx={{
                 position: 'absolute',
@@ -1277,10 +1391,8 @@ function FabU() {
                 borderRadius: '7px',
                 left: 10,
                 right: 10,
-                height: 82,
-                bottom: 20,
-                top: 'auto',
-                transform: 'none',
+                top: 37,
+                bottom: 10,
                 pointerEvents: 'none',
               }}
             />
@@ -1290,10 +1402,10 @@ function FabU() {
               spacing={0.6}
               sx={{
                 position: 'absolute',
-                bottom: 20,
+                top: 37,
+                bottom: 10,
                 left: 10,
                 right: 10,
-                height: 82,
                 justifyContent: 'center',
                 zIndex: 1,
               }}
