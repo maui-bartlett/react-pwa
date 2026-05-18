@@ -1516,7 +1516,7 @@ function FabU() {
   const eyebrow =
     activeTab === 'overview' ? (
       <>
-        Fabula <Sparkles size={10} color="#FFD700" /> Ultima
+        Fabula <Sparkles size={10} color={fabUTokens.color.highlight} /> Ultima
       </>
     ) : (
       `Rad • LVL ${character.level}`
