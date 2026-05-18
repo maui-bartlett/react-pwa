@@ -1150,6 +1150,7 @@ function FabU() {
           <Box
             onClick={(e) => openClassPicker(e as React.MouseEvent<HTMLElement>)}
             sx={{
+              position: 'relative',
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
@@ -1162,6 +1163,35 @@ function FabU() {
               cursor: 'pointer',
             }}
           >
+            {/* Pill label bisecting the top border */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 12,
+                transform: 'translateY(-50%)',
+                display: 'inline-flex',
+                borderRadius: '7px',
+                bgcolor: fabUTokens.color.highlight,
+                px: 1.05,
+                py: 0.36,
+                pointerEvents: 'none',
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  color: fabUTokens.color.highlightFg,
+                  fontWeight: 700,
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.055em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1,
+                }}
+              >
+                Class
+              </Typography>
+            </Box>
             <AddIcon fontSize="small" />
             <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
               Class
