@@ -520,6 +520,21 @@ function FabU() {
   };
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
+
+  // Status effects reduce attribute die sizes by one step per effect (Fabula Ultima rules)
+  const STATUS_DIE_ORDER = ['d6', 'd8', 'd10', 'd12', 'd20'];
+  function reduceAttrDie(die: string, steps: number): import('@/components/fab-u').DieSize {
+    const idx = STATUS_DIE_ORDER.indexOf(die);
+    return (STATUS_DIE_ORDER[Math.max(0, idx - steps)] ??
+      'd6') as import('@/components/fab-u').DieSize;
+  }
+  const attrStatusReductions: Record<AttrKey, number> = {
+    dex: (statusEffects.slow ? 1 : 0) + (statusEffects.enraged ? 1 : 0),
+    insight: (statusEffects.dazed ? 1 : 0) + (statusEffects.enraged ? 1 : 0),
+    might: (statusEffects.weak ? 1 : 0) + (statusEffects.poisoned ? 1 : 0),
+    willpower: (statusEffects.shaken ? 1 : 0) + (statusEffects.poisoned ? 1 : 0),
+  };
+
   function makeAttrRows() {
     const entries: Array<{ label: string; key: AttrKey; category: string }> = [
       { label: 'Dexterity', key: 'dex', category: 'speed' },
@@ -527,36 +542,45 @@ function FabU() {
       { label: 'Might', key: 'might', category: 'power' },
       { label: 'Willpower', key: 'willpower', category: 'focus' },
     ];
-    return entries.map(({ label, key, category }, index) => ({
-      label,
-      score: '',
-      modifier: '',
-      category,
-      die: character.attributes[key].die,
-      modifierNum: character.attributes[key].modifier,
-      temp: character.attributes[key].temp ?? null,
-      onChangeDie: (d: import('@/components/fab-u').DieSize) =>
-        setCharacter((c) => ({
-          ...c,
-          attributes: { ...c.attributes, [key]: { ...c.attributes[key], die: d } },
-        })),
-      onChangeModifier: (m: number) =>
-        setCharacter((c) => ({
-          ...c,
-          attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
-        })),
-      onChangeTemp: (t: import('@/components/fab-u').DieSize | null) =>
-        setCharacter((c) => ({
-          ...c,
-          attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
-        })),
-      popoverHorizontal:
-        index === 0
-          ? ('left' as const)
-          : index === entries.length - 1
-            ? ('right' as const)
-            : undefined,
-    }));
+    return entries.map(({ label, key, category }, index) => {
+      const baseDie = character.attributes[key].die;
+      const userTemp = character.attributes[key].temp ?? null;
+      const reductions = attrStatusReductions[key];
+      const effectiveDie =
+        reductions > 0 ? reduceAttrDie(userTemp ?? baseDie, reductions) : userTemp;
+      // Only show as temp (parenthesised) when it differs from the base die
+      const displayTemp = effectiveDie !== null && effectiveDie !== baseDie ? effectiveDie : null;
+      return {
+        label,
+        score: '',
+        modifier: '',
+        category,
+        die: character.attributes[key].die,
+        modifierNum: character.attributes[key].modifier,
+        temp: displayTemp,
+        onChangeDie: (d: import('@/components/fab-u').DieSize) =>
+          setCharacter((c) => ({
+            ...c,
+            attributes: { ...c.attributes, [key]: { ...c.attributes[key], die: d } },
+          })),
+        onChangeModifier: (m: number) =>
+          setCharacter((c) => ({
+            ...c,
+            attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
+          })),
+        onChangeTemp: (t: import('@/components/fab-u').DieSize | null) =>
+          setCharacter((c) => ({
+            ...c,
+            attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
+          })),
+        popoverHorizontal:
+          index === 0
+            ? ('left' as const)
+            : index === entries.length - 1
+              ? ('right' as const)
+              : undefined,
+      };
+    });
   }
 
   function renderProgressStrip() {
