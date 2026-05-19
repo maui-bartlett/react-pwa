@@ -1462,9 +1462,7 @@ function FabU() {
                     action === 'Attack' ? (
                       <Sword size={14} />
                     ) : action === 'Spell' ? (
-                      <AutoAwesomeOutlinedIcon
-                        sx={{ fontSize: 14, color: fabUTokens.color.highlight }}
-                      />
+                      <AutoAwesomeOutlinedIcon sx={{ fontSize: 14, color: '#E2A530' }} />
                     ) : action === 'Guard' ? (
                       <Shield size={14} />
                     ) : action === 'Inventory' ? (
@@ -2321,7 +2319,7 @@ function FabU() {
                         }),
                         py: `${0.72 / 0.84}rem`,
                         px: `${1 / 0.84}rem`,
-                        color: '#C49440',
+                        color: fabUTokens.color.highlight,
                         fontWeight: 700,
                       },
                     }}
@@ -2330,7 +2328,7 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: '#C49440',
+                      color: fabUTokens.color.highlight,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
