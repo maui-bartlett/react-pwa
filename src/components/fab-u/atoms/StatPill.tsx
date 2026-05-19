@@ -28,6 +28,8 @@ function StatPill({
   pw,
   toneColor,
   valueColor,
+  borderColor,
+  fillGradient,
 }: StatPillData) {
   const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState(false);
@@ -184,11 +186,19 @@ function StatPill({
         }}
         sx={{
           border: `1px solid ${
-            editing || popoverOpen ? fabUTokens.color.textSecondary : toneStyles.borderColor
+            editing || popoverOpen
+              ? fabUTokens.color.textSecondary
+              : (borderColor ?? toneStyles.borderColor)
           }`,
           borderRadius: '10px',
-          backgroundColor:
-            toneColor && fabUTokens.isDark ? alpha(toneColor, 0.07) : fabUTokens.color.pillSurface,
+          ...(fillGradient && !editing && !popoverOpen
+            ? { background: fillGradient }
+            : {
+                backgroundColor:
+                  toneColor && fabUTokens.isDark
+                    ? alpha(toneColor, 0.07)
+                    : fabUTokens.color.pillSurface,
+              }),
           boxShadow: fabUTokens.shadow.card,
           display: 'flex',
           alignItems: 'center',

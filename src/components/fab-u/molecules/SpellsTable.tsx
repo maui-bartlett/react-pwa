@@ -831,7 +831,7 @@ function SpellsTable({
             alignItems: 'center',
             px: 1.2,
             py: 0.75,
-            bgcolor: '#1e2822',
+            bgcolor: '#1c1e1e',
             borderBottom: `1px solid rgba(0,0,0,0.15)`,
           }}
         >

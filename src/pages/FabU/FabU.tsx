@@ -194,116 +194,117 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
   };
 
   return (
-    <Box
-      sx={{
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: '9px',
-        boxShadow: fabUTokens.shadow.card,
-      }}
-    >
-      {channelVisible && (
-        <Box
-          sx={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: TRAIT_ACTION_WIDTH,
-            display: 'flex',
-            zIndex: 0,
-          }}
-        >
-          <Box
-            onClick={(e) => {
-              e.stopPropagation();
-              startEdit();
-            }}
-            sx={{
-              flex: 1,
-              bgcolor: editColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <Pencil size={18} color="white" />
-          </Box>
-        </Box>
-      )}
-      <Stack
-        {...(!isEditing ? swipeHandlers : {})}
-        ref={!isEditing ? setRef : undefined}
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        gap={2}
+    <Box sx={{ borderRadius: '9px', boxShadow: fabUTokens.shadow.card }}>
+      <Box
         sx={{
           position: 'relative',
-          zIndex: 1,
-          border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
-          borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
-          px: 1.25,
-          py: 0.9,
-          bgcolor: fabUTokens.color.pillSurface,
-          boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
-          transform: isEditing ? 'none' : `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease',
-          touchAction: isEditing ? 'auto' : 'pan-y',
-          userSelect: 'none',
+          overflow: 'hidden',
+          borderRadius: '9px',
         }}
       >
-        <Typography
-          variant="caption"
+        {channelVisible && (
+          <Box
+            sx={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: TRAIT_ACTION_WIDTH,
+              display: 'flex',
+              zIndex: 0,
+            }}
+          >
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                startEdit();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: editColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Pencil size={18} color="white" />
+            </Box>
+          </Box>
+        )}
+        <Stack
+          {...(!isEditing ? swipeHandlers : {})}
+          ref={!isEditing ? setRef : undefined}
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={2}
           sx={{
-            color: fabUTokens.color.textSecondary,
-            fontWeight: 700,
-            fontSize: '0.72rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
+            position: 'relative',
+            zIndex: 1,
+            border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+            borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
+            px: 1.25,
+            py: 0.9,
+            bgcolor: fabUTokens.color.pillSurface,
+            boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+            transform: isEditing ? 'none' : `translateX(${visualX}px)`,
+            transition: swiping ? 'none' : 'transform 0.22s ease',
+            touchAction: isEditing ? 'auto' : 'pan-y',
+            userSelect: 'none',
           }}
         >
-          {label}
-        </Typography>
-        {isEditing ? (
-          <InputBase
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commit();
-              if (e.key === 'Escape') revert();
-            }}
-            onBlur={commit}
+          <Typography
+            variant="caption"
             sx={{
-              flex: 1,
-              '& input': {
-                p: 0,
+              color: fabUTokens.color.textSecondary,
+              fontWeight: 700,
+              fontSize: '0.72rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {label}
+          </Typography>
+          {isEditing ? (
+            <InputBase
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commit();
+                if (e.key === 'Escape') revert();
+              }}
+              onBlur={commit}
+              sx={{
+                flex: 1,
+                '& input': {
+                  p: 0,
+                  textAlign: 'right',
+                  fontSize: '0.82rem',
+                  fontWeight: 400,
+                  color: fabUTokens.color.textPrimary,
+                },
+              }}
+            />
+          ) : (
+            <Typography
+              sx={{
+                flex: 1,
                 textAlign: 'right',
                 fontSize: '0.82rem',
                 fontWeight: 400,
                 color: fabUTokens.color.textPrimary,
-              },
-            }}
-          />
-        ) : (
-          <Typography
-            sx={{
-              flex: 1,
-              textAlign: 'right',
-              fontSize: '0.82rem',
-              fontWeight: 400,
-              color: fabUTokens.color.textPrimary,
-            }}
-          >
-            {value}
-          </Typography>
-        )}
-        {trailingWidth != null && <Box sx={{ width: trailingWidth, flexShrink: 0 }} />}
-      </Stack>
+              }}
+            >
+              {value}
+            </Typography>
+          )}
+          {trailingWidth != null && <Box sx={{ width: trailingWidth, flexShrink: 0 }} />}
+        </Stack>
+      </Box>
     </Box>
   );
 }
@@ -389,136 +390,137 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
   return (
     <Box>
       {/* Header row — swipeable, edits identity[0] */}
-      <Box
-        sx={{
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: '9px',
-          boxShadow: fabUTokens.shadow.card,
-        }}
-      >
-        {channelVisible && (
-          <Box
-            sx={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: TRAIT_ACTION_WIDTH,
-              display: 'flex',
-              zIndex: 0,
-            }}
-          >
-            <Box
-              onClick={(e) => {
-                e.stopPropagation();
-                startEdit();
-              }}
-              sx={{
-                flex: 1,
-                bgcolor: editColor,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <Pencil size={18} color="white" />
-            </Box>
-          </Box>
-        )}
-        <Stack
-          {...(!isEditing ? swipeHandlers : {})}
-          ref={!isEditing ? setRef : undefined}
-          direction="row"
-          alignItems="center"
-          gap={2}
-          onClick={() => {
-            if (committedRef.current || isEditing) return;
-            if (snapX !== 0) {
-              setSnapX(0);
-            } else if (rest.length > 0) {
-              setIsOpen((o) => !o);
-            }
-          }}
+      <Box sx={{ borderRadius: '9px', boxShadow: fabUTokens.shadow.card }}>
+        <Box
           sx={{
             position: 'relative',
-            zIndex: 1,
-            border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
-            borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
-            px: 1.25,
-            py: 0.9,
-            bgcolor: fabUTokens.color.pillSurface,
-            boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
-            transform: isEditing ? 'none' : `translateX(${visualX}px)`,
-            transition: swiping ? 'none' : 'transform 0.22s ease',
-            touchAction: isEditing ? 'auto' : 'pan-y',
-            userSelect: 'none',
-            cursor: rest.length > 0 ? 'pointer' : 'default',
+            overflow: 'hidden',
+            borderRadius: '9px',
           }}
         >
-          <Typography
-            variant="caption"
+          {channelVisible && (
+            <Box
+              sx={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: TRAIT_ACTION_WIDTH,
+                display: 'flex',
+                zIndex: 0,
+              }}
+            >
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEdit();
+                }}
+                sx={{
+                  flex: 1,
+                  bgcolor: editColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <Pencil size={18} color="white" />
+              </Box>
+            </Box>
+          )}
+          <Stack
+            {...(!isEditing ? swipeHandlers : {})}
+            ref={!isEditing ? setRef : undefined}
+            direction="row"
+            alignItems="center"
+            gap={2}
+            onClick={() => {
+              if (committedRef.current || isEditing) return;
+              if (snapX !== 0) {
+                setSnapX(0);
+              } else if (rest.length > 0) {
+                setIsOpen((o) => !o);
+              }
+            }}
             sx={{
-              color: fabUTokens.color.textSecondary,
-              fontWeight: 700,
-              fontSize: '0.72rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
+              position: 'relative',
+              zIndex: 1,
+              border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+              borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
+              px: 1.25,
+              py: 0.9,
+              bgcolor: fabUTokens.color.pillSurface,
+              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+              transform: isEditing ? 'none' : `translateX(${visualX}px)`,
+              transition: swiping ? 'none' : 'transform 0.22s ease',
+              touchAction: isEditing ? 'auto' : 'pan-y',
+              userSelect: 'none',
+              cursor: rest.length > 0 ? 'pointer' : 'default',
             }}
           >
-            Identity
-          </Typography>
-          {isEditing ? (
-            <InputBase
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commit();
-                if (e.key === 'Escape') revert();
-              }}
-              onBlur={commit}
-              onClick={(e) => e.stopPropagation()}
+            <Typography
+              variant="caption"
               sx={{
-                flex: 1,
-                '& input': {
-                  p: 0,
+                color: fabUTokens.color.textSecondary,
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              Identity
+            </Typography>
+            {isEditing ? (
+              <InputBase
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commit();
+                  if (e.key === 'Escape') revert();
+                }}
+                onBlur={commit}
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  flex: 1,
+                  '& input': {
+                    p: 0,
+                    textAlign: 'right',
+                    fontSize: '0.82rem',
+                    fontWeight: 400,
+                    color: fabUTokens.color.textPrimary,
+                  },
+                }}
+              />
+            ) : (
+              <Typography
+                sx={{
+                  flex: 1,
                   textAlign: 'right',
                   fontSize: '0.82rem',
                   fontWeight: 400,
                   color: fabUTokens.color.textPrimary,
-                },
-              }}
-            />
-          ) : (
-            <Typography
-              sx={{
-                flex: 1,
-                textAlign: 'right',
-                fontSize: '0.82rem',
-                fontWeight: 400,
-                color: fabUTokens.color.textPrimary,
-              }}
-            >
-              {first}
-            </Typography>
-          )}
-          {rest.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              <ChevronDown
-                size={16}
-                color={fabUTokens.color.textSecondary}
-                style={{
-                  transform: isOpen ? 'rotate(180deg)' : 'none',
-                  transition: 'transform 0.2s ease',
                 }}
-              />
-            </Box>
-          )}
-        </Stack>
+              >
+                {first}
+              </Typography>
+            )}
+            {rest.length > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <ChevronDown
+                  size={16}
+                  color={fabUTokens.color.textSecondary}
+                  style={{
+                    transform: isOpen ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s ease',
+                  }}
+                />
+              </Box>
+            )}
+          </Stack>
+        </Box>
       </Box>
 
       {/* Expanded identity items */}
@@ -1262,7 +1264,10 @@ function FabU() {
               value: String(character.fabulaPoints),
               onChange: setFP,
               pw: 'cb-fp',
-              toneColor: fabUTokens.color.fp,
+              toneColor: '#ffffff',
+              valueColor: '#ffffff',
+              borderColor: '#ffffff',
+              fillGradient: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 35%)`,
             },
             {
               label: 'IP',
@@ -1905,7 +1910,7 @@ function FabU() {
                 left: 10,
                 right: 10,
                 top: 22,
-                bottom: 20,
+                bottom: 12,
                 pointerEvents: 'none',
               }}
             />
@@ -1916,7 +1921,7 @@ function FabU() {
               sx={{
                 position: 'absolute',
                 top: 22,
-                bottom: 20,
+                bottom: 12,
                 left: 10,
                 right: 10,
                 justifyContent: 'center',
