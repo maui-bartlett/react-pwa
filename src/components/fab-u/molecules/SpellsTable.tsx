@@ -93,7 +93,7 @@ function SwipeableSpellRow({
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [removing] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -113,13 +113,6 @@ function SwipeableSpellRow({
 
   const descVisualX = Math.max(-DESC_ACTION_WIDTH, Math.min(0, descSnapX + descDeltaX));
   const descChannelVisible = descSnapX !== 0 || (descSwiping && descDeltaX < -5);
-
-  function triggerRemove() {
-    setRemoving(true);
-    setSnapX(0);
-    setCurrentDeltaX(0);
-    setTimeout(() => onDelete?.(), 450);
-  }
 
   function startEditingEffect() {
     setDescSnapX(0);
@@ -245,7 +238,9 @@ function SwipeableSpellRow({
               data-pw="spell-row-delete"
               onClick={(e) => {
                 e.stopPropagation();
-                triggerRemove();
+                setSnapX(0);
+                setCurrentDeltaX(0);
+                onDelete?.();
               }}
               sx={{
                 flex: 1,

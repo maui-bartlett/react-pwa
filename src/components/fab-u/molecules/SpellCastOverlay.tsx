@@ -105,7 +105,7 @@ function SpellCastOverlay({ burstId }: SpellCastOverlayProps) {
               color: star.color,
               fontSize: star.size,
               strokeWidth: 2.4,
-              filter: `drop-shadow(0 2px 5px rgba(38, 73, 61, 0.42)) drop-shadow(0 0 18px ${alpha(amberColor, 0.55)})`,
+              filter: `drop-shadow(0 0 6px rgba(255, 255, 255, 0.92)) drop-shadow(0 0 14px rgba(255, 230, 120, 0.82)) drop-shadow(0 2px 5px rgba(38, 73, 61, 0.42)) drop-shadow(0 0 22px ${alpha(amberColor, 0.65)})`,
               animation: `spellCastBurst 900ms cubic-bezier(0.16, 1, 0.3, 1) ${index * 36}ms both`,
             }}
           />

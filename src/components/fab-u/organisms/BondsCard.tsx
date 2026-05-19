@@ -52,7 +52,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [removing] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
@@ -62,13 +62,6 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH; // 0 (closed) → 1 (fully open)
-
-  function triggerRemove() {
-    setRemoving(true);
-    setSnapX(0);
-    setCurrentDeltaX(0);
-    setTimeout(() => onRemove(bond.id), 450);
-  }
 
   function startEdit() {
     setSnapX(0);
@@ -177,7 +170,9 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
             data-pw={`bond-delete-${bond.id}`}
             onClick={(e) => {
               e.stopPropagation();
-              triggerRemove();
+              setSnapX(0);
+              setCurrentDeltaX(0);
+              onRemove(bond.id);
             }}
             sx={{
               flex: 1,

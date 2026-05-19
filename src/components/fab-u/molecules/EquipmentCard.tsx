@@ -63,20 +63,13 @@ function EquipmentRow({
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [removing] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
-
-  function triggerRemove() {
-    setRemoving(true);
-    setSnapX(0);
-    setCurrentDeltaX(0);
-    setTimeout(() => onDelete?.(index), 450);
-  }
 
   function startEdit() {
     setSnapX(0);
@@ -242,7 +235,9 @@ function EquipmentRow({
           <Box
             onClick={(e) => {
               e.stopPropagation();
-              triggerRemove();
+              setSnapX(0);
+              setCurrentDeltaX(0);
+              onDelete?.(index);
             }}
             sx={{
               flex: 1,
