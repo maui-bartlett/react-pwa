@@ -23,6 +23,99 @@ async function getBondId(page: Page, characterName: string): Promise<string> {
   return pw.replace('bond-row-', '');
 }
 
+// ── Touch helpers (module-scope so all describe blocks can share them) ──────
+
+// Dispatch raw touch events to the inner swipe-handler Stack.
+// Uses the inner Stack (parent of bond-add-{id}) as target so the
+// events land directly on the element react-swipeable is attached to,
+// avoiding any overlap with the absolutely-positioned footer.
+async function touchSwipeLeft(page: Page, bondId: string, distancePx = 180) {
+  await page.evaluate(
+    ({ id, dist }) => {
+      const target = document.querySelector(`[data-pw="bond-add-${id}"]`)?.parentElement;
+      if (!target) throw new Error(`swipe target not found for bond-add-${id}`);
+      const r = target.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+
+      function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
+        const touch = new Touch({
+          identifier: 1,
+          target: target!,
+          clientX: x,
+          clientY: y,
+          screenX: x,
+          screenY: y,
+          pageX: x,
+          pageY: y,
+          radiusX: 10,
+          radiusY: 10,
+          rotationAngle: 0,
+          force: 1,
+        });
+        return new TouchEvent(type, {
+          touches: type === 'touchend' ? [] : [touch],
+          changedTouches: [touch],
+          bubbles: true,
+          cancelable: true,
+        });
+      }
+
+      const steps = 15;
+      target.dispatchEvent(makeTouchEvent('touchstart', cx, cy));
+      for (let i = 1; i <= steps; i++) {
+        target.dispatchEvent(makeTouchEvent('touchmove', cx - Math.round((dist * i) / steps), cy));
+      }
+      target.dispatchEvent(makeTouchEvent('touchend', cx - dist, cy));
+    },
+    { id: bondId, dist: distancePx },
+  );
+}
+
+// Dispatch touchstart + touchmoves without touchend — leaves row in mid-swipe state.
+async function touchSwipeLeftPartial(page: Page, bondId: string, distancePx: number) {
+  await page.evaluate(
+    ({ id, dist }) => {
+      const target = document.querySelector(`[data-pw="bond-add-${id}"]`)?.parentElement;
+      if (!target) throw new Error(`swipe target not found for bond-add-${id}`);
+      const r = target.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+
+      function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
+        const touch = new Touch({
+          identifier: 1,
+          target: target!,
+          clientX: x,
+          clientY: y,
+          screenX: x,
+          screenY: y,
+          pageX: x,
+          pageY: y,
+          radiusX: 10,
+          radiusY: 10,
+          rotationAngle: 0,
+          force: 1,
+        });
+        return new TouchEvent(type, {
+          touches: [touch],
+          changedTouches: [touch],
+          bubbles: true,
+          cancelable: true,
+        });
+      }
+
+      const steps = 15;
+      target.dispatchEvent(makeTouchEvent('touchstart', cx, cy));
+      for (let i = 1; i <= steps; i++) {
+        target.dispatchEvent(makeTouchEvent('touchmove', cx - Math.round((dist * i) / steps), cy));
+      }
+      // No touchend — row stays in mid-swipe state
+    },
+    { id: bondId, dist: distancePx },
+  );
+}
+
 test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
@@ -30,97 +123,6 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await page.reload();
     await page.waitForLoadState('networkidle');
   });
-
-  // Dispatch raw touch events to the inner swipe-handler Stack.
-  // Uses the inner Stack (parent of bond-add-{id}) as target so the
-  // events land directly on the element react-swipeable is attached to,
-  // avoiding any overlap with the absolutely-positioned footer.
-  async function touchSwipeLeft(page: Page, bondId: string, distancePx = 180) {
-    await page.evaluate(
-      ({ id, dist }) => {
-        const target = document.querySelector(`[data-pw="bond-add-${id}"]`)?.parentElement;
-        if (!target) throw new Error(`swipe target not found for bond-add-${id}`);
-        const r = target.getBoundingClientRect();
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-
-        function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
-          const touch = new Touch({
-            identifier: 1,
-            target: target!,
-            clientX: x,
-            clientY: y,
-            screenX: x,
-            screenY: y,
-            pageX: x,
-            pageY: y,
-            radiusX: 10,
-            radiusY: 10,
-            rotationAngle: 0,
-            force: 1,
-          });
-          return new TouchEvent(type, {
-            touches: type === 'touchend' ? [] : [touch],
-            changedTouches: [touch],
-            bubbles: true,
-            cancelable: true,
-          });
-        }
-
-        const steps = 15;
-        target.dispatchEvent(makeTouchEvent('touchstart', cx, cy));
-        for (let i = 1; i <= steps; i++) {
-          target.dispatchEvent(makeTouchEvent('touchmove', cx - Math.round((dist * i) / steps), cy));
-        }
-        target.dispatchEvent(makeTouchEvent('touchend', cx - dist, cy));
-      },
-      { id: bondId, dist: distancePx },
-    );
-  }
-
-  // Dispatch touchstart + touchmoves without touchend — leaves row in mid-swipe state.
-  async function touchSwipeLeftPartial(page: Page, bondId: string, distancePx: number) {
-    await page.evaluate(
-      ({ id, dist }) => {
-        const target = document.querySelector(`[data-pw="bond-add-${id}"]`)?.parentElement;
-        if (!target) throw new Error(`swipe target not found for bond-add-${id}`);
-        const r = target.getBoundingClientRect();
-        const cx = r.left + r.width / 2;
-        const cy = r.top + r.height / 2;
-
-        function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
-          const touch = new Touch({
-            identifier: 1,
-            target: target!,
-            clientX: x,
-            clientY: y,
-            screenX: x,
-            screenY: y,
-            pageX: x,
-            pageY: y,
-            radiusX: 10,
-            radiusY: 10,
-            rotationAngle: 0,
-            force: 1,
-          });
-          return new TouchEvent(type, {
-            touches: [touch],
-            changedTouches: [touch],
-            bubbles: true,
-            cancelable: true,
-          });
-        }
-
-        const steps = 15;
-        target.dispatchEvent(makeTouchEvent('touchstart', cx, cy));
-        for (let i = 1; i <= steps; i++) {
-          target.dispatchEvent(makeTouchEvent('touchmove', cx - Math.round((dist * i) / steps), cy));
-        }
-        // No touchend — row stays in mid-swipe state
-      },
-      { id: bondId, dist: distancePx },
-    );
-  }
 
   // ── Threshold removes bond ────────────────────────────────────────────────
 
