@@ -88,7 +88,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
           data-pw="header-action"
           sx={{
             alignSelf: 'center',
-            mr: '30px',
+            mr: '40px',
             minWidth: compact ? 78 : 72,
             minHeight: compact ? 30 : 32,
             borderRadius: '7px',

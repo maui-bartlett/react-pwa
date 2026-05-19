@@ -572,6 +572,8 @@ function FabU() {
   const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
+  const [pendingTraitsScroll, setPendingTraitsScroll] = useState(false);
+  const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
   const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -775,6 +777,38 @@ function FabU() {
     }, 100);
     return () => clearTimeout(timer);
   }, [pendingCombatGearScroll]);
+
+  useEffect(() => {
+    if (!pendingTraitsScroll) return;
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const traitsSection = document.querySelector('[data-section="traits"]');
+      if (scrollViewport && traitsSection) {
+        const rect = traitsSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingTraitsScroll(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingTraitsScroll]);
+
+  useEffect(() => {
+    if (!pendingBondsScroll) return;
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const bondsSection = document.querySelector('[data-section="combat-bonds"]');
+      if (scrollViewport && bondsSection) {
+        const rect = bondsSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingBondsScroll(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingBondsScroll]);
 
   const classPickerOpen = Boolean(classPickerAnchorEl);
 
@@ -1086,26 +1120,28 @@ function FabU() {
   function renderOverview() {
     return (
       <>
-        <SurfaceCard label="Traits">
-          <Stack spacing={1}>
-            <IdentityAccordionRow
-              identities={character.traits.identity}
-              onUpdate={(items) =>
-                setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
-              }
-            />
-            <SwipeableTraitRow
-              label="Theme"
-              value={character.traits.theme}
-              onEdit={(v) => updateTrait('theme', v)}
-            />
-            <SwipeableTraitRow
-              label="Origin"
-              value={character.traits.origin}
-              onEdit={(v) => updateTrait('origin', v)}
-            />
-          </Stack>
-        </SurfaceCard>
+        <Box data-section="traits">
+          <SurfaceCard label="Traits">
+            <Stack spacing={1}>
+              <IdentityAccordionRow
+                identities={character.traits.identity}
+                onUpdate={(items) =>
+                  setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
+                }
+              />
+              <SwipeableTraitRow
+                label="Theme"
+                value={character.traits.theme}
+                onEdit={(v) => updateTrait('theme', v)}
+              />
+              <SwipeableTraitRow
+                label="Origin"
+                value={character.traits.origin}
+                onEdit={(v) => updateTrait('origin', v)}
+              />
+            </Stack>
+          </SurfaceCard>
+        </Box>
 
         <AttributesStatsCard
           middleRow={[
@@ -1571,6 +1607,14 @@ function FabU() {
                 onClick={() => {
                   setFP(Math.max(0, character.fabulaPoints - 1));
                   setFabulaAnchorEl(null);
+                  if (name === 'Re-roll') {
+                    setActiveTab('overview');
+                    setPendingTraitsScroll(true);
+                  } else if (name === 'Add 1') {
+                    setActiveTab('combat');
+                    setActiveCombatTab('bonds');
+                    setPendingBondsScroll(true);
+                  }
                 }}
                 sx={{
                   display: 'flex',
@@ -1609,13 +1653,15 @@ function FabU() {
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
         {activeCombatTab === 'bonds' ? (
-          <BondsCard
-            bonds={character.bonds}
-            onToggleType={toggleBondType}
-            onAddBond={addBond}
-            onRemoveBond={removeBond}
-            onRenameBond={renameBond}
-          />
+          <Box data-section="combat-bonds">
+            <BondsCard
+              bonds={character.bonds}
+              onToggleType={toggleBondType}
+              onAddBond={addBond}
+              onRemoveBond={removeBond}
+              onRenameBond={renameBond}
+            />
+          </Box>
         ) : null}
 
         {activeCombatTab === 'skills' ? (

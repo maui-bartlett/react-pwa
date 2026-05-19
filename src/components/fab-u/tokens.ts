@@ -67,9 +67,9 @@ const fabUTokens: FabUTokens = {
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // section header pill fill — same green as top header bar
     labelFg: '#ffffff', // white text on green pill
-    highlight: '#D4AE18', // golden-yellow — more golden in light mode (HSL ~48°)
-    highlightFg: '#1a2e26', // dark text on yellow
-    fp: '#1AADBE', // cyan-teal for Fabula Points
+    highlight: '#E08920', // vivid bronze-amber — brighter/more saturated than previous
+    highlightFg: '#1a2e26', // dark text on amber
+    fp: '#2E96A4', // muted cyan-teal for Fabula Points
     fpFg: '#021e22', // dark text on cyan
     hp: '#c06355',
     mp: '#547bcb',
@@ -105,9 +105,9 @@ const darkFabUTokens: FabUTokens = {
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // same as brand — matches the top header bar green
     labelFg: '#ffffff', // white text on dark-green pill
-    highlight: '#C49E18', // slightly darker golden for dark bg
+    highlight: '#CE7C1C', // vivid dark bronze for dark bg
     highlightFg: '#1a2e26',
-    fp: '#20C2D4', // slightly brighter cyan for dark bg
+    fp: '#3AAAB8', // muted cyan for dark bg
     fpFg: '#021e22',
     hp: '#c06355',
     mp: '#547bcb',

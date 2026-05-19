@@ -145,7 +145,6 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           px: 1,
           py: 0.85,
           zIndex: 10,
-          borderTop: '1px solid #ffffff',
           borderLeft: '1px solid #ffffff',
           borderRight: '1px solid #ffffff',
           bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
