@@ -64,8 +64,6 @@ function SkillCrystalIcon({ sx, ...props }: SvgIconProps) {
       <path d="M12 3v18" />
       <path d="M6 10h12" />
       <path d="m8.5 10 3.5 11 3.5-11" />
-      <path d="m7.5 5.5.7.7" />
-      <path d="m16.5 5.5-.7.7" />
     </SvgIcon>
   );
 }

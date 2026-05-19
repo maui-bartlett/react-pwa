@@ -29,7 +29,6 @@ import {
   Pencil,
   Shield,
   Sparkles,
-  Star,
   Sword,
   Timer,
 } from 'lucide-react';
@@ -48,6 +47,7 @@ import {
   MobileScreen,
   PrimaryNavBar,
   SegmentedTabs,
+  SkillCrystalIcon,
   SkillsTable,
   SpellCastOverlay,
   SpellsTable,
@@ -1425,7 +1425,7 @@ function FabU() {
                     ) : action === 'Study' ? (
                       <span style={{ fontSize: 13, lineHeight: 1 }}>🤓</span>
                     ) : (
-                      <Star size={14} />
+                      <SkillCrystalIcon sx={{ fontSize: 15 }} />
                     );
                   return (
                     <Button

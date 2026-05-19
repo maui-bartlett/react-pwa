@@ -4,3 +4,4 @@ export * from './organisms';
 export * from './types';
 export * from './tokens';
 export { FabUThemeProvider, useFabUTokens } from './ThemeContext';
+export { BackpackIcon, NotesLinesIcon, SkillCrystalIcon, SwordIcon } from './icons';
