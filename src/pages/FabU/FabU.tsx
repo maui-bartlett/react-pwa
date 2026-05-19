@@ -1221,7 +1221,7 @@ function FabU() {
               pw: 'cb-mp',
             },
           ]}
-          topRowTemplate="repeat(3, minmax(0, 1fr))"
+          topRowTemplate="1.1fr 1fr 0.9fr"
           middleRowTemplate="0.62fr 0.62fr 1.12fr 1.12fr"
           bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
@@ -1933,9 +1933,7 @@ function FabU() {
                         py: `${0.72 / 0.84}rem`,
                         px: `${1 / 0.84}rem`,
                         // brandText = brand green in light, lightened green in dark for AA contrast
-                        color: fabUTokens.isDark
-                          ? fabUTokens.color.highlight
-                          : fabUTokens.color.brandText,
+                        color: fabUTokens.color.highlight,
                         fontWeight: 700,
                       },
                     }}
@@ -1944,10 +1942,7 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      // brandText = brand green in light, lightened green in dark for AA contrast
-                      color: fabUTokens.isDark
-                        ? fabUTokens.color.highlight
-                        : fabUTokens.color.brandText,
+                      color: fabUTokens.color.highlight,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,

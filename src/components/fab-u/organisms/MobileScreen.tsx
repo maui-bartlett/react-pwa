@@ -125,8 +125,6 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           left: 0,
           right: 0,
           zIndex: 2,
-          px: 1,
-          pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
           pb: 1.5,
           bgcolor: 'transparent',
         }}

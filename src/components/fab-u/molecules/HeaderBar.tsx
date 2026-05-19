@@ -29,10 +29,11 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       sx={{
         bgcolor: fabUTokens.color.brand,
         border: `1px solid ${alpha('#ffffff', 0.12)}`,
-        borderRadius: compact ? '9px' : '11px',
+        borderRadius: compact ? '9px' : '0 0 11px 11px',
         color: '#fff',
         px: compact ? 1.6 : 1.95,
-        py: compact ? 1.15 : 2.05,
+        pt: compact ? 1.15 : 'max(16px, calc(env(safe-area-inset-top) + 8px))',
+        pb: compact ? 1.15 : 2.05,
         boxShadow: '0 6px 14px rgba(30, 49, 40, 0.08)',
       }}
     >
