@@ -23,7 +23,9 @@ import {
   ChevronDown,
   FlaskConical,
   Pencil,
+  Shield,
   Sparkles,
+  Sword,
   Timer,
 } from 'lucide-react';
 
@@ -1254,50 +1256,64 @@ function FabU() {
                 Battle Actions
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1}>
-                {['Attack', 'Cast', 'Guard', 'Inventory'].map((action) => (
-                  <Button
-                    key={action}
-                    variant="contained"
-                    onClick={(event) => {
-                      if (action === 'Attack') {
-                        setActiveCombatTab('gear');
-                        setPendingCombatGearScroll(true);
-                      }
-                      if (action === 'Cast') {
-                        setActiveCombatTab('spells');
-                        setPendingCombatSpellScroll(true);
-                      }
-                      if (action === 'Inventory') {
-                        const rect = event.currentTarget.getBoundingClientRect();
-                        setInventoryAnchorDir(
-                          rect.top > window.innerHeight / 2 ? 'above' : 'below',
-                        );
-                        setInventoryAnchorEl(event.currentTarget);
-                      }
-                    }}
-                    sx={{
-                      flex: '1 1 calc(50% - 4px)',
-                      width: 'calc(50% - 4px)',
-                      minWidth: 0,
-                      height: 40,
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      fontWeight: 700,
-                      fontSize: '0.78rem',
-                      bgcolor: '#3d7060',
-                      color: '#fff',
-                      boxShadow: fabUTokens.shadow.card,
-                      border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
-                      '&:hover': {
-                        bgcolor: '#3d7060',
-                        filter: 'brightness(0.88)',
+                {(['Attack', 'Cast', 'Guard', 'Inventory'] as const).map((action) => {
+                  const icon =
+                    action === 'Attack' ? (
+                      <Sword size={14} />
+                    ) : action === 'Cast' ? (
+                      <Sparkles size={14} />
+                    ) : action === 'Guard' ? (
+                      <Shield size={14} />
+                    ) : (
+                      <FlaskConical size={14} />
+                    );
+                  return (
+                    <Button
+                      key={action}
+                      variant="contained"
+                      onClick={(event) => {
+                        if (action === 'Attack') {
+                          setActiveCombatTab('gear');
+                          setPendingCombatGearScroll(true);
+                        }
+                        if (action === 'Cast') {
+                          setActiveCombatTab('spells');
+                          setPendingCombatSpellScroll(true);
+                        }
+                        if (action === 'Inventory') {
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          setInventoryAnchorDir(
+                            rect.top > window.innerHeight / 2 ? 'above' : 'below',
+                          );
+                          setInventoryAnchorEl(event.currentTarget);
+                        }
+                      }}
+                      sx={{
+                        flex: '1 1 calc(50% - 4px)',
+                        width: 'calc(50% - 4px)',
+                        minWidth: 0,
+                        height: 40,
+                        borderRadius: '8px',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.78rem',
+                        bgcolor: '#ffffff',
+                        color: '#3d7060',
                         boxShadow: fabUTokens.shadow.card,
-                      },
-                    }}
-                  >
-                    {action}
-                  </Button>
-                ))}
+                        border: '1px solid #3d7060',
+                        '&:hover': {
+                          bgcolor: alpha('#3d7060', 0.06),
+                          boxShadow: fabUTokens.shadow.card,
+                        },
+                      }}
+                    >
+                      <Stack direction="row" alignItems="center" gap={0.75}>
+                        {action}
+                        {icon}
+                      </Stack>
+                    </Button>
+                  );
+                })}
               </Stack>
             </Stack>
 
@@ -1326,13 +1342,12 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.color.highlight,
-                    color: '#ffffff',
+                    bgcolor: '#ffffff',
+                    color: fabUTokens.color.highlight,
                     boxShadow: fabUTokens.shadow.card,
-                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
+                    border: `1px solid ${fabUTokens.color.highlight}`,
                     '&:hover': {
-                      bgcolor: fabUTokens.color.highlight,
-                      filter: 'brightness(0.88)',
+                      bgcolor: alpha(fabUTokens.color.highlight, 0.06),
                       boxShadow: fabUTokens.shadow.card,
                     },
                   }}
@@ -1353,13 +1368,12 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.color.success,
-                    color: '#ffffff',
+                    bgcolor: '#ffffff',
+                    color: fabUTokens.color.success,
                     boxShadow: fabUTokens.shadow.card,
-                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.65)'}`,
+                    border: `1px solid ${fabUTokens.color.success}`,
                     '&:hover': {
-                      bgcolor: fabUTokens.color.success,
-                      filter: 'brightness(0.88)',
+                      bgcolor: alpha(fabUTokens.color.success, 0.06),
                       boxShadow: fabUTokens.shadow.card,
                     },
                   }}
@@ -1805,31 +1819,36 @@ function FabU() {
                 '&:active': { filter: 'brightness(0.88)' },
               }}
             >
-              <svg
-                viewBox="0 0 30 14"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ width: 30, height: 14, display: 'block', marginBottom: '5px' }}
-              >
-                <line x1="29" y1="7" x2="6" y2="7" />
-                <polyline points="13 13 6 7 13 1" />
-              </svg>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: '#ffffff',
-                  fontWeight: 700,
-                  fontSize: '0.6rem',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.2,
-                }}
-              >
-                Buy IP
-              </Typography>
+              {/* Inner wrapper sizes to text width; SVG stretches to match */}
+              <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                <svg
+                  viewBox="0 0 30 14"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  preserveAspectRatio="none"
+                  style={{ width: '100%', height: 14, display: 'block', marginBottom: '5px' }}
+                >
+                  <line x1="29" y1="7" x2="6" y2="7" />
+                  <polyline points="13 13 6 7 13 1" />
+                </svg>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Buy IP
+                </Typography>
+              </Box>
             </Box>
           }
         />

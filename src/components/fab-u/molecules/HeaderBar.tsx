@@ -29,7 +29,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       sx={{
         bgcolor: fabUTokens.color.brand,
         border: `1px solid ${alpha('#ffffff', 0.12)}`,
-        borderRadius: compact ? '9px' : '0 0 11px 11px',
+        borderRadius: compact ? '9px' : 0,
         color: '#fff',
         px: compact ? 1.6 : 1.95,
         pt: compact ? 1.15 : 'max(16px, calc(env(safe-area-inset-top) + 8px))',
@@ -87,7 +87,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
         <Box
           data-pw="header-action"
           sx={{
-            alignSelf: compact ? 'center' : 'flex-start',
+            alignSelf: 'center',
             minWidth: compact ? 78 : 72,
             minHeight: compact ? 30 : 32,
             borderRadius: '7px',
