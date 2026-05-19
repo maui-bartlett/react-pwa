@@ -14,7 +14,7 @@ export type Bond = {
   types: BondType[];
 };
 
-export type CombatSubTab = 'bonds' | 'skills' | 'spells' | 'gear';
+export type CombatSubTab = 'bonds' | 'skills' | 'spells' | 'gear' | 'traits';
 
 export type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 

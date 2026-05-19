@@ -363,7 +363,7 @@ function SwipeableSpellRow({
                 flex: 1.5,
                 minWidth: 0,
                 pl: 0,
-                ml: '-8px',
+                pr: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
@@ -485,7 +485,7 @@ function SwipeableSpellRow({
                 flex: 1.5,
                 minWidth: 0,
                 pl: 0,
-                ml: '-8px',
+                pr: '10px',
                 textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
@@ -830,7 +830,7 @@ function SpellsTable({
             Target
           </Box>
           <Box
-            sx={{ flex: 1.5, minWidth: 0, pl: 0, ml: '-8px', textAlign: 'right', ...headerCellSx }}
+            sx={{ flex: 1.5, minWidth: 0, pl: 0, pr: '10px', textAlign: 'right', ...headerCellSx }}
           >
             Duration
           </Box>
@@ -923,7 +923,7 @@ function SpellsTable({
                 flex: 1.5,
                 minWidth: 0,
                 pl: 0,
-                ml: '-8px',
+                pr: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',

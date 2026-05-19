@@ -24,7 +24,6 @@ import {
   Check,
   CheckCircle,
   ChevronDown,
-  Diamond,
   Feather,
   FlaskConical,
   Pencil,
@@ -32,6 +31,7 @@ import {
   Sparkles,
   Sword,
   Timer,
+  Zap,
 } from 'lucide-react';
 
 import {
@@ -73,6 +73,7 @@ import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
+  { label: 'Traits', value: 'traits' },
   { label: 'Bonds', value: 'bonds' },
   { label: 'Skills', value: 'skills' },
   { label: 'Spells', value: 'spells' },
@@ -575,7 +576,7 @@ function FabU() {
   const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
-  const [pendingTraitsScroll, setPendingTraitsScroll] = useState(false);
+  const [pendingCombatTraitsScroll, setPendingCombatTraitsScroll] = useState(false);
   const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
   const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
   const handleToggleEffect = (id: string) => {
@@ -782,20 +783,20 @@ function FabU() {
   }, [pendingCombatGearScroll]);
 
   useEffect(() => {
-    if (!pendingTraitsScroll) return;
+    if (!pendingCombatTraitsScroll) return;
     const timer = setTimeout(() => {
       const scrollViewport = document.querySelector('[data-pw="content-area"]');
-      const traitsSection = document.querySelector('[data-section="traits"]');
+      const traitsSection = document.querySelector('[data-section="combat-traits"]');
       if (scrollViewport && traitsSection) {
         const rect = traitsSection.getBoundingClientRect();
         const viewportRect = scrollViewport.getBoundingClientRect();
         const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
         (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
       }
-      setPendingTraitsScroll(false);
+      setPendingCombatTraitsScroll(false);
     }, 100);
     return () => clearTimeout(timer);
-  }, [pendingTraitsScroll]);
+  }, [pendingCombatTraitsScroll]);
 
   useEffect(() => {
     if (!pendingBondsScroll) return;
@@ -1335,7 +1336,7 @@ function FabU() {
                     ) : action === 'Study' ? (
                       <span style={{ fontSize: 13, lineHeight: 1 }}>🤓</span>
                     ) : (
-                      <Diamond size={14} />
+                      <Zap size={14} />
                     );
                   return (
                     <Button
@@ -1349,6 +1350,11 @@ function FabU() {
                         if (action === 'Spell') {
                           setActiveCombatTab('spells');
                           setPendingCombatSpellScroll(true);
+                        }
+                        if (action === 'Equipment') {
+                          setActiveTab('combat');
+                          setActiveCombatTab('gear');
+                          setPendingCombatGearScroll(true);
                         }
                         if (action === 'Inventory') {
                           const rect = event.currentTarget.getBoundingClientRect();
@@ -1630,8 +1636,9 @@ function FabU() {
                   setFP(Math.max(0, character.fabulaPoints - 1));
                   setFabulaAnchorEl(null);
                   if (name === 'Re-roll') {
-                    setActiveTab('overview');
-                    setPendingTraitsScroll(true);
+                    setActiveTab('combat');
+                    setActiveCombatTab('traits');
+                    setPendingCombatTraitsScroll(true);
                   } else if (name === 'Add 1') {
                     setActiveTab('combat');
                     setActiveCombatTab('bonds');
@@ -1673,6 +1680,31 @@ function FabU() {
         </Popover>
 
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
+
+        {activeCombatTab === 'traits' ? (
+          <Box data-section="combat-traits">
+            <SurfaceCard label="Traits">
+              <Stack spacing={1}>
+                <IdentityAccordionRow
+                  identities={character.traits.identity}
+                  onUpdate={(items) =>
+                    setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
+                  }
+                />
+                <SwipeableTraitRow
+                  label="Theme"
+                  value={character.traits.theme}
+                  onEdit={(v) => updateTrait('theme', v)}
+                />
+                <SwipeableTraitRow
+                  label="Origin"
+                  value={character.traits.origin}
+                  onEdit={(v) => updateTrait('origin', v)}
+                />
+              </Stack>
+            </SurfaceCard>
+          </Box>
+        ) : null}
 
         {activeCombatTab === 'bonds' ? (
           <Box data-section="combat-bonds">
@@ -1749,6 +1781,14 @@ function FabU() {
               onDeleteItem={handleDeleteEquipment}
               onUpdateItem={handleUpdateEquipment}
               onAddSlotItem={handleAddEquipmentItem}
+            />
+            <DetailListCard
+              label="Backpack"
+              addLabel="Item"
+              items={character.backpack.map((b) => ({ title: b.title, subtitle: b.subtitle }))}
+              onRemoveItem={handleDeleteBackpackItem}
+              onEditItem={handleEditBackpackItem}
+              onAdd={() => handleAddBackpackItem()}
             />
           </Box>
         ) : null}

@@ -1,7 +1,6 @@
 import { ComponentType } from 'react';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
-import BackpackOutlinedIcon from '@mui/icons-material/BackpackOutlined';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
@@ -10,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useFabUTokens } from '../ThemeContext';
-import { DiamondIcon, NotesLinesIcon, SwordIcon } from '../icons';
+import { BackpackIcon, DiamondIcon, NotesLinesIcon, SwordIcon } from '../icons';
 import { FabUTab } from '../types';
 
 type PrimaryNavBarProps = {
@@ -23,7 +22,7 @@ const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIco
   { label: 'Combat', value: 'combat', icon: SwordIcon },
   { label: 'Skills', value: 'skills', icon: DiamondIcon },
   { label: 'Spells', value: 'spells', icon: AutoAwesomeOutlinedIcon },
-  { label: 'Gear', value: 'gear', icon: BackpackOutlinedIcon },
+  { label: 'Gear', value: 'gear', icon: BackpackIcon },
   { label: 'Notes', value: 'notes', icon: NotesLinesIcon },
 ];
 
