@@ -2321,8 +2321,7 @@ function FabU() {
                         }),
                         py: `${0.72 / 0.84}rem`,
                         px: `${1 / 0.84}rem`,
-                        // brandText = brand green in light, lightened green in dark for AA contrast
-                        color: fabUTokens.color.highlight,
+                        color: '#C49440',
                         fontWeight: 700,
                       },
                     }}
@@ -2331,7 +2330,7 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: fabUTokens.color.highlight,
+                      color: '#C49440',
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
