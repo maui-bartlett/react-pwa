@@ -19,9 +19,12 @@ import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
 import {
+  Backpack,
+  Ban,
   Check,
   CheckCircle,
   ChevronDown,
+  Diamond,
   Feather,
   FlaskConical,
   Pencil,
@@ -1304,16 +1307,35 @@ function FabU() {
                 Battle Actions
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1}>
-                {(['Attack', 'Cast', 'Guard', 'Inventory'] as const).map((action) => {
+                {(
+                  [
+                    'Attack',
+                    'Spell',
+                    'Guard',
+                    'Inventory',
+                    'Hinder',
+                    'Equipment',
+                    'Study',
+                    'Skill',
+                  ] as const
+                ).map((action) => {
                   const icon =
                     action === 'Attack' ? (
                       <Sword size={14} />
-                    ) : action === 'Cast' ? (
+                    ) : action === 'Spell' ? (
                       <AutoAwesomeOutlinedIcon sx={{ fontSize: 14 }} />
                     ) : action === 'Guard' ? (
                       <Shield size={14} />
-                    ) : (
+                    ) : action === 'Inventory' ? (
                       <FlaskConical size={14} />
+                    ) : action === 'Hinder' ? (
+                      <Ban size={14} />
+                    ) : action === 'Equipment' ? (
+                      <Backpack size={14} />
+                    ) : action === 'Study' ? (
+                      <span style={{ fontSize: 13, lineHeight: 1 }}>🤓</span>
+                    ) : (
+                      <Diamond size={14} />
                     );
                   return (
                     <Button
@@ -1324,7 +1346,7 @@ function FabU() {
                           setActiveCombatTab('gear');
                           setPendingCombatGearScroll(true);
                         }
-                        if (action === 'Cast') {
+                        if (action === 'Spell') {
                           setActiveCombatTab('spells');
                           setPendingCombatSpellScroll(true);
                         }
@@ -1448,7 +1470,7 @@ function FabU() {
                   }}
                 >
                   <Stack direction="row" alignItems="center" gap={0.75}>
-                    Progress Clock
+                    Objective
                     <Timer size={14} />
                   </Stack>
                 </Button>
