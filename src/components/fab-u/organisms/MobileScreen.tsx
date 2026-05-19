@@ -91,6 +91,7 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
+            overflowX: 'hidden',
             overscrollBehavior: 'contain',
           }}
         >
@@ -100,7 +101,6 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
               position: 'sticky',
               top: 0,
               zIndex: 2,
-              mx: -1,
               px: 1,
               pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
               pb: 1.5,

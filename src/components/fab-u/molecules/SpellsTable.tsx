@@ -476,7 +476,13 @@ function SwipeableSpellRow({
       {/* Expand panel */}
       {!isEditing && (
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
-          <Box sx={{ px: 1.2, pb: 0, bgcolor: fabUTokens.color.surface }}>
+          <Box
+            sx={{
+              px: 1.2,
+              pb: 0,
+              bgcolor: fabUTokens.isDark ? fabUTokens.color.pillSurface : fabUTokens.color.surface,
+            }}
+          >
             <Box
               sx={{
                 display: 'flex',
@@ -598,9 +604,7 @@ function SwipeableSpellRow({
                   minWidth: 68,
                   minHeight: 40,
                   overflow: 'visible',
-                  bgcolor: fabUTokens.isDark
-                    ? fabUTokens.color.highlight
-                    : alpha(fabUTokens.color.highlight, 0.08),
+                  bgcolor: fabUTokens.isDark ? fabUTokens.color.highlight : '#ffffff',
                   color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.highlight,
                   fontSize: '0.68rem',
                   fontWeight: 700,
@@ -614,7 +618,7 @@ function SwipeableSpellRow({
                   '&:hover': {
                     bgcolor: fabUTokens.isDark
                       ? '#b09040'
-                      : alpha(fabUTokens.color.highlight, 0.14),
+                      : alpha(fabUTokens.color.highlight, 0.06),
                     boxShadow: fabUTokens.isDark
                       ? '0 3px 10px rgba(190, 144, 64, 0.5)'
                       : '0 3px 10px rgba(190, 144, 64, 0.18)',
