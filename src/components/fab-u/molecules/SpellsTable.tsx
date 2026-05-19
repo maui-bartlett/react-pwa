@@ -296,26 +296,38 @@ function SwipeableSpellRow({
               zIndex: 1,
             }}
           >
-            <Box sx={{ flex: 2, minWidth: 0, pl: '24px' }}>
-              <InputBase
-                autoFocus
-                value={editDraft.name}
-                onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onCommitEdit();
-                  if (e.key === 'Escape') onRevertEdit();
-                }}
-                placeholder="Spell name"
-                sx={{
-                  color: fabUTokens.color.textPrimary,
-                  width: '100%',
-                  '& input': {
-                    p: 0,
-                    fontWeight: 700,
-                    ...scaledEditableTextStyle(0.74, { stretch: true }),
-                  },
-                }}
-              />
+            <Box
+              sx={{
+                flex: 2,
+                minWidth: 0,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              {/* 24px spacer mirrors the chevron icon + gap in normal display mode */}
+              <Box sx={{ width: 24, flexShrink: 0 }} />
+              <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <InputBase
+                  autoFocus
+                  value={editDraft.name}
+                  onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') onCommitEdit();
+                    if (e.key === 'Escape') onRevertEdit();
+                  }}
+                  placeholder="Spell name"
+                  sx={{
+                    color: fabUTokens.color.textPrimary,
+                    width: '100%',
+                    '& input': {
+                      p: 0,
+                      fontWeight: 700,
+                      ...scaledEditableTextStyle(0.74, { stretch: true }),
+                    },
+                  }}
+                />
+              </Box>
             </Box>
             <Box sx={{ width: 56, flexShrink: 0 }}>
               <InputBase
