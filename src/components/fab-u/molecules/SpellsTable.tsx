@@ -11,6 +11,7 @@ import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
 
@@ -597,18 +598,26 @@ function SwipeableSpellRow({
                   minWidth: 68,
                   minHeight: 40,
                   overflow: 'visible',
-                  bgcolor: fabUTokens.color.highlight,
-                  color: '#ffffff',
+                  bgcolor: fabUTokens.isDark
+                    ? fabUTokens.color.highlight
+                    : alpha(fabUTokens.color.highlight, 0.08),
+                  color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.highlight,
                   fontSize: '0.68rem',
                   fontWeight: 700,
                   lineHeight: 1.2,
                   textTransform: 'none',
-                  boxShadow: '0 3px 10px rgba(190, 144, 64, 0.5)',
+                  boxShadow: fabUTokens.isDark
+                    ? '0 3px 10px rgba(190, 144, 64, 0.5)'
+                    : '0 3px 10px rgba(190, 144, 64, 0.18)',
                   mr: 1,
-                  border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.65)'}`,
+                  border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : alpha(fabUTokens.color.highlight, 0.5)}`,
                   '&:hover': {
-                    bgcolor: '#b09040',
-                    boxShadow: '0 3px 10px rgba(190, 144, 64, 0.5)',
+                    bgcolor: fabUTokens.isDark
+                      ? '#b09040'
+                      : alpha(fabUTokens.color.highlight, 0.14),
+                    boxShadow: fabUTokens.isDark
+                      ? '0 3px 10px rgba(190, 144, 64, 0.5)'
+                      : '0 3px 10px rgba(190, 144, 64, 0.18)',
                   },
                 }}
               >

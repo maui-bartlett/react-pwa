@@ -112,9 +112,11 @@ type SwipeableTraitRowProps = {
   label: string;
   value: string;
   onEdit: (value: string) => void;
+  /** Extra right-side spacer width (px) — used in accordion expanded rows to align with collapsed value. */
+  trailingWidth?: number;
 };
 
-function SwipeableTraitRow({ label, value, onEdit }: SwipeableTraitRowProps) {
+function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTraitRowProps) {
   const fabUTokens = useFabUTokens();
   const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
   const [snapX, setSnapX] = useState(0);
@@ -285,6 +287,7 @@ function SwipeableTraitRow({ label, value, onEdit }: SwipeableTraitRowProps) {
             {value}
           </Typography>
         )}
+        {trailingWidth != null && <Box sx={{ width: trailingWidth, flexShrink: 0 }} />}
       </Stack>
     </Box>
   );
@@ -408,6 +411,14 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
           direction="row"
           alignItems="center"
           gap={2}
+          onClick={() => {
+            if (committedRef.current || isEditing) return;
+            if (snapX !== 0) {
+              setSnapX(0);
+            } else if (rest.length > 0) {
+              setIsOpen((o) => !o);
+            }
+          }}
           sx={{
             position: 'relative',
             zIndex: 1,
@@ -421,6 +432,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
             transition: swiping ? 'none' : 'transform 0.22s ease',
             touchAction: isEditing ? 'auto' : 'pan-y',
             userSelect: 'none',
+            cursor: rest.length > 0 ? 'pointer' : 'default',
           }}
         >
           <Typography
@@ -447,6 +459,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
                 if (e.key === 'Escape') revert();
               }}
               onBlur={commit}
+              onClick={(e) => e.stopPropagation()}
               sx={{
                 flex: 1,
                 '& input': {
@@ -472,13 +485,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
             </Typography>
           )}
           {rest.length > 0 && (
-            <Box
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!committedRef.current) setIsOpen((o) => !o);
-              }}
-              sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
-            >
+            <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <ChevronDown
                 size={16}
                 color={fabUTokens.color.textSecondary}
@@ -500,6 +507,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
               key={i}
               label=""
               value={item}
+              trailingWidth={32}
               onEdit={(v) => {
                 const updated = [...identities];
                 updated[i + 1] = v;
@@ -521,6 +529,29 @@ function FabU() {
     setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
   const [activeTab, setActiveTab] = useAtom(activeTabState);
   const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
+
+  // Per-tab scroll position persistence
+  const scrollPositions = useRef<Record<string, number>>({});
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Save scroll position whenever the user scrolls within the active tab
+  useEffect(() => {
+    const el = contentScrollRef.current;
+    if (!el) return undefined;
+    const save = () => {
+      scrollPositions.current[activeTab] = el.scrollTop;
+    };
+    el.addEventListener('scroll', save, { passive: true });
+    return () => el.removeEventListener('scroll', save);
+  }, [activeTab]);
+
+  // Restore saved scroll position after tab switch
+  useEffect(() => {
+    const el = contentScrollRef.current;
+    if (!el) return;
+    el.scrollTop = scrollPositions.current[activeTab] ?? 0;
+  }, [activeTab]);
+
   const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
@@ -2072,6 +2103,7 @@ function FabU() {
           <MobileScreen
             header={header}
             footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+            contentScrollRef={contentScrollRef}
             overlay={
               spellCastBurstId === null ? undefined : (
                 <SpellCastOverlay burstId={spellCastBurstId} />

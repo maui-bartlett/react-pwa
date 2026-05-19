@@ -9,9 +9,11 @@ type MobileScreenProps = PropsWithChildren<{
   header: ReactNode;
   footer: ReactNode;
   overlay?: ReactNode;
+  /** Optionally receives a ref to the scrollable content viewport for external scroll management. */
+  contentScrollRef?: React.MutableRefObject<HTMLDivElement | null>;
 }>;
 
-function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) {
+function MobileScreen({ header, footer, overlay, children, contentScrollRef }: MobileScreenProps) {
   const fabUTokens = useFabUTokens();
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -54,6 +56,8 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
     };
   }, [children, footer]);
 
+  const headerBg = fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff';
+
   return (
     <Box
       data-pw="mobile-screen"
@@ -78,31 +82,39 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
         }}
       >
         <Box
-          sx={{
-            px: 1,
-            pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
-            pb: 1.5,
-            flexShrink: 0,
-          }}
-        >
-          {header}
-        </Box>
-        <Box
           data-pw="content-area"
-          ref={scrollViewportRef}
+          ref={(el: HTMLDivElement | null) => {
+            scrollViewportRef.current = el;
+            if (contentScrollRef) contentScrollRef.current = el;
+          }}
           sx={{
-            px: 1,
-            pt: '9px',
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
             overscrollBehavior: 'contain',
-            bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
           }}
         >
-          <Stack ref={contentRef} spacing={2.775}>
-            {children}
-          </Stack>
+          {/* Sticky header — scrolls content underneath */}
+          <Box
+            sx={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 2,
+              mx: -1,
+              px: 1,
+              pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
+              pb: 1.5,
+              bgcolor: headerBg,
+            }}
+          >
+            {header}
+          </Box>
+
+          {/* Content */}
+          <Box ref={contentRef} sx={{ px: 1 }}>
+            <Stack spacing={2.775}>{children}</Stack>
+          </Box>
+
           <Box sx={{ height: bottomSpacerHeight, flexShrink: 0 }} />
         </Box>
       </Stack>
