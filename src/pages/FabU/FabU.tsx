@@ -733,11 +733,13 @@ function FabU() {
       })),
     );
   };
+  const TRAITS_FALLBACK = { identity: [] as string[], theme: '', origin: '' };
+  const safeTraits = character.traits ?? TRAITS_FALLBACK;
   const updateTrait = (key: 'identity' | 'theme' | 'origin', value: string) =>
     setCharacter((c) => ({
       ...c,
       traits: {
-        ...c.traits,
+        ...(c.traits ?? TRAITS_FALLBACK),
         [key]:
           key === 'identity'
             ? value
@@ -1210,19 +1212,19 @@ function FabU() {
           <SurfaceCard label="Traits">
             <Stack spacing={1}>
               <IdentityAccordionRow
-                identities={character.traits.identity}
+                identities={safeTraits.identity}
                 onUpdate={(items) =>
                   setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
                 }
               />
               <SwipeableTraitRow
                 label="Theme"
-                value={character.traits.theme}
+                value={safeTraits.theme}
                 onEdit={(v) => updateTrait('theme', v)}
               />
               <SwipeableTraitRow
                 label="Origin"
-                value={character.traits.origin}
+                value={safeTraits.origin}
                 onEdit={(v) => updateTrait('origin', v)}
               />
             </Stack>
@@ -1771,19 +1773,19 @@ function FabU() {
             <SurfaceCard label="Traits">
               <Stack spacing={1}>
                 <IdentityAccordionRow
-                  identities={character.traits.identity}
+                  identities={safeTraits.identity}
                   onUpdate={(items) =>
                     setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
                   }
                 />
                 <SwipeableTraitRow
                   label="Theme"
-                  value={character.traits.theme}
+                  value={safeTraits.theme}
                   onEdit={(v) => updateTrait('theme', v)}
                 />
                 <SwipeableTraitRow
                   label="Origin"
-                  value={character.traits.origin}
+                  value={safeTraits.origin}
                   onEdit={(v) => updateTrait('origin', v)}
                 />
               </Stack>
@@ -2342,7 +2344,7 @@ function FabU() {
         ? `${character.firstName} "${character.nickName}" ${character.lastName}`
         : meta.title;
     const headerSubtitle =
-      activeTab === 'overview' ? character.traits.identity.join(' · ') : meta.subtitle;
+      activeTab === 'overview' ? safeTraits.identity.join(' · ') : meta.subtitle;
 
     return (
       <HeaderBar

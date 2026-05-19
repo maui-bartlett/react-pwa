@@ -694,7 +694,7 @@ function SkillsTable({
                   alignItems: 'center',
                 }}
               >
-                <XCircle size={28} color="#a84e49" />
+                <XCircle size={28} color={DELETE_RED} />
               </Box>
             </Box>
           ) : undefined
