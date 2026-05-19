@@ -2100,7 +2100,7 @@ function FabU() {
         color: fabUTokens.isDark ? fabUTokens.color.textPrimary : fabUTokens.color.textSecondary,
         bgcolor: fabUTokens.color.surface,
         borderRadius: '10px',
-        boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+        boxShadow: fabUTokens.shadow.card,
         alignItems: 'center',
         '& fieldset': {
           borderColor: fabUTokens.color.border,
