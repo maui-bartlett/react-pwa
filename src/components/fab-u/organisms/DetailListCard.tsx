@@ -498,6 +498,7 @@ function DetailListCard({
               color: fabUTokens.color.highlight,
               bgcolor: fabUTokens.isDark ? 'transparent' : '#ffffff',
               cursor: 'pointer',
+              boxShadow: fabUTokens.shadow.card,
             }}
           >
             <AddIcon fontSize="small" />

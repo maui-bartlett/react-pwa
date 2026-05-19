@@ -73,7 +73,7 @@ function StatusPill({
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        boxShadow: '0 1px 3px rgba(31, 42, 38, 0.04)',
+        boxShadow: fabUTokens.shadow.card,
         cursor: !result || interactive ? 'pointer' : 'default',
         userSelect: 'none',
         transition: 'background-color 150ms ease, border-radius 180ms ease, transform 180ms ease',

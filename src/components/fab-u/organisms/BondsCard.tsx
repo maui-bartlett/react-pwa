@@ -456,6 +456,7 @@ function BondsCard({
               color: fabUTokens.color.highlight,
               bgcolor: fabUTokens.color.surface,
               cursor: 'pointer',
+              boxShadow: fabUTokens.shadow.card,
             }}
           >
             <AddIcon fontSize="small" />

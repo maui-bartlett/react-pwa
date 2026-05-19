@@ -204,25 +204,32 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
     >
       {channelVisible && (
         <Box
-          onClick={(e) => {
-            e.stopPropagation();
-            startEdit();
-          }}
           sx={{
             position: 'absolute',
             right: 0,
             top: 0,
             bottom: 0,
             width: TRAIT_ACTION_WIDTH,
-            bgcolor: editColor,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
             zIndex: 0,
           }}
         >
-          <Pencil size={18} color="white" />
+          <Box
+            onClick={(e) => {
+              e.stopPropagation();
+              startEdit();
+            }}
+            sx={{
+              flex: 1,
+              bgcolor: editColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Pencil size={18} color="white" />
+          </Box>
         </Box>
       )}
       <Stack
@@ -392,25 +399,32 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
       >
         {channelVisible && (
           <Box
-            onClick={(e) => {
-              e.stopPropagation();
-              startEdit();
-            }}
             sx={{
               position: 'absolute',
               right: 0,
               top: 0,
               bottom: 0,
               width: TRAIT_ACTION_WIDTH,
-              bgcolor: editColor,
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
               zIndex: 0,
             }}
           >
-            <Pencil size={18} color="white" />
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                startEdit();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: editColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Pencil size={18} color="white" />
+            </Box>
           </Box>
         )}
         <Stack
@@ -1099,7 +1113,7 @@ function FabU() {
             valueColor: '#ffffff',
             trailingIcon: <Feather size={14} color="#ffffff" />,
             borderColor: '#ffffff',
-            fillGradient: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 15%)`,
+            fillGradient: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 35%)`,
           },
           {
             label: 'XP',
@@ -1327,7 +1341,9 @@ function FabU() {
                     action === 'Attack' ? (
                       <Sword size={14} />
                     ) : action === 'Spell' ? (
-                      <AutoAwesomeOutlinedIcon sx={{ fontSize: 14 }} />
+                      <AutoAwesomeOutlinedIcon
+                        sx={{ fontSize: 14, color: fabUTokens.color.highlight }}
+                      />
                     ) : action === 'Guard' ? (
                       <Shield size={14} />
                     ) : action === 'Inventory' ? (
@@ -1436,12 +1452,12 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    background: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 15%)`,
+                    background: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 35%)`,
                     color: '#ffffff',
                     boxShadow: fabUTokens.shadow.card,
                     border: '1px solid #ffffff',
                     '&:hover': {
-                      background: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 15%)`,
+                      background: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 35%)`,
                       filter: 'brightness(0.9)',
                       boxShadow: fabUTokens.shadow.card,
                     },
@@ -1849,6 +1865,7 @@ function FabU() {
               color: fabUTokens.color.highlight,
               bgcolor: fabUTokens.color.surface,
               cursor: 'pointer',
+              boxShadow: fabUTokens.shadow.card,
             }}
           >
             {/* Pill label bisecting the top border */}
@@ -1888,7 +1905,7 @@ function FabU() {
                 left: 10,
                 right: 10,
                 top: 22,
-                bottom: 10,
+                bottom: 20,
                 pointerEvents: 'none',
               }}
             />
@@ -1899,7 +1916,7 @@ function FabU() {
               sx={{
                 position: 'absolute',
                 top: 22,
-                bottom: 10,
+                bottom: 20,
                 left: 10,
                 right: 10,
                 justifyContent: 'center',
@@ -1946,7 +1963,14 @@ function FabU() {
               toneColor: '#ffffff',
               valueColor: '#ffffff',
               borderColor: '#ffffff',
-              fillGradient: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 15%)`,
+              fillGradient: `linear-gradient(225deg, rgba(255,255,255,0.85) 0%, ${fabUTokens.color.fp} 35%)`,
+            },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              pw: 'ip',
+              onChange: setIP,
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
             {
               label: 'HP',
@@ -1965,13 +1989,6 @@ function FabU() {
               onChange: setCurrentMP,
               maxValue: totalMP,
               toneColor: fabUTokens.color.mp,
-            },
-            {
-              label: 'IP',
-              value: String(character.inventoryPoints),
-              pw: 'ip',
-              onChange: setIP,
-              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
           ]}
         />

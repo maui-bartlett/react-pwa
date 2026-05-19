@@ -20,6 +20,7 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
         overflow: 'visible',
         pb: 0.5,
         pt: 0.5,
+        justifyContent: 'center',
       }}
     >
       {options.map((option) => {

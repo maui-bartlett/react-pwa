@@ -831,7 +831,7 @@ function SpellsTable({
             alignItems: 'center',
             px: 1.2,
             py: 0.75,
-            bgcolor: '#1a2e26',
+            bgcolor: '#1e2822',
             borderBottom: `1px solid rgba(0,0,0,0.15)`,
           }}
         >
@@ -998,6 +998,7 @@ function SpellsTable({
             border: `1px dashed ${fabUTokens.color.highlight}`,
             borderRadius: '8px',
             bgcolor: fabUTokens.color.surface,
+            boxShadow: fabUTokens.shadow.card,
           }}
         >
           <AddIcon sx={{ fontSize: '1rem' }} />

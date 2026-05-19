@@ -251,7 +251,6 @@ function EquipmentRow({
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
             }}
           >
             <Trash2 size={18} color="white" />
@@ -268,8 +267,6 @@ function EquipmentRow({
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow:
-                'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
             }}
           >
             <Pencil size={18} color="white" />
@@ -466,6 +463,7 @@ function EquipmentCard({
                 color: fabUTokens.color.highlight,
                 bgcolor: fabUTokens.isDark ? 'transparent' : '#ffffff',
                 cursor: onAddSlotItem ? 'pointer' : 'default',
+                boxShadow: fabUTokens.shadow.card,
               }}
             >
               <AddIcon fontSize="small" />

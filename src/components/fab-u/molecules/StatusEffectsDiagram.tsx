@@ -226,6 +226,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
                   cursor: summaryVisible ? 'pointer' : 'default',
+                  boxShadow: fabUTokens.shadow.card,
                   opacity: summaryVisible ? 1 : 0,
                   pointerEvents: summaryVisible ? 'auto' : 'none',
                   transition:

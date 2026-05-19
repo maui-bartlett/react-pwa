@@ -45,7 +45,7 @@ function SurfaceCard({
         pt: label ? (hasInlineActions && !title && !subtitle ? 2.2 : 3.4) : 1.65,
         backgroundImage: fabUTokens.isDark
           ? `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.62)} 0%, ${fabUTokens.color.surfaceCard} 24%)`
-          : `linear-gradient(180deg, ${alpha(fabUTokens.color.brandSoft, 0.55)} 0%, ${fabUTokens.color.surfaceCard} 22%)`,
+          : `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
         ...sx,
       }}
       {...props}
