@@ -18,45 +18,57 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
   const [bottomSpacerHeight, setBottomSpacerHeight] = useState(0);
+  const [topPaddingHeight, setTopPaddingHeight] = useState(0);
 
   useEffect(() => {
     const scrollViewport = scrollViewportRef.current;
     const content = contentRef.current;
     const footerElement = footerRef.current;
+    const headerElement = headerRef.current;
 
-    if (!scrollViewport || !content || !footerElement) {
+    if (!scrollViewport || !content || !footerElement || !headerElement) {
       return undefined;
     }
 
-    function updateBottomSpacer() {
-      if (!scrollViewportRef.current || !contentRef.current || !footerRef.current) {
+    function updateSpacers() {
+      if (
+        !scrollViewportRef.current ||
+        !contentRef.current ||
+        !footerRef.current ||
+        !headerRef.current
+      ) {
         return;
       }
 
       const scrollViewport = scrollViewportRef.current;
       const content = contentRef.current;
       const footerElement = footerRef.current;
+      const headerElement = headerRef.current;
+
+      // Top padding: push content below the floating header
+      setTopPaddingHeight(headerElement.offsetHeight);
+
+      // Bottom spacer: enough room to scroll past the floating footer
       const desiredScrollAllowance = footerElement.offsetHeight + 12;
       const viewportFillRequirement = scrollViewport.clientHeight - content.offsetHeight;
       const nextSpacerHeight = Math.max(desiredScrollAllowance, viewportFillRequirement, 0);
-
       setBottomSpacerHeight(nextSpacerHeight);
     }
 
-    updateBottomSpacer();
+    updateSpacers();
 
-    const resizeObserver = new ResizeObserver(updateBottomSpacer);
+    const resizeObserver = new ResizeObserver(updateSpacers);
     resizeObserver.observe(scrollViewport);
     resizeObserver.observe(content);
     resizeObserver.observe(footerElement);
+    resizeObserver.observe(headerElement);
 
     return () => {
       resizeObserver.disconnect();
     };
-  }, [children, footer]);
-
-  const headerBg = fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff';
+  }, [children, footer, header]);
 
   return (
     <Box
@@ -95,29 +107,33 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
             overscrollBehavior: 'contain',
           }}
         >
-          {/* Sticky header — scrolls content underneath */}
-          <Box
-            sx={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 2,
-              px: 1,
-              pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
-              pb: 1.5,
-              bgcolor: headerBg,
-            }}
-          >
-            {header}
-          </Box>
-
-          {/* Content */}
-          <Box ref={contentRef} sx={{ px: 1, pt: 1.25 }}>
+          {/* Content — top padding reserves space below the floating header */}
+          <Box ref={contentRef} sx={{ px: 1, pt: `${topPaddingHeight}px` }}>
             <Stack spacing={2.775}>{children}</Stack>
           </Box>
 
           <Box sx={{ height: bottomSpacerHeight, flexShrink: 0 }} />
         </Box>
       </Stack>
+
+      {/* Header — floats above scroll area; transparent bg lets content show through */}
+      <Box
+        ref={headerRef}
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 2,
+          px: 1,
+          pt: 'max(16px, calc(env(safe-area-inset-top) + 8px))',
+          pb: 1.5,
+          bgcolor: 'transparent',
+        }}
+      >
+        {header}
+      </Box>
+
       <Box
         ref={footerRef}
         data-pw="app-footer"
