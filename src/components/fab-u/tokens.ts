@@ -107,7 +107,7 @@ const darkFabUTokens: FabUTokens = {
     labelFg: '#ffffff', // white text on dark-green pill
     highlight: '#E2A530', // bronze — slightly more warm brown/orange
     highlightFg: '#1a2e26',
-    fp: '#2B7E7A', // same blue-green teal as light mode
+    fp: '#1d5e5b', // darker teal for dark mode
     fpFg: '#021e22',
     hp: '#c06355',
     mp: '#547bcb',
