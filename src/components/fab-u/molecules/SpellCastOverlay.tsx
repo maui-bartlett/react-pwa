@@ -2,15 +2,12 @@ import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 
-import { useFabUTokens } from '../ThemeContext';
-
 type SpellCastOverlayProps = {
   burstId: number;
 };
 
 function SpellCastOverlay({ burstId }: SpellCastOverlayProps) {
-  const fabUTokens = useFabUTokens();
-  const amberColor = fabUTokens.color.highlight;
+  const amberColor = '#E2A530';
 
   const STARS = [
     { color: '#ffffff', x: '-120px', y: '-88px', rotate: '-120deg', size: 55 },
