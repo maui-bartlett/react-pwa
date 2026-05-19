@@ -120,9 +120,9 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
         ref={headerRef}
         sx={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
+          top: '-1px',
+          left: '-1px',
+          right: '-1px',
           zIndex: 2,
           pb: 1.5,
           bgcolor: 'transparent',
@@ -136,14 +136,14 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
         data-pw="app-footer"
         sx={{
           position: 'absolute',
-          right: 0,
-          bottom: 0,
-          left: 0,
+          right: '-1px',
+          bottom: '-1px',
+          left: '-1px',
           px: 1,
           py: 0.85,
           zIndex: 10,
           borderTop: `1px solid ${fabUTokens.color.border}`,
-          bgcolor: fabUTokens.color.brand,
+          bgcolor: 'transparent',
         }}
       >
         {footer}
