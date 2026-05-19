@@ -86,7 +86,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       {actionLabel ? (
         <Box
           data-pw="header-action"
-          style={{ marginRight: '30px' }}
+          style={{ marginRight: '20px' }}
           sx={{
             alignSelf: 'center',
             minWidth: compact ? 78 : 72,
