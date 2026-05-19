@@ -610,18 +610,35 @@ function FabU() {
   const [character, setCharacter, characterHistory] = useCharacterHistory();
   // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
   // deferred mutation; clicking Delete runs it then pops the undo button.
-  const [pendingDelete, setPendingDelete] = useState<(() => void) | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    confirm: () => void;
+    cancel?: () => void;
+    beforeConfirm?: () => void;
+  } | null>(null);
   const [undoOpen, setUndoOpen] = useState(false);
-  const confirmDelete = (performDelete: () => void) => {
-    // Wrap in a fn so React's setState doesn't auto-invoke it.
-    setPendingDelete(() => performDelete);
+  const confirmDelete = (
+    performDelete: () => void,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) => {
+    setPendingDelete({ confirm: performDelete, cancel: onCancel, beforeConfirm: onBeforeConfirm });
   };
   const handleConfirmDelete = () => {
-    if (pendingDelete) pendingDelete();
+    if (!pendingDelete) return;
+    const { confirm, beforeConfirm } = pendingDelete;
     setPendingDelete(null);
     setUndoOpen(true);
+    if (beforeConfirm) {
+      beforeConfirm();
+      setTimeout(confirm, 500);
+    } else {
+      confirm();
+    }
   };
-  const handleCancelDelete = () => setPendingDelete(null);
+  const handleCancelDelete = () => {
+    pendingDelete?.cancel?.();
+    setPendingDelete(null);
+  };
   const handleUndoFromSnackbar = () => {
     characterHistory.undo();
     setUndoOpen(false);
@@ -714,8 +731,12 @@ function FabU() {
         },
       ],
     }));
-  const removeBond = (id: string) =>
-    confirmDelete(() => setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) })));
+  const removeBond = (id: string, onCancel?: () => void, onBeforeConfirm?: () => void) =>
+    confirmDelete(
+      () => setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) })),
+      onCancel,
+      onBeforeConfirm,
+    );
   const renameBond = (id: string, newName: string) =>
     setCharacter((c) => ({
       ...c,
@@ -920,16 +941,24 @@ function FabU() {
       ),
     }));
 
-  const handleDeleteSkill = (className: string, skillName: string) =>
-    confirmDelete(() =>
-      setCharacter((c) => ({
-        ...c,
-        skillGroups: c.skillGroups.map((g) =>
-          g.className === className
-            ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
-            : g,
-        ),
-      })),
+  const handleDeleteSkill = (
+    className: string,
+    skillName: string,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) =>
+    confirmDelete(
+      () =>
+        setCharacter((c) => ({
+          ...c,
+          skillGroups: c.skillGroups.map((g) =>
+            g.className === className
+              ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
+              : g,
+          ),
+        })),
+      onCancel,
+      onBeforeConfirm,
     );
 
   const handleEditSkill = (
@@ -963,16 +992,24 @@ function FabU() {
       ),
     }));
 
-  const handleDeleteSpell = (className: string, spellName: string) =>
-    confirmDelete(() =>
-      setCharacter((c) => ({
-        ...c,
-        spellGroups: c.spellGroups.map((g) =>
-          g.className === className
-            ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
-            : g,
-        ),
-      })),
+  const handleDeleteSpell = (
+    className: string,
+    spellName: string,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) =>
+    confirmDelete(
+      () =>
+        setCharacter((c) => ({
+          ...c,
+          spellGroups: c.spellGroups.map((g) =>
+            g.className === className
+              ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
+              : g,
+          ),
+        })),
+      onCancel,
+      onBeforeConfirm,
     );
 
   const handleEditSpell = (
@@ -1001,12 +1038,19 @@ function FabU() {
     return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
   };
 
-  const handleDeleteEquipment = (index: number) => {
-    confirmDelete(() =>
-      setCharacter((prev) => ({
-        ...prev,
-        equipment: prev.equipment.filter((_, i) => i !== index),
-      })),
+  const handleDeleteEquipment = (
+    index: number,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) => {
+    confirmDelete(
+      () =>
+        setCharacter((prev) => ({
+          ...prev,
+          equipment: prev.equipment.filter((_, i) => i !== index),
+        })),
+      onCancel,
+      onBeforeConfirm,
     );
   };
 
@@ -1020,12 +1064,19 @@ function FabU() {
     }));
   };
 
-  const handleDeleteBackpackItem = (index: number) => {
-    confirmDelete(() =>
-      setCharacter((prev) => ({
-        ...prev,
-        backpack: prev.backpack.filter((_, i) => i !== index),
-      })),
+  const handleDeleteBackpackItem = (
+    index: number,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) => {
+    confirmDelete(
+      () =>
+        setCharacter((prev) => ({
+          ...prev,
+          backpack: prev.backpack.filter((_, i) => i !== index),
+        })),
+      onCancel,
+      onBeforeConfirm,
     );
   };
 
@@ -1823,7 +1874,9 @@ function FabU() {
                     handleAddSkillLevels(group.className, skillName, levels)
                   }
                   classMastered={mastered}
-                  onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
+                  onDeleteSkill={(skillName, oc, obc) =>
+                    handleDeleteSkill(group.className, skillName, oc, obc)
+                  }
                   onEditSkill={(oldName, updatedSkill) =>
                     handleEditSkill(group.className, oldName, updatedSkill)
                   }
@@ -1850,7 +1903,9 @@ function FabU() {
                 onUpdateSpellEffect={(spellName, effect) =>
                   handleUpdateSpellEffect(group.className, spellName, effect)
                 }
-                onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
+                onDeleteSpell={(spellName, oc, obc) =>
+                  handleDeleteSpell(group.className, spellName, oc, obc)
+                }
                 onEditSpell={(oldName, updatedSpell) =>
                   handleEditSpell(group.className, oldName, updatedSpell)
                 }

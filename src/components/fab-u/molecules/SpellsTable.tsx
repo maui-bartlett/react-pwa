@@ -52,7 +52,7 @@ type SpellsTableProps = {
   totalMagicLevels?: number;
   onAddSpell?: (spell: SpellRow) => void;
   onUpdateSpellEffect?: (spellName: string, effect: string) => void;
-  onDeleteSpell?: (spellName: string) => void;
+  onDeleteSpell?: (spellName: string, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onEditSpell?: (oldName: string, updatedSpell: SpellRow) => void;
 };
 
@@ -62,7 +62,7 @@ type SwipeableSpellRowProps = {
   onToggle: () => void;
   onCastSpell?: (spellName: string, mpCost: string) => void;
   onUpdateSpellEffect?: (spellName: string, effect: string) => void;
-  onDelete?: () => void;
+  onDelete?: (onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onStartEdit: () => void;
   isEditing: boolean;
   editDraft: EditingSpellState | null;
@@ -94,6 +94,7 @@ function SwipeableSpellRow({
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -213,16 +214,24 @@ function SwipeableSpellRow({
     <Box
       sx={{
         borderBottom: `1px solid ${fabUTokens.color.border}`,
-        overflow: removing ? 'hidden' : 'visible',
-        maxHeight: removing ? 0 : 'none',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        ...(exitingLeft
+          ? {
+              overflow: 'hidden',
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              overflow: removing ? 'hidden' : 'visible',
+              maxHeight: removing ? 0 : '300px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Swipeable main row section */}
       <Box sx={{ position: 'relative', overflow: 'hidden' }}>
         {/* Action channel */}
-        {channelVisible && (
+        {(channelVisible || exitingLeft) && (
           <Box
             sx={{
               position: 'absolute',
@@ -232,15 +241,22 @@ function SwipeableSpellRow({
               width: ACTION_WIDTH,
               display: 'flex',
               zIndex: 0,
+              ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
             }}
           >
             <Box
               data-pw="spell-row-delete"
               onClick={(e) => {
                 e.stopPropagation();
-                setSnapX(0);
-                setCurrentDeltaX(0);
-                onDelete?.();
+                onDelete?.(
+                  () => {
+                    setSnapX(0);
+                    setCurrentDeltaX(0);
+                  },
+                  () => {
+                    setExitingLeft(true);
+                  },
+                );
               }}
               sx={{
                 flex: 1,
@@ -418,8 +434,12 @@ function SwipeableSpellRow({
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
-              transform: `translateX(${visualX}px)`,
-              transition: swiping ? 'none' : 'transform 0.22s ease',
+              transform: exitingLeft ? 'translateX(-200%)' : `translateX(${visualX}px)`,
+              transition: exitingLeft
+                ? 'transform 350ms ease-in'
+                : swiping
+                  ? 'none'
+                  : 'transform 0.22s ease',
               cursor: 'pointer',
               touchAction: 'pan-y',
               userSelect: 'none',
@@ -853,7 +873,7 @@ function SpellsTable({
                 onToggle={() => toggleRow(row.name)}
                 onCastSpell={onCastSpell}
                 onUpdateSpellEffect={onUpdateSpellEffect}
-                onDelete={onDeleteSpell ? () => onDeleteSpell(row.name) : undefined}
+                onDelete={onDeleteSpell ? (oc, obc) => onDeleteSpell(row.name, oc, obc) : undefined}
                 onStartEdit={() => startEditingSpell(row)}
                 isEditing={isRowEditing}
                 editDraft={isRowEditing ? editingSpell : null}

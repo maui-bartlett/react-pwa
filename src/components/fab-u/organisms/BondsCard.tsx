@@ -41,7 +41,7 @@ function isNegativeBondType(type: BondType) {
 type BondRowProps = {
   bond: Bond;
   onOpenMenu: (e: React.MouseEvent<HTMLElement>, bondId: string) => void;
-  onRemove: (bondId: string) => void;
+  onRemove: (bondId: string, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onRename: (bondId: string, newName: string) => void;
 };
 
@@ -53,6 +53,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
@@ -148,13 +149,20 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
         overflow: 'hidden',
         borderRadius: '9px',
         boxShadow: fabUTokens.shadow.card,
-        maxHeight: removing ? 0 : '200px',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        ...(exitingLeft
+          ? {
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              maxHeight: removing ? 0 : '200px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Action channel */}
-      {channelVisible && (
+      {(channelVisible || exitingLeft) && (
         <Box
           sx={{
             position: 'absolute',
@@ -164,15 +172,23 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
             width: ACTION_WIDTH,
             display: 'flex',
             zIndex: 0,
+            ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
           }}
         >
           <Box
             data-pw={`bond-delete-${bond.id}`}
             onClick={(e) => {
               e.stopPropagation();
-              setSnapX(0);
-              setCurrentDeltaX(0);
-              onRemove(bond.id);
+              onRemove(
+                bond.id,
+                () => {
+                  setSnapX(0);
+                  setCurrentDeltaX(0);
+                },
+                () => {
+                  setExitingLeft(true);
+                },
+              );
             }}
             sx={{
               flex: 1,
@@ -221,8 +237,16 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
           py: 0.85,
           bgcolor: fabUTokens.color.pillSurface,
           boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
-          transform: editingName ? 'none' : `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease',
+          transform: editingName
+            ? 'none'
+            : exitingLeft
+              ? 'translateX(-200%)'
+              : `translateX(${visualX}px)`,
+          transition: exitingLeft
+            ? 'transform 350ms ease-in'
+            : swiping
+              ? 'none'
+              : 'transform 0.22s ease',
           touchAction: editingName ? 'auto' : 'pan-y',
           userSelect: 'none',
         }}

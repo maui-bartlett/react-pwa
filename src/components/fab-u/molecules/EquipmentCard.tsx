@@ -25,7 +25,7 @@ type EquipmentCardProps = {
   title?: string;
   items: EquipmentItem[];
   label?: string;
-  onDeleteItem?: (index: number) => void;
+  onDeleteItem?: (index: number, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onUpdateItem?: (index: number, updated: EquipmentItem) => void;
   onAddSlotItem?: (slot: EquipmentSlot) => void;
 };
@@ -41,7 +41,7 @@ type EquipmentRowProps = {
   onStartEdit: () => void;
   onCommitEdit: () => void;
   onRevertEdit: () => void;
-  onDelete?: (index: number) => void;
+  onDelete?: (index: number, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
 };
 
 function EquipmentRow({
@@ -64,6 +64,7 @@ function EquipmentRow({
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -214,13 +215,20 @@ function EquipmentRow({
         overflow: 'hidden',
         borderRadius: '9px',
         boxShadow: fabUTokens.shadow.card,
-        maxHeight: removing ? 0 : '200px',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        ...(exitingLeft
+          ? {
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              maxHeight: removing ? 0 : '200px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Action channel */}
-      {channelVisible && (
+      {(channelVisible || exitingLeft) && (
         <Box
           sx={{
             position: 'absolute',
@@ -230,14 +238,22 @@ function EquipmentRow({
             width: ACTION_WIDTH,
             display: 'flex',
             zIndex: 0,
+            ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
           }}
         >
           <Box
             onClick={(e) => {
               e.stopPropagation();
-              setSnapX(0);
-              setCurrentDeltaX(0);
-              onDelete?.(index);
+              onDelete?.(
+                index,
+                () => {
+                  setSnapX(0);
+                  setCurrentDeltaX(0);
+                },
+                () => {
+                  setExitingLeft(true);
+                },
+              );
             }}
             sx={{
               flex: 1,
@@ -281,8 +297,12 @@ function EquipmentRow({
           py: 0.95,
           bgcolor: fabUTokens.color.surface,
           boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
-          transform: `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease',
+          transform: exitingLeft ? 'translateX(-200%)' : `translateX(${visualX}px)`,
+          transition: exitingLeft
+            ? 'transform 350ms ease-in'
+            : swiping
+              ? 'none'
+              : 'transform 0.22s ease',
           touchAction: 'pan-y',
           userSelect: 'none',
         }}

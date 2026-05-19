@@ -39,7 +39,7 @@ type SkillsTableProps = {
   onAddSkillLevels?: (skillName: string, levels: number) => void;
   /** When true, the add-level button is hidden even if onAddSkillLevels is provided */
   classMastered?: boolean;
-  onDeleteSkill?: (skillName: string) => void;
+  onDeleteSkill?: (skillName: string, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onEditSkill?: (oldName: string, updatedSkill: SkillRow) => void;
   /** Called when the user edits the full description in the accordion panel */
   onUpdateSkillDescription?: (skillName: string, description: string) => void;
@@ -61,7 +61,7 @@ type SwipeableSkillRowProps = {
   onCommitEdit: () => void;
   onRevertEdit: () => void;
   onStartEdit: () => void;
-  onDelete?: () => void;
+  onDelete?: (onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   hasAddLevels: boolean;
   canAddLevels: boolean;
   onOpenLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
@@ -93,6 +93,7 @@ function SwipeableSkillRow({
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -212,16 +213,24 @@ function SwipeableSkillRow({
       data-pw="skill-table-row"
       sx={{
         borderBottom: `1px solid ${fabUTokens.color.border}`,
-        overflow: removing ? 'hidden' : 'visible',
-        maxHeight: removing ? 0 : 'none',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        ...(exitingLeft
+          ? {
+              overflow: 'hidden',
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              overflow: removing ? 'hidden' : 'visible',
+              maxHeight: removing ? 0 : '300px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Swipeable main row section */}
       <Box sx={{ position: 'relative', overflow: 'hidden' }}>
         {/* Action channel */}
-        {channelVisible && (
+        {(channelVisible || exitingLeft) && (
           <Box
             sx={{
               position: 'absolute',
@@ -230,6 +239,7 @@ function SwipeableSkillRow({
               bottom: 0,
               width: ACTION_WIDTH,
               display: 'flex',
+              ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
               zIndex: 0,
             }}
           >
@@ -237,9 +247,15 @@ function SwipeableSkillRow({
               data-pw="skill-row-delete"
               onClick={(e) => {
                 e.stopPropagation();
-                setSnapX(0);
-                setCurrentDeltaX(0);
-                onDelete?.();
+                onDelete?.(
+                  () => {
+                    setSnapX(0);
+                    setCurrentDeltaX(0);
+                  },
+                  () => {
+                    setExitingLeft(true);
+                  },
+                );
               }}
               sx={{
                 flex: 1,
@@ -345,8 +361,12 @@ function SwipeableSkillRow({
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
-              transform: `translateX(${visualX}px)`,
-              transition: swiping ? 'none' : 'transform 0.22s ease',
+              transform: exitingLeft ? 'translateX(-200%)' : `translateX(${visualX}px)`,
+              transition: exitingLeft
+                ? 'transform 350ms ease-in'
+                : swiping
+                  ? 'none'
+                  : 'transform 0.22s ease',
               cursor: 'pointer',
               touchAction: 'pan-y',
               userSelect: 'none',
@@ -752,7 +772,7 @@ function SkillsTable({
                 onCommitEdit={commitSkillEdit}
                 onRevertEdit={revertSkillEdit}
                 onStartEdit={() => startEditingSkill(row)}
-                onDelete={onDeleteSkill ? () => onDeleteSkill(row.name) : undefined}
+                onDelete={onDeleteSkill ? (oc, obc) => onDeleteSkill(row.name, oc, obc) : undefined}
                 hasAddLevels={!!onAddSkillLevels}
                 canAddLevels={canAddLevels}
                 onOpenLevelMenu={(e) => openLevelMenu(e, row.name)}
