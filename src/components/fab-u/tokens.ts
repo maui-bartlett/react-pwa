@@ -69,7 +69,7 @@ const fabUTokens: FabUTokens = {
     labelFg: '#ffffff', // white text on green pill
     highlight: '#E2A530', // bronze — slightly more warm brown/orange
     highlightFg: '#1a2e26', // dark text on bronze
-    fp: '#2d8060', // green-teal for Fabula Points
+    fp: '#3d7a6e', // muted teal-green for Fabula Points
     fpFg: '#021e22', // dark text on cyan
     hp: '#c06355',
     mp: '#547bcb',
@@ -107,7 +107,7 @@ const darkFabUTokens: FabUTokens = {
     labelFg: '#ffffff', // white text on dark-green pill
     highlight: '#E2A530', // bronze — slightly more warm brown/orange
     highlightFg: '#1a2e26',
-    fp: '#1d5e42', // darker green-teal for dark mode
+    fp: '#2b5a4e', // darker muted teal-green for dark mode
     fpFg: '#021e22',
     hp: '#c06355',
     mp: '#547bcb',
