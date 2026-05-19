@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useFabUTokens } from '../ThemeContext';
-import { BackpackIcon, DiamondIcon, NotesLinesIcon, SwordIcon } from '../icons';
+import { BackpackIcon, NotesLinesIcon, SkillCrystalIcon, SwordIcon } from '../icons';
 import { FabUTab } from '../types';
 
 type PrimaryNavBarProps = {
@@ -20,7 +20,7 @@ type PrimaryNavBarProps = {
 const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIconProps> }> = [
   { label: 'Character', value: 'overview', icon: PersonOutlinedIcon },
   { label: 'Combat', value: 'combat', icon: SwordIcon },
-  { label: 'Skills', value: 'skills', icon: DiamondIcon },
+  { label: 'Skills', value: 'skills', icon: SkillCrystalIcon },
   { label: 'Spells', value: 'spells', icon: AutoAwesomeOutlinedIcon },
   { label: 'Gear', value: 'gear', icon: BackpackIcon },
   { label: 'Notes', value: 'notes', icon: NotesLinesIcon },

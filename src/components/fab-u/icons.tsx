@@ -46,10 +46,26 @@ function SwordIcon({ sx, ...props }: SvgIconProps) {
   );
 }
 
-function DiamondIcon(props: SvgIconProps) {
+function SkillCrystalIcon({ sx, ...props }: SvgIconProps) {
   return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path d="M12 4.5 18.5 11 12 19.5 5.5 11 12 4.5Zm0 2.12L8.03 11 12 16.19 15.97 11 12 6.62Z" />
+    <SvgIcon
+      {...props}
+      viewBox="0 0 24 24"
+      sx={{
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        ...sx,
+      }}
+    >
+      <path d="M12 3 18 10 12 21 6 10z" />
+      <path d="M12 3v18" />
+      <path d="M6 10h12" />
+      <path d="m8.5 10 3.5 11 3.5-11" />
+      <path d="m7.5 5.5.7.7" />
+      <path d="m16.5 5.5-.7.7" />
     </SvgIcon>
   );
 }
@@ -62,4 +78,4 @@ function NotesLinesIcon(props: SvgIconProps) {
   );
 }
 
-export { BackpackIcon, DiamondIcon, NotesLinesIcon, SwordIcon };
+export { BackpackIcon, NotesLinesIcon, SkillCrystalIcon, SwordIcon };
