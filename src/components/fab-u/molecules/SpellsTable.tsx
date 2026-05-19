@@ -84,7 +84,7 @@ function SwipeableSpellRow({
 }: SwipeableSpellRowProps) {
   const fabUTokens = useFabUTokens();
   const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
-  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
+  const editColor = '#4d8070';
 
   // Row swipe state
   const [snapX, setSnapX] = useState(0);
@@ -265,7 +265,7 @@ function SwipeableSpellRow({
               }}
               sx={{
                 flex: 1,
-                bgcolor: fabUTokens.color.brand,
+                bgcolor: editColor,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -607,10 +607,13 @@ function SwipeableSpellRow({
                   fontWeight: 700,
                   lineHeight: 1.2,
                   textTransform: 'none',
-                  boxShadow: 'none',
+                  boxShadow: '0 3px 10px rgba(190, 144, 64, 0.5)',
                   mr: 1,
                   border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.65)'}`,
-                  '&:hover': { bgcolor: '#b09040', boxShadow: 'none' },
+                  '&:hover': {
+                    bgcolor: '#b09040',
+                    boxShadow: '0 3px 10px rgba(190, 144, 64, 0.5)',
+                  },
                 }}
               >
                 Cast
@@ -784,7 +787,7 @@ function SpellsTable({
             alignItems: 'center',
             px: 1.2,
             py: 0.75,
-            bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : '#1a2e26',
+            bgcolor: '#1a2e26',
             borderBottom: `1px solid rgba(0,0,0,0.15)`,
           }}
         >
