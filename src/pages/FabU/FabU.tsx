@@ -39,6 +39,7 @@ import {
   BondType,
   BondsCard,
   CombatSubTab,
+  ConfirmDeleteModal,
   DetailListCard,
   EquipmentCard,
   FabUTab,
@@ -54,6 +55,7 @@ import {
   SummaryStrip,
   SurfaceCard,
   TabOption,
+  UndoSnackbar,
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
   useFabUTokens,
@@ -66,11 +68,11 @@ import {
   MAX_CHARACTER_LEVEL,
   activeCombatTabState,
   activeTabState,
-  characterState,
   statusEffectsState,
 } from './atoms';
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
+import { useCharacterHistory } from './useCharacterHistory';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Traits', value: 'traits' },
@@ -247,7 +249,11 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
             px: 1.25,
             py: 0.9,
             bgcolor: fabUTokens.color.pillSurface,
-            boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+            // Inset highlight + right-edge drop shadow. At rest the drop
+            // shadow extends past the inner overflow:hidden boundary and is
+            // clipped (invisible); when the row swipes left, its right edge
+            // moves inward and the shadow lands on the exposed edit button.
+            boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12), 4px 0 8px rgba(0, 0, 0, 0.22)',
             transform: isEditing ? 'none' : `translateX(${visualX}px)`,
             transition: swiping ? 'none' : 'transform 0.22s ease',
             touchAction: isEditing ? 'auto' : 'pan-y',
@@ -450,7 +456,10 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
               px: 1.25,
               py: 0.9,
               bgcolor: fabUTokens.color.pillSurface,
-              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+              // Inset highlight + right-edge drop shadow. The drop shadow is
+              // clipped at rest by the outer overflow:hidden, then becomes
+              // visible against the green edit button as the row slides left.
+              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12), 4px 0 8px rgba(0, 0, 0, 0.22)',
               transform: isEditing ? 'none' : `translateX(${visualX}px)`,
               transition: swiping ? 'none' : 'transform 0.22s ease',
               touchAction: isEditing ? 'auto' : 'pan-y',
@@ -598,7 +607,51 @@ function FabU() {
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
-  const [character, setCharacter] = useAtom(characterState);
+  const [character, setCharacter, characterHistory] = useCharacterHistory();
+  // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
+  // deferred mutation; clicking Delete runs it then pops the undo button.
+  const [pendingDelete, setPendingDelete] = useState<(() => void) | null>(null);
+  const [undoOpen, setUndoOpen] = useState(false);
+  const confirmDelete = (performDelete: () => void) => {
+    // Wrap in a fn so React's setState doesn't auto-invoke it.
+    setPendingDelete(() => performDelete);
+  };
+  const handleConfirmDelete = () => {
+    if (pendingDelete) pendingDelete();
+    setPendingDelete(null);
+    setUndoOpen(true);
+  };
+  const handleCancelDelete = () => setPendingDelete(null);
+  const handleUndoFromSnackbar = () => {
+    characterHistory.undo();
+    setUndoOpen(false);
+  };
+
+  // Keyboard shortcuts: Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z = redo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key !== 'z') return;
+      // Don't hijack undo/redo inside text inputs and editable elements —
+      // users expect native text-editor undo there.
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const isEditable =
+        tag === 'INPUT' || tag === 'TEXTAREA' || (target?.isContentEditable ?? false);
+      if (isEditable) return;
+      e.preventDefault();
+      if (e.shiftKey) {
+        characterHistory.redo();
+      } else {
+        characterHistory.undo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [characterHistory]);
+
   const setInitiative = (v: number) => setCharacter((c) => ({ ...c, initiative: v }));
   const setDefense = (v: number) => setCharacter((c) => ({ ...c, defense: v }));
   const setDefenseTemp = (v: number | null) => setCharacter((c) => ({ ...c, defenseTemp: v }));
@@ -662,7 +715,7 @@ function FabU() {
       ],
     }));
   const removeBond = (id: string) =>
-    setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
+    confirmDelete(() => setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) })));
   const renameBond = (id: string, newName: string) =>
     setCharacter((c) => ({
       ...c,
@@ -671,12 +724,14 @@ function FabU() {
   const removeClass = (index: number) => {
     const cls = character.classes[index];
     if (!cls) return;
-    setCharacter((c) => ({
-      ...c,
-      classes: c.classes.filter((_, i) => i !== index),
-      skillGroups: c.skillGroups.filter((g) => g.className !== cls.name),
-      spellGroups: c.spellGroups.filter((g) => g.className !== cls.name),
-    }));
+    confirmDelete(() =>
+      setCharacter((c) => ({
+        ...c,
+        classes: c.classes.filter((_, i) => i !== index),
+        skillGroups: c.skillGroups.filter((g) => g.className !== cls.name),
+        spellGroups: c.spellGroups.filter((g) => g.className !== cls.name),
+      })),
+    );
   };
   const updateTrait = (key: 'identity' | 'theme' | 'origin', value: string) =>
     setCharacter((c) => ({
@@ -864,14 +919,16 @@ function FabU() {
     }));
 
   const handleDeleteSkill = (className: string, skillName: string) =>
-    setCharacter((c) => ({
-      ...c,
-      skillGroups: c.skillGroups.map((g) =>
-        g.className === className
-          ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
-          : g,
-      ),
-    }));
+    confirmDelete(() =>
+      setCharacter((c) => ({
+        ...c,
+        skillGroups: c.skillGroups.map((g) =>
+          g.className === className
+            ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
+            : g,
+        ),
+      })),
+    );
 
   const handleEditSkill = (
     className: string,
@@ -905,14 +962,16 @@ function FabU() {
     }));
 
   const handleDeleteSpell = (className: string, spellName: string) =>
-    setCharacter((c) => ({
-      ...c,
-      spellGroups: c.spellGroups.map((g) =>
-        g.className === className
-          ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
-          : g,
-      ),
-    }));
+    confirmDelete(() =>
+      setCharacter((c) => ({
+        ...c,
+        spellGroups: c.spellGroups.map((g) =>
+          g.className === className
+            ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
+            : g,
+        ),
+      })),
+    );
 
   const handleEditSpell = (
     className: string,
@@ -941,10 +1000,12 @@ function FabU() {
   };
 
   const handleDeleteEquipment = (index: number) => {
-    setCharacter((prev) => ({
-      ...prev,
-      equipment: prev.equipment.filter((_, i) => i !== index),
-    }));
+    confirmDelete(() =>
+      setCharacter((prev) => ({
+        ...prev,
+        equipment: prev.equipment.filter((_, i) => i !== index),
+      })),
+    );
   };
 
   const handleUpdateEquipment = (
@@ -958,10 +1019,12 @@ function FabU() {
   };
 
   const handleDeleteBackpackItem = (index: number) => {
-    setCharacter((prev) => ({
-      ...prev,
-      backpack: prev.backpack.filter((_, i) => i !== index),
-    }));
+    confirmDelete(() =>
+      setCharacter((prev) => ({
+        ...prev,
+        backpack: prev.backpack.filter((_, i) => i !== index),
+      })),
+    );
   };
 
   const handleEditBackpackItem = (index: number, updated: { title: string; subtitle: string }) => {
@@ -2488,6 +2551,16 @@ function FabU() {
           </MobileScreen>
         </Stack>
       </>
+      <ConfirmDeleteModal
+        open={pendingDelete !== null}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
+      <UndoSnackbar
+        open={undoOpen}
+        onUndo={handleUndoFromSnackbar}
+        onClose={() => setUndoOpen(false)}
+      />
     </FabUThemeProvider>
   );
 }
