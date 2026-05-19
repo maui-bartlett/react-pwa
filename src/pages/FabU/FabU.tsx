@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
@@ -1268,7 +1269,7 @@ function FabU() {
                     action === 'Attack' ? (
                       <Sword size={14} />
                     ) : action === 'Cast' ? (
-                      <Sparkles size={14} />
+                      <AutoAwesomeOutlinedIcon sx={{ fontSize: 14 }} />
                     ) : action === 'Guard' ? (
                       <Shield size={14} />
                     ) : (
@@ -1307,7 +1308,7 @@ function FabU() {
                         bgcolor: fabUTokens.isDark ? '#3d7060' : '#ffffff',
                         color: fabUTokens.isDark ? '#fff' : fabUTokens.color.textPrimary,
                         boxShadow: fabUTokens.shadow.card,
-                        border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : '#3d7060'}`,
+                        border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.brandText}`,
                         '&:hover': {
                           bgcolor: fabUTokens.isDark ? '#3d7060' : alpha('#3d7060', 0.06),
                           filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
@@ -2172,7 +2173,7 @@ function FabU() {
                         boxSizing: 'border-box',
                         px: 2,
                         py: 1.1,
-                        borderRadius: '8px 8px 0 0',
+                        borderRadius: 0,
                         boxShadow: '0 -4px 18px rgba(31, 42, 38, 0.18)',
                         fontSize: '0.84rem',
                         fontWeight: 700,

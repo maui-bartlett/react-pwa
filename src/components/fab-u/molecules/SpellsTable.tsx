@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -10,6 +11,7 @@ import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
@@ -360,7 +362,7 @@ function SwipeableSpellRow({
               sx={{
                 flex: 1.5,
                 minWidth: 0,
-                pl: 1.5,
+                pl: '2px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
@@ -481,7 +483,7 @@ function SwipeableSpellRow({
               sx={{
                 flex: 1.5,
                 minWidth: 0,
-                pl: 1.5,
+                pl: '2px',
                 textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
@@ -642,7 +644,10 @@ function SwipeableSpellRow({
                   },
                 }}
               >
-                Cast
+                <Stack direction="row" alignItems="center" gap={0.5}>
+                  Cast
+                  <AutoAwesomeOutlinedIcon sx={{ fontSize: 13 }} />
+                </Stack>
               </Button>
             </Box>
           </Box>
@@ -822,7 +827,7 @@ function SpellsTable({
           <Box sx={{ width: 48, flexShrink: 0, ml: '6px', textAlign: 'right', ...headerCellSx }}>
             Target
           </Box>
-          <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, textAlign: 'right', ...headerCellSx }}>
+          <Box sx={{ flex: 1.5, minWidth: 0, pl: '2px', textAlign: 'right', ...headerCellSx }}>
             Duration
           </Box>
         </Box>
@@ -913,7 +918,7 @@ function SpellsTable({
               sx={{
                 flex: 1.5,
                 minWidth: 0,
-                pl: 1.5,
+                pl: '2px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',

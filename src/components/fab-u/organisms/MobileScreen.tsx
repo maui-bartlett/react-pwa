@@ -126,6 +126,9 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           zIndex: 2,
           pb: 1.5,
           bgcolor: 'transparent',
+          borderLeft: `1px solid ${fabUTokens.color.brand}`,
+          borderRight: `1px solid ${fabUTokens.color.brand}`,
+          borderTop: `1px solid ${fabUTokens.color.brand}`,
         }}
       >
         {header}
@@ -142,7 +145,9 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           px: 1,
           py: 0.85,
           zIndex: 10,
-          borderTop: `1px solid ${fabUTokens.color.border}`,
+          borderTop: '1px solid #ffffff',
+          borderLeft: '1px solid #ffffff',
+          borderRight: '1px solid #ffffff',
           bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
         }}
       >
