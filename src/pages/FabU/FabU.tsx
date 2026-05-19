@@ -29,9 +29,9 @@ import {
   Pencil,
   Shield,
   Sparkles,
+  Star,
   Sword,
   Timer,
-  Zap,
 } from 'lucide-react';
 
 import {
@@ -1097,6 +1097,7 @@ function FabU() {
             onChange: setFP,
             toneColor: fabUTokens.color.fp,
             trailingIcon: <Feather size={14} color={fabUTokens.color.fp} />,
+            borderGradient: `linear-gradient(225deg, rgba(255,255,255,0.9) 0%, ${fabUTokens.color.fp} 100%)`,
           },
           {
             label: 'XP',
@@ -1336,7 +1337,7 @@ function FabU() {
                     ) : action === 'Study' ? (
                       <span style={{ fontSize: 13, lineHeight: 1 }}>🤓</span>
                     ) : (
-                      <Zap size={14} />
+                      <Star size={14} />
                     );
                   return (
                     <Button
@@ -1433,15 +1434,13 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.isDark ? fabUTokens.color.fp : '#ffffff',
-                    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.fp,
+                    background: `linear-gradient(225deg, #ffffff 0%, ${fabUTokens.color.fp} 100%)`,
+                    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.fpFg,
                     boxShadow: fabUTokens.shadow.card,
-                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.fp}`,
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : alpha(fabUTokens.color.fp, 0.5)}`,
                     '&:hover': {
-                      bgcolor: fabUTokens.isDark
-                        ? fabUTokens.color.fp
-                        : alpha(fabUTokens.color.fp, 0.06),
-                      filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
+                      background: `linear-gradient(225deg, #ffffff 0%, ${fabUTokens.color.fp} 100%)`,
+                      filter: 'brightness(0.9)',
                       boxShadow: fabUTokens.shadow.card,
                     },
                   }}
@@ -1782,14 +1781,16 @@ function FabU() {
               onUpdateItem={handleUpdateEquipment}
               onAddSlotItem={handleAddEquipmentItem}
             />
-            <DetailListCard
-              label="Backpack"
-              addLabel="Item"
-              items={character.backpack.map((b) => ({ title: b.title, subtitle: b.subtitle }))}
-              onRemoveItem={handleDeleteBackpackItem}
-              onEditItem={handleEditBackpackItem}
-              onAdd={() => handleAddBackpackItem()}
-            />
+            <Box sx={{ mt: 2.5 }}>
+              <DetailListCard
+                label="Backpack"
+                addLabel="Item"
+                items={character.backpack.map((b) => ({ title: b.title, subtitle: b.subtitle }))}
+                onRemoveItem={handleDeleteBackpackItem}
+                onEditItem={handleEditBackpackItem}
+                onAdd={() => handleAddBackpackItem()}
+              />
+            </Box>
           </Box>
         ) : null}
       </>

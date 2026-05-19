@@ -294,7 +294,6 @@ function SwipeableSpellRow({
               height: 46,
               bgcolor: fabUTokens.color.pillSurface,
               zIndex: 1,
-              gap: 0.5,
             }}
           >
             <Box sx={{ flex: 2, minWidth: 0, pl: '24px' }}>

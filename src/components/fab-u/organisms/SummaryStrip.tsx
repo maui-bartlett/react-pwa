@@ -32,6 +32,8 @@ type SummaryMetric = {
   valueColor?: string;
   /** When provided, overrides the pill border color (display mode only). */
   borderColor?: string;
+  /** When provided, applies a CSS gradient border using the padding-box/border-box technique. */
+  borderGradient?: string;
 };
 
 type SummaryStripProps = {
@@ -77,15 +79,24 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
           const showZennitIcon = metric.pw === 'zennit';
           const isXpMetric = metric.label === 'XP';
           const tc = metric.toneColor;
+          const bgColor = tc && fabUTokens.isDark ? alpha(tc, 0.07) : fabUTokens.color.pillSurface;
+          const useGradientBorder = !!metric.borderGradient && !isEditing;
           const metricBox = (
             <Box
               key={metric.label}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
               onClick={() => !isEditing && openEdit(metric)}
               sx={{
-                border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : (metric.borderColor ?? (tc ? alpha(tc, 0.5) : fabUTokens.color.border))}`,
+                ...(useGradientBorder
+                  ? {
+                      border: '1px solid transparent',
+                      background: `linear-gradient(${bgColor}, ${bgColor}) padding-box, ${metric.borderGradient} border-box`,
+                    }
+                  : {
+                      border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : (metric.borderColor ?? (tc ? alpha(tc, 0.5) : fabUTokens.color.border))}`,
+                      bgcolor: bgColor,
+                    }),
                 borderRadius: '9px',
-                bgcolor: tc && fabUTokens.isDark ? alpha(tc, 0.07) : fabUTokens.color.pillSurface,
                 boxShadow: fabUTokens.shadow.card,
                 display: 'flex',
                 alignItems: 'center',
