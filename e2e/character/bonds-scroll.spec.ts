@@ -4,7 +4,14 @@
  * every touchmove regardless of direction.
  * Fix: manual touchmove listener only calls preventDefault when |deltaX| > |deltaY|.
  */
-import { devices, expect, test } from '@playwright/test';
+import { type Page, devices, expect, test } from '@playwright/test';
+
+/** Confirm the deletion modal that now gates every destructive action. */
+async function confirmDeleteModal(page: Page) {
+  const btn = page.locator('[data-pw="confirm-delete-confirm"]');
+  await expect(btn).toBeVisible({ timeout: 2000 });
+  await btn.click();
+}
 
 // Full Pixel 5 emulation so page.mouse drags emit real touch events in Chromium.
 // Exclude defaultBrowserType — can't be set inside a describe block.
@@ -248,6 +255,7 @@ test.describe('Bond row — vertical scroll pass-through', () => {
       { startX: cx, startY: cy, dist: 180 },
     );
 
+    await confirmDeleteModal(page);
     await expect(row).toHaveCount(0, { timeout: 1500 });
   });
 });

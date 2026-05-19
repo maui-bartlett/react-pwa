@@ -1,5 +1,12 @@
 import { type Page, devices, expect, test } from '@playwright/test';
 
+/** Confirm the deletion modal that now gates every destructive action. */
+async function confirmDeleteModal(page: Page) {
+  const btn = page.locator('[data-pw="confirm-delete-confirm"]');
+  await expect(btn).toBeVisible({ timeout: 2000 });
+  await btn.click();
+}
+
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -123,6 +130,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(row).toBeVisible();
 
     await touchSwipeLeft(page, id);
+    await confirmDeleteModal(page);
 
     // Row removed from DOM after collapse animation
     await expect(row).toHaveCount(0, { timeout: 1500 });
@@ -172,6 +180,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
 
     // The × button is opacity:0 normally; force-click it
     await page.locator(`[data-pw="bond-delete-${id}"]`).click({ force: true });
+    await confirmDeleteModal(page);
 
     await expect(row).toHaveCount(0, { timeout: 1500 });
 
@@ -184,6 +193,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test('Remove on Overview → bond gone from Combat > Bonds subtab', async ({ page }) => {
     const id = await getBondId(page, 'Granada');
     await touchSwipeLeft(page, id);
+    await confirmDeleteModal(page);
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
 
     await page.getByRole('button', { name: 'Combat' }).first().click();
@@ -198,6 +208,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test('Removed bond does not reappear after reload', async ({ page }) => {
     const id = await getBondId(page, 'Juice');
     await touchSwipeLeft(page, id);
+    await confirmDeleteModal(page);
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
 
     await page.reload();
