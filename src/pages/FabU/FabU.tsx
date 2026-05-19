@@ -507,7 +507,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
               key={i}
               label=""
               value={item}
-              trailingWidth={32}
+              trailingWidth={16}
               onEdit={(v) => {
                 const updated = [...identities];
                 updated[i + 1] = v;

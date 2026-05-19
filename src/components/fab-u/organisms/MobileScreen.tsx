@@ -111,7 +111,7 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           </Box>
 
           {/* Content */}
-          <Box ref={contentRef} sx={{ px: 1 }}>
+          <Box ref={contentRef} sx={{ px: 1, pt: 1.25 }}>
             <Stack spacing={2.775}>{children}</Stack>
           </Box>
 
