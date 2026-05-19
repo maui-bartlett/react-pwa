@@ -30,6 +30,8 @@ type SummaryMetric = {
   toneColor?: string;
   /** When provided, overrides the value text color (display mode only). */
   valueColor?: string;
+  /** When provided, overrides the pill border color (display mode only). */
+  borderColor?: string;
 };
 
 type SummaryStripProps = {
@@ -81,7 +83,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
               onClick={() => !isEditing && openEdit(metric)}
               sx={{
-                border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : tc ? alpha(tc, 0.5) : fabUTokens.color.border}`,
+                border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : (metric.borderColor ?? (tc ? alpha(tc, 0.5) : fabUTokens.color.border))}`,
                 borderRadius: '9px',
                 bgcolor: tc && fabUTokens.isDark ? alpha(tc, 0.07) : fabUTokens.color.pillSurface,
                 boxShadow: fabUTokens.shadow.card,

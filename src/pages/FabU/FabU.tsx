@@ -1057,6 +1057,7 @@ function FabU() {
             pw: 'ov-xp',
             onChange: setCurrentXP,
             valueColor: fabUTokens.color.brandText,
+            borderColor: fabUTokens.color.textPrimary,
           },
           {
             label: 'LVL',
@@ -1065,6 +1066,7 @@ function FabU() {
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
             valueColor: fabUTokens.color.brandText,
+            borderColor: fabUTokens.color.brand,
           },
         ]}
       />
@@ -1837,7 +1839,7 @@ function FabU() {
                   strokeLinejoin="round"
                   preserveAspectRatio="none"
                   style={{
-                    width: '100%',
+                    width: 'calc(100% - 2px)',
                     height: 14,
                     display: 'block',
                     marginBottom: '5px',
