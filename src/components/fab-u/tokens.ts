@@ -67,7 +67,7 @@ const fabUTokens: FabUTokens = {
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // section header pill fill — same green as top header bar
     labelFg: '#ffffff', // white text on green pill
-    highlight: '#C49230', // bronze with slight yellow shift
+    highlight: '#DCA832', // bronze with slight yellow shift
     highlightFg: '#1a2e26', // dark text on bronze
     fp: '#2B7E7A', // muted blue-green teal for Fabula Points
     fpFg: '#021e22', // dark text on cyan

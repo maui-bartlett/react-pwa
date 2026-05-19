@@ -34,6 +34,8 @@ type SummaryMetric = {
   borderColor?: string;
   /** When provided, applies a CSS gradient border using the padding-box/border-box technique. */
   borderGradient?: string;
+  /** When provided, applies a CSS gradient as the pill background fill (overrides bgcolor). */
+  fillGradient?: string;
 };
 
 type SummaryStripProps = {
@@ -81,6 +83,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
           const tc = metric.toneColor;
           const bgColor = tc && fabUTokens.isDark ? alpha(tc, 0.07) : fabUTokens.color.pillSurface;
           const useGradientBorder = !!metric.borderGradient && !isEditing;
+          const useFillGradient = !!metric.fillGradient && !isEditing;
           const metricBox = (
             <Box
               key={metric.label}
@@ -94,7 +97,9 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                     }
                   : {
                       border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : (metric.borderColor ?? (tc ? alpha(tc, 0.5) : fabUTokens.color.border))}`,
-                      bgcolor: bgColor,
+                      ...(useFillGradient
+                        ? { background: metric.fillGradient }
+                        : { bgcolor: bgColor }),
                     }),
                 borderRadius: '9px',
                 boxShadow: fabUTokens.shadow.card,
