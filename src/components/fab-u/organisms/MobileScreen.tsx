@@ -107,8 +107,8 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
             overscrollBehavior: 'contain',
           }}
         >
-          {/* Content — top padding reserves space below the floating header */}
-          <Box ref={contentRef} sx={{ px: 1, pt: `${topPaddingHeight}px` }}>
+          {/* Content — top padding reserves space below the floating header + 10px breathing room */}
+          <Box ref={contentRef} sx={{ px: 1, pt: `${topPaddingHeight + 10}px` }}>
             <Stack spacing={2.775}>{children}</Stack>
           </Box>
 

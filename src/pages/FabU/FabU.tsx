@@ -1297,12 +1297,13 @@ function FabU() {
                         textTransform: 'none',
                         fontWeight: 700,
                         fontSize: '0.78rem',
-                        bgcolor: '#ffffff',
-                        color: '#3d7060',
+                        bgcolor: fabUTokens.isDark ? '#3d7060' : '#ffffff',
+                        color: fabUTokens.isDark ? '#fff' : '#3d7060',
                         boxShadow: fabUTokens.shadow.card,
-                        border: '1px solid #3d7060',
+                        border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : '#3d7060'}`,
                         '&:hover': {
-                          bgcolor: alpha('#3d7060', 0.06),
+                          bgcolor: fabUTokens.isDark ? '#3d7060' : alpha('#3d7060', 0.06),
+                          filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
                           boxShadow: fabUTokens.shadow.card,
                         },
                       }}
@@ -1342,12 +1343,15 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: '#ffffff',
-                    color: fabUTokens.color.highlight,
+                    bgcolor: fabUTokens.isDark ? fabUTokens.color.highlight : '#ffffff',
+                    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.highlight,
                     boxShadow: fabUTokens.shadow.card,
-                    border: `1px solid ${fabUTokens.color.highlight}`,
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.highlight}`,
                     '&:hover': {
-                      bgcolor: alpha(fabUTokens.color.highlight, 0.06),
+                      bgcolor: fabUTokens.isDark
+                        ? fabUTokens.color.highlight
+                        : alpha(fabUTokens.color.highlight, 0.06),
+                      filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
                       boxShadow: fabUTokens.shadow.card,
                     },
                   }}
@@ -1368,12 +1372,15 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: '#ffffff',
-                    color: fabUTokens.color.success,
+                    bgcolor: fabUTokens.isDark ? fabUTokens.color.success : '#ffffff',
+                    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.success,
                     boxShadow: fabUTokens.shadow.card,
-                    border: `1px solid ${fabUTokens.color.success}`,
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.success}`,
                     '&:hover': {
-                      bgcolor: alpha(fabUTokens.color.success, 0.06),
+                      bgcolor: fabUTokens.isDark
+                        ? fabUTokens.color.success
+                        : alpha(fabUTokens.color.success, 0.06),
+                      filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
                       boxShadow: fabUTokens.shadow.card,
                     },
                   }}
@@ -1822,7 +1829,7 @@ function FabU() {
               {/* Inner wrapper sizes to text width; SVG stretches to match */}
               <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'stretch' }}>
                 <svg
-                  viewBox="0 0 30 14"
+                  viewBox="6 0 23 14"
                   fill="none"
                   stroke="#ffffff"
                   strokeWidth={2}
@@ -1928,7 +1935,7 @@ function FabU() {
             </IconButton>
           }
           sx={{
-            backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
+            backgroundImage: `linear-gradient(0deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
           <Stack spacing={1.5}>
