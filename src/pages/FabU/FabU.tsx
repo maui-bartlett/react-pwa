@@ -915,10 +915,10 @@ function FabU() {
     }));
   };
 
-  const handleAddEquipmentItem = () => {
+  const handleAddEquipmentItem = (slot: string) => {
     setCharacter((prev) => ({
       ...prev,
-      equipment: [...prev.equipment, { name: 'New Item', slot: 'Accessory', description: '' }],
+      equipment: [...prev.equipment, { name: 'New Item', slot, description: '' }],
     }));
   };
 
@@ -1300,7 +1300,7 @@ function FabU() {
                         fontWeight: 700,
                         fontSize: '0.78rem',
                         bgcolor: fabUTokens.isDark ? '#3d7060' : '#ffffff',
-                        color: fabUTokens.isDark ? '#fff' : '#3d7060',
+                        color: fabUTokens.isDark ? '#fff' : fabUTokens.color.textPrimary,
                         boxShadow: fabUTokens.shadow.card,
                         border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : '#3d7060'}`,
                         '&:hover': {
@@ -1577,10 +1577,9 @@ function FabU() {
               label="Equipment"
               title=""
               items={character.equipment}
-              emptyLabel="Accessory"
               onDeleteItem={handleDeleteEquipment}
               onUpdateItem={handleUpdateEquipment}
-              onAddItem={handleAddEquipmentItem}
+              onAddSlotItem={handleAddEquipmentItem}
             />
           </Box>
         ) : null}
@@ -1790,10 +1789,9 @@ function FabU() {
           label="Equipment"
           title=""
           items={character.equipment}
-          emptyLabel="Accessory"
           onDeleteItem={handleDeleteEquipment}
           onUpdateItem={handleUpdateEquipment}
-          onAddItem={handleAddEquipmentItem}
+          onAddSlotItem={handleAddEquipmentItem}
         />
         <SummaryStrip
           label="Inventory Points"
@@ -2226,11 +2224,6 @@ function FabU() {
           }}
           sx={{
             bottom: { xs: 'calc(env(safe-area-inset-bottom) + 22px)', sm: 24 },
-            width: '100%',
-            '& .MuiSnackbarContent-root': {
-              width: FAB_U_TOAST_WIDTH,
-              maxWidth: 390,
-            },
           }}
         >
           <Box

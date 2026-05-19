@@ -34,7 +34,6 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
       direction="row"
       justifyContent="space-between"
       sx={{
-        border: `1px solid ${fabUTokens.color.border}`,
         borderRadius: '9px',
         bgcolor: fabUTokens.color.surface,
         px: 0.18,

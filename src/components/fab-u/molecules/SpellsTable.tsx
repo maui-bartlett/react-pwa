@@ -295,7 +295,7 @@ function SwipeableSpellRow({
               gap: 0.5,
             }}
           >
-            <Box sx={{ flex: 2, minWidth: 0 }}>
+            <Box sx={{ flex: 2, minWidth: 0, pl: '24px' }}>
               <InputBase
                 autoFocus
                 value={editDraft.name}
@@ -328,7 +328,11 @@ function SwipeableSpellRow({
                 sx={{
                   color: fabUTokens.color.textPrimary,
                   width: '100%',
-                  '& input': { p: 0, ...scaledEditableTextStyle(0.74, { stretch: true }) },
+                  '& input': {
+                    p: 0,
+                    textAlign: 'right',
+                    ...scaledEditableTextStyle(0.74, { stretch: true }),
+                  },
                 }}
               />
             </Box>
@@ -442,6 +446,7 @@ function SwipeableSpellRow({
               sx={{
                 width: 56,
                 flexShrink: 0,
+                textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
@@ -610,18 +615,15 @@ function SwipeableSpellRow({
                   fontWeight: 700,
                   lineHeight: 1.2,
                   textTransform: 'none',
-                  boxShadow: fabUTokens.isDark
-                    ? '0 3px 10px rgba(190, 144, 64, 0.5)'
-                    : '0 3px 10px rgba(190, 144, 64, 0.18)',
+                  boxShadow: `0 3px 10px ${alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.5 : 0.18)}`,
                   mr: 1,
                   border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : alpha(fabUTokens.color.highlight, 0.5)}`,
                   '&:hover': {
                     bgcolor: fabUTokens.isDark
-                      ? '#b09040'
+                      ? fabUTokens.color.highlight
                       : alpha(fabUTokens.color.highlight, 0.06),
-                    boxShadow: fabUTokens.isDark
-                      ? '0 3px 10px rgba(190, 144, 64, 0.5)'
-                      : '0 3px 10px rgba(190, 144, 64, 0.18)',
+                    filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
+                    boxShadow: `0 3px 10px ${alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.5 : 0.18)}`,
                   },
                 }}
               >
@@ -801,7 +803,7 @@ function SpellsTable({
           }}
         >
           <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
-          <Box sx={{ width: 56, flexShrink: 0, ...headerCellSx }}>Cost</Box>
+          <Box sx={{ width: 56, flexShrink: 0, textAlign: 'right', ...headerCellSx }}>Cost</Box>
           <Box sx={{ width: 48, flexShrink: 0, ...headerCellSx }}>Target</Box>
           <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, ...headerCellSx }}>Duration</Box>
         </Box>
@@ -870,7 +872,10 @@ function SpellsTable({
                 onChange={(e) => setDraftSpell((d) => (d ? { ...d, cost: e.target.value } : d))}
                 placeholder="0 MP"
                 onKeyDown={draftKeyDown()}
-                sx={inputSx}
+                sx={{
+                  ...inputSx,
+                  '& input': { ...inputSx['& input'], textAlign: 'right' as const },
+                }}
               />
             </Box>
             <Box sx={{ width: 48, flexShrink: 0 }}>

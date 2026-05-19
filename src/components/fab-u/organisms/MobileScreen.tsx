@@ -143,7 +143,7 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           py: 0.85,
           zIndex: 10,
           borderTop: `1px solid ${fabUTokens.color.border}`,
-          bgcolor: 'transparent',
+          bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
         }}
       >
         {footer}

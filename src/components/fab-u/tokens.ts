@@ -63,7 +63,7 @@ const fabUTokens: FabUTokens = {
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // section header pill fill — same green as top header bar
     labelFg: '#ffffff', // white text on green pill
-    highlight: '#c49030', // amber/yellow — vivid saturated amber in light mode
+    highlight: '#C68430', // amber/yellow — vivid saturated amber in light mode
     highlightFg: '#1a2e26', // dark text on yellow
     hp: '#c06355',
     mp: '#547bcb',
@@ -99,7 +99,7 @@ const darkFabUTokens: FabUTokens = {
     brandFg: '#ffffff', // text ON brand-green bg
     labelBg: '#315c4d', // same as brand — matches the top header bar green
     labelFg: '#ffffff', // white text on dark-green pill
-    highlight: '#be9040', // amber — matches light mode tone
+    highlight: '#BA8338', // amber — matches light mode tone
     highlightFg: '#1a2e26',
     hp: '#c06355',
     mp: '#547bcb',

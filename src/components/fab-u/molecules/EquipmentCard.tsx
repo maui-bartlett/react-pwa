@@ -18,14 +18,16 @@ const ACTION_WIDTH = 128;
 const SNAP_THRESHOLD = 50;
 const DELETE_RED = '#a84e49';
 
+const EQUIPMENT_SLOTS = ['Main Hand', 'Off Hand', 'Accessory', 'Armor'] as const;
+type EquipmentSlot = (typeof EQUIPMENT_SLOTS)[number];
+
 type EquipmentCardProps = {
   title?: string;
   items: EquipmentItem[];
-  emptyLabel?: string;
   label?: string;
   onDeleteItem?: (index: number) => void;
   onUpdateItem?: (index: number, updated: EquipmentItem) => void;
-  onAddItem?: () => void;
+  onAddSlotItem?: (slot: EquipmentSlot) => void;
 };
 
 type EquipmentRowProps = {
@@ -354,11 +356,10 @@ function EquipmentRow({
 function EquipmentCard({
   title = 'Equipped gear',
   items,
-  emptyLabel = 'Open accessory slot',
   label = 'Gear',
   onDeleteItem,
   onUpdateItem,
-  onAddItem,
+  onAddSlotItem,
 }: EquipmentCardProps) {
   const fabUTokens = useFabUTokens();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -428,43 +429,52 @@ function EquipmentCard({
       actionsPosition="inline"
     >
       <Stack spacing={1.05}>
-        {items.map((item, index) => (
-          <EquipmentRow
-            key={`${item.slot}-${item.name}-${index}`}
-            item={item}
-            index={index}
-            isEditing={editingIndex === index}
-            nameDraft={editingIndex === index ? nameDraft : item.name}
-            descDraft={editingIndex === index ? descDraft : item.description}
-            onNameChange={setNameDraft}
-            onDescChange={setDescDraft}
-            onStartEdit={() => startEdit(index)}
-            onCommitEdit={commitEdit}
-            onRevertEdit={revertEdit}
-            onDelete={onDeleteItem}
-          />
-        ))}
-
-        <Box
-          onClick={onAddItem}
-          sx={{
-            border: `1px dashed ${fabUTokens.color.highlight}`,
-            borderRadius: '9px',
-            px: 1.3,
-            py: 1.45,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            color: fabUTokens.color.highlight,
-            bgcolor: fabUTokens.color.surface,
-            cursor: onAddItem ? 'pointer' : 'default',
-          }}
-        >
-          <AddIcon fontSize="small" />
-          <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
-            {emptyLabel}
-          </Typography>
-        </Box>
+        {EQUIPMENT_SLOTS.map((slot) => {
+          const slotItemIndex = items.findIndex((item) => item.slot === slot);
+          if (slotItemIndex !== -1) {
+            return (
+              <EquipmentRow
+                key={slot}
+                item={items[slotItemIndex]}
+                index={slotItemIndex}
+                isEditing={editingIndex === slotItemIndex}
+                nameDraft={editingIndex === slotItemIndex ? nameDraft : items[slotItemIndex].name}
+                descDraft={
+                  editingIndex === slotItemIndex ? descDraft : items[slotItemIndex].description
+                }
+                onNameChange={setNameDraft}
+                onDescChange={setDescDraft}
+                onStartEdit={() => startEdit(slotItemIndex)}
+                onCommitEdit={commitEdit}
+                onRevertEdit={revertEdit}
+                onDelete={onDeleteItem}
+              />
+            );
+          }
+          return (
+            <Box
+              key={slot}
+              onClick={() => onAddSlotItem?.(slot)}
+              sx={{
+                border: `1px dashed ${fabUTokens.color.highlight}`,
+                borderRadius: '9px',
+                px: 1.3,
+                py: 1.45,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                color: fabUTokens.color.highlight,
+                bgcolor: fabUTokens.isDark ? 'transparent' : '#ffffff',
+                cursor: onAddSlotItem ? 'pointer' : 'default',
+              }}
+            >
+              <AddIcon fontSize="small" />
+              <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                {slot}
+              </Typography>
+            </Box>
+          );
+        })}
       </Stack>
     </SurfaceCard>
   );

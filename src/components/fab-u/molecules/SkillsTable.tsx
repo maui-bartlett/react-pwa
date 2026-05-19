@@ -295,7 +295,7 @@ function SwipeableSkillRow({
               gap: 0.5,
             }}
           >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ flex: 1, minWidth: 0, pl: '24px' }}>
               <InputBase
                 autoFocus
                 value={editDraft.name}
