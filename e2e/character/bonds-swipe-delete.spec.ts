@@ -288,9 +288,9 @@ test.describe('Bond × button absent on touch device', () => {
   });
 });
 
-// ── Desktop: channel opens on mouse drag (trackMouse: true) ──────────────
+// ── Desktop: channel opens on swipe (TouchEvent API available in all Chromium) ──
 
-test.describe('Bond channel opens on desktop mouse drag', () => {
+test.describe('Bond channel opens on desktop via swipe', () => {
   test.use({ viewport: { width: 1280, height: 900 }, hasTouch: false });
 
   test.beforeEach(async ({ page }) => {
@@ -300,27 +300,14 @@ test.describe('Bond channel opens on desktop mouse drag', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('mouse drag opens action channel, delete button appears (trackMouse: true)', async ({
-    page,
-  }) => {
+  test('swipe past threshold opens action channel, delete button appears', async ({ page }) => {
     const id = await getBondId(page, 'Jelena');
 
     // Channel is not visible at rest
     await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toHaveCount(0);
 
-    // Mouse drag past SNAP_THRESHOLD (50px) opens the channel via trackMouse
-    const row = page.locator(`[data-pw="bond-row-${id}"]`);
-    const box = await row.boundingBox();
-    expect(box).not.toBeNull();
-    const cx = box!.x + box!.width / 2;
-    const cy = box!.y + box!.height / 2;
-
-    await page.mouse.move(cx, cy);
-    await page.mouse.down();
-    for (let i = 1; i <= 10; i++) {
-      await page.mouse.move(cx - (60 * i) / 10, cy);
-    }
-    await page.mouse.up();
+    // Synthetic TouchEvents work in Chromium regardless of hasTouch setting
+    await touchSwipeLeft(page, id);
 
     await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toBeVisible();
   });
