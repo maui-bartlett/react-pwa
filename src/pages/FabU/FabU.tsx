@@ -1056,7 +1056,7 @@ function FabU() {
             valueSuffix: ` / ${character.totalXP}`,
             pw: 'ov-xp',
             onChange: setCurrentXP,
-            valueColor: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
+            valueColor: fabUTokens.color.brandText,
           },
           {
             label: 'LVL',
@@ -1064,7 +1064,7 @@ function FabU() {
             pw: 'ov-level',
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
-            valueColor: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
+            valueColor: fabUTokens.color.brandText,
           },
         ]}
       />
@@ -1836,7 +1836,13 @@ function FabU() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   preserveAspectRatio="none"
-                  style={{ width: '100%', height: 14, display: 'block', marginBottom: '5px' }}
+                  style={{
+                    width: '100%',
+                    height: 14,
+                    display: 'block',
+                    marginBottom: '5px',
+                    overflow: 'visible',
+                  }}
                 >
                   <line x1="29" y1="7" x2="6" y2="7" />
                   <polyline points="13 13 6 7 13 1" />

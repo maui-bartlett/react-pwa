@@ -403,7 +403,11 @@ function SwipeableSkillRow({
                 flexShrink: 0,
                 textAlign: 'right',
                 ...cellTextSx,
-                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.brandText,
+                color: isOpen
+                  ? fabUTokens.color.brandFg
+                  : fabUTokens.isDark
+                    ? fabUTokens.color.brandText
+                    : '#3d7060',
                 fontWeight: 700,
               }}
             >
