@@ -123,7 +123,10 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: tc ?? fabUTokens.color.textSecondary,
+                      color:
+                        isEditing && !fabUTokens.isDark
+                          ? '#000000'
+                          : (tc ?? fabUTokens.color.textSecondary),
                       fontWeight: 700,
                       fontSize: '0.6rem',
                       letterSpacing: '0.05em',
@@ -212,7 +215,13 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                     ) : null}
                     {!showZennitIcon && metric.trailingIcon ? (
                       <Box
-                        sx={{ ml: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                        sx={{
+                          ml: 'auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexShrink: 0,
+                          ...(isEditing && !fabUTokens.isDark && { filter: 'brightness(0)' }),
+                        }}
                       >
                         {metric.trailingIcon}
                       </Box>

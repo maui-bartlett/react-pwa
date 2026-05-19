@@ -221,7 +221,7 @@ function StatPill({
             <Typography
               variant="caption"
               sx={{
-                color: toneStyles.color,
+                color: editing && !fabUTokens.isDark ? '#000000' : toneStyles.color,
                 fontWeight: 700,
                 fontSize: '0.6rem',
                 letterSpacing: '0.05em',
