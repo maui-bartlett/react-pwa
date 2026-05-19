@@ -336,7 +336,7 @@ function SwipeableSpellRow({
                 }}
               />
             </Box>
-            <Box sx={{ width: 48, flexShrink: 0 }}>
+            <Box sx={{ width: 48, flexShrink: 0, ml: '6px' }}>
               <InputBase
                 value={editDraft.target}
                 onChange={(e) => onEditDraftChange({ ...editDraft, target: e.target.value })}
@@ -348,11 +348,24 @@ function SwipeableSpellRow({
                 sx={{
                   color: fabUTokens.color.textPrimary,
                   width: '100%',
-                  '& input': { p: 0, ...scaledEditableTextStyle(0.74, { stretch: true }) },
+                  '& input': {
+                    p: 0,
+                    textAlign: 'right',
+                    ...scaledEditableTextStyle(0.74, { stretch: true }),
+                  },
                 }}
               />
             </Box>
-            <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, display: 'flex', alignItems: 'center' }}>
+            <Box
+              sx={{
+                flex: 1.5,
+                minWidth: 0,
+                pl: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+              }}
+            >
               <select
                 value={editDraft.duration}
                 onChange={(e) =>
@@ -369,7 +382,6 @@ function SwipeableSpellRow({
                   outline: 'none',
                   fontFamily: 'inherit',
                   cursor: 'pointer',
-                  flex: 1,
                   minWidth: 0,
                   colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}
@@ -457,6 +469,8 @@ function SwipeableSpellRow({
               sx={{
                 width: 48,
                 flexShrink: 0,
+                ml: '6px',
+                textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
@@ -468,6 +482,7 @@ function SwipeableSpellRow({
                 flex: 1.5,
                 minWidth: 0,
                 pl: 1.5,
+                textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
@@ -804,8 +819,12 @@ function SpellsTable({
         >
           <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
           <Box sx={{ width: 56, flexShrink: 0, textAlign: 'right', ...headerCellSx }}>Cost</Box>
-          <Box sx={{ width: 48, flexShrink: 0, ...headerCellSx }}>Target</Box>
-          <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, ...headerCellSx }}>Duration</Box>
+          <Box sx={{ width: 48, flexShrink: 0, ml: '6px', textAlign: 'right', ...headerCellSx }}>
+            Target
+          </Box>
+          <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, textAlign: 'right', ...headerCellSx }}>
+            Duration
+          </Box>
         </Box>
 
         {/* Spell rows */}
@@ -878,13 +897,16 @@ function SpellsTable({
                 }}
               />
             </Box>
-            <Box sx={{ width: 48, flexShrink: 0 }}>
+            <Box sx={{ width: 48, flexShrink: 0, ml: '6px' }}>
               <InputBase
                 value={draftSpell.target}
                 onChange={(e) => setDraftSpell((d) => (d ? { ...d, target: e.target.value } : d))}
                 placeholder="1"
                 onKeyDown={draftKeyDown()}
-                sx={inputSx}
+                sx={{
+                  ...inputSx,
+                  '& input': { ...inputSx['& input'], textAlign: 'right' as const },
+                }}
               />
             </Box>
             <Box
@@ -894,6 +916,7 @@ function SpellsTable({
                 pl: 1.5,
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'flex-end',
                 gap: 0.5,
               }}
             >
@@ -913,7 +936,6 @@ function SpellsTable({
                   outline: 'none',
                   fontFamily: 'inherit',
                   cursor: 'pointer',
-                  flex: 1,
                   minWidth: 0,
                   colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}

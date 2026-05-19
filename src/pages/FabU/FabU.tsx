@@ -7,10 +7,10 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
+import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
-import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -558,6 +558,11 @@ function FabU() {
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
+  useEffect(() => {
+    if (!notEnoughMpToastOpen) return;
+    const t = setTimeout(() => setNotEnoughMpToastOpen(false), 2400);
+    return () => clearTimeout(t);
+  }, [notEnoughMpToastOpen]);
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
@@ -1066,7 +1071,7 @@ function FabU() {
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
             valueColor: fabUTokens.color.brandText,
-            borderColor: fabUTokens.color.brand,
+            borderColor: fabUTokens.color.brandText,
           },
         ]}
       />
@@ -1312,7 +1317,16 @@ function FabU() {
                     >
                       <Stack direction="row" alignItems="center" gap={0.75}>
                         {action}
-                        {icon}
+                        <Box
+                          component="span"
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: fabUTokens.isDark ? 'inherit' : fabUTokens.color.brandText,
+                          }}
+                        >
+                          {icon}
+                        </Box>
                       </Stack>
                     </Button>
                   );
@@ -2132,9 +2146,45 @@ function FabU() {
             footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
             contentScrollRef={contentScrollRef}
             overlay={
-              spellCastBurstId === null ? undefined : (
-                <SpellCastOverlay burstId={spellCastBurstId} />
-              )
+              <>
+                {spellCastBurstId !== null && <SpellCastOverlay burstId={spellCastBurstId} />}
+                <Fade in={notEnoughMpToastOpen} timeout={180}>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                      zIndex: 20,
+                    }}
+                  >
+                    <Box
+                      data-pw="not-enough-mp-toast"
+                      role="alert"
+                      sx={{
+                        bgcolor: fabUTokens.color.hp,
+                        color: '#ffffff',
+                        width: FAB_U_TOAST_WIDTH,
+                        maxWidth: 390,
+                        boxSizing: 'border-box',
+                        px: 2,
+                        py: 1.1,
+                        borderRadius: '8px 8px 0 0',
+                        boxShadow: '0 -4px 18px rgba(31, 42, 38, 0.18)',
+                        fontSize: '0.84rem',
+                        fontWeight: 700,
+                        letterSpacing: 0,
+                        textAlign: 'center',
+                      }}
+                    >
+                      Not enough MP to cast
+                    </Box>
+                  </Box>
+                </Fade>
+              </>
             }
           >
             {content}
@@ -2214,40 +2264,6 @@ function FabU() {
             </Popover>
           </MobileScreen>
         </Stack>
-        <Snackbar
-          open={notEnoughMpToastOpen}
-          autoHideDuration={2400}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          onClose={(_, reason) => {
-            if (reason === 'clickaway') return;
-            setNotEnoughMpToastOpen(false);
-          }}
-          sx={{
-            bottom: { xs: 'calc(env(safe-area-inset-bottom) + 22px)', sm: 24 },
-          }}
-        >
-          <Box
-            data-pw="not-enough-mp-toast"
-            role="alert"
-            sx={{
-              bgcolor: fabUTokens.color.hp,
-              color: '#ffffff',
-              width: FAB_U_TOAST_WIDTH,
-              maxWidth: 390,
-              boxSizing: 'border-box',
-              px: 2,
-              py: 1.1,
-              borderRadius: '8px',
-              boxShadow: '0 10px 26px rgba(31, 42, 38, 0.22)',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              letterSpacing: 0,
-              textAlign: 'center',
-            }}
-          >
-            Not enough MP to cast
-          </Box>
-        </Snackbar>
       </>
     </FabUThemeProvider>
   );
