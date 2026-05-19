@@ -1231,7 +1231,7 @@ function FabU() {
             valueColor: '#ffffff',
             trailingIcon: <Feather size={14} color="#ffffff" />,
             borderColor: '#ffffff',
-            fillGradient: `linear-gradient(225deg, ${fabUTokens.isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.85)'} 0%, ${fabUTokens.color.fp} 35%)`,
+            fillGradient: `${fabUTokens.color.fp}`,
           },
           {
             label: 'XP',
@@ -1383,7 +1383,7 @@ function FabU() {
               toneColor: '#ffffff',
               valueColor: '#ffffff',
               borderColor: '#ffffff',
-              fillGradient: `linear-gradient(225deg, ${fabUTokens.isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.85)'} 0%, ${fabUTokens.color.fp} 35%)`,
+              fillGradient: `${fabUTokens.color.fp}`,
             },
             {
               label: 'IP',
@@ -1573,12 +1573,12 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    background: `linear-gradient(225deg, ${fabUTokens.isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.85)'} 0%, ${fabUTokens.color.fp} 35%)`,
+                    background: `${fabUTokens.color.fp}`,
                     color: '#ffffff',
                     boxShadow: fabUTokens.shadow.card,
                     border: '1px solid #ffffff',
                     '&:hover': {
-                      background: `linear-gradient(225deg, ${fabUTokens.isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.85)'} 0%, ${fabUTokens.color.fp} 35%)`,
+                      background: `${fabUTokens.color.fp}`,
                       filter: 'brightness(0.9)',
                       boxShadow: fabUTokens.shadow.card,
                     },
@@ -2088,7 +2088,7 @@ function FabU() {
               toneColor: '#ffffff',
               valueColor: '#ffffff',
               borderColor: '#ffffff',
-              fillGradient: `linear-gradient(225deg, ${fabUTokens.isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.85)'} 0%, ${fabUTokens.color.fp} 35%)`,
+              fillGradient: `${fabUTokens.color.fp}`,
             },
             {
               label: 'IP',
