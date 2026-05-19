@@ -398,7 +398,6 @@ function BondsCard({
             <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
               <InputBase
                 inputRef={inputRef}
-                data-pw="bond-name-input"
                 inputProps={{ 'data-pw': 'bond-name-input' }}
                 autoFocus
                 placeholder="Name"

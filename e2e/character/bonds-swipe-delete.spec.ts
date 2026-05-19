@@ -130,6 +130,8 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(row).toBeVisible();
 
     await touchSwipeLeft(page, id);
+    // Swipe opens the action channel — click the channel delete button to trigger removal
+    await page.locator(`[data-pw="bond-delete-${id}"]`).click();
     await confirmDeleteModal(page);
 
     // Row removed from DOM after collapse animation
@@ -171,15 +173,16 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(row).toHaveCount(1);
   });
 
-  // ── Desktop × button removes bond ────────────────────────────────────────
+  // ── Channel delete button removes bond ───────────────────────────────────
 
   test('Click × button removes bond row', async ({ page }) => {
     const id = await getBondId(page, 'Yoru');
     const row = page.locator(`[data-pw="bond-row-${id}"]`);
     await expect(row).toBeVisible();
 
-    // The × button is opacity:0 normally; force-click it
-    await page.locator(`[data-pw="bond-delete-${id}"]`).click({ force: true });
+    // Swipe to open the action channel, then click the channel delete button
+    await touchSwipeLeft(page, id);
+    await page.locator(`[data-pw="bond-delete-${id}"]`).click();
     await confirmDeleteModal(page);
 
     await expect(row).toHaveCount(0, { timeout: 1500 });
@@ -193,6 +196,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test('Remove on Overview → bond gone from Combat > Bonds subtab', async ({ page }) => {
     const id = await getBondId(page, 'Granada');
     await touchSwipeLeft(page, id);
+    await page.locator(`[data-pw="bond-delete-${id}"]`).click();
     await confirmDeleteModal(page);
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
 
@@ -208,6 +212,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test('Removed bond does not reappear after reload', async ({ page }) => {
     const id = await getBondId(page, 'Juice');
     await touchSwipeLeft(page, id);
+    await page.locator(`[data-pw="bond-delete-${id}"]`).click();
     await confirmDeleteModal(page);
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
 
@@ -250,31 +255,18 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(page.locator(`[data-pw="bond-red-channel-${id}"]`)).toHaveCount(0);
   });
 
-  // ── Red channel + trash icon above commit threshold (-45px) ──────────────
-  // 45px > 35px flat commit threshold → row slides, red channel visible.
-  // delete threshold = 35 + 25 = 60px.
-  // progress = 45/60 = 0.75 → opacity≈0.75, scale≈0.90.
+  // ── Action channel visible above swipe threshold (-45px) ─────────────────
+  // 45px mid-swipe (no touchend) keeps swiping=true and currentDeltaX=-45,
+  // so channelVisible fires and the delete/edit channel is rendered.
 
-  test('Mid-swipe -45px: red channel visible, trash opacity≈0.75, scale≈0.90', async ({
+  test('Mid-swipe -45px: action channel visible, delete button rendered', async ({
     page,
   }) => {
     const id = await getBondId(page, 'Jelena');
     await touchSwipeLeftPartial(page, id, 45);
 
-    const redChannel = page.locator(`[data-pw="bond-red-channel-${id}"]`);
-    await expect(redChannel).toBeVisible();
-
-    const trash = page.locator(`[data-pw="bond-trash-${id}"]`);
-    await expect(trash).toBeVisible();
-
-    const opacity = await trash.evaluate((el) => (el as HTMLElement).style.opacity);
-    expect(parseFloat(opacity)).toBeCloseTo(0.75, 1);
-
-    const scale = await trash.evaluate((el) => {
-      const m = (el as HTMLElement).style.transform.match(/scale\(([^)]+)\)/);
-      return m ? parseFloat(m[1]) : NaN;
-    });
-    expect(scale).toBeCloseTo(0.9, 1);
+    // Channel becomes visible while swiping (channelVisible = swiping && deltaX < -5)
+    await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toBeVisible();
   });
 });
 
@@ -296,9 +288,9 @@ test.describe('Bond × button absent on touch device', () => {
   });
 });
 
-// ── Desktop: × button IS rendered ────────────────────────────────────────
+// ── Desktop: channel opens on mouse drag (trackMouse: true) ──────────────
 
-test.describe('Bond × button present on desktop', () => {
+test.describe('Bond channel opens on desktop mouse drag', () => {
   test.use({ viewport: { width: 1280, height: 900 }, hasTouch: false });
 
   test.beforeEach(async ({ page }) => {
@@ -308,8 +300,28 @@ test.describe('Bond × button present on desktop', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('× button is in DOM on desktop (hover: hover, pointer: fine)', async ({ page }) => {
+  test('mouse drag opens action channel, delete button appears (trackMouse: true)', async ({
+    page,
+  }) => {
     const id = await getBondId(page, 'Jelena');
-    await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toHaveCount(1);
+
+    // Channel is not visible at rest
+    await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toHaveCount(0);
+
+    // Mouse drag past SNAP_THRESHOLD (50px) opens the channel via trackMouse
+    const row = page.locator(`[data-pw="bond-row-${id}"]`);
+    const box = await row.boundingBox();
+    expect(box).not.toBeNull();
+    const cx = box!.x + box!.width / 2;
+    const cy = box!.y + box!.height / 2;
+
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) {
+      await page.mouse.move(cx - (60 * i) / 10, cy);
+    }
+    await page.mouse.up();
+
+    await expect(page.locator(`[data-pw="bond-delete-${id}"]`)).toBeVisible();
   });
 });

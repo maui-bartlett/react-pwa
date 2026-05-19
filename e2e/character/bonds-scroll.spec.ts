@@ -255,6 +255,8 @@ test.describe('Bond row — vertical scroll pass-through', () => {
       { startX: cx, startY: cy, dist: 180 },
     );
 
+    // Swipe opens the action channel — click the channel delete button to trigger removal
+    await page.locator('[data-pw="bond-delete-jelena"]').click();
     await confirmDeleteModal(page);
     await expect(row).toHaveCount(0, { timeout: 1500 });
   });
