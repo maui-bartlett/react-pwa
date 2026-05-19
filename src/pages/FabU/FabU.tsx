@@ -22,6 +22,7 @@ import {
   Check,
   CheckCircle,
   ChevronDown,
+  Feather,
   FlaskConical,
   Pencil,
   Shield,
@@ -567,6 +568,8 @@ function FabU() {
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
+  const [fabulaAnchorEl, setFabulaAnchorEl] = useState<HTMLElement | null>(null);
+  const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
   const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
@@ -1054,7 +1057,8 @@ function FabU() {
             value: String(character.fabulaPoints),
             pw: 'fp',
             onChange: setFP,
-            toneColor: fabUTokens.color.highlight,
+            toneColor: fabUTokens.color.fp,
+            trailingIcon: <Feather size={14} color={fabUTokens.color.fp} />,
           },
           {
             label: 'XP',
@@ -1201,7 +1205,7 @@ function FabU() {
               value: String(character.fabulaPoints),
               onChange: setFP,
               pw: 'cb-fp',
-              toneColor: fabUTokens.color.highlight,
+              toneColor: fabUTokens.color.fp,
             },
             {
               label: 'IP',
@@ -1351,6 +1355,11 @@ function FabU() {
               <Stack direction="row" flexWrap="wrap" gap={1}>
                 <Button
                   variant="contained"
+                  onClick={(event) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setFabulaAnchorDir(rect.top > window.innerHeight / 2 ? 'above' : 'below');
+                    setFabulaAnchorEl(event.currentTarget);
+                  }}
                   sx={{
                     flex: '1 1 calc(50% - 4px)',
                     width: 'calc(50% - 4px)',
@@ -1360,14 +1369,14 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.isDark ? fabUTokens.color.highlight : '#ffffff',
-                    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.highlight,
+                    bgcolor: fabUTokens.isDark ? fabUTokens.color.fp : '#ffffff',
+                    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.fp,
                     boxShadow: fabUTokens.shadow.card,
-                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.highlight}`,
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.fp}`,
                     '&:hover': {
                       bgcolor: fabUTokens.isDark
-                        ? fabUTokens.color.highlight
-                        : alpha(fabUTokens.color.highlight, 0.06),
+                        ? fabUTokens.color.fp
+                        : alpha(fabUTokens.color.fp, 0.06),
                       filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
                       boxShadow: fabUTokens.shadow.card,
                     },
@@ -1375,7 +1384,7 @@ function FabU() {
                 >
                   <Stack direction="row" alignItems="center" gap={0.75}>
                     Spend Fabula
-                    <Sparkles size={14} />
+                    <Feather size={14} />
                   </Stack>
                 </Button>
                 <Button
@@ -1495,6 +1504,83 @@ function FabU() {
                   py: 1.1,
                   borderRadius: '9px',
                   bgcolor: color,
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'filter 0.12s ease',
+                  '&:hover': { filter: 'brightness(0.88)' },
+                  '&:active': { filter: 'brightness(0.78)' },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.85rem', lineHeight: 1.3 }}
+                >
+                  {name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', lineHeight: 1.4 }}
+                >
+                  {description}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </Popover>
+
+        <Popover
+          open={Boolean(fabulaAnchorEl)}
+          anchorEl={fabulaAnchorEl}
+          onClose={() => setFabulaAnchorEl(null)}
+          anchorOrigin={
+            fabulaAnchorDir === 'above'
+              ? { vertical: 'top', horizontal: 'right' }
+              : { vertical: 'bottom', horizontal: 'right' }
+          }
+          transformOrigin={
+            fabulaAnchorDir === 'above'
+              ? { vertical: 'bottom', horizontal: 'right' }
+              : { vertical: 'top', horizontal: 'right' }
+          }
+          marginThreshold={12}
+          disableRestoreFocus
+          PaperProps={{
+            sx: {
+              ...(fabulaAnchorDir === 'above' ? { mb: '5px' } : { mt: '5px' }),
+              p: 1,
+              width: 200,
+              bgcolor: fabUTokens.color.surface,
+              backgroundImage: 'none',
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
+              borderRadius: '12px',
+              boxShadow: fabUTokens.shadow.soft,
+            },
+          }}
+        >
+          <Stack spacing={0.75}>
+            {[
+              { name: 'Re-roll', description: '1 FP • Invoke a Trait' },
+              { name: 'Add 1', description: '1 FP • Invoke a Bond' },
+              { name: 'Alter Story', description: '1 FP' },
+            ].map(({ name, description }) => (
+              <Box
+                key={name}
+                component="button"
+                type="button"
+                onClick={() => {
+                  setFP(Math.max(0, character.fabulaPoints - 1));
+                  setFabulaAnchorEl(null);
+                }}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  width: '100%',
+                  px: 1.5,
+                  py: 1.1,
+                  borderRadius: '9px',
+                  bgcolor: fabUTokens.color.fp,
                   border: 'none',
                   cursor: 'pointer',
                   textAlign: 'left',
@@ -1746,7 +1832,7 @@ function FabU() {
               value: String(character.fabulaPoints),
               pw: 'fp',
               onChange: setFP,
-              toneColor: fabUTokens.color.highlight,
+              toneColor: fabUTokens.color.fp,
             },
             {
               label: 'HP',

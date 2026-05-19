@@ -28,6 +28,10 @@ type FabUColorTokens = {
   labelFg: string;
   highlight: string;
   highlightFg: string;
+  /** Fabula Points accent color — cyan-teal. */
+  fp: string;
+  /** Foreground text rendered ON an fp-colored background. */
+  fpFg: string;
   hp: string;
   mp: string;
   warning: string;
@@ -65,6 +69,8 @@ const fabUTokens: FabUTokens = {
     labelFg: '#ffffff', // white text on green pill
     highlight: '#D4AE18', // golden-yellow — more golden in light mode (HSL ~48°)
     highlightFg: '#1a2e26', // dark text on yellow
+    fp: '#1AADBE', // cyan-teal for Fabula Points
+    fpFg: '#021e22', // dark text on cyan
     hp: '#c06355',
     mp: '#547bcb',
     warning: '#d19842',
@@ -101,6 +107,8 @@ const darkFabUTokens: FabUTokens = {
     labelFg: '#ffffff', // white text on dark-green pill
     highlight: '#C49E18', // slightly darker golden for dark bg
     highlightFg: '#1a2e26',
+    fp: '#20C2D4', // slightly brighter cyan for dark bg
+    fpFg: '#021e22',
     hp: '#c06355',
     mp: '#547bcb',
     warning: '#d19842',
