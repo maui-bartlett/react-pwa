@@ -74,7 +74,7 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
       <Stack
         sx={{
           height: '100%',
-          bgcolor: fabUTokens.color.canvas,
+          bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
         }}
       >
         <Box
@@ -97,7 +97,7 @@ function MobileScreen({ header, footer, overlay, children }: MobileScreenProps) 
             minHeight: 0,
             overflowY: 'auto',
             overscrollBehavior: 'contain',
-            bgcolor: fabUTokens.color.canvas,
+            bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
           }}
         >
           <Stack ref={contentRef} spacing={2.775}>

@@ -6,6 +6,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
@@ -16,7 +17,15 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { Check, CheckCircle, FlaskConical, Pencil, Sparkles, Timer } from 'lucide-react';
+import {
+  Check,
+  CheckCircle,
+  ChevronDown,
+  FlaskConical,
+  Pencil,
+  Sparkles,
+  Timer,
+} from 'lucide-react';
 
 import {
   AttributesStatsCard,
@@ -201,8 +210,6 @@ function SwipeableTraitRow({ label, value, onEdit }: SwipeableTraitRowProps) {
             justifyContent: 'center',
             cursor: 'pointer',
             zIndex: 0,
-            boxShadow:
-              'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
           }}
         >
           <Pencil size={18} color="white" />
@@ -279,6 +286,229 @@ function SwipeableTraitRow({ label, value, onEdit }: SwipeableTraitRowProps) {
           </Typography>
         )}
       </Stack>
+    </Box>
+  );
+}
+
+type IdentityAccordionRowProps = {
+  identities: string[];
+  onUpdate: (identities: string[]) => void;
+};
+
+function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProps) {
+  const fabUTokens = useFabUTokens();
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
+  const [isOpen, setIsOpen] = useState(false);
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const rowElRef = useRef<HTMLElement | null>(null);
+  const committedRef = useRef(false);
+
+  const first = identities[0] ?? '';
+  const rest = identities.slice(1);
+
+  const visualX = Math.max(-TRAIT_ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
+  const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+
+  function startEdit() {
+    setSnapX(0);
+    setCurrentDeltaX(0);
+    setDraft(first);
+    setIsEditing(true);
+  }
+
+  function commit() {
+    onUpdate([draft, ...rest]);
+    setIsEditing(false);
+  }
+
+  function revert() {
+    setIsEditing(false);
+  }
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
+      setCurrentDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setSwiping(false);
+      if (dir === 'Left' && absX > 50 && snapX === 0) {
+        setSnapX(-TRAIT_ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > 50 && snapX !== 0) {
+        setSnapX(0);
+      }
+      setCurrentDeltaX(0);
+      setTimeout(() => {
+        committedRef.current = false;
+      }, 50);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      setSnapX(0);
+      setCurrentDeltaX(0);
+      setSwiping(false);
+    }
+  }, [isEditing]);
+
+  const setRef = (el: HTMLElement | null) => {
+    swipeHandlers.ref(el);
+    rowElRef.current = el;
+  };
+
+  return (
+    <Box>
+      {/* Header row — swipeable, edits identity[0] */}
+      <Box
+        sx={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: '9px',
+          boxShadow: fabUTokens.shadow.card,
+        }}
+      >
+        {channelVisible && (
+          <Box
+            onClick={(e) => {
+              e.stopPropagation();
+              startEdit();
+            }}
+            sx={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: TRAIT_ACTION_WIDTH,
+              bgcolor: editColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 0,
+            }}
+          >
+            <Pencil size={18} color="white" />
+          </Box>
+        )}
+        <Stack
+          {...(!isEditing ? swipeHandlers : {})}
+          ref={!isEditing ? setRef : undefined}
+          direction="row"
+          alignItems="center"
+          gap={2}
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+            borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
+            px: 1.25,
+            py: 0.9,
+            bgcolor: fabUTokens.color.pillSurface,
+            boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
+            transform: isEditing ? 'none' : `translateX(${visualX}px)`,
+            transition: swiping ? 'none' : 'transform 0.22s ease',
+            touchAction: isEditing ? 'auto' : 'pan-y',
+            userSelect: 'none',
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: fabUTokens.color.textSecondary,
+              fontWeight: 700,
+              fontSize: '0.72rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Identity
+          </Typography>
+          {isEditing ? (
+            <InputBase
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commit();
+                if (e.key === 'Escape') revert();
+              }}
+              onBlur={commit}
+              sx={{
+                flex: 1,
+                '& input': {
+                  p: 0,
+                  textAlign: 'right',
+                  fontSize: '0.82rem',
+                  fontWeight: 400,
+                  color: fabUTokens.color.textPrimary,
+                },
+              }}
+            />
+          ) : (
+            <Typography
+              sx={{
+                flex: 1,
+                textAlign: 'right',
+                fontSize: '0.82rem',
+                fontWeight: 400,
+                color: fabUTokens.color.textPrimary,
+              }}
+            >
+              {first}
+            </Typography>
+          )}
+          {rest.length > 0 && (
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!committedRef.current) setIsOpen((o) => !o);
+              }}
+              sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <ChevronDown
+                size={16}
+                color={fabUTokens.color.textSecondary}
+                style={{
+                  transform: isOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.2s ease',
+                }}
+              />
+            </Box>
+          )}
+        </Stack>
+      </Box>
+
+      {/* Expanded identity items */}
+      <Collapse in={isOpen} timeout="auto" unmountOnExit>
+        <Stack spacing={1} sx={{ mt: 1 }}>
+          {rest.map((item, i) => (
+            <SwipeableTraitRow
+              key={i}
+              label=""
+              value={item}
+              onEdit={(v) => {
+                const updated = [...identities];
+                updated[i + 1] = v;
+                onUpdate(updated);
+              }}
+            />
+          ))}
+        </Stack>
+      </Collapse>
     </Box>
   );
 }
@@ -813,10 +1043,11 @@ function FabU() {
       <>
         <SurfaceCard label="Traits">
           <Stack spacing={1}>
-            <SwipeableTraitRow
-              label="Identity"
-              value={character.traits.identity.join(', ')}
-              onEdit={(v) => updateTrait('identity', v)}
+            <IdentityAccordionRow
+              identities={character.traits.identity}
+              onUpdate={(items) =>
+                setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
+              }
             />
             <SwipeableTraitRow
               label="Theme"

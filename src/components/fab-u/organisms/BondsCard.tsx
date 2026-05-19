@@ -186,7 +186,6 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.2), inset 0 -3px 8px rgba(0,0,0,0.2)',
             }}
           >
             <Trash2 size={18} color="white" />
@@ -204,8 +203,6 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow:
-                'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
             }}
           >
             <Pencil size={18} color="white" />
