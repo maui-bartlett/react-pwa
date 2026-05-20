@@ -11,7 +11,7 @@ async function revealDeleteAction(page: import('@playwright/test').Page, bondId:
     const cy = r.top + r.height / 2;
 
     function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
-      const touch = new Touch({
+      const touch = {
         identifier: 1,
         target: target!,
         clientX: x,
@@ -24,13 +24,14 @@ async function revealDeleteAction(page: import('@playwright/test').Page, bondId:
         radiusY: 10,
         rotationAngle: 0,
         force: 1,
-      });
-      return new TouchEvent(type, {
-        touches: type === 'touchend' ? [] : [touch],
-        changedTouches: [touch],
+      } as Touch;
+      const event = new Event(type, {
         bubbles: true,
         cancelable: true,
-      });
+      }) as TouchEvent;
+      Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : [touch] });
+      Object.defineProperty(event, 'changedTouches', { value: [touch] });
+      return event;
     }
 
     target.dispatchEvent(makeTouchEvent('touchstart', cx, cy));

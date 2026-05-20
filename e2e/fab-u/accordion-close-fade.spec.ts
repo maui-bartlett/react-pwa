@@ -15,6 +15,12 @@ import { expect, test } from '@playwright/test';
 test.describe('Status Effects accordion smooth close', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
+  async function toggleStatusEffects(page: import('@playwright/test').Page) {
+    await page
+      .locator('[data-pw="status-effects-accordion-toggle"]')
+      .click({ position: { x: 30, y: 18 } });
+  }
+
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
     await page.evaluate(() => localStorage.removeItem('fab-u-character'));
@@ -31,12 +37,12 @@ test.describe('Status Effects accordion smooth close', () => {
     const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
 
     // --- Open ---
-    await toggle.click({ position: { x: 8, y: 8 } });
+    await toggleStatusEffects(page);
     await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 600 });
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
     // --- Close ---
-    await toggle.click({ position: { x: 8, y: 8 } });
+    await toggleStatusEffects(page);
 
     // Immediately after click the detail pill should still be in the DOM
     // (the fade-out hasn't finished yet). We just check we didn't snap shut.
@@ -58,12 +64,12 @@ test.describe('Status Effects accordion smooth close', () => {
     const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
 
     // Open → close → open again
-    await toggle.click({ position: { x: 8, y: 8 } });
+    await toggleStatusEffects(page);
     await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 600 });
-    await toggle.click({ position: { x: 8, y: 8 } });
+    await toggleStatusEffects(page);
     await page.waitForTimeout(500); // wait for close animation
 
-    await toggle.click({ position: { x: 8, y: 8 } });
+    await toggleStatusEffects(page);
     await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 600 });
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   });

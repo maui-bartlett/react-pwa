@@ -39,7 +39,7 @@ async function touchSwipeLeft(page: Page, bondId: string, distancePx = 180) {
       const cy = r.top + r.height / 2;
 
       function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
-        const touch = new Touch({
+        const touch = {
           identifier: 1,
           target: target!,
           clientX: x,
@@ -52,13 +52,14 @@ async function touchSwipeLeft(page: Page, bondId: string, distancePx = 180) {
           radiusY: 10,
           rotationAngle: 0,
           force: 1,
-        });
-        return new TouchEvent(type, {
-          touches: type === 'touchend' ? [] : [touch],
-          changedTouches: [touch],
+        } as Touch;
+        const event = new Event(type, {
           bubbles: true,
           cancelable: true,
-        });
+        }) as TouchEvent;
+        Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : [touch] });
+        Object.defineProperty(event, 'changedTouches', { value: [touch] });
+        return event;
       }
 
       const steps = 15;
@@ -83,7 +84,7 @@ async function touchSwipeLeftPartial(page: Page, bondId: string, distancePx: num
       const cy = r.top + r.height / 2;
 
       function makeTouchEvent(type: string, x: number, y: number): TouchEvent {
-        const touch = new Touch({
+        const touch = {
           identifier: 1,
           target: target!,
           clientX: x,
@@ -96,13 +97,14 @@ async function touchSwipeLeftPartial(page: Page, bondId: string, distancePx: num
           radiusY: 10,
           rotationAngle: 0,
           force: 1,
-        });
-        return new TouchEvent(type, {
-          touches: [touch],
-          changedTouches: [touch],
+        } as Touch;
+        const event = new Event(type, {
           bubbles: true,
           cancelable: true,
-        });
+        }) as TouchEvent;
+        Object.defineProperty(event, 'touches', { value: [touch] });
+        Object.defineProperty(event, 'changedTouches', { value: [touch] });
+        return event;
       }
 
       const steps = 15;
@@ -279,7 +281,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
 // ── Mobile full emulation: × button NOT rendered ─────────────────────────
 
 test.describe('Bond × button absent on touch device', () => {
-  test.use({ viewport: devices['Pixel 5'].viewport, hasTouch: true, isMobile: true });
+  test.use({ viewport: devices['Pixel 5'].viewport, hasTouch: true });
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');

@@ -13,9 +13,8 @@ async function confirmDeleteModal(page: Page) {
   await btn.click();
 }
 
-// Full Pixel 5 emulation so page.mouse drags emit real touch events in Chromium.
-// Exclude defaultBrowserType — can't be set inside a describe block.
-const { defaultBrowserType: _dbt, ...Pixel5 } = devices['Pixel 5'];
+// Pixel 5 viewport/touch emulation. Exclude fields unsupported in all browsers.
+const { defaultBrowserType: _dbt, isMobile: _isMobile, ...Pixel5 } = devices['Pixel 5'];
 
 async function getScrollTop(page: import('@playwright/test').Page): Promise<number> {
   return page.evaluate(() => {
@@ -65,7 +64,7 @@ test.describe('Bond row — vertical scroll pass-through', () => {
       };
 
       function fire(type: string, x: number, y: number) {
-        const t = new Touch({
+        const t = {
           identifier: 1,
           target: bondRow!,
           clientX: x,
@@ -78,15 +77,11 @@ test.describe('Bond row — vertical scroll pass-through', () => {
           radiusY: 10,
           rotationAngle: 0,
           force: 1,
-        });
-        bondRow!.dispatchEvent(
-          new TouchEvent(type, {
-            touches: type === 'touchend' ? [] : [t],
-            changedTouches: [t],
-            bubbles: true,
-            cancelable: true,
-          }),
-        );
+        } as Touch;
+        const event = new Event(type, { bubbles: true, cancelable: true }) as TouchEvent;
+        Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : [t] });
+        Object.defineProperty(event, 'changedTouches', { value: [t] });
+        bondRow!.dispatchEvent(event);
       }
 
       // Pure vertical — 60 px down
@@ -114,7 +109,8 @@ test.describe('Bond row — vertical scroll pass-through', () => {
   // Input.synthesizeScrollGesture fires genuine touch events that the browser
   // processes for scroll, exercising our touchmove listener end-to-end.
 
-  test('vertical drag over bond row advances scrollTop', async ({ page }) => {
+  test('vertical drag over bond row advances scrollTop', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'CDP synthesized scroll gestures are Chromium-only');
     // Mobile emulation (isMobile:true) gives Chromium a URL bar, reducing
     // window.innerHeight to ~727 even with viewport 393x851. Bond rows are
     // below the fold at that height. Target a coordinate in the scroll
@@ -173,7 +169,7 @@ test.describe('Bond row — vertical scroll pass-through', () => {
         const tgt = document.querySelector('[data-pw="bond-add-jelena"]')
           ?.parentElement as HTMLElement;
         function fire(type: string, x: number, y: number) {
-          const t = new Touch({
+          const t = {
             identifier: 1,
             target: tgt,
             clientX: x,
@@ -186,15 +182,11 @@ test.describe('Bond row — vertical scroll pass-through', () => {
             radiusY: 10,
             rotationAngle: 0,
             force: 1,
-          });
-          tgt.dispatchEvent(
-            new TouchEvent(type, {
-              touches: [t],
-              changedTouches: [t],
-              bubbles: true,
-              cancelable: true,
-            }),
-          );
+          } as Touch;
+          const event = new Event(type, { bubbles: true, cancelable: true }) as TouchEvent;
+          Object.defineProperty(event, 'touches', { value: [t] });
+          Object.defineProperty(event, 'changedTouches', { value: [t] });
+          tgt.dispatchEvent(event);
         }
         fire('touchstart', startX, startY);
         for (let i = 1; i <= 10; i++) fire('touchmove', startX - (dist * i) / 10, startY);
@@ -225,7 +217,7 @@ test.describe('Bond row — vertical scroll pass-through', () => {
         const target = document.querySelector('[data-pw="bond-add-jelena"]')
           ?.parentElement as HTMLElement;
         function fire(type: string, x: number, y: number) {
-          const t = new Touch({
+          const t = {
             identifier: 1,
             target,
             clientX: x,
@@ -238,15 +230,11 @@ test.describe('Bond row — vertical scroll pass-through', () => {
             radiusY: 10,
             rotationAngle: 0,
             force: 1,
-          });
-          target.dispatchEvent(
-            new TouchEvent(type, {
-              touches: type === 'touchend' ? [] : [t],
-              changedTouches: [t],
-              bubbles: true,
-              cancelable: true,
-            }),
-          );
+          } as Touch;
+          const event = new Event(type, { bubbles: true, cancelable: true }) as TouchEvent;
+          Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : [t] });
+          Object.defineProperty(event, 'changedTouches', { value: [t] });
+          target.dispatchEvent(event);
         }
         fire('touchstart', startX, startY);
         for (let i = 1; i <= 15; i++) fire('touchmove', startX - (dist * i) / 15, startY);
