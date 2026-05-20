@@ -26,14 +26,14 @@ From current repo inspection:
   - `fab-u-status-effects`
   - `fab-u-active-tab`
   - `fab-u-active-combat-tab`
-  - migration reads from older keys `fab-u-character-notes` and `fab-u-backstory-answers`.
-- `src/pages/FabU/atoms.ts` defines the current `Character` type, `BackpackItem`, `BackstoryPrompt`, `ClassEntry`, default character state, localStorage migration helpers, and `MAX_CHARACTER_LEVEL`.
-- `src/pages/FabU/atoms.ts` now stores character name as `firstName`, `lastName`, and `nickName`.
-- `src/pages/FabU/atoms.ts` now stores `traits: { identity: string[]; theme: string; origin: string }`; identity was migrated from an older string shape to `string[]`.
-- HP/MP max values are now derived in `FabU.tsx` from the relevant attribute die, level, and bonus fields. `Character` stores `hpBonus` and `mpBonus`, not persisted `totalHP`/`totalMP`; migration back-computes bonuses from old `totalHP`/`totalMP` values.
-- `statusEffectsState` now persists all six effect flags: `slow`, `dazed`, `weak`, `shaken`, `enraged`, and `poisoned`. The previous derived-status atom is no longer exported.
+- Important baseline decision: backend work does **not** need to support localStorage states from before PR #18. Existing legacy localStorage migration code may remain in the app, but the new backend import/sync path can treat the current PR #18 localStorage shape as the minimum supported local character shape.
+- `src/pages/FabU/atoms.ts` defines the current `Character` type, `BackpackItem`, `BackstoryPrompt`, `ClassEntry`, default character state, current localStorage normalization helpers, and `MAX_CHARACTER_LEVEL`.
+- `src/pages/FabU/atoms.ts` stores character name as `firstName`, `lastName`, and `nickName`.
+- `src/pages/FabU/atoms.ts` stores `traits: { identity: string[]; theme: string; origin: string }`.
+- HP/MP max values are derived in `FabU.tsx` from the relevant attribute die, level, and bonus fields. `Character` stores `hpBonus` and `mpBonus`, not persisted `totalHP`/`totalMP`.
+- `statusEffectsState` persists all six effect flags: `slow`, `dazed`, `weak`, `shaken`, `enraged`, and `poisoned`.
 - `src/pages/FabU/useCharacterHistory.ts` defines an in-memory Jotai history stack `{ past: Character[]; future: Character[] }` with max depth 100. It is intentionally not persisted and resets on reload.
-- `src/components/fab-u/atoms/ConfirmDeleteModal.tsx` and `src/components/fab-u/atoms/UndoSnackbar.tsx` are now part of the FabU UI and exported through component indexes.
+- `src/components/fab-u/atoms/ConfirmDeleteModal.tsx` and `src/components/fab-u/atoms/UndoSnackbar.tsx` are part of the FabU UI and exported through component indexes.
 - `src/pages/FabU/skills.ts` and `src/pages/FabU/spells.ts` define default `SkillGroup` and `SpellGroup` values used by the current character state.
 
 ## Locked product decisions
@@ -55,9 +55,10 @@ Use these decisions for the initial implementation:
 5. Offline-first PWA behavior must be preserved.
 6. Anonymous/local characters must be supported and later claimable/importable into a signed-in account.
 7. Characters are private by default outside campaigns.
-8. Current `Character` state is fairly stable, but schema/version migration must be supported.
-9. Use true deletes for most join/invite/session-like entities, but soft-delete/archive player accounts, characters, and campaigns.
-10. GMs should be allowed to edit player character state if campaign permissions allow it.
+8. Current `Character` state is fairly stable, but future schema/version migration must be supported.
+9. No backend/local import support is required for pre-PR #18 localStorage shapes.
+10. Use true deletes for most join/invite/session-like entities, but soft-delete/archive player accounts, characters, and campaigns.
+11. GMs should be allowed to edit player character state if campaign permissions allow it.
 
 ## Core model
 
@@ -106,7 +107,7 @@ Before adding backend calls, separate the current character model from storage m
 
 1. Move or re-export the current `Character`, `BackpackItem`, `BackstoryPrompt`, and `ClassEntry` types from `src/pages/FabU/atoms.ts` into a domain file such as:
    - `src/domain/fabU/characterTypes.ts`
-2. Preserve the current fields exactly in the initial backend-facing type:
+2. Preserve the current PR #18 fields exactly in the initial backend-facing type:
    - `firstName`
    - `lastName`
    - `nickName`
@@ -136,10 +137,10 @@ Before adding backend calls, separate the current character model from storage m
    - `backpack`
    - `traits`
 3. Do not reintroduce persisted `totalHP` or `totalMP`. Treat max HP/MP as derived values from attribute die + level + `hpBonus`/`mpBonus`.
-4. Move defaults and migration helpers into:
+4. Move defaults and current-shape normalization helpers into:
    - `src/domain/fabU/characterDefaults.ts`
    - `src/domain/fabU/characterMigration.ts`
-5. Add versioned storage shape:
+5. Add versioned storage shape for backend persistence and future migrations:
    ```ts
    export type PersistedCharacterState = {
      schemaVersion: number;
@@ -147,25 +148,24 @@ Before adding backend calls, separate the current character model from storage m
      statusEffects: Record<string, boolean>;
    };
    ```
-6. Create helpers:
+6. Create helpers for the current baseline and future migrations:
    - `createDefaultCharacter()`
-   - `normalizeCharacter(raw)`
-   - `migrateCharacter(raw)`
-   - `normalizeTraits(raw)`
-   - `normalizeHpMpBonus(raw)`
+   - `normalizeCurrentCharacter(raw)`
+   - `migrateCharacter(raw)` for future schema versions only
    - `serializeCharacterForBackend(character, statusEffects)`
    - `deserializeCharacterFromBackend(raw)`
    - `getTotalHP(character)`
    - `getTotalMP(character)`
 7. Keep `atomWithStorage` temporarily for offline/local support, but make it use the shared domain helpers.
-8. Add tests for migration from all known localStorage shapes:
+8. Do **not** implement or test backend import compatibility for pre-PR #18 localStorage states, including:
    - old notes-only state from `fab-u-character-notes`
    - old backstory answers from `fab-u-backstory-answers`
    - pre-equipment characters
    - pre-traits characters
    - `traits.identity` as string
-   - old `totalHP`/`totalMP` migrated to `hpBonus`/`mpBonus`
+   - old `totalHP`/`totalMP` persisted totals
    - old status effects missing `enraged`/`poisoned`
+9. Keep future schema migration scaffolding lightweight so later changes after PR #18 can be migrated cleanly.
 
 ## Phase 2: Install and initialize Convex
 
@@ -458,7 +458,7 @@ Create reusable helpers in `convex/lib/auth.ts` or similar:
 - `restore`
 - `listCampaignsForCharacter`
 
-`updateState` must accept the current versioned `Character` shape, including `traits`, `hpBonus`, `mpBonus`, and name fields. It must reject or migrate stale payloads before saving.
+`updateState` must accept the current versioned PR #18 `Character` shape, including `traits`, `hpBonus`, `mpBonus`, and name fields. It may reject pre-PR #18 local payloads instead of migrating them. Future post-PR #18 schema versions should be migrated by explicit versioned migration helpers.
 
 ### `convex/campaigns.ts`
 
@@ -502,7 +502,7 @@ Rules:
 2. Preserve `useCharacterHistory()` as the component-facing setter so existing undo/redo behavior survives backend integration.
 3. Introduce a hook such as `useFabUCharacterPersistence` that bridges:
    - current Jotai atoms
-   - localStorage offline state
+   - current PR #18 localStorage baseline
    - `useCharacterHistory()` setter
    - Convex persisted state when signed in
 4. Add a signed-in character selector before assuming a single global `characterState`.
@@ -525,6 +525,7 @@ Rules:
     - `activeCombatTabState`
     - in-memory per-tab scroll positions
 13. Do not persist the undo/redo history stack to Convex. It may be cleared after successful server hydration, character switch, logout, or destructive reset.
+14. If the import bridge sees a local payload older than the PR #18 baseline, it may either ignore it and create a fresh default character or show a user-facing unsupported-local-data message. It does not need to transform old shapes.
 
 ## Phase 9: Offline-first PWA plan
 
@@ -562,17 +563,17 @@ Rules:
 
 ## Phase 11: Testing checklist
 
-1. Unit test character migration/normalization using current localStorage shapes from `src/pages/FabU/atoms.ts`.
+1. Unit test current PR #18 character normalization/serialization using the current `Character` shape from `src/pages/FabU/atoms.ts`.
 2. Unit test default character creation from current skill/spell defaults.
 3. Unit test derived total HP/MP helpers.
-4. Unit test traits migration from string identity to string-array identity.
-5. Unit test status-effect normalization for all six flags.
-6. Test that `useCharacterHistory()` remains session-scoped and is not serialized into backend payloads.
+4. Unit test status-effect normalization for all six current flags.
+5. Test that `useCharacterHistory()` remains session-scoped and is not serialized into backend payloads.
+6. Test that pre-PR #18 localStorage payloads are not treated as required supported imports. If detection is implemented, test that they are ignored or rejected cleanly.
 7. Test auth flows manually for email/password, magic link, Google, Discord, and Apple.
 8. Add Convex permission tests if Convex testing utilities are adopted.
 9. Smoke-test:
    - sign up/sign in/sign out
-   - claim local character after sign-in
+   - claim/import a current PR #18 local character after sign-in
    - create character
    - update character state
    - edit Traits values and confirm they persist
@@ -622,8 +623,8 @@ Rules:
 
 1. `chore: inventory latest FabU state and routes`
 2. `refactor: extract FabU character domain model`
-3. `test: add FabU character migration tests`
-4. `test: add derived HP MP and traits migration tests`
+3. `test: add current FabU character serialization tests`
+4. `test: add derived HP MP tests`
 5. `chore: install and initialize convex`
 6. `chore: add convex provider`
 7. `chore: initialize better-auth with npx auth@latest init`
@@ -632,7 +633,7 @@ Rules:
 10. `feat: add user profile and settings schema/functions`
 11. `feat: add character schema/functions`
 12. `feat: preserve useCharacterHistory with backend persistence bridge`
-13. `feat: add local character claim/import flow`
+13. `feat: add current local character claim/import flow`
 14. `feat: add campaign schema/functions`
 15. `feat: add join code and invite flows`
 16. `feat: add frontend auth screens and session hooks`
@@ -645,7 +646,8 @@ Rules:
 - A user can create an account and sign in/out with email/password, magic link, Google, Discord, or Apple.
 - Better Auth setup uses the current `npx auth@latest` CLI workflow for secret generation, initialization, schema generation, and diagnostics where applicable.
 - Anonymous/local characters continue to work offline.
-- A local character can be claimed/imported into a signed-in account.
+- A current PR #18-baseline local character can be claimed/imported into a signed-in account.
+- Pre-PR #18 localStorage shapes are not required to import or migrate.
 - A signed-in user gets a `userProfile` and `userSettings` record.
 - A signed-in user can create, list, open, update, and archive their own characters.
 - Current `Character` state from `src/pages/FabU/atoms.ts` persists across reloads and devices.
