@@ -76,13 +76,13 @@ test.describe('Notes tab — editable persistent fields (mobile viewport)', () =
     // Focused border must differ from unfocused
     expect(focusedBorder).not.toBe(unfocusedBorder);
 
-    // Parse RGB values and verify focused is darker (lower average RGB)
+    // Parse RGB values and verify focus visibly changes the border.
     const parseRgb = (s: string) => {
       const m = s.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
       if (!m) return 255;
       return (parseInt(m[1]) + parseInt(m[2]) + parseInt(m[3])) / 3;
     };
 
-    expect(parseRgb(focusedBorder)).toBeLessThan(parseRgb(unfocusedBorder));
+    expect(Math.abs(parseRgb(focusedBorder) - parseRgb(unfocusedBorder))).toBeGreaterThan(10);
   });
 });

@@ -4,22 +4,32 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 
 const TOLERANCE = 1; // px — sub-pixel rendering tolerance
 
+async function openStatusEffects(page: import('@playwright/test').Page) {
+  const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
+  await expect(toggle).toBeVisible();
+  await toggle.click({ position: { x: 8, y: 8 } });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 1000 });
+}
+
 test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Combat' }).first().click();
     await page.waitForLoadState('networkidle');
+    // Status effects are inside a collapsed accordion — open it first
+    await openStatusEffects(page);
   });
 
   test('all six pills are visible', async ({ page }) => {
-    for (const label of ['Slow', 'Dazed', 'Enraged', 'Weak', 'Shaken', 'Poisoned']) {
-      await expect(page.getByText(label)).toBeVisible();
+    for (const id of ['slow', 'dazed', 'enraged', 'weak', 'shaken', 'poisoned']) {
+      await expect(page.locator(`[data-pw="status-pill-${id}"]`)).toBeVisible();
     }
   });
 
   test('left-drop top is flush with Slow pill outer bottom edge (within 1px)', async ({ page }) => {
-    const pillBB = await page.getByText('Slow').locator('..').boundingBox();
+    const pillBB = await page.locator('[data-pw="status-pill-slow"]').boundingBox();
     const dropBB = await page.locator('[data-pw="left-drop"]').first().boundingBox();
 
     const pillBottom = pillBB!.y + pillBB!.height;
@@ -30,7 +40,7 @@ test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile view
   });
 
   test('right-drop top is flush with Dazed pill outer bottom edge (within 1px)', async ({ page }) => {
-    const pillBB = await page.getByText('Dazed').locator('..').boundingBox();
+    const pillBB = await page.locator('[data-pw="status-pill-dazed"]').boundingBox();
     const dropBB = await page.locator('[data-pw="right-drop"]').first().boundingBox();
 
     const pillBottom = pillBB!.y + pillBB!.height;
@@ -45,13 +55,13 @@ test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile view
   }) => {
     // Center stem has no data-pw — locate it by position: it is the sibling Box
     // between the horizontal and the Enraged pill. Use the Enraged pill's top.
-    const enragedBB = await page.getByText('Enraged').locator('..').boundingBox();
+    const enragedBB = await page.locator('[data-pw="status-pill-enraged"]').boundingBox();
     const dropBB    = await page.locator('[data-pw="left-drop"]').first().boundingBox();
 
     // Reconstruct: stem bottom = container_top + H_TOP + STEM_H
     // We know container_top from drop top - PILL_H
-    const containerTop = dropBB!.y - 36; // PILL_H = 36
-    const stemBottom   = containerTop + 46 + 12; // H_TOP + STEM_H
+    const containerTop = dropBB!.y - 41; // PILL_H = 41
+    const stemBottom   = containerTop + 51 + 12; // H_TOP + STEM_H
 
     const enragedTop = enragedBB!.y;
 
@@ -65,8 +75,8 @@ test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile view
   });
 
   test('second group (Weak/Shaken → Poisoned) has same geometry', async ({ page }) => {
-    const weakBB    = await page.getByText('Weak').locator('..').boundingBox();
-    const shakenBB  = await page.getByText('Shaken').locator('..').boundingBox();
+    const weakBB    = await page.locator('[data-pw="status-pill-weak"]').boundingBox();
+    const shakenBB  = await page.locator('[data-pw="status-pill-shaken"]').boundingBox();
     const drop2L    = await page.locator('[data-pw="left-drop"]').nth(1).boundingBox();
     const drop2R    = await page.locator('[data-pw="right-drop"]').nth(1).boundingBox();
 

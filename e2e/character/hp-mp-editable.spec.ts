@@ -57,11 +57,10 @@ test.describe('HP / MP editable pills — Spells tab (mobile viewport)', () => {
     await expect(suffix).toContainText('/ 58');
   });
 
-  test('clicking suffix does not open edit mode', async ({ page }) => {
-    const suffix = page.locator('[data-pw="metric-hp-suffix"]');
-    await suffix.click();
+  test('clicking suffix area opens edit mode through the parent pill', async ({ page }) => {
+    await page.locator('[data-pw="metric-hp"]').click({ position: { x: 70, y: 32 } });
     const input = page.locator('[data-pw="metric-hp-input"]');
-    await expect(input).not.toBeVisible();
+    await expect(input).toBeVisible();
   });
 
   test('HP and MP values persist across page reload', async ({ page }) => {

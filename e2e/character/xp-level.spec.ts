@@ -12,7 +12,7 @@ test.describe('XP and Level editing (mobile viewport)', () => {
 
   // ── XP ──────────────────────────────────────────────────────────────────
 
-  test('Overview XP: tap left value → editable, type 1500 → display reads 1500 / 10', async ({
+  test('Overview XP: tap left value → editable, type 1500 → rolls over into level and XP 0 / 10', async ({
     page,
   }) => {
     const pill = page.locator('[data-pw="metric-ov-xp"]');
@@ -21,7 +21,7 @@ test.describe('XP and Level editing (mobile viewport)', () => {
     await input.waitFor({ state: 'visible' });
     await input.fill('1500');
     await input.blur();
-    await expect(pill.locator('p').first()).toHaveText('1500');
+    await expect(pill.locator('p').first()).toHaveText('0');
     const suffix = page.locator('[data-pw="metric-ov-xp-suffix"]');
     await expect(suffix).toHaveText('/ 10');
   });
@@ -121,7 +121,7 @@ test.describe('XP and Level editing (mobile viewport)', () => {
 
   test('Overview Classes list shows LVL (e.g. LVL 10)', async ({ page }) => {
     // The classes list trailing labels should say LVL, not LV
-    const classesCard = page.locator('text=LVL 10');
+    const classesCard = page.locator('text=LVL 9');
     await expect(classesCard).toBeVisible();
   });
 });

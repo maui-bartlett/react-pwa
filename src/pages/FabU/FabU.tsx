@@ -1218,6 +1218,7 @@ function FabU() {
   }
 
   function renderProgressStrip() {
+    const progressPwPrefix = activeTab === 'skills' ? 'sk' : 'ov';
     return (
       <SummaryStrip
         label="Progress"
@@ -1237,7 +1238,7 @@ function FabU() {
             label: 'XP',
             value: String(character.currentXP),
             valueSuffix: ` / ${character.totalXP}`,
-            pw: 'ov-xp',
+            pw: `${progressPwPrefix}-xp`,
             onChange: setCurrentXP,
             valueColor: fabUTokens.color.brandText,
             borderColor: fabUTokens.color.textPrimary,
@@ -1245,7 +1246,7 @@ function FabU() {
           {
             label: 'LVL',
             value: String(character.level),
-            pw: 'ov-level',
+            pw: `${progressPwPrefix}-level`,
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
             valueColor: fabUTokens.color.brandText,

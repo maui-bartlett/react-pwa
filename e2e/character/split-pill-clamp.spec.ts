@@ -12,32 +12,28 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
 
   // ── Click-through: clicking suffix or neutral area enters edit mode ──────
 
-  test('Overview HP StatPill: clicking suffix enters edit mode', async ({ page }) => {
-    const suffix = page.locator('[data-pw="statpill-ov-hp-suffix"]');
-    await suffix.click();
+  test('Overview HP StatPill: clicking suffix area enters edit mode', async ({ page }) => {
+    await page.locator('[data-pw="statpill-ov-hp"]').click({ position: { x: 70, y: 32 } });
     await expect(page.locator('[data-pw="statpill-ov-hp-input"]')).toBeVisible();
     await page.locator('[data-pw="statpill-ov-hp-input"]').blur();
   });
 
-  test('Overview MP StatPill: clicking suffix enters edit mode', async ({ page }) => {
-    const suffix = page.locator('[data-pw="statpill-ov-mp-suffix"]');
-    await suffix.click();
+  test('Overview MP StatPill: clicking suffix area enters edit mode', async ({ page }) => {
+    await page.locator('[data-pw="statpill-ov-mp"]').click({ position: { x: 70, y: 32 } });
     await expect(page.locator('[data-pw="statpill-ov-mp-input"]')).toBeVisible();
     await page.locator('[data-pw="statpill-ov-mp-input"]').blur();
   });
 
-  test('Spells HP SummaryStrip: clicking suffix enters edit mode', async ({ page }) => {
+  test('Spells HP SummaryStrip: clicking suffix area enters edit mode', async ({ page }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
     await page.waitForLoadState('networkidle');
-    const suffix = page.locator('[data-pw="metric-hp-suffix"]');
-    await suffix.click();
+    await page.locator('[data-pw="metric-hp"]').click({ position: { x: 70, y: 32 } });
     await expect(page.locator('[data-pw="metric-hp-input"]')).toBeVisible();
     await page.locator('[data-pw="metric-hp-input"]').blur();
   });
 
-  test('Overview XP SummaryStrip: clicking suffix enters edit mode', async ({ page }) => {
-    const suffix = page.locator('[data-pw="metric-ov-xp-suffix"]');
-    await suffix.click();
+  test('Overview XP SummaryStrip: clicking suffix area enters edit mode', async ({ page }) => {
+    await page.locator('[data-pw="metric-ov-xp"]').click({ position: { x: 70, y: 32 } });
     await expect(page.locator('[data-pw="metric-ov-xp-input"]')).toBeVisible();
     await page.locator('[data-pw="metric-ov-xp-input"]').blur();
   });
@@ -64,17 +60,17 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
     await expect(pill.locator('h6').first()).toHaveText('58');
   });
 
-  test('Overview XP: typing 999 → clamped to totalXP (10)', async ({ page }) => {
+  test('Overview XP: typing 999 → rolls over into level and XP 9', async ({ page }) => {
     const pill = page.locator('[data-pw="metric-ov-xp"]');
     await pill.click();
     const input = page.locator('[data-pw="metric-ov-xp-input"]');
     await input.waitFor({ state: 'visible' });
     await input.fill('999');
     await input.blur();
-    await expect(pill.locator('p').first()).toHaveText('10');
+    await expect(pill.locator('p').first()).toHaveText('9');
   });
 
-  test('Skills XP: typing 999 → clamped to totalXP (10)', async ({ page }) => {
+  test('Skills XP: typing 999 → rolls over into level and XP 9', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
     await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-sk-xp"]');
@@ -83,7 +79,7 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
     await input.waitFor({ state: 'visible' });
     await input.fill('999');
     await input.blur();
-    await expect(pill.locator('p').first()).toHaveText('10');
+    await expect(pill.locator('p').first()).toHaveText('9');
   });
 
   test('Spells HP SummaryStrip: typing 999 → clamped to totalHP (58)', async ({ page }) => {

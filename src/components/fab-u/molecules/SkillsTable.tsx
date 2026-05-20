@@ -872,7 +872,7 @@ function SkillsTable({
               gap: 0.75,
               px: 1,
               py: 0.6,
-              minHeight: 41,
+              minHeight: 47,
               cursor: 'pointer',
               color: fabUTokens.color.highlight,
               border: `1px dashed ${fabUTokens.color.highlight}`,

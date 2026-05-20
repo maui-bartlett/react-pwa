@@ -20,6 +20,9 @@ test.describe('Status Effects accordion smooth close', () => {
     await page.evaluate(() => localStorage.removeItem('fab-u-character'));
     await page.reload();
     await page.waitForLoadState('networkidle');
+    // Status Effects accordion is on the Combat tab
+    await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
+    await page.waitForLoadState('networkidle');
   });
 
   test('accordion closes smoothly — detail pills gone, summary pills visible after close', async ({
@@ -28,12 +31,12 @@ test.describe('Status Effects accordion smooth close', () => {
     const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
 
     // --- Open ---
-    await toggle.click();
+    await toggle.click({ position: { x: 8, y: 8 } });
     await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 600 });
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
     // --- Close ---
-    await toggle.click();
+    await toggle.click({ position: { x: 8, y: 8 } });
 
     // Immediately after click the detail pill should still be in the DOM
     // (the fade-out hasn't finished yet). We just check we didn't snap shut.
@@ -55,12 +58,12 @@ test.describe('Status Effects accordion smooth close', () => {
     const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
 
     // Open → close → open again
-    await toggle.click();
+    await toggle.click({ position: { x: 8, y: 8 } });
     await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 600 });
-    await toggle.click();
+    await toggle.click({ position: { x: 8, y: 8 } });
     await page.waitForTimeout(500); // wait for close animation
 
-    await toggle.click();
+    await toggle.click({ position: { x: 8, y: 8 } });
     await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 600 });
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   });

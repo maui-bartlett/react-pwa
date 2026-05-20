@@ -501,7 +501,7 @@ function BondsCard({
               backgroundImage: 'none',
               borderRadius: '10px',
               boxShadow: '0 4px 16px rgba(31, 42, 38, 0.14)',
-              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
               minWidth: 148,
             },
           } as Record<string, unknown>,

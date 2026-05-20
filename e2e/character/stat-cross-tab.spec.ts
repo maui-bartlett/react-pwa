@@ -17,7 +17,7 @@ test.describe('HP/MP/FP/IP cross-tab sync (mobile viewport)', () => {
     await page.locator('[data-pw="metric-hp-input"]').fill('40');
     await page.locator('[data-pw="metric-hp-input"]').blur();
 
-    await page.getByRole('button', { name: 'Overview' }).first().click();
+    await page.locator('[data-pw="app-footer"]').getByText('Character').click();
     await page.waitForLoadState('networkidle');
 
     // Overview AttributesStatsCard HP pill should show 40
@@ -39,7 +39,7 @@ test.describe('HP/MP/FP/IP cross-tab sync (mobile viewport)', () => {
     await input.fill('22');
     await input.blur();
 
-    await page.getByRole('button', { name: 'Spells' }).first().click();
+    await page.locator('[data-pw="app-footer"]').getByText('Spells').click();
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('[data-pw="metric-mp"]')).toContainText('22');

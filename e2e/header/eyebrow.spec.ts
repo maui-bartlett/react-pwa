@@ -4,7 +4,7 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function navigateTo(page: any, tab: string) {
-  await page.getByRole('button', { name: tab }).first().click();
+  await page.locator('[data-pw="app-footer"]').getByText(tab).click();
   await page.waitForLoadState('networkidle');
 }
 
@@ -31,7 +31,7 @@ test.describe('HeaderBar — eyebrow text per tab (mobile viewport)', () => {
     const text = await page.locator('[data-pw="header-eyebrow"]').textContent();
     console.log('Combat eyebrow textContent:', text);
     expect(text).toMatch(/rad/i);
-    expect(text).toMatch(/lv\s*13/i);
+    expect(text).toMatch(/lvl\s*13/i);
     expect(text).toContain('•');
   });
 

@@ -16,10 +16,8 @@ test.describe('Add Level popover', () => {
     await page.reload();
     await page.waitForLoadState('networkidle');
 
-    // Navigate to Combat → Skills sub-tab
-    await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
-    await page.waitForLoadState('networkidle');
-    await page.locator('[data-pw="content-area"]').getByText('Skills').click();
+    // Navigate to Skills tab
+    await page.locator('[data-pw="app-footer"]').getByText('Skills').click();
     await page.waitForLoadState('networkidle');
   });
 
@@ -32,7 +30,7 @@ test.describe('Add Level popover', () => {
 
     await btn.click();
 
-    const popup = page.locator('[data-pw="add-level-popup"]');
+    const popup = page.locator('[data-pw="add-level-menu"]');
     await expect(popup).toBeVisible();
 
     const popupBox = await popup.boundingBox();
@@ -40,15 +38,19 @@ test.describe('Add Level popover', () => {
 
     const btnBottom = btnBox!.y + btnBox!.height;
     expect(
+      popupBox!.y + popupBox!.height,
+      `add-level-menu should overlap or sit below the + button bottom (${btnBottom.toFixed(1)})`,
+    ).toBeGreaterThan(btnBottom);
+    expect(
       popupBox!.y,
-      `add-level-popup top (${popupBox!.y.toFixed(1)}) should be at or below + button bottom (${btnBottom.toFixed(1)}) within 4px`,
-    ).toBeGreaterThanOrEqual(btnBottom - 4);
+      `add-level-menu top (${popupBox!.y.toFixed(1)}) should remain anchored near the + button bottom (${btnBottom.toFixed(1)})`,
+    ).toBeLessThanOrEqual(btnBottom + 8);
   });
 
   test('popover stays inside the MobileScreen frame', async ({ page }) => {
     await page.locator('[data-pw="skill-add-level-entropic-magic"]').click();
 
-    const popup = page.locator('[data-pw="add-level-popup"]');
+    const popup = page.locator('[data-pw="add-level-menu"]');
     await expect(popup).toBeVisible();
 
     const frame = page.locator('[data-pw="mobile-screen"]');
@@ -70,27 +72,27 @@ test.describe('Add Level popover', () => {
     const btn = page.locator('[data-pw="skill-add-level-entropic-magic"]');
     await btn.click();
 
-    const popup = page.locator('[data-pw="add-level-popup"]');
+    const popup = page.locator('[data-pw="add-level-menu"]');
     await expect(popup).toBeVisible();
 
-    await popup.getByRole('button', { name: 'Cancel' }).click();
+    await page.keyboard.press('Escape');
     await expect(popup).not.toBeVisible();
   });
 
-  test('Add confirms and closes the popover', async ({ page }) => {
+  test('Selecting a level closes the popover', async ({ page }) => {
     await page.locator('[data-pw="skill-add-level-entropic-magic"]').click();
 
-    const popup = page.locator('[data-pw="add-level-popup"]');
+    const popup = page.locator('[data-pw="add-level-menu"]');
     await expect(popup).toBeVisible();
 
-    await popup.getByRole('button', { name: 'Add' }).click();
+    await page.locator('[data-pw="skill-level-option-8"]').click();
     await expect(popup).not.toBeVisible();
   });
 
   test('popover background is dark surface token in dark mode', async ({ page }) => {
     await page.locator('[data-pw="skill-add-level-entropic-magic"]').click();
 
-    const popup = page.locator('[data-pw="add-level-popup"]');
+    const popup = page.locator('[data-pw="add-level-menu"]');
     await expect(popup).toBeVisible();
 
     const bg = await popup.evaluate((el) => window.getComputedStyle(el).backgroundColor);

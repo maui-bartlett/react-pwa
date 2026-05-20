@@ -100,21 +100,21 @@ test.describe('Bonds type toggle (mobile viewport)', () => {
     await page.locator('[data-pw="bond-add-jelena"]').click();
     await page.locator('[data-pw="bond-type-affection"]').click();
 
-    await page.getByRole('button', { name: 'Combat' }).first().click();
+    await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
     await page.waitForLoadState('networkidle');
     const combatRow = page.locator('[data-pw="bond-add-jelena"]').locator('..');
     await expect(combatRow.locator('text=Affection')).not.toBeVisible();
   });
 
   test('Toggle on Combat > Bonds reflects on Overview Bonds card', async ({ page }) => {
-    await page.getByRole('button', { name: 'Combat' }).first().click();
+    await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
     await page.waitForLoadState('networkidle');
 
     // Add Mistrust to Yoru on Combat
     await page.locator('[data-pw="bond-add-yoru"]').first().click();
     await page.locator('[data-pw="bond-type-mistrust"]').click();
 
-    await page.getByRole('button', { name: 'Overview' }).first().click();
+    await page.locator('[data-pw="app-footer"]').getByText('Character').click();
     await page.waitForLoadState('networkidle');
     const overviewRow = page.locator('[data-pw="bond-add-yoru"]').locator('..');
     await expect(overviewRow.locator('text=Mistrust')).toBeVisible();

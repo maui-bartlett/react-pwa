@@ -832,6 +832,7 @@ function SpellsTable({
       actionsPosition="inline"
     >
       <Box
+        data-pw="spells-table-container"
         sx={{
           border: `1px solid ${fabUTokens.color.border}`,
           borderRadius: '9px',

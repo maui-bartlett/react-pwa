@@ -47,16 +47,16 @@ test.describe('Attribute popup overhaul', () => {
       await pill.click();
 
       const baseSelect = page.locator('[data-pw="attr-die-select"]').first();
-      const modInput = page.locator('[data-pw="attr-mod-input"]').first();
+      const modSelect = page.locator('[data-pw="attr-mod-select"]').first();
       const tempSelect = page.locator('[data-pw="attr-temp-select"]').first();
 
       await expect(baseSelect).toBeVisible();
-      await expect(modInput).toBeVisible();
+      await expect(modSelect).toBeVisible();
       await expect(tempSelect).toBeVisible();
 
       // Verify vertical stacking: each element should be below the previous
       const baseBox = await baseSelect.boundingBox();
-      const modBox = await modInput.boundingBox();
+      const modBox = await modSelect.boundingBox();
       const tempBox = await tempSelect.boundingBox();
 
       expect(baseBox).not.toBeNull();

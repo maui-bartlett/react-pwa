@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 /**
  * Verifies Commit 2 changes:
- * 1. Mod input background matches Base select background in the AttributePill popover.
+ * 1. Mod select background matches Base select background in the AttributePill popover.
  * 2. When a Temp die is set, the resting AttributePill shows "(d<temp>)" format.
  * 3. Status Effects card has equal left/right padding and all pills fit within the card.
  */
@@ -15,25 +15,23 @@ test.describe('AttributePill popup polish + Status Effects layout', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('Mod input background matches Base select background', async ({ page }) => {
+  test('Mod select background matches Base select background', async ({ page }) => {
     // Open the Dex attribute pill popup (on the overview tab)
-    const dexPill = page.locator('[data-pw="attr-pill-dex"]');
+    const dexPill = page.locator('[data-pw="attr-pill-dexterity"]');
     await expect(dexPill).toBeVisible();
     await dexPill.click();
 
     // Both Base and Mod fields should be visible
     const baseSelect = page.locator('[data-pw="attr-die-select"]');
-    const modInput = page.locator('[data-pw="attr-mod-input"]');
+    const modSelect = page.locator('[data-pw="attr-mod-select"]');
     await expect(baseSelect).toBeVisible();
-    await expect(modInput).toBeVisible();
+    await expect(modSelect).toBeVisible();
 
     const baseBg = await baseSelect.evaluate((el) => {
       return window.getComputedStyle(el).backgroundColor;
     });
-    const modBg = await modInput.evaluate((el) => {
-      // InputBase renders an <input> — walk up to find the styled container
-      const container = el.closest('[data-pw="attr-mod-input-shell"]') ?? el.parentElement;
-      return container ? window.getComputedStyle(container).backgroundColor : '';
+    const modBg = await modSelect.evaluate((el) => {
+      return window.getComputedStyle(el).backgroundColor;
     });
 
     expect(
@@ -70,7 +68,12 @@ test.describe('AttributePill popup polish + Status Effects layout', () => {
   });
 
   test('Status Effects pills fit within card with equal left/right padding', async ({ page }) => {
-    // Status effects card is on the overview tab (default)
+    await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
+    await page.waitForLoadState('networkidle');
+    const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
+    await toggle.click({ position: { x: 8, y: 8 } });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
     const card = page.locator('[data-pw="status-pill-slow"]').locator('xpath=ancestor::*[contains(@class,"MuiPaper")]').first();
 
     // Locate a known pill on each side
