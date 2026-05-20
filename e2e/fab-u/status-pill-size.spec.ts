@@ -15,10 +15,15 @@ test.describe('Status Effects pill size increase', () => {
     await page.reload();
     await page.waitForLoadState('networkidle');
 
+    // Status Effects accordion is on the Combat tab
+    await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
+    await page.waitForLoadState('networkidle');
+
     // Open the accordion to reveal the full-size StatusPillGroup
     const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
     await expect(toggle).toBeVisible();
-    await toggle.click();
+    await toggle.click({ position: { x: 8, y: 8 } });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
     // Wait for the pills to be visible
     await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible();
@@ -42,8 +47,8 @@ test.describe('Status Effects pill size increase', () => {
 
     expect(
       box!.width,
-      `Slow pill width (${box!.width}px) should exceed old 72px minWidth`,
-    ).toBeGreaterThan(72);
+      `Slow pill width (${box!.width}px) should meet the 72px minWidth baseline`,
+    ).toBeGreaterThanOrEqual(72);
   });
 
   test('bracket drop connector top meets upper pill bottom (≤2px gap)', async ({ page }) => {

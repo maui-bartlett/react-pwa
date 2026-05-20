@@ -2,6 +2,9 @@ import { devices, expect, test } from '@playwright/test';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
 
+const pillValue = (page: import('@playwright/test').Page, pillId: string, value: string) =>
+  page.locator(`[data-pw="${pillId}"]`).getByRole('heading', { name: value });
+
 test.describe('Attribute pills — die + modifier picker (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
@@ -40,32 +43,32 @@ test.describe('Attribute pills — die + modifier picker (mobile viewport)', () 
 
     // Close popover by pressing Escape
     await page.keyboard.press('Escape');
-    await expect(page.getByText('d12')).toBeVisible();
+    await expect(pillValue(page, 'attr-pill-dexterity', 'd12')).toBeVisible();
   });
 
   test('setting modifier to 2 shows die + 2', async ({ page }) => {
     await page.getByText('Dexterity').click();
-    const modInput = page.locator('[data-pw="attr-mod-input"]');
-    await modInput.fill('2');
+    const modSelect = page.locator('[data-pw="attr-mod-select"]');
+    await modSelect.selectOption('2');
     await page.keyboard.press('Escape');
 
-    await expect(page.getByText('d8 + 2')).toBeVisible();
+    await expect(pillValue(page, 'attr-pill-dexterity', 'd8 + 2')).toBeVisible();
   });
 
-  test('setting modifier to -1 shows die - 1', async ({ page }) => {
+  test('setting modifier to 1 shows die + 1', async ({ page }) => {
     await page.getByText('Dexterity').click();
-    const modInput = page.locator('[data-pw="attr-mod-input"]');
-    await modInput.fill('-1');
+    const modSelect = page.locator('[data-pw="attr-mod-select"]');
+    await modSelect.selectOption('1');
     await page.keyboard.press('Escape');
 
-    await expect(page.getByText('d8 - 1')).toBeVisible();
+    await expect(pillValue(page, 'attr-pill-dexterity', 'd8 + 1')).toBeVisible();
   });
 
   test('setting modifier to 0 shows die only', async ({ page }) => {
     // Willpower has modifier 1 by default — clear it
     await page.getByText('Willpower').click();
-    const modInput = page.locator('[data-pw="attr-mod-input"]');
-    await modInput.fill('0');
+    const modSelect = page.locator('[data-pw="attr-mod-select"]');
+    await modSelect.selectOption('0');
     await page.keyboard.press('Escape');
 
     // Should no longer show '+ 1'
@@ -75,8 +78,8 @@ test.describe('Attribute pills — die + modifier picker (mobile viewport)', () 
   test('attribute changes persist to localStorage and survive reload', async ({ page }) => {
     await page.getByText('Insight').click();
     await page.locator('[data-pw="attr-die-select"]').selectOption('d12');
-    const modInput = page.locator('[data-pw="attr-mod-input"]');
-    await modInput.fill('3');
+    const modSelect = page.locator('[data-pw="attr-mod-select"]');
+    await modSelect.selectOption('3');
     await page.keyboard.press('Escape');
 
     const stored = await page.evaluate(
@@ -88,7 +91,7 @@ test.describe('Attribute pills — die + modifier picker (mobile viewport)', () 
     await page.reload();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('d12 + 3')).toBeVisible();
+    await expect(pillValue(page, 'attr-pill-insight', 'd12 + 3')).toBeVisible();
   });
 
   test('attribute changes visible on Combat tab (same atom)', async ({ page }) => {
@@ -99,6 +102,6 @@ test.describe('Attribute pills — die + modifier picker (mobile viewport)', () 
     await page.getByRole('button', { name: 'Combat' }).first().click();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('d10').first()).toBeVisible();
+    await expect(pillValue(page, 'attr-pill-might', 'd10')).toBeVisible();
   });
 });

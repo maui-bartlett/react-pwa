@@ -17,10 +17,10 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
       direction="row"
       spacing={1}
       sx={{
-        overflowX: 'auto',
+        overflow: 'visible',
         pb: 0.5,
-        '&::-webkit-scrollbar': { display: 'none' },
-        scrollbarWidth: 'none',
+        pt: 0.5,
+        justifyContent: 'center',
       }}
     >
       {options.map((option) => {
@@ -35,8 +35,12 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
             sx={{
               borderRadius: '10px',
               borderColor: active ? fabUTokens.color.brand : fabUTokens.color.border,
-              bgcolor: active ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
-              color: active ? '#fff' : fabUTokens.color.textSecondary,
+              bgcolor: active ? fabUTokens.color.brand : fabUTokens.color.surface,
+              color: active
+                ? '#fff'
+                : fabUTokens.isDark
+                  ? '#ffffff'
+                  : fabUTokens.color.textSecondary,
               textTransform: 'none',
               fontWeight: 700,
               fontSize: '0.76rem',
@@ -44,11 +48,11 @@ function SegmentedTabs<T extends string>({ options, value, onChange }: Segmented
               minHeight: 34,
               px: 1.25,
               whiteSpace: 'nowrap',
-              boxShadow: 'none',
+              boxShadow: fabUTokens.shadow.card,
               '&:hover': {
                 borderColor: fabUTokens.color.brand,
                 bgcolor: active ? fabUTokens.color.brandStrong : fabUTokens.color.brandSoft,
-                boxShadow: 'none',
+                boxShadow: fabUTokens.shadow.card,
               },
             }}
           >

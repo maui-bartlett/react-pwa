@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { Coins } from 'lucide-react';
 
@@ -25,6 +26,16 @@ type SummaryMetric = {
   maxValue?: number;
   /** Optional icon rendered at the trailing (right) edge of the pill */
   trailingIcon?: ReactNode;
+  /** When provided, overrides the default border/background/label color with this accent color. */
+  toneColor?: string;
+  /** When provided, overrides the value text color (display mode only). */
+  valueColor?: string;
+  /** When provided, overrides the pill border color (display mode only). */
+  borderColor?: string;
+  /** When provided, applies a CSS gradient border using the padding-box/border-box technique. */
+  borderGradient?: string;
+  /** When provided, applies a CSS gradient as the pill background fill (overrides bgcolor). */
+  fillGradient?: string;
 };
 
 type SummaryStripProps = {
@@ -69,16 +80,29 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
           const editable = !!metric.onChange;
           const showZennitIcon = metric.pw === 'zennit';
           const isXpMetric = metric.label === 'XP';
+          const tc = metric.toneColor;
+          const bgColor = tc && fabUTokens.isDark ? alpha(tc, 0.07) : fabUTokens.color.pillSurface;
+          const useGradientBorder = !!metric.borderGradient && !isEditing;
+          const useFillGradient = !!metric.fillGradient && !isEditing;
           const metricBox = (
             <Box
               key={metric.label}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
               onClick={() => !isEditing && openEdit(metric)}
               sx={{
-                border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+                ...(useGradientBorder
+                  ? {
+                      border: '1px solid transparent',
+                      background: `linear-gradient(${bgColor}, ${bgColor}) padding-box, ${metric.borderGradient} border-box`,
+                    }
+                  : {
+                      border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : (metric.borderColor ?? (tc ? alpha(tc, 0.5) : fabUTokens.color.border))}`,
+                      ...(useFillGradient
+                        ? { background: metric.fillGradient }
+                        : { bgcolor: bgColor }),
+                    }),
                 borderRadius: '9px',
-                bgcolor: fabUTokens.color.surface,
-                boxShadow: fabUTokens.shadow.soft,
+                boxShadow: fabUTokens.shadow.card,
                 display: 'flex',
                 alignItems: 'center',
                 boxSizing: 'border-box',
@@ -99,7 +123,10 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: fabUTokens.color.textSecondary,
+                      color:
+                        isEditing && !fabUTokens.isDark
+                          ? '#000000'
+                          : (tc ?? fabUTokens.color.textSecondary),
                       fontWeight: 700,
                       fontSize: '0.6rem',
                       letterSpacing: '0.05em',
@@ -156,7 +183,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                       <Typography
                         variant="body1"
                         sx={{
-                          color: fabUTokens.color.textPrimary,
+                          color: metric.valueColor ?? fabUTokens.color.textPrimary,
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,
@@ -188,7 +215,13 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                     ) : null}
                     {!showZennitIcon && metric.trailingIcon ? (
                       <Box
-                        sx={{ ml: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                        sx={{
+                          ml: 'auto',
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexShrink: 0,
+                          ...(isEditing && !fabUTokens.isDark && { filter: 'brightness(0)' }),
+                        }}
                       >
                         {metric.trailingIcon}
                       </Box>

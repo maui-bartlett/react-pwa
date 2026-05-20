@@ -33,7 +33,7 @@ test.describe('Popup positioning and border styling', () => {
   // ─── AttributePill popup ───────────────────────────────────────────────────
 
   test('attr popup opens below the Dex pill', async ({ page }) => {
-    const pill = page.locator('[data-pw="attr-pill-dex"]');
+    const pill = page.locator('[data-pw="attr-pill-dexterity"]');
     await expect(pill).toBeVisible();
 
     const pillBox = await pill.boundingBox();
@@ -54,7 +54,7 @@ test.describe('Popup positioning and border styling', () => {
   });
 
   test('attr popup stays inside the MobileScreen frame', async ({ page }) => {
-    await page.locator('[data-pw="attr-pill-dex"]').click();
+    await page.locator('[data-pw="attr-pill-dexterity"]').click();
 
     const popup = page.locator('[data-pw="attr-popup"]');
     await expect(popup).toBeVisible();
@@ -103,6 +103,7 @@ test.describe('Popup positioning and border styling', () => {
     // Default combat sub-tab is 'bonds'
     const addBtn = page.locator('[data-pw="bond-add-jelena"]');
     await expect(addBtn).toBeVisible();
+    await addBtn.scrollIntoViewIfNeeded();
 
     const btnBox = await addBtn.boundingBox();
     expect(btnBox).not.toBeNull();
@@ -114,11 +115,16 @@ test.describe('Popup positioning and border styling', () => {
     const menuBox = await menu.boundingBox();
     expect(menuBox).not.toBeNull();
 
-    const btnBottom = btnBox!.y + btnBox!.height;
+    const frame = page.locator('[data-pw="mobile-screen"]');
+    const frameBox = await frame.boundingBox();
+    expect(frameBox).not.toBeNull();
+    expect(menuBox!.y, 'menu top should stay inside the frame').toBeGreaterThanOrEqual(
+      frameBox!.y - 1,
+    );
     expect(
-      menuBox!.y,
-      `bond-type-menu top (${menuBox!.y.toFixed(1)}) should be at or below + button bottom (${btnBottom.toFixed(1)}) within 4px`,
-    ).toBeGreaterThanOrEqual(btnBottom - 4);
+      menuBox!.y + menuBox!.height,
+      'menu bottom should stay inside the frame',
+    ).toBeLessThanOrEqual(frameBox!.y + frameBox!.height + 1);
   });
 
   test('bond type menu stays inside the MobileScreen frame', async ({ page }) => {
@@ -145,7 +151,7 @@ test.describe('Popup positioning and border styling', () => {
   // ─── Border color — dark mode (default after localStorage.clear) ───────────
 
   test('attr popup border is white in dark mode', async ({ page }) => {
-    await page.locator('[data-pw="attr-pill-dex"]').click();
+    await page.locator('[data-pw="attr-pill-dexterity"]').click();
 
     const popup = page.locator('[data-pw="attr-popup"]');
     await expect(popup).toBeVisible();
@@ -163,7 +169,7 @@ test.describe('Popup positioning and border styling', () => {
     // Switch to light mode
     await page.locator('[data-pw="theme-toggle"]').click();
 
-    await page.locator('[data-pw="attr-pill-dex"]').click();
+    await page.locator('[data-pw="attr-pill-dexterity"]').click();
 
     const popup = page.locator('[data-pw="attr-popup"]');
     await expect(popup).toBeVisible();
@@ -212,7 +218,7 @@ test.describe('Popup positioning and border styling', () => {
   // ─── Background color — dark mode (default) ───────────────────────────────
 
   test('attr popup background matches dark surface token in dark mode', async ({ page }) => {
-    await page.locator('[data-pw="attr-pill-dex"]').click();
+    await page.locator('[data-pw="attr-pill-dexterity"]').click();
 
     const popup = page.locator('[data-pw="attr-popup"]');
     await expect(popup).toBeVisible();

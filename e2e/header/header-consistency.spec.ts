@@ -6,7 +6,8 @@ const HEIGHT_TOLERANCE = 1; // px
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function navigateTo(page: any, tab: string) {
-  await page.getByRole('button', { name: tab }).first().click();
+  const navLabel = tab === 'Overview' ? 'Character' : tab;
+  await page.locator('[data-pw="app-footer"]').getByText(navLabel).click();
   await page.waitForLoadState('networkidle');
 }
 

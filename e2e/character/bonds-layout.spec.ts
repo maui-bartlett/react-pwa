@@ -24,14 +24,14 @@ test.describe('BondsCard layout fixes (mobile viewport)', () => {
     expect(Math.abs(btnCenter - rowCenter)).toBeLessThanOrEqual(1);
   });
 
-  test('Menu paper background is white (rgb(255, 255, 255))', async ({ page }) => {
+  test('Menu paper background uses the dark surface token', async ({ page }) => {
     await page.locator('[data-pw="bond-add-jelena"]').click();
     const menu = page.locator('[role="menu"]');
     await expect(menu).toBeVisible();
 
     const paper = page.locator('.MuiPaper-root').filter({ has: menu });
     const bg = await paper.evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(bg).toBe('rgb(255, 255, 255)');
+    expect(bg).toBe('rgb(19, 22, 19)');
 
     await page.keyboard.press('Escape');
   });

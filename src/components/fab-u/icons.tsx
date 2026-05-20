@@ -1,17 +1,69 @@
 import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
 
-function SwordIcon(props: SvgIconProps) {
+/** Lucide Backpack — stroke-based, matches the Backpack icon from lucide-react. */
+function BackpackIcon({ sx, ...props }: SvgIconProps) {
   return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path d="M14.66 3.03 21 2l-1.03 6.34-1.88-1.88-4.97 4.97v2.05l-1.71 1.71-1.48-1.48-4.7 4.7 1.12 1.12-.71.71H3.67v-1.97l.71-.71 1.12 1.12 4.7-4.7-1.49-1.49 1.71-1.71h2.05l4.97-4.97-1.88-1.88Z" />
+    <SvgIcon
+      {...props}
+      viewBox="0 0 24 24"
+      sx={{
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        ...sx,
+      }}
+    >
+      <path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+      <path d="M8 10h8" />
+      <path d="M8 18h8" />
+      <path d="M8 22v-6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v6" />
+      <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
     </SvgIcon>
   );
 }
 
-function DiamondIcon(props: SvgIconProps) {
+function SwordIcon({ sx, ...props }: SvgIconProps) {
   return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path d="M12 4.5 18.5 11 12 19.5 5.5 11 12 4.5Zm0 2.12L8.03 11 12 16.19 15.97 11 12 6.62Z" />
+    <SvgIcon
+      {...props}
+      viewBox="0 0 24 24"
+      sx={{
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        ...sx,
+      }}
+    >
+      <path d="m11 19-6-6" />
+      <path d="m5 21-2-2" />
+      <path d="m8 16-4 4" />
+      <path d="M9.5 17.5 21 6V3h-3L6.5 14.5" />
+    </SvgIcon>
+  );
+}
+
+function SkillCrystalIcon({ sx, ...props }: SvgIconProps) {
+  return (
+    <SvgIcon
+      {...props}
+      viewBox="0 0 24 24"
+      sx={{
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 2,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        ...sx,
+      }}
+    >
+      <path d="M12 3 18 10 12 21 6 10z" />
+      <path d="M12 3v18" />
+      <path d="M6 10h12" />
+      <path d="m8.5 10 3.5 11 3.5-11" />
     </SvgIcon>
   );
 }
@@ -24,4 +76,4 @@ function NotesLinesIcon(props: SvgIconProps) {
   );
 }
 
-export { DiamondIcon, NotesLinesIcon, SwordIcon };
+export { BackpackIcon, NotesLinesIcon, SkillCrystalIcon, SwordIcon };

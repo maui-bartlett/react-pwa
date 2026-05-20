@@ -24,7 +24,7 @@ import { SkillRow } from '../types';
 const ACTION_WIDTH = 128;
 const DESC_ACTION_WIDTH = 64;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#d32f2f';
+const DELETE_RED = '#a84e49';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
 
 type SkillsTableProps = {
@@ -37,7 +37,9 @@ type SkillsTableProps = {
   onAddSkill?: (skill: SkillRow) => void;
   freeSkillLevels?: number;
   onAddSkillLevels?: (skillName: string, levels: number) => void;
-  onDeleteSkill?: (skillName: string) => void;
+  /** When true, the add-level button is hidden even if onAddSkillLevels is provided */
+  classMastered?: boolean;
+  onDeleteSkill?: (skillName: string, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onEditSkill?: (oldName: string, updatedSkill: SkillRow) => void;
   /** Called when the user edits the full description in the accordion panel */
   onUpdateSkillDescription?: (skillName: string, description: string) => void;
@@ -59,7 +61,7 @@ type SwipeableSkillRowProps = {
   onCommitEdit: () => void;
   onRevertEdit: () => void;
   onStartEdit: () => void;
-  onDelete?: () => void;
+  onDelete?: (onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   hasAddLevels: boolean;
   canAddLevels: boolean;
   onOpenLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
@@ -83,12 +85,15 @@ function SwipeableSkillRow({
   onUpdateSkillDescription,
 }: SwipeableSkillRowProps) {
   const fabUTokens = useFabUTokens();
+  const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
 
   // Row swipe state
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
@@ -108,13 +113,6 @@ function SwipeableSkillRow({
 
   const descVisualX = Math.max(-DESC_ACTION_WIDTH, Math.min(0, descSnapX + descDeltaX));
   const descChannelVisible = descSnapX !== 0 || (descSwiping && descDeltaX < -5);
-
-  function triggerRemove() {
-    setRemoving(true);
-    setSnapX(0);
-    setCurrentDeltaX(0);
-    setTimeout(() => onDelete?.(), 450);
-  }
 
   // Row swipe handlers
   const swipeHandlers = useSwipeable({
@@ -215,16 +213,24 @@ function SwipeableSkillRow({
       data-pw="skill-table-row"
       sx={{
         borderBottom: `1px solid ${fabUTokens.color.border}`,
-        overflow: removing ? 'hidden' : 'visible',
-        maxHeight: removing ? 0 : 'none',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        ...(exitingLeft
+          ? {
+              overflow: 'hidden',
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              overflow: removing ? 'hidden' : 'visible',
+              maxHeight: removing ? 0 : '300px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Swipeable main row section */}
       <Box sx={{ position: 'relative', overflow: 'hidden' }}>
         {/* Action channel */}
-        {channelVisible && (
+        {(channelVisible || exitingLeft) && (
           <Box
             sx={{
               position: 'absolute',
@@ -233,6 +239,7 @@ function SwipeableSkillRow({
               bottom: 0,
               width: ACTION_WIDTH,
               display: 'flex',
+              ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
               zIndex: 0,
             }}
           >
@@ -240,11 +247,19 @@ function SwipeableSkillRow({
               data-pw="skill-row-delete"
               onClick={(e) => {
                 e.stopPropagation();
-                triggerRemove();
+                onDelete?.(
+                  () => {
+                    setSnapX(0);
+                    setCurrentDeltaX(0);
+                  },
+                  () => {
+                    setExitingLeft(true);
+                  },
+                );
               }}
               sx={{
                 flex: 1,
-                bgcolor: DELETE_RED,
+                bgcolor: deleteColor,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -263,13 +278,11 @@ function SwipeableSkillRow({
               }}
               sx={{
                 flex: 1,
-                bgcolor: fabUTokens.color.brand,
+                bgcolor: editColor,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow:
-                  'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
               }}
             >
               <Pencil size={18} color="white" />
@@ -288,12 +301,12 @@ function SwipeableSkillRow({
               px: 1.2,
               py: 0.7,
               minHeight: 46,
-              bgcolor: fabUTokens.color.surface,
+              bgcolor: fabUTokens.color.pillSurface,
               zIndex: 1,
               gap: 0.5,
             }}
           >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box sx={{ flex: 1, minWidth: 0, pl: '24px' }}>
               <InputBase
                 autoFocus
                 value={editDraft.name}
@@ -344,12 +357,16 @@ function SwipeableSkillRow({
               alignItems: 'center',
               px: 1.2,
               height: 46,
-              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surface,
+              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.pillSurface,
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
-              transform: `translateX(${visualX}px)`,
-              transition: swiping ? 'none' : 'transform 0.22s ease',
+              transform: exitingLeft ? 'translateX(-200%)' : `translateX(${visualX}px)`,
+              transition: exitingLeft
+                ? 'transform 350ms ease-in'
+                : swiping
+                  ? 'none'
+                  : 'transform 0.22s ease',
               cursor: 'pointer',
               touchAction: 'pan-y',
               userSelect: 'none',
@@ -401,7 +418,11 @@ function SwipeableSkillRow({
                 flexShrink: 0,
                 textAlign: 'right',
                 ...cellTextSx,
-                color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.brandText,
+                color: isOpen
+                  ? fabUTokens.color.brandFg
+                  : fabUTokens.isDark
+                    ? fabUTokens.color.brandText
+                    : '#3d7060',
                 fontWeight: 700,
               }}
             >
@@ -446,113 +467,104 @@ function SwipeableSkillRow({
         )}
       </Box>
 
-      {/* Accordion expand panel — swipeable, edit-only channel */}
+      {/* Accordion expand panel — whole row swipeable */}
       {!isEditing && (
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
-          <Box sx={{ px: 1.2, pb: 0 }}>
+          <Box
+            {...descSwipeHandlers}
+            ref={descSetRef}
+            sx={{ position: 'relative', overflow: 'hidden', bgcolor: fabUTokens.color.surface }}
+          >
+            {/* Desc action channel (edit only) */}
+            {descChannelVisible && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: DESC_ACTION_WIDTH,
+                  display: 'flex',
+                  zIndex: 0,
+                }}
+              >
+                <Box
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDescSnapX(0);
+                    setDescDeltaX(0);
+                    setDescDraft(row.description ?? row.effect ?? '');
+                    setDescEditActive(true);
+                  }}
+                  sx={{
+                    flex: 1,
+                    bgcolor: editColor,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Pencil size={18} color="white" />
+                </Box>
+              </Box>
+            )}
+
+            {/* Desc content — whole row translates on swipe */}
             <Box
               sx={{
                 position: 'relative',
-                overflow: 'hidden',
-                borderRadius: '9px',
-                my: 0.75,
+                zIndex: 1,
+                transform: `translateX(${descVisualX}px)`,
+                transition: descSwiping ? 'none' : 'transform 0.22s ease',
+                touchAction: 'pan-y',
+                userSelect: 'none',
+                py: 1.25,
+                px: 2.7,
+                bgcolor: fabUTokens.color.surface,
+                minHeight: 42,
+                display: 'flex',
+                alignItems: 'center',
               }}
             >
-              {/* Desc action channel (edit only) */}
-              {descChannelVisible && (
-                <Box
+              {descEditActive ? (
+                <InputBase
+                  autoFocus
+                  multiline
+                  fullWidth
+                  value={descDraft}
+                  onChange={(e) => setDescDraft(e.target.value)}
+                  onBlur={() => {
+                    onUpdateSkillDescription?.(row.name, descDraft.trim());
+                    setDescEditActive(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setDescEditActive(false);
+                  }}
                   sx={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: DESC_ACTION_WIDTH,
-                    display: 'flex',
-                    zIndex: 0,
+                    color: fabUTokens.color.textPrimary,
+                    alignItems: 'flex-start',
+                    '& textarea': {
+                      p: 0,
+                      lineHeight: 1.5,
+                      ...scaledEditableTextStyle(0.84, { stretch: true, lineHeight: 1.5 }),
+                      color: fabUTokens.color.textPrimary,
+                    },
+                  }}
+                />
+              ) : (
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: '0.84rem',
+                    lineHeight: 1.5,
+                    color: fabUTokens.color.textPrimary,
+                    fontStyle: !row.description && !row.effect ? 'italic' : 'normal',
                   }}
                 >
-                  <Box
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDescSnapX(0);
-                      setDescDeltaX(0);
-                      setDescDraft(row.description ?? row.effect ?? '');
-                      setDescEditActive(true);
-                    }}
-                    sx={{
-                      flex: 1,
-                      bgcolor: fabUTokens.color.brand,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      boxShadow:
-                        'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
-                    }}
-                  >
-                    <Pencil size={18} color="white" />
-                  </Box>
-                </Box>
+                  {(row.description ?? row.effect) || 'Swipe left to add description'}
+                </Typography>
               )}
-
-              {/* Desc content — translates on swipe */}
-              <Box
-                {...descSwipeHandlers}
-                ref={descSetRef}
-                sx={{
-                  position: 'relative',
-                  zIndex: 1,
-                  transform: `translateX(${descVisualX}px)`,
-                  transition: descSwiping ? 'none' : 'transform 0.22s ease',
-                  touchAction: 'pan-y',
-                  userSelect: 'none',
-                  py: 1.25,
-                  px: 1.5,
-                  bgcolor: fabUTokens.color.surface,
-                  border: `1px solid ${fabUTokens.color.border}`,
-                  borderRadius: '9px',
-                  minHeight: 42,
-                }}
-              >
-                {descEditActive ? (
-                  <InputBase
-                    autoFocus
-                    multiline
-                    fullWidth
-                    value={descDraft}
-                    onChange={(e) => setDescDraft(e.target.value)}
-                    onBlur={() => {
-                      onUpdateSkillDescription?.(row.name, descDraft.trim());
-                      setDescEditActive(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') setDescEditActive(false);
-                    }}
-                    sx={{
-                      color: fabUTokens.color.textPrimary,
-                      alignItems: 'flex-start',
-                      '& textarea': {
-                        p: 0,
-                        lineHeight: 1.5,
-                        ...scaledEditableTextStyle(0.74, { stretch: true, lineHeight: 1.5 }),
-                        color: fabUTokens.color.textPrimary,
-                      },
-                    }}
-                  />
-                ) : (
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontSize: '0.74rem',
-                      lineHeight: 1.5,
-                      color: fabUTokens.color.textPrimary,
-                      fontStyle: !row.description && !row.effect ? 'italic' : 'normal',
-                    }}
-                  >
-                    {(row.description ?? row.effect) || 'Swipe left to add description'}
-                  </Typography>
-                )}
-              </Box>
             </Box>
           </Box>
         </Collapse>
@@ -570,6 +582,7 @@ function SkillsTable({
   onAddSkill,
   freeSkillLevels = 0,
   onAddSkillLevels,
+  classMastered = false,
   onDeleteSkill,
   onEditSkill,
   onUpdateSkillDescription,
@@ -652,7 +665,7 @@ function SkillsTable({
   }
 
   const headerCellSx = {
-    color: fabUTokens.color.textSecondary,
+    color: '#ffffff',
     fontSize: '0.62rem',
     fontWeight: 700,
     letterSpacing: '0.045em',
@@ -696,7 +709,7 @@ function SkillsTable({
                   alignItems: 'center',
                 }}
               >
-                <XCircle size={28} color="#d32f2f" />
+                <XCircle size={28} color={DELETE_RED} />
               </Box>
             </Box>
           ) : undefined
@@ -708,6 +721,7 @@ function SkillsTable({
             border: `1px solid ${fabUTokens.color.border}`,
             borderRadius: '9px',
             overflow: 'hidden',
+            boxShadow: fabUTokens.shadow.card,
           }}
         >
           {/* Header */}
@@ -717,8 +731,8 @@ function SkillsTable({
               alignItems: 'center',
               px: 1.2,
               py: 0.75,
-              bgcolor: fabUTokens.color.surfaceMuted,
-              borderBottom: `1px solid ${fabUTokens.color.border}`,
+              bgcolor: fabUTokens.isDark ? '#1c1e1e' : '#4a4f4d',
+              borderBottom: `1px solid rgba(0,0,0,0.15)`,
             }}
           >
             <Box sx={{ flex: 1, minWidth: 0, ...headerCellSx }}>Skill</Box>
@@ -734,7 +748,7 @@ function SkillsTable({
               Math.max(0, maxLevel - (isNaN(level) ? 0 : level)),
               freeSkillLevels,
             );
-            const canAddLevels = !!onAddSkillLevels && availableForSkill > 0;
+            const canAddLevels = !!onAddSkillLevels && !classMastered && availableForSkill > 0;
             const isEditing = editingSkill?.originalName === row.name;
             return (
               <SwipeableSkillRow
@@ -758,7 +772,7 @@ function SkillsTable({
                 onCommitEdit={commitSkillEdit}
                 onRevertEdit={revertSkillEdit}
                 onStartEdit={() => startEditingSkill(row)}
-                onDelete={onDeleteSkill ? () => onDeleteSkill(row.name) : undefined}
+                onDelete={onDeleteSkill ? (oc, obc) => onDeleteSkill(row.name, oc, obc) : undefined}
                 hasAddLevels={!!onAddSkillLevels}
                 canAddLevels={canAddLevels}
                 onOpenLevelMenu={(e) => openLevelMenu(e, row.name)}
@@ -777,7 +791,7 @@ function SkillsTable({
                 px: 1.2,
                 py: 0.7,
                 minHeight: 46,
-                bgcolor: fabUTokens.color.surface,
+                bgcolor: fabUTokens.color.pillSurface,
                 gap: 0.5,
               }}
             >
@@ -858,12 +872,13 @@ function SkillsTable({
               gap: 0.75,
               px: 1,
               py: 0.6,
-              minHeight: 41,
+              minHeight: 47,
               cursor: 'pointer',
               color: fabUTokens.color.highlight,
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '8px',
-              bgcolor: 'transparent',
+              bgcolor: fabUTokens.color.surface,
+              boxShadow: fabUTokens.shadow.card,
             }}
           >
             <AddIcon sx={{ fontSize: '1rem' }} />
@@ -891,7 +906,7 @@ function SkillsTable({
               backgroundImage: 'none',
               borderRadius: '10px',
               boxShadow: '0 4px 16px rgba(31, 42, 38, 0.14)',
-              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
               minWidth: 100,
             },
           } as Record<string, unknown>,

@@ -31,7 +31,7 @@ test.describe('SpellsTable — uniform row height + flush container bottom (mobi
 
   test('spell row text is vertically centered within the row (Spells tab)', async ({ page }) => {
     const row = page.locator('[data-pw="spell-row"]').first();
-    const textEl = row.locator('td').first().locator('*').first();
+    const textEl = row.locator('p, span').first();
 
     const rowBB = await row.boundingBox();
     const textBB = await textEl.boundingBox();
@@ -46,7 +46,8 @@ test.describe('SpellsTable — uniform row height + flush container bottom (mobi
   test('table container bottom is flush with last spell row bottom (Spells tab)', async ({
     page,
   }) => {
-    const container = page.locator('table').first().locator('..');
+    // The spell rows are inside a div container (not a table element)
+    const container = page.locator('[data-pw="spells-table-container"]').first();
     const rows = page.locator('[data-pw="spell-row"]');
     const count = await rows.count();
     const lastRow = rows.nth(count - 1);

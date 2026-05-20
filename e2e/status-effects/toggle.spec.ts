@@ -3,9 +3,16 @@ import { devices, expect, test } from '@playwright/test';
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 const PILLS = ['slow', 'dazed', 'enraged', 'weak', 'shaken', 'poisoned'] as const;
-const RESTING_BG = 'rgb(255, 255, 255)';
-const DERIVED_FILL = 'rgb(74, 84, 80)'; // #4a5450
+const RESTING_BG = 'rgb(19, 22, 19)';
 const TOLERANCE = 1; // px — for bracket geometry checks
+
+async function openStatusEffects(page: import('@playwright/test').Page) {
+  const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
+  await expect(toggle).toBeVisible();
+  await toggle.click({ position: { x: 8, y: 8 } });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('[data-pw="status-pill-slow"]')).toBeVisible({ timeout: 1000 });
+}
 
 test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,9 +21,11 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Combat' }).first().click();
     await page.waitForLoadState('networkidle');
+    // Status effects are inside a collapsed accordion — open it first
+    await openStatusEffects(page);
   });
 
-  test('initial state: all pills have white resting background', async ({ page }) => {
+  test('initial state: all pills have resting surface background', async ({ page }) => {
     for (const id of PILLS) {
       await expect(
         page.locator(`[data-pw="status-pill-${id}"]`),
@@ -106,6 +115,7 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Combat' }).first().click();
     await page.waitForLoadState('networkidle');
+    await openStatusEffects(page);
 
     await expect(page.locator('[data-pw="status-pill-slow"]')).not.toHaveCSS(
       'background-color',
@@ -122,19 +132,13 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
   });
 
   test('connector drops remain flush with pill borders after toggling', async ({ page }) => {
-    // Trigger enraged via slow + dazed (derived)
     await page.locator('[data-pw="status-pill-slow"]').click();
     await expect(page.locator('[data-pw="status-pill-slow"]')).not.toHaveCSS(
       'background-color',
       RESTING_BG,
     );
-    await page.locator('[data-pw="status-pill-dazed"]').click();
-    await expect(page.locator('[data-pw="status-pill-enraged"]')).not.toHaveCSS(
-      'background-color',
-      RESTING_BG,
-    );
 
-    const pillBB = await page.getByText('Slow').locator('..').boundingBox();
+    const pillBB = await page.locator('[data-pw="status-pill-slow"]').boundingBox();
     const dropBB = await page.locator('[data-pw="left-drop"]').first().boundingBox();
 
     const pillBottom = pillBB!.y + pillBB!.height;
@@ -143,10 +147,9 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
     expect(Math.abs(dropTop - pillBottom)).toBeLessThanOrEqual(TOLERANCE);
   });
 
-  test('enraged auto-selects when slow AND dazed are both on', async ({ page }) => {
+  test('enraged toggles independently from slow and dazed', async ({ page }) => {
     const enraged = page.locator('[data-pw="status-pill-enraged"]');
 
-    // One of the pair alone → enraged stays off
     await page.locator('[data-pw="status-pill-slow"]').click();
     await expect(page.locator('[data-pw="status-pill-slow"]')).not.toHaveCSS(
       'background-color',
@@ -154,72 +157,64 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
     );
     await expect(enraged).toHaveCSS('background-color', RESTING_BG);
 
-    // Both on → enraged auto-selects with darker gray fill
-    await page.locator('[data-pw="status-pill-dazed"]').click();
-    await expect(enraged).toHaveCSS('background-color', DERIVED_FILL);
+    await enraged.click();
+    await expect(enraged).not.toHaveCSS('background-color', RESTING_BG);
     await expect(enraged.locator('.MuiTypography-root')).toHaveCSS('color', 'rgb(255, 255, 255)');
 
-    // Remove one → enraged turns off
-    await page.locator('[data-pw="status-pill-dazed"]').click();
+    await enraged.click();
     await expect(enraged).toHaveCSS('background-color', RESTING_BG);
   });
 
-  test('poisoned auto-selects when weak AND shaken are both on', async ({ page }) => {
+  test('poisoned toggles independently from weak and shaken', async ({ page }) => {
     const poisoned = page.locator('[data-pw="status-pill-poisoned"]');
 
     await page.locator('[data-pw="status-pill-weak"]').click();
     await expect(poisoned).toHaveCSS('background-color', RESTING_BG);
 
-    await page.locator('[data-pw="status-pill-shaken"]').click();
-    await expect(poisoned).toHaveCSS('background-color', DERIVED_FILL);
+    await poisoned.click();
+    await expect(poisoned).not.toHaveCSS('background-color', RESTING_BG);
     await expect(poisoned.locator('.MuiTypography-root')).toHaveCSS('color', 'rgb(255, 255, 255)');
 
-    await page.locator('[data-pw="status-pill-shaken"]').click();
+    await poisoned.click();
     await expect(poisoned).toHaveCSS('background-color', RESTING_BG);
   });
 
-  test('direct click on enraged/poisoned does not change their state', async ({ page }) => {
+  test('direct click on enraged/poisoned toggles their state', async ({ page }) => {
     const enraged = page.locator('[data-pw="status-pill-enraged"]');
     const poisoned = page.locator('[data-pw="status-pill-poisoned"]');
 
-    // Click derived pills directly — state must not change
+    await enraged.click();
+    await poisoned.click();
+    await expect(enraged).not.toHaveCSS('background-color', RESTING_BG);
+    await expect(poisoned).not.toHaveCSS('background-color', RESTING_BG);
+
     await enraged.click();
     await poisoned.click();
     await expect(enraged).toHaveCSS('background-color', RESTING_BG);
     await expect(poisoned).toHaveCSS('background-color', RESTING_BG);
-
-    // Trigger enraged via pair, then click it directly — must stay selected
-    await page.locator('[data-pw="status-pill-slow"]').click();
-    await page.locator('[data-pw="status-pill-dazed"]').click();
-    await expect(enraged).toHaveCSS('background-color', DERIVED_FILL);
-    await enraged.click();
-    await expect(enraged).toHaveCSS('background-color', DERIVED_FILL);
   });
 
-  test('derived state restores correctly after reload', async ({ page }) => {
+  test('result status state restores correctly after reload', async ({ page }) => {
     await page.locator('[data-pw="status-pill-slow"]').click();
-    await page.locator('[data-pw="status-pill-dazed"]').click();
-    await expect(page.locator('[data-pw="status-pill-enraged"]')).toHaveCSS(
+    await page.locator('[data-pw="status-pill-enraged"]').click();
+    await expect(page.locator('[data-pw="status-pill-enraged"]')).not.toHaveCSS(
       'background-color',
-      DERIVED_FILL,
+      RESTING_BG,
     );
 
     await page.reload();
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Combat' }).first().click();
     await page.waitForLoadState('networkidle');
+    await openStatusEffects(page);
 
     await expect(page.locator('[data-pw="status-pill-slow"]')).not.toHaveCSS(
       'background-color',
       RESTING_BG,
     );
-    await expect(page.locator('[data-pw="status-pill-dazed"]')).not.toHaveCSS(
+    await expect(page.locator('[data-pw="status-pill-enraged"]')).not.toHaveCSS(
       'background-color',
       RESTING_BG,
-    );
-    await expect(page.locator('[data-pw="status-pill-enraged"]')).toHaveCSS(
-      'background-color',
-      DERIVED_FILL,
     );
   });
 });

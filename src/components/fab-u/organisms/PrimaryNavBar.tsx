@@ -1,8 +1,7 @@
 import { ComponentType } from 'react';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
-import BackpackOutlinedIcon from '@mui/icons-material/BackpackOutlined';
-import GridViewOutlinedIcon from '@mui/icons-material/GridViewOutlined';
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import ButtonBase from '@mui/material/ButtonBase';
 import Stack from '@mui/material/Stack';
 import { SvgIconProps } from '@mui/material/SvgIcon';
@@ -10,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useFabUTokens } from '../ThemeContext';
-import { DiamondIcon, NotesLinesIcon, SwordIcon } from '../icons';
+import { BackpackIcon, NotesLinesIcon, SkillCrystalIcon, SwordIcon } from '../icons';
 import { FabUTab } from '../types';
 
 type PrimaryNavBarProps = {
@@ -19,11 +18,11 @@ type PrimaryNavBarProps = {
 };
 
 const options: Array<{ label: string; value: FabUTab; icon: ComponentType<SvgIconProps> }> = [
-  { label: 'Overview', value: 'overview', icon: GridViewOutlinedIcon },
+  { label: 'Character', value: 'overview', icon: PersonOutlinedIcon },
   { label: 'Combat', value: 'combat', icon: SwordIcon },
-  { label: 'Skills', value: 'skills', icon: DiamondIcon },
+  { label: 'Skills', value: 'skills', icon: SkillCrystalIcon },
   { label: 'Spells', value: 'spells', icon: AutoAwesomeOutlinedIcon },
-  { label: 'Gear', value: 'gear', icon: BackpackOutlinedIcon },
+  { label: 'Gear', value: 'gear', icon: BackpackIcon },
   { label: 'Notes', value: 'notes', icon: NotesLinesIcon },
 ];
 
@@ -34,7 +33,6 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
       direction="row"
       justifyContent="space-between"
       sx={{
-        border: `1px solid ${fabUTokens.color.border}`,
         borderRadius: '9px',
         bgcolor: fabUTokens.color.surface,
         px: 0.18,

@@ -16,16 +16,18 @@ import { EquipmentItem } from '../types';
 
 const ACTION_WIDTH = 128;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#d32f2f';
+const DELETE_RED = '#a84e49';
+
+const EQUIPMENT_SLOTS = ['Main Hand', 'Off Hand', 'Accessory', 'Armor'] as const;
+type EquipmentSlot = (typeof EQUIPMENT_SLOTS)[number];
 
 type EquipmentCardProps = {
   title?: string;
   items: EquipmentItem[];
-  emptyLabel?: string;
   label?: string;
-  onDeleteItem?: (index: number) => void;
+  onDeleteItem?: (index: number, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onUpdateItem?: (index: number, updated: EquipmentItem) => void;
-  onAddItem?: () => void;
+  onAddSlotItem?: (slot: EquipmentSlot) => void;
 };
 
 type EquipmentRowProps = {
@@ -39,7 +41,7 @@ type EquipmentRowProps = {
   onStartEdit: () => void;
   onCommitEdit: () => void;
   onRevertEdit: () => void;
-  onDelete?: (index: number) => void;
+  onDelete?: (index: number, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
 };
 
 function EquipmentRow({
@@ -56,23 +58,19 @@ function EquipmentRow({
   onDelete,
 }: EquipmentRowProps) {
   const fabUTokens = useFabUTokens();
+  const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
-
-  function triggerRemove() {
-    setRemoving(true);
-    setSnapX(0);
-    setCurrentDeltaX(0);
-    setTimeout(() => onDelete?.(index), 450);
-  }
 
   function startEdit() {
     setSnapX(0);
@@ -139,7 +137,7 @@ function EquipmentRow({
           position: 'relative',
           overflow: 'hidden',
           borderRadius: '9px',
-          boxShadow: fabUTokens.shadow.soft,
+          boxShadow: fabUTokens.shadow.card,
           maxHeight: removing ? 0 : '200px',
           opacity: removing ? 0 : 1,
           transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
@@ -151,7 +149,7 @@ function EquipmentRow({
             borderRadius: '9px',
             px: 1.3,
             py: 0.95,
-            bgcolor: fabUTokens.color.surface,
+            bgcolor: fabUTokens.color.pillSurface,
             boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12)',
           }}
         >
@@ -216,14 +214,21 @@ function EquipmentRow({
         position: 'relative',
         overflow: 'hidden',
         borderRadius: '9px',
-        boxShadow: fabUTokens.shadow.soft,
-        maxHeight: removing ? 0 : '200px',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        boxShadow: fabUTokens.shadow.card,
+        ...(exitingLeft
+          ? {
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              maxHeight: removing ? 0 : '200px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Action channel */}
-      {channelVisible && (
+      {(channelVisible || exitingLeft) && (
         <Box
           sx={{
             position: 'absolute',
@@ -233,16 +238,26 @@ function EquipmentRow({
             width: ACTION_WIDTH,
             display: 'flex',
             zIndex: 0,
+            ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
           }}
         >
           <Box
             onClick={(e) => {
               e.stopPropagation();
-              triggerRemove();
+              onDelete?.(
+                index,
+                () => {
+                  setSnapX(0);
+                  setCurrentDeltaX(0);
+                },
+                () => {
+                  setExitingLeft(true);
+                },
+              );
             }}
             sx={{
               flex: 1,
-              bgcolor: DELETE_RED,
+              bgcolor: deleteColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -258,13 +273,11 @@ function EquipmentRow({
             }}
             sx={{
               flex: 1,
-              bgcolor: fabUTokens.color.brand,
+              bgcolor: editColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow:
-                'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
             }}
           >
             <Pencil size={18} color="white" />
@@ -279,13 +292,17 @@ function EquipmentRow({
           position: 'relative',
           zIndex: 1,
           border: `1px solid ${fabUTokens.color.border}`,
-          borderRadius: '9px',
+          borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
           px: 1.3,
           py: 0.95,
           bgcolor: fabUTokens.color.surface,
           boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
-          transform: `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease',
+          transform: exitingLeft ? 'translateX(-200%)' : `translateX(${visualX}px)`,
+          transition: exitingLeft
+            ? 'transform 350ms ease-in'
+            : swiping
+              ? 'none'
+              : 'transform 0.22s ease',
           touchAction: 'pan-y',
           userSelect: 'none',
         }}
@@ -351,11 +368,10 @@ function EquipmentRow({
 function EquipmentCard({
   title = 'Equipped gear',
   items,
-  emptyLabel = 'Open accessory slot',
   label = 'Gear',
   onDeleteItem,
   onUpdateItem,
-  onAddItem,
+  onAddSlotItem,
 }: EquipmentCardProps) {
   const fabUTokens = useFabUTokens();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -417,7 +433,7 @@ function EquipmentCard({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={28} color="#d32f2f" />
+              <XCircle size={28} color="#a84e49" />
             </Box>
           </Box>
         ) : undefined
@@ -425,43 +441,53 @@ function EquipmentCard({
       actionsPosition="inline"
     >
       <Stack spacing={1.05}>
-        {items.map((item, index) => (
-          <EquipmentRow
-            key={`${item.slot}-${item.name}-${index}`}
-            item={item}
-            index={index}
-            isEditing={editingIndex === index}
-            nameDraft={editingIndex === index ? nameDraft : item.name}
-            descDraft={editingIndex === index ? descDraft : item.description}
-            onNameChange={setNameDraft}
-            onDescChange={setDescDraft}
-            onStartEdit={() => startEdit(index)}
-            onCommitEdit={commitEdit}
-            onRevertEdit={revertEdit}
-            onDelete={onDeleteItem}
-          />
-        ))}
-
-        <Box
-          onClick={onAddItem}
-          sx={{
-            border: `1px dashed ${fabUTokens.color.highlight}`,
-            borderRadius: '9px',
-            px: 1.3,
-            py: 1.45,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            color: fabUTokens.color.highlight,
-            bgcolor: 'transparent',
-            cursor: onAddItem ? 'pointer' : 'default',
-          }}
-        >
-          <AddIcon fontSize="small" />
-          <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-            {emptyLabel}
-          </Typography>
-        </Box>
+        {EQUIPMENT_SLOTS.map((slot) => {
+          const slotItemIndex = items.findIndex((item) => item.slot === slot);
+          if (slotItemIndex !== -1) {
+            return (
+              <EquipmentRow
+                key={slot}
+                item={items[slotItemIndex]}
+                index={slotItemIndex}
+                isEditing={editingIndex === slotItemIndex}
+                nameDraft={editingIndex === slotItemIndex ? nameDraft : items[slotItemIndex].name}
+                descDraft={
+                  editingIndex === slotItemIndex ? descDraft : items[slotItemIndex].description
+                }
+                onNameChange={setNameDraft}
+                onDescChange={setDescDraft}
+                onStartEdit={() => startEdit(slotItemIndex)}
+                onCommitEdit={commitEdit}
+                onRevertEdit={revertEdit}
+                onDelete={onDeleteItem}
+              />
+            );
+          }
+          return (
+            <Box
+              key={slot}
+              onClick={() => onAddSlotItem?.(slot)}
+              sx={{
+                border: `1px dashed ${fabUTokens.color.highlight}`,
+                borderRadius: '9px',
+                px: 1.3,
+                py: 1.45,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                color: fabUTokens.color.highlight,
+                bgcolor: fabUTokens.isDark ? 'transparent' : '#ffffff',
+                cursor: onAddSlotItem ? 'pointer' : 'default',
+                boxShadow: fabUTokens.shadow.card,
+              }}
+            >
+              <AddIcon fontSize="small" />
+              <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                {slot}
+              </Typography>
+            </Box>
+          );
+        })}
       </Stack>
     </SurfaceCard>
   );

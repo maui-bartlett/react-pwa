@@ -1,27 +1,44 @@
 import type { MouseEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 
-import AddIcon from '@mui/icons-material/Add';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
+import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
-import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useAtom, useAtomValue } from 'jotai';
-import { Check, CheckCircle, FlaskConical, Pencil, Sparkles } from 'lucide-react';
+import {
+  Backpack,
+  Ban,
+  Check,
+  CheckCircle,
+  ChevronDown,
+  Feather,
+  FlaskConical,
+  Pencil,
+  Shield,
+  Sparkles,
+  Sword,
+  Timer,
+} from 'lucide-react';
 
 import {
   AttributesStatsCard,
   BondType,
   BondsCard,
   CombatSubTab,
+  ConfirmDeleteModal,
   DetailListCard,
   EquipmentCard,
   FabUTab,
@@ -30,6 +47,7 @@ import {
   MobileScreen,
   PrimaryNavBar,
   SegmentedTabs,
+  SkillCrystalIcon,
   SkillsTable,
   SpellCastOverlay,
   SpellsTable,
@@ -37,18 +55,27 @@ import {
   SummaryStrip,
   SurfaceCard,
   TabOption,
+  UndoSnackbar,
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
+  useFabUTokens,
 } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
-import { characterState, derivedStatusEffectsState, statusEffectsState } from './atoms';
+import {
+  MAX_CHARACTER_LEVEL,
+  activeCombatTabState,
+  activeTabState,
+  statusEffectsState,
+} from './atoms';
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
+import { useCharacterHistory } from './useCharacterHistory';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
+  { label: 'Traits', value: 'traits' },
   { label: 'Bonds', value: 'bonds' },
   { label: 'Skills', value: 'skills' },
   { label: 'Spells', value: 'spells' },
@@ -64,7 +91,7 @@ const screenMeta: Record<
 > = {
   overview: {
     title: 'Radovan "Rad" Milinic',
-    subtitle: 'Transfer Student to UoE · Political refugee · Origin: Infinita',
+    subtitle: 'Transfer Student to UoE · Political refugee',
     actionLabel: '',
   },
   skills: {
@@ -74,20 +101,458 @@ const screenMeta: Record<
   },
   spells: {
     title: 'Spells & Arcana',
-    subtitle: 'Entropist magic, rituals, cast actions, and spell tables',
+    subtitle: 'Magic, resources, and rituals',
     actionLabel: 'Spells',
   },
   gear: {
     title: 'Gear & Inventory',
-    subtitle: 'Equipment, inventory points, backpack, and zenit',
+    subtitle: 'Equipment, backpack, and zenit',
     actionLabel: 'Gear',
   },
   notes: {
     title: 'Character Notes',
-    subtitle: 'Backstory prompts and campaign-facing notes',
+    subtitle: 'Backstory prompts and campaign notes',
     actionLabel: 'Notes',
   },
 };
+
+const TRAIT_ACTION_WIDTH = 64;
+
+type SwipeableTraitRowProps = {
+  label: string;
+  value: string;
+  onEdit: (value: string) => void;
+  /** Extra right-side spacer width (px) — used in accordion expanded rows to align with collapsed value. */
+  trailingWidth?: number;
+};
+
+function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTraitRowProps) {
+  const fabUTokens = useFabUTokens();
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const rowElRef = useRef<HTMLElement | null>(null);
+  const committedRef = useRef(false);
+
+  const visualX = Math.max(-TRAIT_ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
+  const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+
+  function startEdit() {
+    setSnapX(0);
+    setCurrentDeltaX(0);
+    setDraft(value);
+    setIsEditing(true);
+  }
+
+  function commit() {
+    onEdit(draft);
+    setIsEditing(false);
+  }
+
+  function revert() {
+    setIsEditing(false);
+  }
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
+      setCurrentDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setSwiping(false);
+      if (dir === 'Left' && absX > 50 && snapX === 0) {
+        setSnapX(-TRAIT_ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > 50 && snapX !== 0) {
+        setSnapX(0);
+      }
+      setCurrentDeltaX(0);
+      setTimeout(() => {
+        committedRef.current = false;
+      }, 50);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      setSnapX(0);
+      setCurrentDeltaX(0);
+      setSwiping(false);
+    }
+  }, [isEditing]);
+
+  const setRef = (el: HTMLElement | null) => {
+    swipeHandlers.ref(el);
+    rowElRef.current = el;
+  };
+
+  return (
+    <Box sx={{ borderRadius: '9px', boxShadow: fabUTokens.shadow.card }}>
+      <Box
+        sx={{
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: '9px',
+        }}
+      >
+        {channelVisible && (
+          <Box
+            sx={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: TRAIT_ACTION_WIDTH,
+              display: 'flex',
+              zIndex: 0,
+            }}
+          >
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                startEdit();
+              }}
+              sx={{
+                flex: 1,
+                bgcolor: editColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <Pencil size={18} color="white" />
+            </Box>
+          </Box>
+        )}
+        <Stack
+          {...(!isEditing ? swipeHandlers : {})}
+          ref={!isEditing ? setRef : undefined}
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={2}
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+            borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
+            px: 1.25,
+            py: 0.9,
+            bgcolor: fabUTokens.color.pillSurface,
+            // Inset highlight + right-edge drop shadow. At rest the drop
+            // shadow extends past the inner overflow:hidden boundary and is
+            // clipped (invisible); when the row swipes left, its right edge
+            // moves inward and the shadow lands on the exposed edit button.
+            boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12), 4px 0 8px rgba(0, 0, 0, 0.22)',
+            transform: isEditing ? 'none' : `translateX(${visualX}px)`,
+            transition: swiping ? 'none' : 'transform 0.22s ease',
+            touchAction: isEditing ? 'auto' : 'pan-y',
+            userSelect: 'none',
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: fabUTokens.color.textSecondary,
+              fontWeight: 700,
+              fontSize: '0.72rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {label}
+          </Typography>
+          {isEditing ? (
+            <InputBase
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commit();
+                if (e.key === 'Escape') revert();
+              }}
+              onBlur={commit}
+              sx={{
+                flex: 1,
+                '& input': {
+                  p: 0,
+                  textAlign: 'right',
+                  fontSize: '0.82rem',
+                  fontWeight: 400,
+                  color: fabUTokens.color.textPrimary,
+                },
+              }}
+            />
+          ) : (
+            <Typography
+              sx={{
+                flex: 1,
+                textAlign: 'right',
+                fontSize: '0.82rem',
+                fontWeight: 400,
+                color: fabUTokens.color.textPrimary,
+              }}
+            >
+              {value}
+            </Typography>
+          )}
+          {trailingWidth != null && <Box sx={{ width: trailingWidth, flexShrink: 0 }} />}
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
+type IdentityAccordionRowProps = {
+  identities: string[];
+  onUpdate: (identities: string[]) => void;
+};
+
+function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProps) {
+  const fabUTokens = useFabUTokens();
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
+  const [isOpen, setIsOpen] = useState(false);
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const rowElRef = useRef<HTMLElement | null>(null);
+  const committedRef = useRef(false);
+
+  const first = identities[0] ?? '';
+  const rest = identities.slice(1);
+
+  const visualX = Math.max(-TRAIT_ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
+  const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
+
+  function startEdit() {
+    setSnapX(0);
+    setCurrentDeltaX(0);
+    setDraft(first);
+    setIsEditing(true);
+  }
+
+  function commit() {
+    onUpdate([draft, ...rest]);
+    setIsEditing(false);
+  }
+
+  function revert() {
+    setIsEditing(false);
+  }
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+        committedRef.current = true;
+      }
+      setCurrentDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setSwiping(false);
+      if (dir === 'Left' && absX > 50 && snapX === 0) {
+        setSnapX(-TRAIT_ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > 50 && snapX !== 0) {
+        setSnapX(0);
+      }
+      setCurrentDeltaX(0);
+      setTimeout(() => {
+        committedRef.current = false;
+      }, 50);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  useEffect(() => {
+    if (isEditing) {
+      setSnapX(0);
+      setCurrentDeltaX(0);
+      setSwiping(false);
+    }
+  }, [isEditing]);
+
+  const setRef = (el: HTMLElement | null) => {
+    swipeHandlers.ref(el);
+    rowElRef.current = el;
+  };
+
+  return (
+    <Box>
+      {/* Header row — swipeable, edits identity[0] */}
+      <Box sx={{ borderRadius: '9px', boxShadow: fabUTokens.shadow.card }}>
+        <Box
+          sx={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '9px',
+          }}
+        >
+          {channelVisible && (
+            <Box
+              sx={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: TRAIT_ACTION_WIDTH,
+                display: 'flex',
+                zIndex: 0,
+              }}
+            >
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEdit();
+                }}
+                sx={{
+                  flex: 1,
+                  bgcolor: editColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <Pencil size={18} color="white" />
+              </Box>
+            </Box>
+          )}
+          <Stack
+            {...(!isEditing ? swipeHandlers : {})}
+            ref={!isEditing ? setRef : undefined}
+            direction="row"
+            alignItems="center"
+            gap={2}
+            onClick={() => {
+              if (committedRef.current || isEditing) return;
+              if (snapX !== 0) {
+                setSnapX(0);
+              } else if (rest.length > 0) {
+                setIsOpen((o) => !o);
+              }
+            }}
+            sx={{
+              position: 'relative',
+              zIndex: 1,
+              border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
+              borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
+              px: 1.25,
+              py: 0.9,
+              bgcolor: fabUTokens.color.pillSurface,
+              // Inset highlight + right-edge drop shadow. The drop shadow is
+              // clipped at rest by the outer overflow:hidden, then becomes
+              // visible against the green edit button as the row slides left.
+              boxShadow: 'inset 3px 0 0 rgba(49, 92, 77, 0.12), 4px 0 8px rgba(0, 0, 0, 0.22)',
+              transform: isEditing ? 'none' : `translateX(${visualX}px)`,
+              transition: swiping ? 'none' : 'transform 0.22s ease',
+              touchAction: isEditing ? 'auto' : 'pan-y',
+              userSelect: 'none',
+              cursor: rest.length > 0 ? 'pointer' : 'default',
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: fabUTokens.color.textSecondary,
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              Identity
+            </Typography>
+            {isEditing ? (
+              <InputBase
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commit();
+                  if (e.key === 'Escape') revert();
+                }}
+                onBlur={commit}
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  flex: 1,
+                  '& input': {
+                    p: 0,
+                    textAlign: 'right',
+                    fontSize: '0.82rem',
+                    fontWeight: 400,
+                    color: fabUTokens.color.textPrimary,
+                  },
+                }}
+              />
+            ) : (
+              <Typography
+                sx={{
+                  flex: 1,
+                  textAlign: 'right',
+                  fontSize: '0.82rem',
+                  fontWeight: 400,
+                  color: fabUTokens.color.textPrimary,
+                }}
+              >
+                {first}
+              </Typography>
+            )}
+            {rest.length > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <ChevronDown
+                  size={16}
+                  color={fabUTokens.color.textSecondary}
+                  style={{
+                    transform: isOpen ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s ease',
+                  }}
+                />
+              </Box>
+            )}
+          </Stack>
+        </Box>
+      </Box>
+
+      {/* Expanded identity items */}
+      <Collapse in={isOpen} timeout="auto" unmountOnExit>
+        <Stack spacing={1} sx={{ mt: 1 }}>
+          {rest.map((item, i) => (
+            <SwipeableTraitRow
+              key={i}
+              label=""
+              value={item}
+              trailingWidth={16}
+              onEdit={(v) => {
+                const updated = [...identities];
+                updated[i + 1] = v;
+                onUpdate(updated);
+              }}
+            />
+          ))}
+        </Stack>
+      </Collapse>
+    </Box>
+  );
+}
 
 function FabU() {
   const themeMode = useAtomValue(themeModeState);
@@ -95,23 +560,115 @@ function FabU() {
   const fabUTokens = themeMode === ThemeMode.DARK ? darkFabUTokens : lightFabUTokens;
   const toggleTheme = () =>
     setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
-  const [activeTab, setActiveTab] = useState<FabUTab>('overview');
-  const [activeCombatTab, setActiveCombatTab] = useState<CombatSubTab>('bonds');
+  const [activeTab, setActiveTab] = useAtom(activeTabState);
+  const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
+
+  // Per-tab scroll position persistence
+  const scrollPositions = useRef<Record<string, number>>({});
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Save scroll position whenever the user scrolls within the active tab
+  useEffect(() => {
+    const el = contentScrollRef.current;
+    if (!el) return undefined;
+    const save = () => {
+      scrollPositions.current[activeTab] = el.scrollTop;
+    };
+    el.addEventListener('scroll', save, { passive: true });
+    return () => el.removeEventListener('scroll', save);
+  }, [activeTab]);
+
+  // Restore saved scroll position after tab switch
+  useEffect(() => {
+    const el = contentScrollRef.current;
+    if (!el) return;
+    el.scrollTop = scrollPositions.current[activeTab] ?? 0;
+  }, [activeTab]);
+
   const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
+  useEffect(() => {
+    if (!notEnoughMpToastOpen) return;
+    const t = setTimeout(() => setNotEnoughMpToastOpen(false), 2400);
+    return () => clearTimeout(t);
+  }, [notEnoughMpToastOpen]);
   const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
+  const [fabulaAnchorEl, setFabulaAnchorEl] = useState<HTMLElement | null>(null);
+  const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
-  const [, setStatusEffects] = useAtom(statusEffectsState);
-  const statusEffects = useAtomValue(derivedStatusEffectsState);
+  const [pendingCombatTraitsScroll, setPendingCombatTraitsScroll] = useState(false);
+  const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
+  const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
   const handleToggleEffect = (id: string) => {
     setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
   };
-  const [character, setCharacter] = useAtom(characterState);
+  const [character, setCharacter, characterHistory] = useCharacterHistory();
+  // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
+  // deferred mutation; clicking Delete runs it then pops the undo button.
+  const [pendingDelete, setPendingDelete] = useState<{
+    confirm: () => void;
+    cancel?: () => void;
+    beforeConfirm?: () => void;
+  } | null>(null);
+  const [undoOpen, setUndoOpen] = useState(false);
+  const confirmDelete = (
+    performDelete: () => void,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) => {
+    setPendingDelete({ confirm: performDelete, cancel: onCancel, beforeConfirm: onBeforeConfirm });
+  };
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    const { confirm, beforeConfirm } = pendingDelete;
+    setPendingDelete(null);
+    setUndoOpen(true);
+    if (beforeConfirm) {
+      beforeConfirm();
+      setTimeout(confirm, 500);
+    } else {
+      confirm();
+    }
+  };
+  const handleCancelDelete = () => {
+    pendingDelete?.cancel?.();
+    setPendingDelete(null);
+  };
+  const handleUndoFromSnackbar = () => {
+    characterHistory.undo();
+    setUndoOpen(false);
+  };
+
+  // Keyboard shortcuts: Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z = redo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key !== 'z') return;
+      // Don't hijack undo/redo inside text inputs and editable elements —
+      // users expect native text-editor undo there.
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const isEditable =
+        tag === 'INPUT' || tag === 'TEXTAREA' || (target?.isContentEditable ?? false);
+      if (isEditable) return;
+      e.preventDefault();
+      if (e.shiftKey) {
+        characterHistory.redo();
+      } else {
+        characterHistory.undo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [characterHistory]);
+
   const setInitiative = (v: number) => setCharacter((c) => ({ ...c, initiative: v }));
   const setDefense = (v: number) => setCharacter((c) => ({ ...c, defense: v }));
   const setDefenseTemp = (v: number | null) => setCharacter((c) => ({ ...c, defenseTemp: v }));
@@ -128,12 +685,21 @@ function FabU() {
 
       return {
         ...c,
-        level: c.level + Math.floor(v / c.totalXP),
+        level: Math.min(c.level + Math.floor(v / c.totalXP), MAX_CHARACTER_LEVEL),
         currentXP: v % c.totalXP,
       };
     });
-  const setLevel = (v: number) => setCharacter((c) => ({ ...c, level: v }));
+  const setLevel = (v: number) =>
+    setCharacter((c) => ({ ...c, level: Math.min(Math.max(1, v), MAX_CHARACTER_LEVEL) }));
   const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+
+  // Die-value lookup used to derive max HP and MP from attributes + level + bonus
+  const DIE_VALUES: Record<string, number> = { d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
+  const totalHP =
+    (DIE_VALUES[character.attributes.might.die] ?? 8) * 5 + character.level + character.hpBonus;
+  const totalMP =
+    (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + character.mpBonus;
+
   // Spend 100 Zennit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
   const handleBuyIP = () =>
     setCharacter((c) =>
@@ -165,8 +731,12 @@ function FabU() {
         },
       ],
     }));
-  const removeBond = (id: string) =>
-    setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) }));
+  const removeBond = (id: string, onCancel?: () => void, onBeforeConfirm?: () => void) =>
+    confirmDelete(
+      () => setCharacter((c) => ({ ...c, bonds: c.bonds.filter((b) => b.id !== id) })),
+      onCancel,
+      onBeforeConfirm,
+    );
   const renameBond = (id: string, newName: string) =>
     setCharacter((c) => ({
       ...c,
@@ -175,13 +745,31 @@ function FabU() {
   const removeClass = (index: number) => {
     const cls = character.classes[index];
     if (!cls) return;
+    confirmDelete(() =>
+      setCharacter((c) => ({
+        ...c,
+        classes: c.classes.filter((_, i) => i !== index),
+        skillGroups: c.skillGroups.filter((g) => g.className !== cls.name),
+        spellGroups: c.spellGroups.filter((g) => g.className !== cls.name),
+      })),
+    );
+  };
+  const TRAITS_FALLBACK = { identity: [] as string[], theme: '', origin: '' };
+  const safeTraits = character.traits ?? TRAITS_FALLBACK;
+  const updateTrait = (key: 'identity' | 'theme' | 'origin', value: string) =>
     setCharacter((c) => ({
       ...c,
-      classes: c.classes.filter((_, i) => i !== index),
-      skillGroups: c.skillGroups.filter((g) => g.className !== cls.name),
-      spellGroups: c.spellGroups.filter((g) => g.className !== cls.name),
+      traits: {
+        ...(c.traits ?? TRAITS_FALLBACK),
+        [key]:
+          key === 'identity'
+            ? value
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : value,
+      },
     }));
-  };
   const updateBackstoryPrompt = (index: number, prompt: string) =>
     setCharacter((c) => ({
       ...c,
@@ -288,6 +876,38 @@ function FabU() {
     return () => clearTimeout(timer);
   }, [pendingCombatGearScroll]);
 
+  useEffect(() => {
+    if (!pendingCombatTraitsScroll) return;
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const traitsSection = document.querySelector('[data-section="combat-traits"]');
+      if (scrollViewport && traitsSection) {
+        const rect = traitsSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingCombatTraitsScroll(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingCombatTraitsScroll]);
+
+  useEffect(() => {
+    if (!pendingBondsScroll) return;
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const bondsSection = document.querySelector('[data-section="combat-bonds"]');
+      if (scrollViewport && bondsSection) {
+        const rect = bondsSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingBondsScroll(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingBondsScroll]);
+
   const classPickerOpen = Boolean(classPickerAnchorEl);
 
   const openClassPicker = (event: MouseEvent<HTMLElement>) => {
@@ -321,15 +941,25 @@ function FabU() {
       ),
     }));
 
-  const handleDeleteSkill = (className: string, skillName: string) =>
-    setCharacter((c) => ({
-      ...c,
-      skillGroups: c.skillGroups.map((g) =>
-        g.className === className
-          ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
-          : g,
-      ),
-    }));
+  const handleDeleteSkill = (
+    className: string,
+    skillName: string,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) =>
+    confirmDelete(
+      () =>
+        setCharacter((c) => ({
+          ...c,
+          skillGroups: c.skillGroups.map((g) =>
+            g.className === className
+              ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
+              : g,
+          ),
+        })),
+      onCancel,
+      onBeforeConfirm,
+    );
 
   const handleEditSkill = (
     className: string,
@@ -362,15 +992,25 @@ function FabU() {
       ),
     }));
 
-  const handleDeleteSpell = (className: string, spellName: string) =>
-    setCharacter((c) => ({
-      ...c,
-      spellGroups: c.spellGroups.map((g) =>
-        g.className === className
-          ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
-          : g,
-      ),
-    }));
+  const handleDeleteSpell = (
+    className: string,
+    spellName: string,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) =>
+    confirmDelete(
+      () =>
+        setCharacter((c) => ({
+          ...c,
+          spellGroups: c.spellGroups.map((g) =>
+            g.className === className
+              ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
+              : g,
+          ),
+        })),
+      onCancel,
+      onBeforeConfirm,
+    );
 
   const handleEditSpell = (
     className: string,
@@ -398,11 +1038,20 @@ function FabU() {
     return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
   };
 
-  const handleDeleteEquipment = (index: number) => {
-    setCharacter((prev) => ({
-      ...prev,
-      equipment: prev.equipment.filter((_, i) => i !== index),
-    }));
+  const handleDeleteEquipment = (
+    index: number,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) => {
+    confirmDelete(
+      () =>
+        setCharacter((prev) => ({
+          ...prev,
+          equipment: prev.equipment.filter((_, i) => i !== index),
+        })),
+      onCancel,
+      onBeforeConfirm,
+    );
   };
 
   const handleUpdateEquipment = (
@@ -415,11 +1064,20 @@ function FabU() {
     }));
   };
 
-  const handleDeleteBackpackItem = (index: number) => {
-    setCharacter((prev) => ({
-      ...prev,
-      backpack: prev.backpack.filter((_, i) => i !== index),
-    }));
+  const handleDeleteBackpackItem = (
+    index: number,
+    onCancel?: () => void,
+    onBeforeConfirm?: () => void,
+  ) => {
+    confirmDelete(
+      () =>
+        setCharacter((prev) => ({
+          ...prev,
+          backpack: prev.backpack.filter((_, i) => i !== index),
+        })),
+      onCancel,
+      onBeforeConfirm,
+    );
   };
 
   const handleEditBackpackItem = (index: number, updated: { title: string; subtitle: string }) => {
@@ -436,10 +1094,10 @@ function FabU() {
     }));
   };
 
-  const handleAddEquipmentItem = () => {
+  const handleAddEquipmentItem = (slot: string) => {
     setCharacter((prev) => ({
       ...prev,
-      equipment: [...prev.equipment, { name: 'New Item', slot: 'Accessory', description: '' }],
+      equipment: [...prev.equipment, { name: 'New Item', slot, description: '' }],
     }));
   };
 
@@ -496,6 +1154,21 @@ function FabU() {
   };
 
   type AttrKey = 'dex' | 'insight' | 'might' | 'willpower';
+
+  // Status effects reduce attribute die sizes by one step per effect (Fabula Ultima rules)
+  const STATUS_DIE_ORDER = ['d6', 'd8', 'd10', 'd12', 'd20'];
+  function reduceAttrDie(die: string, steps: number): import('@/components/fab-u').DieSize {
+    const idx = STATUS_DIE_ORDER.indexOf(die);
+    return (STATUS_DIE_ORDER[Math.max(0, idx - steps)] ??
+      'd6') as import('@/components/fab-u').DieSize;
+  }
+  const attrStatusReductions: Record<AttrKey, number> = {
+    dex: (statusEffects.slow ? 1 : 0) + (statusEffects.enraged ? 1 : 0),
+    insight: (statusEffects.dazed ? 1 : 0) + (statusEffects.enraged ? 1 : 0),
+    might: (statusEffects.weak ? 1 : 0) + (statusEffects.poisoned ? 1 : 0),
+    willpower: (statusEffects.shaken ? 1 : 0) + (statusEffects.poisoned ? 1 : 0),
+  };
+
   function makeAttrRows() {
     const entries: Array<{ label: string; key: AttrKey; category: string }> = [
       { label: 'Dexterity', key: 'dex', category: 'speed' },
@@ -503,39 +1176,49 @@ function FabU() {
       { label: 'Might', key: 'might', category: 'power' },
       { label: 'Willpower', key: 'willpower', category: 'focus' },
     ];
-    return entries.map(({ label, key, category }, index) => ({
-      label,
-      score: '',
-      modifier: '',
-      category,
-      die: character.attributes[key].die,
-      modifierNum: character.attributes[key].modifier,
-      temp: character.attributes[key].temp ?? null,
-      onChangeDie: (d: import('@/components/fab-u').DieSize) =>
-        setCharacter((c) => ({
-          ...c,
-          attributes: { ...c.attributes, [key]: { ...c.attributes[key], die: d } },
-        })),
-      onChangeModifier: (m: number) =>
-        setCharacter((c) => ({
-          ...c,
-          attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
-        })),
-      onChangeTemp: (t: import('@/components/fab-u').DieSize | null) =>
-        setCharacter((c) => ({
-          ...c,
-          attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
-        })),
-      popoverHorizontal:
-        index === 0
-          ? ('left' as const)
-          : index === entries.length - 1
-            ? ('right' as const)
-            : undefined,
-    }));
+    return entries.map(({ label, key, category }, index) => {
+      const baseDie = character.attributes[key].die;
+      const userTemp = character.attributes[key].temp ?? null;
+      const reductions = attrStatusReductions[key];
+      const effectiveDie =
+        reductions > 0 ? reduceAttrDie(userTemp ?? baseDie, reductions) : userTemp;
+      // Only show as temp (parenthesised) when it differs from the base die
+      const displayTemp = effectiveDie !== null && effectiveDie !== baseDie ? effectiveDie : null;
+      return {
+        label,
+        score: '',
+        modifier: '',
+        category,
+        die: character.attributes[key].die,
+        modifierNum: character.attributes[key].modifier,
+        temp: displayTemp,
+        onChangeDie: (d: import('@/components/fab-u').DieSize) =>
+          setCharacter((c) => ({
+            ...c,
+            attributes: { ...c.attributes, [key]: { ...c.attributes[key], die: d } },
+          })),
+        onChangeModifier: (m: number) =>
+          setCharacter((c) => ({
+            ...c,
+            attributes: { ...c.attributes, [key]: { ...c.attributes[key], modifier: m } },
+          })),
+        onChangeTemp: (t: import('@/components/fab-u').DieSize | null) =>
+          setCharacter((c) => ({
+            ...c,
+            attributes: { ...c.attributes, [key]: { ...c.attributes[key], temp: t } },
+          })),
+        popoverHorizontal:
+          index === 0
+            ? ('left' as const)
+            : index === entries.length - 1
+              ? ('right' as const)
+              : undefined,
+      };
+    });
   }
 
   function renderProgressStrip() {
+    const progressPwPrefix = activeTab === 'skills' ? 'sk' : 'ov';
     return (
       <SummaryStrip
         label="Progress"
@@ -545,15 +1228,30 @@ function FabU() {
             value: String(character.fabulaPoints),
             pw: 'fp',
             onChange: setFP,
+            toneColor: '#ffffff',
+            valueColor: '#ffffff',
+            trailingIcon: <Feather size={14} color="#ffffff" />,
+            borderColor: '#ffffff',
+            fillGradient: `${fabUTokens.color.fp}`,
           },
           {
             label: 'XP',
             value: String(character.currentXP),
             valueSuffix: ` / ${character.totalXP}`,
-            pw: 'ov-xp',
+            pw: `${progressPwPrefix}-xp`,
             onChange: setCurrentXP,
+            valueColor: fabUTokens.color.brandText,
+            borderColor: fabUTokens.color.textPrimary,
           },
-          { label: 'LVL', value: String(character.level), pw: 'ov-level', onChange: setLevel },
+          {
+            label: 'LVL',
+            value: String(character.level),
+            pw: `${progressPwPrefix}-level`,
+            onChange: setLevel,
+            maxValue: MAX_CHARACTER_LEVEL,
+            valueColor: fabUTokens.color.brandText,
+            borderColor: fabUTokens.color.brandText,
+          },
         ]}
       />
     );
@@ -562,59 +1260,57 @@ function FabU() {
   function renderOverview() {
     return (
       <>
-        <SurfaceCard label="Traits">
-          <Stack spacing={1} sx={{ pl: 1.18 }}>
-            {[
-              ['IDENTITY', 'Transfer Student to UoE'],
-              ['THEME', 'Belonging'],
-              ['ORIGIN', 'Infinita'],
-            ].map(([label, value]) => (
-              <Stack key={label} direction="row" justifyContent="space-between" gap={2}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: fabUTokens.color.textSecondary, fontWeight: 700, minWidth: 76 }}
-                >
-                  {label}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: fabUTokens.color.textPrimary, textAlign: 'right' }}
-                >
-                  {value}
-                </Typography>
-              </Stack>
-            ))}
-          </Stack>
-        </SurfaceCard>
+        <Box data-section="traits">
+          <SurfaceCard label="Traits">
+            <Stack spacing={1}>
+              <IdentityAccordionRow
+                identities={safeTraits.identity}
+                onUpdate={(items) =>
+                  setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
+                }
+              />
+              <SwipeableTraitRow
+                label="Theme"
+                value={safeTraits.theme}
+                onEdit={(v) => updateTrait('theme', v)}
+              />
+              <SwipeableTraitRow
+                label="Origin"
+                value={safeTraits.origin}
+                onEdit={(v) => updateTrait('origin', v)}
+              />
+            </Stack>
+          </SurfaceCard>
+        </Box>
 
         <AttributesStatsCard
           middleRow={[
             {
               label: 'HP',
               value: String(character.currentHP),
-              valueSuffix: ` / ${character.totalHP}`,
+              valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'danger' as const,
+              toneColor: fabUTokens.color.hp,
               onChange: setCurrentHP,
-              maxValue: character.totalHP,
+              maxValue: totalHP,
               pw: 'ov-hp',
             },
             {
               label: 'MP',
               value: String(character.currentMP),
-              valueSuffix: ` / ${character.totalMP}`,
+              valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'accent' as const,
+              toneColor: fabUTokens.color.mp,
               onChange: setCurrentMP,
-              maxValue: character.totalMP,
+              maxValue: totalMP,
               pw: 'ov-mp',
             },
             {
               label: 'IP',
               value: String(character.inventoryPoints),
-              tone: 'warning' as const,
               onChange: setIP,
               pw: 'ov-ip',
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
           ]}
           bottomRow={makeAttrRows()}
@@ -656,7 +1352,7 @@ function FabU() {
               value: String(character.defense),
               valueSuffix:
                 character.defenseTemp === null ? undefined : `(${character.defenseTemp})`,
-              tone: 'success' as const,
+              toneColor: fabUTokens.color.hp,
               onChange: setDefense,
               onChangeSuffix: setDefenseTemp,
               pw: 'cb-defense',
@@ -666,7 +1362,7 @@ function FabU() {
               value: String(character.magicDefense),
               valueSuffix:
                 character.magicDefenseTemp === null ? undefined : `(${character.magicDefenseTemp})`,
-              tone: 'success' as const,
+              toneColor: fabUTokens.color.mp,
               onChange: setMagicDefense,
               onChangeSuffix: setMagicDefenseTemp,
               pw: 'cb-magic-defense',
@@ -683,39 +1379,42 @@ function FabU() {
             {
               label: 'FP',
               value: String(character.fabulaPoints),
-              tone: 'neutral' as const,
               onChange: setFP,
               pw: 'cb-fp',
+              toneColor: '#ffffff',
+              valueColor: '#ffffff',
+              borderColor: '#ffffff',
+              fillGradient: `${fabUTokens.color.fp}`,
             },
             {
               label: 'IP',
               value: String(character.inventoryPoints),
-              tone: 'warning' as const,
               onChange: setIP,
               pw: 'cb-ip',
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
             {
               label: 'HP',
               value: String(character.currentHP),
-              valueSuffix: ` / ${character.totalHP}`,
+              valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'danger' as const,
+              toneColor: fabUTokens.color.hp,
               onChange: setCurrentHP,
-              maxValue: character.totalHP,
+              maxValue: totalHP,
               pw: 'cb-hp',
             },
             {
               label: 'MP',
               value: String(character.currentMP),
-              valueSuffix: ` / ${character.totalMP}`,
+              valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
-              tone: 'accent' as const,
+              toneColor: fabUTokens.color.mp,
               onChange: setCurrentMP,
-              maxValue: character.totalMP,
+              maxValue: totalMP,
               pw: 'cb-mp',
             },
           ]}
-          topRowTemplate="repeat(3, minmax(0, 1fr))"
+          topRowTemplate="1.1fr 1fr 0.9fr"
           middleRowTemplate="0.62fr 0.62fr 1.12fr 1.12fr"
           bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
@@ -748,49 +1447,98 @@ function FabU() {
                 Battle Actions
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={1}>
-                {['Attack', 'Cast', 'Guard', 'Inventory'].map((action) => (
-                  <Button
-                    key={action}
-                    variant="contained"
-                    onClick={(event) => {
-                      if (action === 'Attack') {
-                        setActiveCombatTab('gear');
-                        setPendingCombatGearScroll(true);
-                      }
-                      if (action === 'Cast') {
-                        setActiveCombatTab('spells');
-                        setPendingCombatSpellScroll(true);
-                      }
-                      if (action === 'Inventory') {
-                        const rect = event.currentTarget.getBoundingClientRect();
-                        setInventoryAnchorDir(
-                          rect.top > window.innerHeight / 2 ? 'above' : 'below',
-                        );
-                        setInventoryAnchorEl(event.currentTarget);
-                      }
-                    }}
-                    sx={{
-                      flex: '1 1 calc(50% - 4px)',
-                      width: 'calc(50% - 4px)',
-                      minWidth: 0,
-                      height: 40,
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      fontWeight: 700,
-                      fontSize: '0.78rem',
-                      bgcolor: fabUTokens.color.brandText,
-                      color: '#fff',
-                      boxShadow: 'none',
-                      '&:hover': {
-                        bgcolor: fabUTokens.color.brandText,
-                        filter: 'brightness(0.88)',
-                        boxShadow: 'none',
-                      },
-                    }}
-                  >
-                    {action}
-                  </Button>
-                ))}
+                {(
+                  [
+                    'Attack',
+                    'Spell',
+                    'Guard',
+                    'Inventory',
+                    'Hinder',
+                    'Equipment',
+                    'Study',
+                    'Skill',
+                  ] as const
+                ).map((action) => {
+                  const icon =
+                    action === 'Attack' ? (
+                      <Sword size={14} />
+                    ) : action === 'Spell' ? (
+                      <AutoAwesomeOutlinedIcon sx={{ fontSize: 14, color: '#E2A530' }} />
+                    ) : action === 'Guard' ? (
+                      <Shield size={14} />
+                    ) : action === 'Inventory' ? (
+                      <FlaskConical size={14} />
+                    ) : action === 'Hinder' ? (
+                      <Ban size={14} />
+                    ) : action === 'Equipment' ? (
+                      <Backpack size={14} />
+                    ) : action === 'Study' ? (
+                      <span style={{ fontSize: 13, lineHeight: 1 }}>🤓</span>
+                    ) : (
+                      <SkillCrystalIcon sx={{ fontSize: 15 }} />
+                    );
+                  return (
+                    <Button
+                      key={action}
+                      variant="contained"
+                      onClick={(event) => {
+                        if (action === 'Attack') {
+                          setActiveCombatTab('gear');
+                          setPendingCombatGearScroll(true);
+                        }
+                        if (action === 'Spell') {
+                          setActiveCombatTab('spells');
+                          setPendingCombatSpellScroll(true);
+                        }
+                        if (action === 'Equipment') {
+                          setActiveTab('combat');
+                          setActiveCombatTab('gear');
+                          setPendingCombatGearScroll(true);
+                        }
+                        if (action === 'Inventory') {
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          setInventoryAnchorDir(
+                            rect.top > window.innerHeight / 2 ? 'above' : 'below',
+                          );
+                          setInventoryAnchorEl(event.currentTarget);
+                        }
+                      }}
+                      sx={{
+                        flex: '1 1 calc(50% - 4px)',
+                        width: 'calc(50% - 4px)',
+                        minWidth: 0,
+                        height: 40,
+                        borderRadius: '8px',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.78rem',
+                        bgcolor: fabUTokens.isDark ? '#3d7060' : '#ffffff',
+                        color: fabUTokens.isDark ? '#fff' : fabUTokens.color.textPrimary,
+                        boxShadow: fabUTokens.shadow.card,
+                        border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.brandText}`,
+                        '&:hover': {
+                          bgcolor: fabUTokens.isDark ? '#3d7060' : alpha('#3d7060', 0.06),
+                          filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
+                          boxShadow: fabUTokens.shadow.card,
+                        },
+                      }}
+                    >
+                      <Stack direction="row" alignItems="center" gap={0.75}>
+                        {action}
+                        <Box
+                          component="span"
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: fabUTokens.isDark ? 'inherit' : fabUTokens.color.brandText,
+                          }}
+                        >
+                          {icon}
+                        </Box>
+                      </Stack>
+                    </Button>
+                  );
+                })}
               </Stack>
             </Stack>
 
@@ -810,6 +1558,11 @@ function FabU() {
               <Stack direction="row" flexWrap="wrap" gap={1}>
                 <Button
                   variant="contained"
+                  onClick={(event) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setFabulaAnchorDir(rect.top > window.innerHeight / 2 ? 'above' : 'below');
+                    setFabulaAnchorEl(event.currentTarget);
+                  }}
                   sx={{
                     flex: '1 1 calc(50% - 4px)',
                     width: 'calc(50% - 4px)',
@@ -819,17 +1572,21 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.color.highlight,
+                    background: `${fabUTokens.color.fp}`,
                     color: '#ffffff',
-                    boxShadow: 'none',
+                    boxShadow: fabUTokens.shadow.card,
+                    border: '1px solid #ffffff',
                     '&:hover': {
-                      bgcolor: fabUTokens.color.highlight,
-                      filter: 'brightness(0.88)',
-                      boxShadow: 'none',
+                      background: `${fabUTokens.color.fp}`,
+                      filter: 'brightness(0.9)',
+                      boxShadow: fabUTokens.shadow.card,
                     },
                   }}
                 >
-                  Spend Fabula
+                  <Stack direction="row" alignItems="center" gap={0.75}>
+                    Spend Fabula
+                    <Feather size={14} />
+                  </Stack>
                 </Button>
                 <Button
                   variant="contained"
@@ -842,17 +1599,23 @@ function FabU() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.78rem',
-                    bgcolor: fabUTokens.color.brandText,
-                    color: '#ffffff',
-                    boxShadow: 'none',
+                    bgcolor: fabUTokens.isDark ? fabUTokens.color.success : '#ffffff',
+                    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.success,
+                    boxShadow: fabUTokens.shadow.card,
+                    border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.success}`,
                     '&:hover': {
-                      bgcolor: fabUTokens.color.brandText,
-                      filter: 'brightness(0.88)',
-                      boxShadow: 'none',
+                      bgcolor: fabUTokens.isDark
+                        ? fabUTokens.color.success
+                        : alpha(fabUTokens.color.success, 0.06),
+                      filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
+                      boxShadow: fabUTokens.shadow.card,
                     },
                   }}
                 >
-                  Progress Clock
+                  <Stack direction="row" alignItems="center" gap={0.75}>
+                    Objective
+                    <Timer size={14} />
+                  </Stack>
                 </Button>
               </Stack>
             </Stack>
@@ -882,7 +1645,7 @@ function FabU() {
               width: 200,
               bgcolor: fabUTokens.color.surface,
               backgroundImage: 'none',
-              border: `1px solid ${fabUTokens.isDark ? '#ffffff26' : fabUTokens.color.border}`,
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
               borderRadius: '12px',
               boxShadow: fabUTokens.shadow.soft,
             },
@@ -896,7 +1659,7 @@ function FabU() {
                 color: fabUTokens.color.hp,
                 onUse: () => {
                   setIP(Math.max(0, character.inventoryPoints - 3));
-                  setCurrentHP(Math.min(character.totalHP, character.currentHP + 50));
+                  setCurrentHP(Math.min(totalHP, character.currentHP + 50));
                   setInventoryAnchorEl(null);
                 },
               },
@@ -906,7 +1669,7 @@ function FabU() {
                 color: fabUTokens.color.mp,
                 onUse: () => {
                   setIP(Math.max(0, character.inventoryPoints - 3));
-                  setCurrentMP(Math.min(character.totalMP, character.currentMP + 50));
+                  setCurrentMP(Math.min(totalMP, character.currentMP + 50));
                   setInventoryAnchorEl(null);
                 },
               },
@@ -916,7 +1679,14 @@ function FabU() {
                 color: fabUTokens.color.success,
                 onUse: () => {
                   setIP(Math.max(0, character.inventoryPoints - 2));
-                  setStatusEffects({ slow: false, dazed: false, weak: false, shaken: false });
+                  setStatusEffects({
+                    slow: false,
+                    dazed: false,
+                    weak: false,
+                    shaken: false,
+                    enraged: false,
+                    poisoned: false,
+                  });
                   setInventoryAnchorEl(null);
                 },
               },
@@ -960,52 +1730,161 @@ function FabU() {
           </Stack>
         </Popover>
 
+        <Popover
+          open={Boolean(fabulaAnchorEl)}
+          anchorEl={fabulaAnchorEl}
+          onClose={() => setFabulaAnchorEl(null)}
+          anchorOrigin={
+            fabulaAnchorDir === 'above'
+              ? { vertical: 'top', horizontal: 'right' }
+              : { vertical: 'bottom', horizontal: 'right' }
+          }
+          transformOrigin={
+            fabulaAnchorDir === 'above'
+              ? { vertical: 'bottom', horizontal: 'right' }
+              : { vertical: 'top', horizontal: 'right' }
+          }
+          marginThreshold={12}
+          disableRestoreFocus
+          PaperProps={{
+            sx: {
+              ...(fabulaAnchorDir === 'above' ? { mb: '5px' } : { mt: '5px' }),
+              p: 1,
+              width: 200,
+              bgcolor: fabUTokens.color.surface,
+              backgroundImage: 'none',
+              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
+              borderRadius: '12px',
+              boxShadow: fabUTokens.shadow.soft,
+            },
+          }}
+        >
+          <Stack spacing={0.75}>
+            {[
+              { name: 'Re-roll', description: '1 FP • Invoke a Trait' },
+              { name: 'Add 1', description: '1 FP • Invoke a Bond' },
+              { name: 'Alter Story', description: '1 FP' },
+            ].map(({ name, description }) => (
+              <Box
+                key={name}
+                component="button"
+                type="button"
+                onClick={() => {
+                  setFP(Math.max(0, character.fabulaPoints - 1));
+                  setFabulaAnchorEl(null);
+                  if (name === 'Re-roll') {
+                    setActiveTab('combat');
+                    setActiveCombatTab('traits');
+                    setPendingCombatTraitsScroll(true);
+                  } else if (name === 'Add 1') {
+                    setActiveTab('combat');
+                    setActiveCombatTab('bonds');
+                    setPendingBondsScroll(true);
+                  }
+                }}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  width: '100%',
+                  px: 1.5,
+                  py: 1.1,
+                  borderRadius: '9px',
+                  bgcolor: fabUTokens.color.fp,
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'filter 0.12s ease',
+                  '&:hover': { filter: 'brightness(0.88)' },
+                  '&:active': { filter: 'brightness(0.78)' },
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.85rem', lineHeight: 1.3 }}
+                >
+                  {name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', lineHeight: 1.4 }}
+                >
+                  {description}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </Popover>
+
         <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
 
+        {activeCombatTab === 'traits' ? (
+          <Box data-section="combat-traits">
+            <SurfaceCard label="Traits">
+              <Stack spacing={1}>
+                <IdentityAccordionRow
+                  identities={safeTraits.identity}
+                  onUpdate={(items) =>
+                    setCharacter((c) => ({ ...c, traits: { ...c.traits, identity: items } }))
+                  }
+                />
+                <SwipeableTraitRow
+                  label="Theme"
+                  value={safeTraits.theme}
+                  onEdit={(v) => updateTrait('theme', v)}
+                />
+                <SwipeableTraitRow
+                  label="Origin"
+                  value={safeTraits.origin}
+                  onEdit={(v) => updateTrait('origin', v)}
+                />
+              </Stack>
+            </SurfaceCard>
+          </Box>
+        ) : null}
+
         {activeCombatTab === 'bonds' ? (
-          <BondsCard
-            bonds={character.bonds}
-            onToggleType={toggleBondType}
-            onAddBond={addBond}
-            onRemoveBond={removeBond}
-            onRenameBond={renameBond}
-          />
+          <Box data-section="combat-bonds">
+            <BondsCard
+              bonds={character.bonds}
+              onToggleType={toggleBondType}
+              onAddBond={addBond}
+              onRemoveBond={removeBond}
+              onRenameBond={renameBond}
+            />
+          </Box>
         ) : null}
 
         {activeCombatTab === 'skills' ? (
           <>
-            {character.skillGroups
-              .filter((g) => g.className !== 'Tinkerer')
-              .map((group) => {
-                const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
-                return (
-                  <SkillsTable
-                    key={group.className}
-                    label={`${group.className} Skills`}
-                    title={`${group.className} Skills`}
-                    rows={group.skills}
-                    onAddSkill={
-                      canAddMoreSkills
-                        ? (skill) => handleAddSkill(group.className, skill)
-                        : undefined
-                    }
-                    freeSkillLevels={freeSkillLevels}
-                    onAddSkillLevels={
-                      mastered
-                        ? undefined
-                        : (skillName, levels) =>
-                            handleAddSkillLevels(group.className, skillName, levels)
-                    }
-                    onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
-                    onEditSkill={(oldName, updatedSkill) =>
-                      handleEditSkill(group.className, oldName, updatedSkill)
-                    }
-                    onUpdateSkillDescription={(skillName, description) =>
-                      handleUpdateSkillDescription(group.className, skillName, description)
-                    }
-                  />
-                );
-              })}
+            {character.skillGroups.map((group) => {
+              const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
+              return (
+                <SkillsTable
+                  key={group.className}
+                  label={`${group.className} Skills`}
+                  title={`${group.className} Skills`}
+                  rows={group.skills}
+                  onAddSkill={
+                    canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
+                  }
+                  freeSkillLevels={freeSkillLevels}
+                  onAddSkillLevels={(skillName, levels) =>
+                    handleAddSkillLevels(group.className, skillName, levels)
+                  }
+                  classMastered={mastered}
+                  onDeleteSkill={(skillName, oc, obc) =>
+                    handleDeleteSkill(group.className, skillName, oc, obc)
+                  }
+                  onEditSkill={(oldName, updatedSkill) =>
+                    handleEditSkill(group.className, oldName, updatedSkill)
+                  }
+                  onUpdateSkillDescription={(skillName, description) =>
+                    handleUpdateSkillDescription(group.className, skillName, description)
+                  }
+                />
+              );
+            })}
           </>
         ) : null}
 
@@ -1023,7 +1902,9 @@ function FabU() {
                 onUpdateSpellEffect={(spellName, effect) =>
                   handleUpdateSpellEffect(group.className, spellName, effect)
                 }
-                onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
+                onDeleteSpell={(spellName, oc, obc) =>
+                  handleDeleteSpell(group.className, spellName, oc, obc)
+                }
                 onEditSpell={(oldName, updatedSpell) =>
                   handleEditSpell(group.className, oldName, updatedSpell)
                 }
@@ -1038,11 +1919,20 @@ function FabU() {
               label="Equipment"
               title=""
               items={character.equipment}
-              emptyLabel="Accessory"
               onDeleteItem={handleDeleteEquipment}
               onUpdateItem={handleUpdateEquipment}
-              onAddItem={handleAddEquipmentItem}
+              onAddSlotItem={handleAddEquipmentItem}
             />
+            <Box sx={{ mt: 2.5 }}>
+              <DetailListCard
+                label="Backpack"
+                addLabel="Item"
+                items={character.backpack.map((b) => ({ title: b.title, subtitle: b.subtitle }))}
+                onRemoveItem={handleDeleteBackpackItem}
+                onEditItem={handleEditBackpackItem}
+                onAdd={() => handleAddBackpackItem()}
+              />
+            </Box>
           </Box>
         ) : null}
       </>
@@ -1069,12 +1959,10 @@ function FabU() {
                   canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                 }
                 freeSkillLevels={freeSkillLevels}
-                onAddSkillLevels={
-                  mastered
-                    ? undefined
-                    : (skillName, levels) =>
-                        handleAddSkillLevels(group.className, skillName, levels)
+                onAddSkillLevels={(skillName, levels) =>
+                  handleAddSkillLevels(group.className, skillName, levels)
                 }
+                classMastered={mastered}
                 onDeleteSkill={(skillName) => handleDeleteSkill(group.className, skillName)}
                 onEditSkill={(oldName, updatedSkill) =>
                   handleEditSkill(group.className, oldName, updatedSkill)
@@ -1090,22 +1978,95 @@ function FabU() {
           <Box
             onClick={(e) => openClassPicker(e as React.MouseEvent<HTMLElement>)}
             sx={{
+              position: 'relative',
               border: `1px dashed ${fabUTokens.color.highlight}`,
               borderRadius: '9px',
               px: 1.3,
-              py: 5.8,
+              minHeight: 129,
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
+              justifyContent: 'center',
               color: fabUTokens.color.highlight,
-              bgcolor: 'transparent',
+              bgcolor: fabUTokens.color.surface,
               cursor: 'pointer',
+              boxShadow: fabUTokens.shadow.card,
             }}
           >
-            <AddIcon fontSize="small" />
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-              Class
-            </Typography>
+            {/* Pill label bisecting the top border */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 12,
+                transform: 'translateY(-50%)',
+                display: 'inline-flex',
+                borderRadius: '7px',
+                bgcolor: fabUTokens.color.highlight,
+                px: 1.05,
+                py: 0.36,
+                pointerEvents: 'none',
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  color: fabUTokens.color.labelFg,
+                  fontWeight: 700,
+                  fontSize: '0.6rem',
+                  letterSpacing: '0.055em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                + Class • 0 / 10
+              </Typography>
+            </Box>
+            {/* Inner dashed box */}
+            <Box
+              sx={{
+                position: 'absolute',
+                border: `1px dashed ${alpha(fabUTokens.color.highlight, 0.45)}`,
+                borderRadius: '7px',
+                left: 10,
+                right: 10,
+                top: 22,
+                bottom: 12,
+                pointerEvents: 'none',
+              }}
+            />
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.6}
+              sx={{
+                position: 'absolute',
+                top: 22,
+                bottom: 12,
+                left: 10,
+                right: 10,
+                justifyContent: 'center',
+                zIndex: 1,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: '1.5rem',
+                  fontWeight: 200,
+                  lineHeight: 1,
+                }}
+              >
+                +
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  letterSpacing: '0.03em',
+                }}
+              >
+                Class
+              </Typography>
+            </Stack>
           </Box>
         ) : null}
       </>
@@ -1118,24 +2079,41 @@ function FabU() {
         <SummaryStrip
           label="Resources"
           metrics={[
-            { label: 'FP', value: String(character.fabulaPoints), pw: 'fp', onChange: setFP },
+            {
+              label: 'FP',
+              value: String(character.fabulaPoints),
+              pw: 'fp',
+              onChange: setFP,
+              toneColor: '#ffffff',
+              valueColor: '#ffffff',
+              borderColor: '#ffffff',
+              fillGradient: `${fabUTokens.color.fp}`,
+            },
+            {
+              label: 'IP',
+              value: String(character.inventoryPoints),
+              pw: 'ip',
+              onChange: setIP,
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
+            },
             {
               label: 'HP',
               value: String(character.currentHP),
-              valueSuffix: ` / ${character.totalHP}`,
+              valueSuffix: ` / ${totalHP}`,
               pw: 'hp',
               onChange: setCurrentHP,
-              maxValue: character.totalHP,
+              maxValue: totalHP,
+              toneColor: fabUTokens.color.hp,
             },
             {
               label: 'MP',
               value: String(character.currentMP),
-              valueSuffix: ` / ${character.totalMP}`,
+              valueSuffix: ` / ${totalMP}`,
               pw: 'mp',
               onChange: setCurrentMP,
-              maxValue: character.totalMP,
+              maxValue: totalMP,
+              toneColor: fabUTokens.color.mp,
             },
-            { label: 'IP', value: String(character.inventoryPoints), pw: 'ip', onChange: setIP },
           ]}
         />
         {character.spellGroups.map((group) => (
@@ -1167,10 +2145,9 @@ function FabU() {
           label="Equipment"
           title=""
           items={character.equipment}
-          emptyLabel="Accessory"
           onDeleteItem={handleDeleteEquipment}
           onUpdateItem={handleUpdateEquipment}
-          onAddItem={handleAddEquipmentItem}
+          onAddSlotItem={handleAddEquipmentItem}
         />
         <SummaryStrip
           label="Inventory Points"
@@ -1180,6 +2157,7 @@ function FabU() {
               value: String(character.inventoryPoints),
               pw: 'ip',
               onChange: setIP,
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
               trailingIcon: (
                 <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
               ),
@@ -1198,38 +2176,48 @@ function FabU() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 0.4,
                 cursor: 'pointer',
                 boxShadow: fabUTokens.shadow.soft,
                 userSelect: 'none',
                 '&:active': { filter: 'brightness(0.88)' },
               }}
             >
-              <svg
-                viewBox="0 0 30 14"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ width: 30, height: 14, display: 'block' }}
-              >
-                <line x1="29" y1="7" x2="6" y2="7" />
-                <polyline points="13 13 6 7 13 1" />
-              </svg>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: '#ffffff',
-                  fontWeight: 700,
-                  fontSize: '0.6rem',
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.2,
-                }}
-              >
-                Buy IP
-              </Typography>
+              {/* Inner wrapper sizes to text width; SVG stretches to match */}
+              <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                <svg
+                  viewBox="6 0 23 14"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  preserveAspectRatio="none"
+                  style={{
+                    width: 'calc(100% - 2px)',
+                    height: 14,
+                    display: 'block',
+                    marginBottom: '5px',
+                    overflow: 'visible',
+                  }}
+                >
+                  <line x1="29" y1="7" x2="6" y2="7" />
+                  <polyline points="13 13 6 7 13 1" />
+                </svg>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Buy IP
+                </Typography>
+              </Box>
             </Box>
           }
         />
@@ -1253,7 +2241,7 @@ function FabU() {
         color: fabUTokens.isDark ? fabUTokens.color.textPrimary : fabUTokens.color.textSecondary,
         bgcolor: fabUTokens.color.surface,
         borderRadius: '10px',
-        boxShadow: '0 3px 10px rgba(31, 42, 38, 0.04)',
+        boxShadow: fabUTokens.shadow.card,
         alignItems: 'center',
         '& fieldset': {
           borderColor: fabUTokens.color.border,
@@ -1309,7 +2297,7 @@ function FabU() {
             </IconButton>
           }
           sx={{
-            backgroundImage: `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
+            backgroundImage: `linear-gradient(0deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
           }}
         >
           <Stack spacing={1.5}>
@@ -1332,10 +2320,7 @@ function FabU() {
                         }),
                         py: `${0.72 / 0.84}rem`,
                         px: `${1 / 0.84}rem`,
-                        // brandText = brand green in light, lightened green in dark for AA contrast
-                        color: fabUTokens.isDark
-                          ? fabUTokens.color.highlight
-                          : fabUTokens.color.brandText,
+                        color: fabUTokens.color.highlight,
                         fontWeight: 700,
                       },
                     }}
@@ -1344,10 +2329,7 @@ function FabU() {
                   <Typography
                     variant="body2"
                     sx={{
-                      // brandText = brand green in light, lightened green in dark for AA contrast
-                      color: fabUTokens.isDark
-                        ? fabUTokens.color.highlight
-                        : fabUTokens.color.brandText,
+                      color: fabUTokens.color.highlight,
                       fontWeight: 700,
                       fontSize: '0.9rem',
                       lineHeight: 1.45,
@@ -1391,10 +2373,10 @@ function FabU() {
   const eyebrow =
     activeTab === 'overview' ? (
       <>
-        Fabula <Sparkles size={10} /> Ultima
+        Fabula <Sparkles size={10} color={fabUTokens.color.highlight} /> Ultima
       </>
     ) : (
-      `Rad • LVL ${character.level}`
+      `${character.nickName} • LVL ${character.level}`
     );
 
   const header = (() => {
@@ -1410,12 +2392,18 @@ function FabU() {
     }
 
     const meta = screenMeta[activeTab];
+    const headerTitle =
+      activeTab === 'overview'
+        ? `${character.firstName} "${character.nickName}" ${character.lastName}`
+        : meta.title;
+    const headerSubtitle =
+      activeTab === 'overview' ? safeTraits.identity.join(' · ') : meta.subtitle;
 
     return (
       <HeaderBar
         eyebrow={eyebrow}
-        title={meta.title}
-        subtitle={meta.subtitle}
+        title={headerTitle}
+        subtitle={headerSubtitle}
         actionLabel={activeTab === 'overview' ? `LVL ${character.level}` : meta.actionLabel}
       />
     );
@@ -1487,7 +2475,7 @@ function FabU() {
             minHeight: '100dvh',
             height: '100dvh',
             overflow: 'hidden',
-            bgcolor: fabUTokens.color.canvas,
+            bgcolor: fabUTokens.color.page,
             pt: { xs: 'max(20px, calc(env(safe-area-inset-top) + 12px))', md: 3 },
             pb: { xs: 2, md: 3 },
             px: 1.5,
@@ -1497,10 +2485,47 @@ function FabU() {
           <MobileScreen
             header={header}
             footer={<PrimaryNavBar value={activeTab} onChange={setActiveTab} />}
+            contentScrollRef={contentScrollRef}
             overlay={
-              spellCastBurstId === null ? undefined : (
-                <SpellCastOverlay burstId={spellCastBurstId} />
-              )
+              <>
+                {spellCastBurstId !== null && <SpellCastOverlay burstId={spellCastBurstId} />}
+                <Fade in={notEnoughMpToastOpen} timeout={180}>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                      zIndex: 20,
+                    }}
+                  >
+                    <Box
+                      data-pw="not-enough-mp-toast"
+                      role="alert"
+                      sx={{
+                        bgcolor: fabUTokens.color.hp,
+                        color: '#ffffff',
+                        width: FAB_U_TOAST_WIDTH,
+                        maxWidth: 390,
+                        boxSizing: 'border-box',
+                        px: 2,
+                        py: 1.1,
+                        borderRadius: 0,
+                        boxShadow: '0 -4px 18px rgba(31, 42, 38, 0.18)',
+                        fontSize: '0.84rem',
+                        fontWeight: 700,
+                        letterSpacing: 0,
+                        textAlign: 'center',
+                      }}
+                    >
+                      Not enough MP to cast
+                    </Box>
+                  </Box>
+                </Fade>
+              </>
             }
           >
             {content}
@@ -1580,46 +2605,17 @@ function FabU() {
             </Popover>
           </MobileScreen>
         </Stack>
-        <Snackbar
-          open={notEnoughMpToastOpen}
-          autoHideDuration={2400}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          onClose={(_, reason) => {
-            if (reason === 'clickaway') return;
-            setNotEnoughMpToastOpen(false);
-          }}
-          sx={{
-            bottom: { xs: 'calc(env(safe-area-inset-bottom) + 22px)', sm: 24 },
-            width: '100%',
-            '& .MuiSnackbarContent-root': {
-              width: FAB_U_TOAST_WIDTH,
-              maxWidth: 390,
-            },
-          }}
-        >
-          <Box
-            data-pw="not-enough-mp-toast"
-            role="alert"
-            sx={{
-              bgcolor: fabUTokens.color.hp,
-              color: '#ffffff',
-              width: FAB_U_TOAST_WIDTH,
-              maxWidth: 390,
-              boxSizing: 'border-box',
-              px: 2,
-              py: 1.1,
-              borderRadius: '8px',
-              boxShadow: '0 10px 26px rgba(31, 42, 38, 0.22)',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              letterSpacing: 0,
-              textAlign: 'center',
-            }}
-          >
-            Not enough MP to cast
-          </Box>
-        </Snackbar>
       </>
+      <ConfirmDeleteModal
+        open={pendingDelete !== null}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
+      <UndoSnackbar
+        open={undoOpen}
+        onUndo={handleUndoFromSnackbar}
+        onClose={() => setUndoOpen(false)}
+      />
     </FabUThemeProvider>
   );
 }

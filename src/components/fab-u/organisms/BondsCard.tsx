@@ -31,7 +31,7 @@ const ALL_BOND_TYPES: BondType[] = [
 
 const ACTION_WIDTH = 128;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#d32f2f';
+const DELETE_RED = '#a84e49';
 const NEGATIVE_BOND_TYPES = new Set<BondType>(['Inferiority', 'Mistrust', 'Hatred']);
 
 function isNegativeBondType(type: BondType) {
@@ -41,16 +41,19 @@ function isNegativeBondType(type: BondType) {
 type BondRowProps = {
   bond: Bond;
   onOpenMenu: (e: React.MouseEvent<HTMLElement>, bondId: string) => void;
-  onRemove: (bondId: string) => void;
+  onRemove: (bondId: string, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onRename: (bondId: string, newName: string) => void;
 };
 
 function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   const fabUTokens = useFabUTokens();
+  const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
+  const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const rowElRef = useRef<HTMLElement | null>(null);
@@ -60,13 +63,6 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH; // 0 (closed) → 1 (fully open)
-
-  function triggerRemove() {
-    setRemoving(true);
-    setSnapX(0);
-    setCurrentDeltaX(0);
-    setTimeout(() => onRemove(bond.id), 450);
-  }
 
   function startEdit() {
     setSnapX(0);
@@ -152,14 +148,21 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
         position: 'relative',
         overflow: 'hidden',
         borderRadius: '9px',
-        boxShadow: fabUTokens.shadow.soft,
-        maxHeight: removing ? 0 : '200px',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        boxShadow: fabUTokens.shadow.card,
+        ...(exitingLeft
+          ? {
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              maxHeight: removing ? 0 : '200px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Action channel */}
-      {channelVisible && (
+      {(channelVisible || exitingLeft) && (
         <Box
           sx={{
             position: 'absolute',
@@ -169,17 +172,27 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
             width: ACTION_WIDTH,
             display: 'flex',
             zIndex: 0,
+            ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
           }}
         >
           <Box
             data-pw={`bond-delete-${bond.id}`}
             onClick={(e) => {
               e.stopPropagation();
-              triggerRemove();
+              onRemove(
+                bond.id,
+                () => {
+                  setSnapX(0);
+                  setCurrentDeltaX(0);
+                },
+                () => {
+                  setExitingLeft(true);
+                },
+              );
             }}
             sx={{
               flex: 1,
-              bgcolor: DELETE_RED,
+              bgcolor: deleteColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -196,13 +209,11 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
             }}
             sx={{
               flex: 1,
-              bgcolor: fabUTokens.color.brand,
+              bgcolor: editColor,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow:
-                'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
             }}
           >
             <Pencil size={18} color="white" />
@@ -221,13 +232,21 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
           position: 'relative',
           zIndex: 1,
           border: `1px solid ${fabUTokens.color.border}`,
-          borderRadius: '9px',
+          borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
           px: 1.25,
           py: 0.85,
-          bgcolor: fabUTokens.color.surface,
+          bgcolor: fabUTokens.color.pillSurface,
           boxShadow: `inset 3px 0 0 rgba(49, 92, 77, 0.12), 6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
-          transform: editingName ? 'none' : `translateX(${visualX}px)`,
-          transition: swiping ? 'none' : 'transform 0.22s ease',
+          transform: editingName
+            ? 'none'
+            : exitingLeft
+              ? 'translateX(-200%)'
+              : `translateX(${visualX}px)`,
+          transition: exitingLeft
+            ? 'transform 350ms ease-in'
+            : swiping
+              ? 'none'
+              : 'transform 0.22s ease',
           touchAction: editingName ? 'auto' : 'pan-y',
           userSelect: 'none',
         }}
@@ -392,13 +411,12 @@ function BondsCard({
               borderRadius: '9px',
               px: 1.25,
               py: 0.85,
-              bgcolor: alpha(fabUTokens.color.highlight, 0.08),
+              bgcolor: fabUTokens.color.surface,
             }}
           >
             <Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
               <InputBase
                 inputRef={inputRef}
-                data-pw="bond-name-input"
                 inputProps={{ 'data-pw': 'bond-name-input' }}
                 autoFocus
                 placeholder="Name"
@@ -454,12 +472,13 @@ function BondsCard({
               alignItems: 'center',
               gap: 1,
               color: fabUTokens.color.highlight,
-              bgcolor: 'transparent',
+              bgcolor: fabUTokens.color.surface,
               cursor: 'pointer',
+              boxShadow: fabUTokens.shadow.card,
             }}
           >
             <AddIcon fontSize="small" />
-            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+            <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 700 }}>
               Bond
             </Typography>
           </Box>

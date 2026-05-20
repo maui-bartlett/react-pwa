@@ -7,7 +7,7 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
     await page.goto('/fab-u');
     await page.evaluate(() => localStorage.removeItem('fab-u-character'));
     await page.waitForLoadState('networkidle');
-    // Navigate to Skills tab which shows both FP and IP pills
+    // Navigate to Spells tab which shows both FP and IP resource pills
     await page.getByRole('button', { name: 'Skills' }).first().click();
     await page.waitForLoadState('networkidle');
   });
@@ -37,6 +37,8 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
   });
 
   test('IP pill: click opens input, value commits, blur shows new value', async ({ page }) => {
+    await page.getByRole('button', { name: 'Spells' }).first().click();
+    await page.waitForLoadState('networkidle');
     const ipPill = page.locator('[data-pw="metric-ip"]');
     const input = page.locator('[data-pw="metric-ip-input"]');
 
@@ -58,6 +60,8 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
     await page.locator('[data-pw="metric-fp-input"]').blur();
 
     // Edit IP
+    await page.getByRole('button', { name: 'Spells' }).first().click();
+    await page.waitForLoadState('networkidle');
     await page.locator('[data-pw="metric-ip"]').click();
     await page.locator('[data-pw="metric-ip-input"]').fill('15');
     await page.locator('[data-pw="metric-ip-input"]').blur();
@@ -73,7 +77,7 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
     // Reload and verify
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.getByRole('button', { name: 'Skills' }).first().click();
+    await page.getByRole('button', { name: 'Spells' }).first().click();
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('[data-pw="metric-fp"]')).toContainText('7');

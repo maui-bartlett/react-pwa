@@ -25,18 +25,19 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       direction="row"
       alignItems={compact ? 'center' : 'flex-start'}
       justifyContent="space-between"
-      spacing={2}
+      spacing={compact ? 2 : 1}
       sx={{
         bgcolor: fabUTokens.color.brand,
         border: `1px solid ${alpha('#ffffff', 0.12)}`,
-        borderRadius: compact ? '9px' : '11px',
+        borderRadius: compact ? '9px' : 0,
         color: '#fff',
         px: compact ? 1.6 : 1.95,
-        py: compact ? 1.15 : 2.05,
+        pt: compact ? 1.15 : 'max(16px, calc(env(safe-area-inset-top) + 8px))',
+        pb: compact ? 1.15 : 2.05,
         boxShadow: '0 6px 14px rgba(30, 49, 40, 0.08)',
       }}
     >
-      <Stack spacing={compact ? 0.16 : 0.3}>
+      <Stack spacing={compact ? 0.16 : 0.3} sx={{ flex: 1, minWidth: 0 }}>
         {eyebrow ? (
           <Typography
             data-pw="header-eyebrow"
@@ -73,7 +74,7 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
             variant="body2"
             sx={{
               color: 'rgba(255,255,255,0.8)',
-              maxWidth: compact ? 140 : 230,
+              maxWidth: compact ? 140 : 'none',
               fontSize: compact ? '0.69rem' : '0.78rem',
               lineHeight: 1.32,
             }}
@@ -85,9 +86,10 @@ function HeaderBar({ eyebrow, title, subtitle, actionLabel, variant = 'hero' }: 
       {actionLabel ? (
         <Box
           data-pw="header-action"
+          style={{ marginRight: '20px' }}
           sx={{
-            alignSelf: compact ? 'center' : 'flex-start',
-            minWidth: compact ? 78 : 88,
+            alignSelf: 'center',
+            minWidth: compact ? 78 : 72,
             minHeight: compact ? 30 : 32,
             borderRadius: '7px',
             bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : alpha('#ffffff', 0.96),

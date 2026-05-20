@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -10,6 +11,7 @@ import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
@@ -21,8 +23,9 @@ import { scaledEditableTextStyle } from '../editableText';
 import { SpellRow } from '../types';
 
 const ACTION_WIDTH = 128;
+const DESC_ACTION_WIDTH = 64;
 const SNAP_THRESHOLD = 50;
-const DELETE_RED = '#d32f2f';
+const DELETE_RED = '#a84e49';
 
 type DraftSpell = {
   name: string;
@@ -49,7 +52,7 @@ type SpellsTableProps = {
   totalMagicLevels?: number;
   onAddSpell?: (spell: SpellRow) => void;
   onUpdateSpellEffect?: (spellName: string, effect: string) => void;
-  onDeleteSpell?: (spellName: string) => void;
+  onDeleteSpell?: (spellName: string, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onEditSpell?: (oldName: string, updatedSpell: SpellRow) => void;
 };
 
@@ -59,7 +62,7 @@ type SwipeableSpellRowProps = {
   onToggle: () => void;
   onCastSpell?: (spellName: string, mpCost: string) => void;
   onUpdateSpellEffect?: (spellName: string, effect: string) => void;
-  onDelete?: () => void;
+  onDelete?: (onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   onStartEdit: () => void;
   isEditing: boolean;
   editDraft: EditingSpellState | null;
@@ -83,27 +86,38 @@ function SwipeableSpellRow({
   onRevertEdit,
 }: SwipeableSpellRowProps) {
   const fabUTokens = useFabUTokens();
+  const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
+  const editColor = '#4d8070';
+
+  // Row swipe state
   const [snapX, setSnapX] = useState(0);
   const [currentDeltaX, setCurrentDeltaX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const [removing, setRemoving] = useState(false);
-  const [editingEffect, setEditingEffect] = useState(false);
-  const [effectDraft, setEffectDraft] = useState('');
+  const [removing] = useState(false);
+  const [exitingLeft, setExitingLeft] = useState(false);
   const rowElRef = useRef<HTMLElement | null>(null);
   const committedRef = useRef(false);
+
+  // Accordion description swipe state
+  const [descSnapX, setDescSnapX] = useState(0);
+  const [descDeltaX, setDescDeltaX] = useState(0);
+  const [descSwiping, setDescSwiping] = useState(false);
+  const descElRef = useRef<HTMLElement | null>(null);
+
+  // Description inline edit state
+  const [editingEffect, setEditingEffect] = useState(false);
+  const [effectDraft, setEffectDraft] = useState('');
 
   const visualX = Math.max(-ACTION_WIDTH, Math.min(0, snapX + currentDeltaX));
   const channelVisible = snapX !== 0 || (swiping && currentDeltaX < -5);
   const swipeFraction = Math.abs(visualX) / ACTION_WIDTH;
 
-  function triggerRemove() {
-    setRemoving(true);
-    setSnapX(0);
-    setCurrentDeltaX(0);
-    setTimeout(() => onDelete?.(), 450);
-  }
+  const descVisualX = Math.max(-DESC_ACTION_WIDTH, Math.min(0, descSnapX + descDeltaX));
+  const descChannelVisible = descSnapX !== 0 || (descSwiping && descDeltaX < -5);
 
   function startEditingEffect() {
+    setDescSnapX(0);
+    setDescDeltaX(0);
     setEditingEffect(true);
     setEffectDraft(row.effect);
   }
@@ -140,6 +154,34 @@ function SwipeableSpellRow({
     touchEventOptions: { passive: true },
   });
 
+  // Accordion description swipe handlers
+  const descSwipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setDescSwiping(true);
+      }
+      setDescDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setDescSwiping(false);
+      if (dir === 'Left' && absX > SNAP_THRESHOLD && descSnapX === 0) {
+        setDescSnapX(-DESC_ACTION_WIDTH);
+      } else if (dir === 'Right' && absX > SNAP_THRESHOLD && descSnapX !== 0) {
+        setDescSnapX(0);
+      }
+      setDescDeltaX(0);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
+
+  const descSetRef = (el: HTMLElement | null) => {
+    descSwipeHandlers.ref(el);
+    descElRef.current = el;
+  };
+
   useEffect(() => {
     const el = rowElRef.current;
     if (!el) return;
@@ -172,16 +214,24 @@ function SwipeableSpellRow({
     <Box
       sx={{
         borderBottom: `1px solid ${fabUTokens.color.border}`,
-        overflow: removing ? 'hidden' : 'visible',
-        maxHeight: removing ? 0 : 'none',
-        opacity: removing ? 0 : 1,
-        transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+        ...(exitingLeft
+          ? {
+              overflow: 'hidden',
+              maxHeight: 0,
+              transition: 'max-height 60ms ease-in 340ms',
+            }
+          : {
+              overflow: removing ? 'hidden' : 'visible',
+              maxHeight: removing ? 0 : '300px',
+              opacity: removing ? 0 : 1,
+              transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
+            }),
       }}
     >
       {/* Swipeable main row section */}
       <Box sx={{ position: 'relative', overflow: 'hidden' }}>
         {/* Action channel */}
-        {channelVisible && (
+        {(channelVisible || exitingLeft) && (
           <Box
             sx={{
               position: 'absolute',
@@ -191,17 +241,26 @@ function SwipeableSpellRow({
               width: ACTION_WIDTH,
               display: 'flex',
               zIndex: 0,
+              ...(exitingLeft && { opacity: 0, transition: 'opacity 250ms ease-in' }),
             }}
           >
             <Box
               data-pw="spell-row-delete"
               onClick={(e) => {
                 e.stopPropagation();
-                triggerRemove();
+                onDelete?.(
+                  () => {
+                    setSnapX(0);
+                    setCurrentDeltaX(0);
+                  },
+                  () => {
+                    setExitingLeft(true);
+                  },
+                );
               }}
               sx={{
                 flex: 1,
-                bgcolor: DELETE_RED,
+                bgcolor: deleteColor,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -220,13 +279,11 @@ function SwipeableSpellRow({
               }}
               sx={{
                 flex: 1,
-                bgcolor: fabUTokens.color.brand,
+                bgcolor: editColor,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow:
-                  'inset -3px 0 8px rgba(0,0,0,0.3), inset 0 3px 8px rgba(0,0,0,0.18), inset 0 -3px 8px rgba(0,0,0,0.18)',
               }}
             >
               <Pencil size={18} color="white" />
@@ -246,31 +303,42 @@ function SwipeableSpellRow({
               px: 1.2,
               py: 0.7,
               height: 46,
-              bgcolor: fabUTokens.color.surface,
+              bgcolor: fabUTokens.color.pillSurface,
               zIndex: 1,
-              gap: 0.5,
             }}
           >
-            <Box sx={{ flex: 2, minWidth: 0 }}>
-              <InputBase
-                autoFocus
-                value={editDraft.name}
-                onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onCommitEdit();
-                  if (e.key === 'Escape') onRevertEdit();
-                }}
-                placeholder="Spell name"
-                sx={{
-                  color: fabUTokens.color.textPrimary,
-                  width: '100%',
-                  '& input': {
-                    p: 0,
-                    fontWeight: 700,
-                    ...scaledEditableTextStyle(0.74, { stretch: true }),
-                  },
-                }}
-              />
+            <Box
+              sx={{
+                flex: 2,
+                minWidth: 0,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              {/* 24px spacer mirrors the chevron icon + gap in normal display mode */}
+              <Box sx={{ width: 24, flexShrink: 0 }} />
+              <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <InputBase
+                  autoFocus
+                  value={editDraft.name}
+                  onChange={(e) => onEditDraftChange({ ...editDraft, name: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') onCommitEdit();
+                    if (e.key === 'Escape') onRevertEdit();
+                  }}
+                  placeholder="Spell name"
+                  sx={{
+                    color: fabUTokens.color.textPrimary,
+                    width: '100%',
+                    '& input': {
+                      p: 0,
+                      fontWeight: 700,
+                      ...scaledEditableTextStyle(0.74, { stretch: true }),
+                    },
+                  }}
+                />
+              </Box>
             </Box>
             <Box sx={{ width: 56, flexShrink: 0 }}>
               <InputBase
@@ -284,11 +352,15 @@ function SwipeableSpellRow({
                 sx={{
                   color: fabUTokens.color.textPrimary,
                   width: '100%',
-                  '& input': { p: 0, ...scaledEditableTextStyle(0.74, { stretch: true }) },
+                  '& input': {
+                    p: 0,
+                    textAlign: 'right',
+                    ...scaledEditableTextStyle(0.74, { stretch: true }),
+                  },
                 }}
               />
             </Box>
-            <Box sx={{ width: 48, flexShrink: 0 }}>
+            <Box sx={{ width: 48, flexShrink: 0, ml: '6px' }}>
               <InputBase
                 value={editDraft.target}
                 onChange={(e) => onEditDraftChange({ ...editDraft, target: e.target.value })}
@@ -300,11 +372,25 @@ function SwipeableSpellRow({
                 sx={{
                   color: fabUTokens.color.textPrimary,
                   width: '100%',
-                  '& input': { p: 0, ...scaledEditableTextStyle(0.74, { stretch: true }) },
+                  '& input': {
+                    p: 0,
+                    textAlign: 'right',
+                    ...scaledEditableTextStyle(0.74, { stretch: true }),
+                  },
                 }}
               />
             </Box>
-            <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, display: 'flex', alignItems: 'center' }}>
+            <Box
+              sx={{
+                flex: 1.5,
+                minWidth: 0,
+                pl: 0,
+                pr: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+              }}
+            >
               <select
                 value={editDraft.duration}
                 onChange={(e) =>
@@ -321,7 +407,6 @@ function SwipeableSpellRow({
                   outline: 'none',
                   fontFamily: 'inherit',
                   cursor: 'pointer',
-                  flex: 1,
                   minWidth: 0,
                   colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}
@@ -345,12 +430,16 @@ function SwipeableSpellRow({
               alignItems: 'center',
               px: 1.2,
               height: 46,
-              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surface,
+              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.pillSurface,
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
-              transform: `translateX(${visualX}px)`,
-              transition: swiping ? 'none' : 'transform 0.22s ease',
+              transform: exitingLeft ? 'translateX(-200%)' : `translateX(${visualX}px)`,
+              transition: exitingLeft
+                ? 'transform 350ms ease-in'
+                : swiping
+                  ? 'none'
+                  : 'transform 0.22s ease',
               cursor: 'pointer',
               touchAction: 'pan-y',
               userSelect: 'none',
@@ -398,6 +487,7 @@ function SwipeableSpellRow({
               sx={{
                 width: 56,
                 flexShrink: 0,
+                textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
@@ -408,6 +498,8 @@ function SwipeableSpellRow({
               sx={{
                 width: 48,
                 flexShrink: 0,
+                ml: '6px',
+                textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
@@ -418,7 +510,9 @@ function SwipeableSpellRow({
               sx={{
                 flex: 1.5,
                 minWidth: 0,
-                pl: 1.5,
+                pl: 0,
+                pr: '10px',
+                textAlign: 'right',
                 ...cellSx,
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
@@ -432,33 +526,80 @@ function SwipeableSpellRow({
       {/* Expand panel */}
       {!isEditing && (
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
-          <Box sx={{ px: 1.2, pb: 0 }}>
+          <Box
+            sx={{
+              px: 1.2,
+              pb: 0,
+              bgcolor: fabUTokens.isDark ? fabUTokens.color.pillSurface : fabUTokens.color.surface,
+            }}
+          >
             <Box
               sx={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) 76px',
-                alignItems: 'start',
+                display: 'flex',
+                alignItems: 'center',
                 gap: 1.5,
-                py: 2,
-                px: 1.5,
-                bgcolor: 'transparent',
-                border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.18)}`,
-                borderRadius: '6px',
-                my: 0.75,
+                py: 0.75,
               }}
             >
-              {/* Effect box with pencil/check edit button */}
-              <Box sx={{ position: 'relative' }}>
+              {/* Swipeable description — same style as skill row */}
+              <Box
+                sx={{
+                  flex: 1,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  borderRadius: '9px',
+                }}
+              >
+                {/* Edit channel */}
+                {descChannelVisible && onUpdateSpellEffect && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: DESC_ACTION_WIDTH,
+                      display: 'flex',
+                      zIndex: 0,
+                    }}
+                  >
+                    <Box
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEditingEffect();
+                      }}
+                      sx={{
+                        flex: 1,
+                        bgcolor: editColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Pencil size={18} color="white" />
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Description content — translates on swipe */}
                 <Box
+                  {...(onUpdateSpellEffect ? descSwipeHandlers : {})}
+                  ref={descSetRef}
                   sx={{
-                    border: `1px solid ${alpha(fabUTokens.color.textSecondary, 0.28)}`,
-                    borderRadius: '6px',
-                    px: 1,
-                    py: 0.75,
-                    minHeight: 42,
-                    bgcolor: fabUTokens.isDark
-                      ? alpha(fabUTokens.color.surface, 0.4)
-                      : alpha(fabUTokens.color.surface, 0.6),
+                    position: 'relative',
+                    zIndex: 1,
+                    transform: `translateX(${descVisualX}px)`,
+                    transition: descSwiping ? 'none' : 'transform 0.22s ease',
+                    touchAction: 'pan-y',
+                    userSelect: 'none',
+                    py: 1.25,
+                    px: 1.5,
+                    bgcolor: fabUTokens.color.pillSurface,
+                    borderRadius: descVisualX < 0 ? '9px 0 0 9px' : '9px',
+                    minHeight: 60,
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                 >
                   {editingEffect ? (
@@ -477,11 +618,9 @@ function SwipeableSpellRow({
                         alignItems: 'flex-start',
                         '& textarea': {
                           p: 0,
-                          lineHeight: 1.6,
-                          ...scaledEditableTextStyle(0.72, {
-                            stretch: true,
-                            lineHeight: 1.6,
-                          }),
+                          lineHeight: 1.5,
+                          ...scaledEditableTextStyle(0.84, { stretch: true, lineHeight: 1.5 }),
+                          color: fabUTokens.color.textPrimary,
                         },
                       }}
                     />
@@ -489,41 +628,16 @@ function SwipeableSpellRow({
                     <Typography
                       variant="body2"
                       sx={{
-                        fontSize: '0.72rem',
-                        lineHeight: 1.6,
-                        fontStyle: row.effect ? 'normal' : 'italic',
-                        color: row.effect
-                          ? fabUTokens.color.textPrimary
-                          : fabUTokens.color.textSecondary,
+                        fontSize: '0.84rem',
+                        lineHeight: 1.5,
+                        color: fabUTokens.color.textPrimary,
+                        fontStyle: !row.effect ? 'italic' : 'normal',
                       }}
                     >
-                      {row.effect || 'No description'}
+                      {row.effect || 'Swipe left to add description'}
                     </Typography>
                   )}
                 </Box>
-                {onUpdateSpellEffect ? (
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (editingEffect) commitEffectEdit();
-                      else startEditingEffect();
-                    }}
-                    sx={{
-                      position: 'absolute',
-                      top: -10,
-                      right: -10,
-                      width: 22,
-                      height: 22,
-                      bgcolor: fabUTokens.color.surface,
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      color: fabUTokens.color.textSecondary,
-                      '&:hover': { color: fabUTokens.color.brandText },
-                    }}
-                  >
-                    {editingEffect ? <CheckIcon sx={{ fontSize: 12 }} /> : <Pencil size={11} />}
-                  </IconButton>
-                ) : null}
               </Box>
 
               {/* Cast button */}
@@ -535,23 +649,33 @@ function SwipeableSpellRow({
                   onCastSpell?.(row.name, row.cost);
                 }}
                 sx={{
-                  justifySelf: 'end',
+                  flexShrink: 0,
                   width: 68,
                   minWidth: 68,
                   minHeight: 40,
-                  flexShrink: 0,
                   overflow: 'visible',
-                  bgcolor: fabUTokens.color.highlight,
-                  color: '#ffffff',
+                  bgcolor: fabUTokens.isDark ? fabUTokens.color.highlight : '#ffffff',
+                  color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.highlight,
                   fontSize: '0.68rem',
                   fontWeight: 700,
                   lineHeight: 1.2,
                   textTransform: 'none',
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: '#b09040', boxShadow: 'none' },
+                  boxShadow: `0 3px 10px ${alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.5 : 0.18)}`,
+                  mr: 1,
+                  border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : alpha(fabUTokens.color.highlight, 0.5)}`,
+                  '&:hover': {
+                    bgcolor: fabUTokens.isDark
+                      ? fabUTokens.color.highlight
+                      : alpha(fabUTokens.color.highlight, 0.06),
+                    filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
+                    boxShadow: `0 3px 10px ${alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.5 : 0.18)}`,
+                  },
                 }}
               >
-                Cast
+                <Stack direction="row" alignItems="center" gap={0.5}>
+                  Cast
+                  <AutoAwesomeOutlinedIcon sx={{ fontSize: 13 }} />
+                </Stack>
               </Button>
             </Box>
           </Box>
@@ -658,7 +782,7 @@ function SpellsTable({
     };
 
   const headerCellSx = {
-    color: fabUTokens.color.textSecondary,
+    color: '#ffffff',
     fontSize: '0.62rem',
     fontWeight: 700,
     letterSpacing: '0.045em',
@@ -700,7 +824,7 @@ function SpellsTable({
                 alignItems: 'center',
               }}
             >
-              <XCircle size={28} color="#d32f2f" />
+              <XCircle size={28} color="#a84e49" />
             </Box>
           </Box>
         ) : undefined
@@ -708,10 +832,12 @@ function SpellsTable({
       actionsPosition="inline"
     >
       <Box
+        data-pw="spells-table-container"
         sx={{
           border: `1px solid ${fabUTokens.color.border}`,
           borderRadius: '9px',
           overflow: 'hidden',
+          boxShadow: fabUTokens.shadow.card,
         }}
       >
         {/* Header */}
@@ -721,14 +847,20 @@ function SpellsTable({
             alignItems: 'center',
             px: 1.2,
             py: 0.75,
-            bgcolor: fabUTokens.color.surfaceMuted,
-            borderBottom: `1px solid ${fabUTokens.color.border}`,
+            bgcolor: fabUTokens.isDark ? '#1c1e1e' : '#4a4f4d',
+            borderBottom: `1px solid rgba(0,0,0,0.15)`,
           }}
         >
           <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
-          <Box sx={{ width: 56, flexShrink: 0, ...headerCellSx }}>Cost</Box>
-          <Box sx={{ width: 48, flexShrink: 0, ...headerCellSx }}>Target</Box>
-          <Box sx={{ flex: 1.5, minWidth: 0, pl: 1.5, ...headerCellSx }}>Duration</Box>
+          <Box sx={{ width: 56, flexShrink: 0, textAlign: 'right', ...headerCellSx }}>Cost</Box>
+          <Box sx={{ width: 48, flexShrink: 0, ml: '6px', textAlign: 'right', ...headerCellSx }}>
+            Target
+          </Box>
+          <Box
+            sx={{ flex: 1.5, minWidth: 0, pl: 0, pr: '10px', textAlign: 'right', ...headerCellSx }}
+          >
+            Duration
+          </Box>
         </Box>
 
         {/* Spell rows */}
@@ -742,7 +874,7 @@ function SpellsTable({
                 onToggle={() => toggleRow(row.name)}
                 onCastSpell={onCastSpell}
                 onUpdateSpellEffect={onUpdateSpellEffect}
-                onDelete={onDeleteSpell ? () => onDeleteSpell(row.name) : undefined}
+                onDelete={onDeleteSpell ? (oc, obc) => onDeleteSpell(row.name, oc, obc) : undefined}
                 onStartEdit={() => startEditingSpell(row)}
                 isEditing={isRowEditing}
                 editDraft={isRowEditing ? editingSpell : null}
@@ -775,7 +907,7 @@ function SpellsTable({
               px: 1.2,
               py: 0.7,
               height: 46,
-              bgcolor: fabUTokens.color.surface,
+              bgcolor: fabUTokens.color.pillSurface,
               gap: 0.5,
             }}
           >
@@ -795,25 +927,33 @@ function SpellsTable({
                 onChange={(e) => setDraftSpell((d) => (d ? { ...d, cost: e.target.value } : d))}
                 placeholder="0 MP"
                 onKeyDown={draftKeyDown()}
-                sx={inputSx}
+                sx={{
+                  ...inputSx,
+                  '& input': { ...inputSx['& input'], textAlign: 'right' as const },
+                }}
               />
             </Box>
-            <Box sx={{ width: 48, flexShrink: 0 }}>
+            <Box sx={{ width: 48, flexShrink: 0, ml: '6px' }}>
               <InputBase
                 value={draftSpell.target}
                 onChange={(e) => setDraftSpell((d) => (d ? { ...d, target: e.target.value } : d))}
                 placeholder="1"
                 onKeyDown={draftKeyDown()}
-                sx={inputSx}
+                sx={{
+                  ...inputSx,
+                  '& input': { ...inputSx['& input'], textAlign: 'right' as const },
+                }}
               />
             </Box>
             <Box
               sx={{
                 flex: 1.5,
                 minWidth: 0,
-                pl: 1.5,
+                pl: 0,
+                pr: '10px',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'flex-end',
                 gap: 0.5,
               }}
             >
@@ -833,7 +973,6 @@ function SpellsTable({
                   outline: 'none',
                   fontFamily: 'inherit',
                   cursor: 'pointer',
-                  flex: 1,
                   minWidth: 0,
                   colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}
@@ -874,7 +1013,8 @@ function SpellsTable({
             color: fabUTokens.color.highlight,
             border: `1px dashed ${fabUTokens.color.highlight}`,
             borderRadius: '8px',
-            bgcolor: 'transparent',
+            bgcolor: fabUTokens.color.surface,
+            boxShadow: fabUTokens.shadow.card,
           }}
         >
           <AddIcon sx={{ fontSize: '1rem' }} />

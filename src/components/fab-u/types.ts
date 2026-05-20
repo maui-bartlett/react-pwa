@@ -14,7 +14,7 @@ export type Bond = {
   types: BondType[];
 };
 
-export type CombatSubTab = 'bonds' | 'skills' | 'spells' | 'gear';
+export type CombatSubTab = 'bonds' | 'skills' | 'spells' | 'gear' | 'traits';
 
 export type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 
@@ -48,6 +48,14 @@ export type StatPillData = {
   /** When set, the committed suffix value is clamped to [0, maxValueSuffix]. */
   maxValueSuffix?: number;
   pw?: string;
+  /** When provided, overrides the tone-derived border/label color with this explicit color. */
+  toneColor?: string;
+  /** When provided, overrides the value text color (display mode only, not edit inputs). */
+  valueColor?: string;
+  /** When provided, overrides the pill border color (display mode only). */
+  borderColor?: string;
+  /** When provided, applies a CSS gradient as the pill background fill. */
+  fillGradient?: string;
 };
 
 export type AttributeRow = {

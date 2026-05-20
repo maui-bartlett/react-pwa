@@ -14,16 +14,11 @@ test.describe('SpellsTable — expandable rows (mobile viewport)', () => {
   test('default state: 4 columns (Spell / MP / Target / Duration) with no effect text visible', async ({
     page,
   }) => {
-    const firstTable = page.locator('table').first();
-
-    // Header columns
-    await expect(firstTable.getByRole('columnheader', { name: /spell/i })).toBeVisible();
-    await expect(firstTable.getByRole('columnheader', { name: /^mp$/i })).toBeVisible();
-    await expect(firstTable.getByRole('columnheader', { name: /target/i })).toBeVisible();
-    await expect(firstTable.getByRole('columnheader', { name: /duration/i })).toBeVisible();
-
-    // Effect column header should NOT exist
-    await expect(firstTable.getByRole('columnheader', { name: /^effect$/i })).not.toBeAttached();
+    // Column headers are rendered as text in the header row
+    await expect(page.getByText('Spell').first()).toBeVisible();
+    await expect(page.getByText('Cost').first()).toBeVisible();
+    await expect(page.getByText('Target').first()).toBeVisible();
+    await expect(page.getByText('Duration').first()).toBeVisible();
 
     // Effect text should not be visible in the default state
     // "Accelerate" is the first spell — its effect text should be hidden
@@ -31,10 +26,8 @@ test.describe('SpellsTable — expandable rows (mobile viewport)', () => {
   });
 
   test('clicking a row expands and shows the Effect text', async ({ page }) => {
-    const firstTable = page.locator('table').first();
-
     // Find the first spell row (Accelerate) and click it
-    const accelerateRow = firstTable.getByRole('row', { name: /accelerate/i }).first();
+    const accelerateRow = page.locator('[data-pw="spell-row"]').filter({ hasText: /accelerate/i }).first();
     await accelerateRow.click();
 
     // The effect text should now be visible
@@ -47,8 +40,7 @@ test.describe('SpellsTable — expandable rows (mobile viewport)', () => {
   });
 
   test('clicking an expanded row collapses it again', async ({ page }) => {
-    const firstTable = page.locator('table').first();
-    const accelerateRow = firstTable.getByRole('row', { name: /accelerate/i }).first();
+    const accelerateRow = page.locator('[data-pw="spell-row"]').filter({ hasText: /accelerate/i }).first();
 
     // Expand
     await accelerateRow.click();
@@ -62,10 +54,8 @@ test.describe('SpellsTable — expandable rows (mobile viewport)', () => {
   });
 
   test('only one row expands at a time', async ({ page }) => {
-    const firstTable = page.locator('table').first();
-
-    const accelerateRow = firstTable.getByRole('row', { name: /accelerate/i }).first();
-    const drainRow = firstTable.getByRole('row', { name: /drain spirit/i }).first();
+    const accelerateRow = page.locator('[data-pw="spell-row"]').filter({ hasText: /accelerate/i }).first();
+    const drainRow = page.locator('[data-pw="spell-row"]').filter({ hasText: /drain spirit/i }).first();
 
     await accelerateRow.click();
     await expect(page.getByText('Target takes one extra action on their turn.')).toBeVisible();

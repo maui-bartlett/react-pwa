@@ -18,6 +18,7 @@ type StatusNode = {
   label: string;
   color: string;
   selectedFill?: string;
+  interactive?: boolean;
 };
 
 type StatusGroup = {
@@ -31,8 +32,6 @@ type StatusEffectsDiagramProps = {
   onToggle: (id: string) => void;
 };
 
-const DERIVED_SELECTED_FILL = '#4a5450';
-
 const groups: StatusGroup[] = [
   {
     topLeft: { id: 'slow', label: 'Slow', color: '#d8a24b' },
@@ -40,8 +39,8 @@ const groups: StatusGroup[] = [
     result: {
       id: 'enraged',
       label: 'Enraged',
-      color: '#cfd3cf',
-      selectedFill: DERIVED_SELECTED_FILL,
+      color: '#d4783a',
+      interactive: true,
     },
   },
   {
@@ -50,8 +49,8 @@ const groups: StatusGroup[] = [
     result: {
       id: 'poisoned',
       label: 'Poisoned',
-      color: '#cfd3cf',
-      selectedFill: DERIVED_SELECTED_FILL,
+      color: '#8b5fcf',
+      interactive: true,
     },
   },
 ];
@@ -227,6 +226,7 @@ function StatusEffectsDiagram({ activeEffects, onToggle }: StatusEffectsDiagramP
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
                   cursor: summaryVisible ? 'pointer' : 'default',
+                  boxShadow: fabUTokens.shadow.card,
                   opacity: summaryVisible ? 1 : 0,
                   pointerEvents: summaryVisible ? 'auto' : 'none',
                   transition:

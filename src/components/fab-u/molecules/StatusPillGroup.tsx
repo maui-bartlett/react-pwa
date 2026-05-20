@@ -12,6 +12,7 @@ type StatusPillNode = {
   result?: boolean;
   selected?: boolean;
   viewTransitionName?: string;
+  interactive?: boolean;
 };
 
 type StatusPillGroupProps = {
@@ -47,13 +48,14 @@ function StatusPill({
   result = false,
   selected = false,
   viewTransitionName,
+  interactive = false,
   onToggle,
 }: StatusPillNode & { onToggle: (id: string) => void }) {
   const fabUTokens = useFabUTokens();
   return (
     <Box
       data-pw={`status-pill-${id}`}
-      onClick={result ? undefined : () => onToggle(id)}
+      onClick={!result || interactive ? () => onToggle(id) : undefined}
       sx={{
         // Upper pills: fixed width so all labels ("Slow","Dazed","Weak","Shaken")
         // render identically regardless of font metrics. Result pills stay just
@@ -71,8 +73,8 @@ function StatusPill({
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        boxShadow: '0 1px 3px rgba(31, 42, 38, 0.04)',
-        cursor: result ? 'default' : 'pointer',
+        boxShadow: fabUTokens.shadow.card,
+        cursor: !result || interactive ? 'pointer' : 'default',
         userSelect: 'none',
         transition: 'background-color 150ms ease, border-radius 180ms ease, transform 180ms ease',
         willChange: 'border-radius, transform',
@@ -84,7 +86,7 @@ function StatusPill({
         sx={{
           color: selected
             ? '#ffffff'
-            : result
+            : result && !interactive
               ? fabUTokens.color.textSecondary
               : fabUTokens.color.textPrimary,
           fontWeight: 500,

@@ -5,6 +5,7 @@ import InputBase from '@mui/material/InputBase';
 import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import { useFabUTokens } from '../ThemeContext';
 import { scaledEditableTextStyle } from '../editableText';
@@ -25,6 +26,10 @@ function StatPill({
   maxValue,
   maxValueSuffix,
   pw,
+  toneColor,
+  valueColor,
+  borderColor,
+  fillGradient,
 }: StatPillData) {
   const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState(false);
@@ -32,7 +37,13 @@ function StatPill({
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [draft, setDraft] = useState('');
   const [suffixDraft, setSuffixDraft] = useState('');
-  const toneStyles = getToneStyles(tone);
+  const toneStyles = toneColor
+    ? {
+        borderColor: alpha(toneColor, 0.5),
+        backgroundColor: alpha(toneColor, 0.08),
+        color: toneColor,
+      }
+    : getToneStyles(tone);
   const inline = layout === 'inline';
   const editable = !!onChange;
   const hasBaseTempEditor = !!(onChange && onChangeSuffix);
@@ -145,7 +156,7 @@ function StatPill({
       <Typography
         variant="h6"
         sx={{
-          color: fabUTokens.color.textPrimary,
+          color: valueColor ?? fabUTokens.color.textPrimary,
           fontWeight: 700,
           fontSize: inline ? '0.96rem' : '0.98rem',
           lineHeight: 1.04,
@@ -175,11 +186,20 @@ function StatPill({
         }}
         sx={{
           border: `1px solid ${
-            editing || popoverOpen ? fabUTokens.color.textSecondary : toneStyles.borderColor
+            editing || popoverOpen
+              ? fabUTokens.color.textSecondary
+              : (borderColor ?? toneStyles.borderColor)
           }`,
           borderRadius: '10px',
-          backgroundColor: fabUTokens.color.surface,
-          boxShadow: fabUTokens.shadow.soft,
+          ...(fillGradient && !editing && !popoverOpen
+            ? { background: fillGradient }
+            : {
+                backgroundColor:
+                  toneColor && fabUTokens.isDark
+                    ? alpha(toneColor, 0.07)
+                    : fabUTokens.color.pillSurface,
+              }),
+          boxShadow: fabUTokens.shadow.card,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box',
@@ -201,7 +221,7 @@ function StatPill({
             <Typography
               variant="caption"
               sx={{
-                color: toneStyles.color,
+                color: editing && !fabUTokens.isDark ? '#000000' : toneStyles.color,
                 fontWeight: 700,
                 fontSize: '0.6rem',
                 letterSpacing: '0.05em',
@@ -311,7 +331,7 @@ function StatPill({
             maxWidth: 'min(90vw, 200px)',
             bgcolor: fabUTokens.color.surface,
             backgroundImage: 'none',
-            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
             borderRadius: '12px',
             boxShadow: fabUTokens.shadow.soft,
           },

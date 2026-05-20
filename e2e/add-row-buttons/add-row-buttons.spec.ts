@@ -9,32 +9,28 @@ test.describe('Add-row buttons — Classes and Bonds (mobile viewport)', () => {
     // Overview is the default tab — Classes and Bonds are both on it
   });
 
-  test('Classes list has a "+ Class" add affordance at the bottom', async ({ page }) => {
-    const addRow = page.getByText('Class').last();
-    await expect(addRow).toBeVisible();
-
-    const textContent = await addRow.textContent();
-    expect(textContent).toBe('Class');
+  test('Classes list hides the "+ Class" add affordance when no free levels are available', async ({
+    page,
+  }) => {
+    await expect(page.getByText('Classes').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Class' })).not.toBeVisible();
   });
 
   test('Bonds list has a "+ Bond" add affordance at the bottom', async ({ page }) => {
-    const addRow = page.getByText('Bond').last();
+    const addRow = page.locator('[data-pw="bond-add-new"]').first();
+    await addRow.scrollIntoViewIfNeeded();
     await expect(addRow).toBeVisible();
 
     const textContent = await addRow.textContent();
     expect(textContent).toBe('Bond');
   });
 
-  test('"+ Class" add row is positioned after the last class item', async ({ page }) => {
+  test('Classes card still renders all default class rows', async ({ page }) => {
+    await expect(page.getByText('Entropist')).toBeVisible();
+    await expect(page.getByText('Sharpshooter')).toBeVisible();
     const tinkerer = page.getByText('Tinkerer');
-    const addRow = page.getByText('Class').last();
 
     await expect(tinkerer).toBeVisible();
-    await expect(addRow).toBeVisible();
-
-    const tinkererBox = await tinkerer.boundingBox();
-    const addRowBox = await addRow.boundingBox();
-    expect(addRowBox!.y).toBeGreaterThan(tinkererBox!.y);
   });
 
   test('"+ Bond" add row is visible on Combat > Bonds subtab too', async ({ page }) => {
@@ -43,7 +39,8 @@ test.describe('Add-row buttons — Classes and Bonds (mobile viewport)', () => {
     await page.waitForLoadState('networkidle');
 
     // Bonds is the default combat subtab
-    const addRow = page.getByText('Bond').last();
+    const addRow = page.locator('[data-pw="bond-add-new"]').first();
+    await addRow.scrollIntoViewIfNeeded();
     await expect(addRow).toBeVisible();
 
     const textContent = await addRow.textContent();

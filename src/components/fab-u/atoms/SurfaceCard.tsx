@@ -39,13 +39,13 @@ function SurfaceCard({
         position: 'relative',
         border: `1px solid ${fabUTokens.color.border}`,
         borderRadius: `${fabUTokens.radius.md}px`,
-        bgcolor: fabUTokens.color.surface,
+        bgcolor: fabUTokens.color.surfaceCard,
         boxShadow: fabUTokens.shadow.soft,
         p: 1.65,
         pt: label ? (hasInlineActions && !title && !subtitle ? 2.2 : 3.4) : 1.65,
         backgroundImage: fabUTokens.isDark
-          ? `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.62)} 0%, ${fabUTokens.color.surface} 24%)`
-          : `linear-gradient(180deg, ${alpha(fabUTokens.color.brandSoft, 0.45)} 0%, ${fabUTokens.color.surface} 22%)`,
+          ? `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.62)} 0%, ${fabUTokens.color.surfaceCard} 24%)`
+          : `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 28%)`,
         ...sx,
       }}
       {...props}

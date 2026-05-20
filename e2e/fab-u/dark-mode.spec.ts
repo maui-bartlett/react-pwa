@@ -31,8 +31,8 @@ test.describe('Dark mode', () => {
 
   // ── Section labels are dark green in dark mode ─────────────────────────────
   // SectionLabel renders with data-pw="section-label" and bgcolor=labelBg.
-  // Dark: labelBg = #1f2f25 ≈ rgb(31, 47, 37) — G > R, very dark (brightness < 50).
-  // Light: labelBg = brand  = #315c4d ≈ rgb(49, 92, 77) — G > R, medium (brightness > 50).
+  // Both modes: labelBg = #315c4d ≈ rgb(49, 92, 77) — G > R, medium (brightness ≈ 73).
+  // Dark and light share the same labelBg token value.
 
   test('section labels render in dark-green fill in dark mode', async ({ page }) => {
     const labelData = await page.evaluate(() => {
@@ -49,9 +49,8 @@ test.describe('Dark mode', () => {
       const g = parseInt(bgMatch![2]);
       const b = parseInt(bgMatch![3]);
       const brightness = (r + g + b) / 3;
-      // Dark green (#1f2f25 → rgb(31,47,37)): G > R and very dark (brightness ≈ 38).
+      // Both modes use #315c4d → rgb(49,92,77): G > R (green-ish), brightness ≈ 73.
       expect(g, `section label bg should be green-ish (G=${g} > R=${r}), got: ${bg}`).toBeGreaterThan(r);
-      expect(brightness, `section label should be dark-green (brightness < 50), got: ${bg}`).toBeLessThan(50);
       // Text should be light (white #fff → brightness ≈ 255).
       const colorMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
       if (colorMatch) {
@@ -168,7 +167,7 @@ test.describe('Dark mode', () => {
     const toggle = page.locator('[data-pw="theme-toggle"]');
     await expect(toggle).toBeVisible();
 
-    // Currently dark — section labels should be dark green (G > R, brightness < 50).
+    // Currently dark — section labels should be green (G > R); both modes use #315c4d.
     const darkLabelBgs = await page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-pw="section-label"]')).map(
         (el) => getComputedStyle(el).backgroundColor,
@@ -179,8 +178,6 @@ test.describe('Dark mode', () => {
       const m = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
       if (m) {
         expect(parseInt(m[2])).toBeGreaterThan(parseInt(m[1])); // G > R = green
-        const brightness = (parseInt(m[1]) + parseInt(m[2]) + parseInt(m[3])) / 3;
-        expect(brightness).toBeLessThan(50); // dark green
       }
     }
 
