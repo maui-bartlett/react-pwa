@@ -154,31 +154,66 @@ Before adding backend calls, separate the current character model from storage m
    - Keep `NotificationsProvider`.
    - Do not move `BrowserRouter` unless required by auth routing.
 
-## Phase 4: Install and configure better-auth
+## Phase 4: Install and configure better-auth using the new CLI
 
-1. Install better-auth and required integration packages using the current official CLI/docs:
+Use the current Better Auth CLI package name and commands: `npx auth@latest ...`. The CLI supports `init`, `generate`, `migrate`, `secret`, and `info`.
+
+1. Install Better Auth and any Convex integration package required by the current Better Auth + Convex docs:
    ```bash
    npm install better-auth
    ```
-2. Configure providers:
+2. Generate the application secret with the new CLI:
+   ```bash
+   npx auth@latest secret
+   ```
+   Store the result as `BETTER_AUTH_SECRET` in local environment files and deployment/Convex secrets. Do not commit the generated secret.
+3. Initialize Better Auth with the CLI only where it fits this Vite + Convex app:
+   ```bash
+   npx auth@latest init --name react-pwa --package-manager npm
+   ```
+   Important: the CLI docs currently describe `--framework` support as Next.js-only and `--database` support as SQLite-only. Because this app is Vite + Convex, do not blindly accept generated Next.js/SQLite structure. Keep useful generated auth config, but adapt server handlers, routes, and schema to Convex.
+4. Create or adapt the Better Auth config in a location the CLI can discover, preferably one of:
+   - `auth.ts`
+   - `src/lib/auth.ts`
+   - `src/utils/auth.ts`
+
+   If the config imports app code, avoid `@/*` aliases while running the CLI because the CLI may fail to resolve imported modules. Use relative imports during CLI runs, then restore aliases if safe.
+5. Configure auth providers in the Better Auth config:
    - email/password
    - magic link
    - Google
    - Discord
    - Apple
-3. Expected files may include:
+6. Run schema generation after the Better Auth config exists:
+   ```bash
+   npx auth@latest generate --config ./src/lib/auth.ts --yes
+   ```
+   If the config lives somewhere else, update `--config` accordingly. The CLI's `generate` command creates the schema required by Better Auth for the configured adapter. For Convex, verify whether the current integration expects generated Convex table definitions, a schema fragment to merge into `convex/schema.ts`, or adapter-managed tables.
+7. Do not run `migrate` unless the chosen Better Auth adapter supports direct migrations for the configured database:
+   ```bash
+   npx auth@latest migrate --config ./src/lib/auth.ts --yes
+   ```
+   The CLI docs say `migrate` applies schema directly only for the built-in Kysely adapter; other adapters require their own migration tools. For Convex, prefer the Convex schema/deploy workflow unless the official Better Auth Convex integration explicitly says to run `migrate`.
+8. Use CLI diagnostics before opening the implementation PR:
+   ```bash
+   npx auth@latest info --config ./src/lib/auth.ts
+   npx auth@latest info --config ./src/lib/auth.ts --json > auth-info.json
+   ```
+   Do not commit `auth-info.json` unless it is reviewed and confirmed to contain no sensitive details, even though the CLI redacts sensitive values.
+9. Expected implementation files may include:
    - `convex/auth.ts`
    - `convex/http.ts`
+   - `src/lib/auth.ts`
    - `src/lib/auth-client.ts`
-   - auth route/callback helpers if required by better-auth
-4. Configure secrets only in local/Convex/hosting environments:
+   - auth route/callback helpers if required by Better Auth
+10. Configure secrets only in local/Convex/hosting environments:
    - `BETTER_AUTH_SECRET`
    - `BETTER_AUTH_URL`
    - email provider SMTP/API credentials for magic link
    - Google client ID/secret
    - Discord client ID/secret
-   - Apple client ID/team/key/private key values required by better-auth
-5. Add frontend hooks/wrappers for:
+   - Apple client ID/team/key/private key values required by Better Auth
+11. Add frontend hooks/wrappers for:
    - current session
    - sign in
    - sign up
@@ -186,7 +221,7 @@ Before adding backend calls, separate the current character model from storage m
    - magic link request
    - OAuth provider start
    - loading/error state
-6. Protect backend data with server-side Convex checks regardless of route guards.
+12. Protect backend data with server-side Convex checks regardless of route guards.
 
 ## Phase 5: Define Convex schema
 
@@ -471,6 +506,10 @@ Rules:
    npm run test:unit -- --run
    npm run build
    ```
+7. Run Better Auth CLI diagnostics before merging auth work:
+   ```bash
+   npx auth@latest info --config ./src/lib/auth.ts
+   ```
 
 ## Phase 12: Deployment checklist
 
@@ -488,6 +527,10 @@ Rules:
 5. Verify HTTPS-only cookie/session requirements in production.
 6. Verify PWA service worker excludes auth-sensitive endpoints.
 7. Run production build locally before deploy.
+8. Run Better Auth CLI diagnostics against production-like configuration without committing diagnostic output:
+   ```bash
+   npx auth@latest info --config ./src/lib/auth.ts
+   ```
 
 ## Suggested coding-agent task breakdown
 
@@ -496,20 +539,23 @@ Rules:
 3. `test: add FabU character migration tests`
 4. `chore: install and initialize convex`
 5. `chore: add convex provider`
-6. `chore: configure better-auth providers`
-7. `feat: add user profile and settings schema/functions`
-8. `feat: add character schema/functions`
-9. `feat: add local character claim/import flow`
-10. `feat: add campaign schema/functions`
-11. `feat: add join code and invite flows`
-12. `feat: add frontend auth screens and session hooks`
-13. `feat: connect FabU character persistence to Convex`
-14. `feat: add offline sync queue`
-15. `test: add permissions and sync coverage`
+6. `chore: initialize better-auth with npx auth@latest init`
+7. `chore: generate better-auth secret and configure providers`
+8. `chore: run better-auth generate/info and adapt schema to Convex`
+9. `feat: add user profile and settings schema/functions`
+10. `feat: add character schema/functions`
+11. `feat: add local character claim/import flow`
+12. `feat: add campaign schema/functions`
+13. `feat: add join code and invite flows`
+14. `feat: add frontend auth screens and session hooks`
+15. `feat: connect FabU character persistence to Convex`
+16. `feat: add offline sync queue`
+17. `test: add permissions and sync coverage`
 
 ## Done criteria for MVP backend
 
 - A user can create an account and sign in/out with email/password, magic link, Google, Discord, or Apple.
+- Better Auth setup uses the current `npx auth@latest` CLI workflow for secret generation, initialization, schema generation, and diagnostics where applicable.
 - Anonymous/local characters continue to work offline.
 - A local character can be claimed/imported into a signed-in account.
 - A signed-in user gets a `userProfile` and `userSettings` record.
@@ -525,4 +571,4 @@ Rules:
 - Unauthorized users cannot read or mutate private user/character/campaign data.
 - Player accounts, characters, and campaigns use soft archive/delete behavior.
 - Join/invite/link cleanup entities can be truly deleted where appropriate.
-- TypeScript, lint, unit tests, and production build pass.
+- TypeScript, lint, unit tests, Better Auth diagnostics, and production build pass.
