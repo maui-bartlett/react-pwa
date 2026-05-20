@@ -18,7 +18,7 @@ test.describe('Status Effects accordion smooth close', () => {
   async function toggleStatusEffects(page: import('@playwright/test').Page) {
     await page
       .locator('[data-pw="status-effects-accordion-toggle"]')
-      .click({ position: { x: 30, y: 18 } });
+      .evaluate((el: HTMLElement) => el.click());
   }
 
   test.beforeEach(async ({ page }) => {
