@@ -1,25 +1,39 @@
 # Backend Development Plan: Convex + better-auth
 
-This plan is intended for a coding agent implementing the Fabula Ultima app backend in this repository. The goal is to add persistent user accounts, saved character state for multiple characters, user-level settings, offline-capable local characters, and campaigns where users can participate or act as GM/owner. A user's characters must be able to participate in multiple campaigns, including multiple characters in the same campaign if needed.
+This plan is intended for a coding agent implementing the Fabula Ultima app backend in this repository. The goal is to add persistent user accounts, saved character state for multiple characters, user-level settings, offline-capable local characters, undo-aware sync behavior, and campaigns where users can participate or act as GM/owner. A user's characters must be able to participate in multiple campaigns, including multiple characters in the same campaign if needed.
 
 ## Current repository context
 
-From repo inspection:
+Current master includes the merged PR #18, `UI polish: traits edit, Buy IP arrow, skill desc, LVL stability`.
+
+From current repo inspection:
 
 - The app is a Vite React PWA using TypeScript and ES modules.
 - React entry is split between `src/main.tsx`, `src/root.tsx`, and `src/App.tsx`.
 - `src/root.tsx` currently provides global React providers: React StrictMode, Jotai, theme, and Toolpad notifications.
 - `src/App.tsx` mounts `CssBaseline`, hotkeys, `BrowserRouter`, `Sidebar`, and `Pages`.
 - Path aliasing uses `@/* -> src/*` in `tsconfig.app.json` and Vite.
-- The package currently has React, React Router, Jotai, MUI, Toolpad, vite-plugin-pwa, Vitest, and Playwright dependencies, but no Convex or better-auth dependencies yet.
+- The package currently has React, React Router, Jotai, MUI, Toolpad, vite-plugin-pwa, Vitest, Playwright, and `react-swipeable`, but no Convex or better-auth dependencies yet.
+- `.gitignore` now ignores `dist`.
 - The FabU app lives under `src/pages/FabU/`.
 - The main page component is `src/pages/FabU/FabU.tsx`.
-- FabU imports `characterState`, `statusEffectsState`, and `derivedStatusEffectsState` from `src/pages/FabU/atoms.ts`.
-- Current durable FabU state is stored with Jotai `atomWithStorage` in localStorage keys:
+- `FabU.tsx` now uses `useCharacterHistory()` instead of directly calling `useAtom(characterState)`, so all character mutations should flow through a history-aware setter.
+- `FabU.tsx` has a session-scoped confirm-delete + undo flow for destructive actions, plus Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z keyboard shortcuts for undo/redo.
+- `FabU.tsx` persists active main tab and active combat sub-tab using Jotai storage atoms.
+- `FabU.tsx` includes swipe/edit UI for Traits and a combat `Traits` sub-tab.
+- Durable FabU state is stored with Jotai `atomWithStorage` in localStorage keys:
   - `fab-u-character`
   - `fab-u-status-effects`
+  - `fab-u-active-tab`
+  - `fab-u-active-combat-tab`
   - migration reads from older keys `fab-u-character-notes` and `fab-u-backstory-answers`.
 - `src/pages/FabU/atoms.ts` defines the current `Character` type, `BackpackItem`, `BackstoryPrompt`, `ClassEntry`, default character state, localStorage migration helpers, and `MAX_CHARACTER_LEVEL`.
+- `src/pages/FabU/atoms.ts` now stores character name as `firstName`, `lastName`, and `nickName`.
+- `src/pages/FabU/atoms.ts` now stores `traits: { identity: string[]; theme: string; origin: string }`; identity was migrated from an older string shape to `string[]`.
+- HP/MP max values are now derived in `FabU.tsx` from the relevant attribute die, level, and bonus fields. `Character` stores `hpBonus` and `mpBonus`, not persisted `totalHP`/`totalMP`; migration back-computes bonuses from old `totalHP`/`totalMP` values.
+- `statusEffectsState` now persists all six effect flags: `slow`, `dazed`, `weak`, `shaken`, `enraged`, and `poisoned`. The previous derived-status atom is no longer exported.
+- `src/pages/FabU/useCharacterHistory.ts` defines an in-memory Jotai history stack `{ past: Character[]; future: Character[] }` with max depth 100. It is intentionally not persisted and resets on reload.
+- `src/components/fab-u/atoms/ConfirmDeleteModal.tsx` and `src/components/fab-u/atoms/UndoSnackbar.tsx` are now part of the FabU UI and exported through component indexes.
 - `src/pages/FabU/skills.ts` and `src/pages/FabU/spells.ts` define default `SkillGroup` and `SpellGroup` values used by the current character state.
 
 ## Locked product decisions
@@ -55,11 +69,12 @@ Use these decisions for the initial implementation:
 6. `campaignCharacters` stores many-to-many campaign participation and campaign-specific state.
 7. `campaignInvites` supports email/account invites.
 8. `campaignJoinCodes` supports join-code flow.
-9. `localCharacterImports` or client-side import logic supports anonymous/local character claiming after sign-in.
+9. Local/anonymous character data is claimed/imported after sign-in without silently overwriting remote data.
+10. Session-scoped undo/redo is a frontend concern and should not be persisted as part of canonical backend character state.
 
 ## Phase 0: Full project inventory
 
-1. Run the local test/build baseline before changing anything:
+1. Run the local baseline before changing anything:
    ```bash
    npm install
    npm run ts:check
@@ -74,25 +89,57 @@ Use these decisions for the initial implementation:
 3. Inspect FabU-specific files:
    ```bash
    find src/pages/FabU -maxdepth 3 -type f | sort
-   sed -n '1,260p' src/pages/FabU/atoms.ts
+   sed -n '1,340p' src/pages/FabU/atoms.ts
+   sed -n '1,180p' src/pages/FabU/useCharacterHistory.ts
    ```
-4. Locate every direct use of durable state:
+4. Locate every direct use of durable state and history-aware setters:
    ```bash
-   grep -R "characterState\|statusEffectsState\|atomWithStorage\|fab-u-character\|fab-u-status-effects\|localStorage" -n src
+   grep -R "characterState\|statusEffectsState\|activeTabState\|activeCombatTabState\|atomWithStorage\|useCharacterHistory\|fab-u-character\|fab-u-status-effects\|fab-u-active-tab\|fab-u-active-combat-tab\|localStorage" -n src
    ```
-5. Document which components mutate `Character` directly. `FabU.tsx` currently contains many direct `setCharacter` mutations; do not replace all at once without an adapter layer.
+5. Document which components mutate `Character` directly. `FabU.tsx` contains many `setCharacter` mutations, but they now pass through `useCharacterHistory()`.
 6. Identify route paths for the FabU page before adding auth guards.
+7. Review PR #18 and any newer merged PRs before implementation. If another PR lands before backend work begins, repeat this phase.
 
 ## Phase 1: Extract FabU character domain model
 
 Before adding backend calls, separate the current character model from storage mechanics.
 
-1. Move or re-export the `Character`, `BackpackItem`, `BackstoryPrompt`, and `ClassEntry` types from `src/pages/FabU/atoms.ts` into a domain file such as:
+1. Move or re-export the current `Character`, `BackpackItem`, `BackstoryPrompt`, and `ClassEntry` types from `src/pages/FabU/atoms.ts` into a domain file such as:
    - `src/domain/fabU/characterTypes.ts`
-2. Move defaults and migration helpers into:
+2. Preserve the current fields exactly in the initial backend-facing type:
+   - `firstName`
+   - `lastName`
+   - `nickName`
+   - `initiative`
+   - `defense`
+   - `defenseTemp`
+   - `magicDefense`
+   - `magicDefenseTemp`
+   - `fabulaPoints`
+   - `inventoryPoints`
+   - `currentHP`
+   - `hpBonus`
+   - `currentMP`
+   - `mpBonus`
+   - `currentXP`
+   - `totalXP`
+   - `level`
+   - `zennit`
+   - `attributes`
+   - `bonds`
+   - `backstoryPrompts`
+   - `notes`
+   - `classes`
+   - `skillGroups`
+   - `spellGroups`
+   - `equipment`
+   - `backpack`
+   - `traits`
+3. Do not reintroduce persisted `totalHP` or `totalMP`. Treat max HP/MP as derived values from attribute die + level + `hpBonus`/`mpBonus`.
+4. Move defaults and migration helpers into:
    - `src/domain/fabU/characterDefaults.ts`
    - `src/domain/fabU/characterMigration.ts`
-3. Add versioned storage shape:
+5. Add versioned storage shape:
    ```ts
    export type PersistedCharacterState = {
      schemaVersion: number;
@@ -100,14 +147,25 @@ Before adding backend calls, separate the current character model from storage m
      statusEffects: Record<string, boolean>;
    };
    ```
-4. Create helpers:
+6. Create helpers:
    - `createDefaultCharacter()`
    - `normalizeCharacter(raw)`
    - `migrateCharacter(raw)`
+   - `normalizeTraits(raw)`
+   - `normalizeHpMpBonus(raw)`
    - `serializeCharacterForBackend(character, statusEffects)`
    - `deserializeCharacterFromBackend(raw)`
-5. Keep `atomWithStorage` temporarily for offline/local support, but make it use the shared domain helpers.
-6. Add tests for migration from current localStorage shape.
+   - `getTotalHP(character)`
+   - `getTotalMP(character)`
+7. Keep `atomWithStorage` temporarily for offline/local support, but make it use the shared domain helpers.
+8. Add tests for migration from all known localStorage shapes:
+   - old notes-only state from `fab-u-character-notes`
+   - old backstory answers from `fab-u-backstory-answers`
+   - pre-equipment characters
+   - pre-traits characters
+   - `traits.identity` as string
+   - old `totalHP`/`totalMP` migrated to `hpBonus`/`mpBonus`
+   - old status effects missing `enraged`/`poisoned`
 
 ## Phase 2: Install and initialize Convex
 
@@ -253,11 +311,14 @@ export default defineSchema({
   characters: defineTable({
     ownerUserId: v.id('userProfiles'),
     name: v.string(),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    nickName: v.optional(v.string()),
     summary: v.optional(v.string()),
     portraitUrl: v.optional(v.string()),
     schemaVersion: v.number(),
     characterState: v.any(),
-    statusEffects: v.optional(v.record(v.string(), v.boolean())),
+    statusEffects: v.record(v.string(), v.boolean()),
     archivedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -343,6 +404,14 @@ export default defineSchema({
 });
 ```
 
+Schema notes:
+
+- `characters.name` is a denormalized display/search name derived from `firstName`, `lastName`, and `nickName`.
+- Store the full current `Character` object in `characterState` for the MVP, but also copy name fields to top-level fields for list/search performance.
+- Store status effects separately from `characterState` only if the frontend keeps separate atoms. Otherwise the serializer may bundle both into a single versioned payload and hydrate both atoms.
+- Do not store frontend-only undo stacks (`past`/`future`) in Convex.
+- Consider storing a `revision` number in `characters` if offline sync or multi-device conflict resolution needs more than `updatedAt`.
+
 Deletion policy:
 
 - Soft archive: `userProfiles`, `characters`, `campaigns`.
@@ -389,6 +458,8 @@ Create reusable helpers in `convex/lib/auth.ts` or similar:
 - `restore`
 - `listCampaignsForCharacter`
 
+`updateState` must accept the current versioned `Character` shape, including `traits`, `hpBonus`, `mpBonus`, and name fields. It must reject or migrate stale payloads before saving.
+
 ### `convex/campaigns.ts`
 
 - `listMine`
@@ -428,25 +499,32 @@ Rules:
 ## Phase 8: Frontend integration with current FabU state
 
 1. Keep the existing `FabU.tsx` UI working during migration.
-2. Introduce a hook such as `useFabUCharacterPersistence` that bridges:
+2. Preserve `useCharacterHistory()` as the component-facing setter so existing undo/redo behavior survives backend integration.
+3. Introduce a hook such as `useFabUCharacterPersistence` that bridges:
    - current Jotai atoms
    - localStorage offline state
+   - `useCharacterHistory()` setter
    - Convex persisted state when signed in
-3. Add a signed-in character selector before assuming a single global `characterState`.
-4. Add local anonymous character support:
-   - keep localStorage character data
+4. Add a signed-in character selector before assuming a single global `characterState`.
+5. Add local anonymous character support:
+   - keep localStorage or IndexedDB character data
    - assign a local-only ID
    - mark sync status as `localOnly`, `syncing`, `synced`, or `conflict`
-5. After sign-in, prompt to import/claim local characters into the account.
-6. Do not silently overwrite backend character state with local state.
-7. Use debounced saves for high-frequency mutations in `FabU.tsx`.
-8. Add conflict handling using `updatedAt` or a revision number.
-9. Keep Jotai for immediate UI responsiveness and transient values.
-10. Move durable state to Convex after the bridge is stable:
+6. After sign-in, prompt to import/claim local characters into the account.
+7. Do not silently overwrite backend character state with local state.
+8. Use debounced saves for high-frequency mutations in `FabU.tsx`.
+9. Add conflict handling using `updatedAt` or a revision number.
+10. Keep Jotai for immediate UI responsiveness and transient/session state.
+11. Move durable state to Convex after the bridge is stable:
     - `characterState`
     - `statusEffectsState`
     - user settings
     - campaign links and campaign-specific state
+12. Treat these as user settings or per-device UI preferences, not canonical character state:
+    - `activeTabState`
+    - `activeCombatTabState`
+    - in-memory per-tab scroll positions
+13. Do not persist the undo/redo history stack to Convex. It may be cleared after successful server hydration, character switch, logout, or destructive reset.
 
 ## Phase 9: Offline-first PWA plan
 
@@ -459,10 +537,12 @@ Rules:
 4. Add last-known server snapshot metadata:
    - `serverCharacterId`
    - `serverUpdatedAt`
+   - `serverRevision`
    - `localUpdatedAt`
    - `syncStatus`
 5. Service worker/Workbox must not cache auth callback responses, session endpoints, or sensitive API responses.
 6. Offline-created campaigns can be local drafts until online; do not assume campaign creation can complete offline without server confirmation.
+7. Undo/redo should operate on the local current character state first; queued sync entries should be collapsed/debounced so undo does not generate a noisy sequence of obsolete backend writes.
 
 ## Phase 10: Authorization matrix
 
@@ -484,14 +564,20 @@ Rules:
 
 1. Unit test character migration/normalization using current localStorage shapes from `src/pages/FabU/atoms.ts`.
 2. Unit test default character creation from current skill/spell defaults.
-3. Test auth flows manually for email/password, magic link, Google, Discord, and Apple.
-4. Add Convex permission tests if Convex testing utilities are adopted.
-5. Smoke-test:
+3. Unit test derived total HP/MP helpers.
+4. Unit test traits migration from string identity to string-array identity.
+5. Unit test status-effect normalization for all six flags.
+6. Test that `useCharacterHistory()` remains session-scoped and is not serialized into backend payloads.
+7. Test auth flows manually for email/password, magic link, Google, Discord, and Apple.
+8. Add Convex permission tests if Convex testing utilities are adopted.
+9. Smoke-test:
    - sign up/sign in/sign out
    - claim local character after sign-in
    - create character
    - update character state
+   - edit Traits values and confirm they persist
    - update status effects
+   - undo/redo local character edits before and after sync
    - create campaign
    - create and use join code
    - create and accept invite
@@ -499,14 +585,14 @@ Rules:
    - add multiple user characters to one campaign
    - add one character to multiple campaigns
    - GM edits campaign-specific character state
-6. Run:
+10. Run:
    ```bash
    npm run ts:check
    npm run lint:check
    npm run test:unit -- --run
    npm run build
    ```
-7. Run Better Auth CLI diagnostics before merging auth work:
+11. Run Better Auth CLI diagnostics before merging auth work:
    ```bash
    npx auth@latest info --config ./src/lib/auth.ts
    ```
@@ -534,23 +620,25 @@ Rules:
 
 ## Suggested coding-agent task breakdown
 
-1. `chore: inventory FabU state and routes`
+1. `chore: inventory latest FabU state and routes`
 2. `refactor: extract FabU character domain model`
 3. `test: add FabU character migration tests`
-4. `chore: install and initialize convex`
-5. `chore: add convex provider`
-6. `chore: initialize better-auth with npx auth@latest init`
-7. `chore: generate better-auth secret and configure providers`
-8. `chore: run better-auth generate/info and adapt schema to Convex`
-9. `feat: add user profile and settings schema/functions`
-10. `feat: add character schema/functions`
-11. `feat: add local character claim/import flow`
-12. `feat: add campaign schema/functions`
-13. `feat: add join code and invite flows`
-14. `feat: add frontend auth screens and session hooks`
-15. `feat: connect FabU character persistence to Convex`
-16. `feat: add offline sync queue`
-17. `test: add permissions and sync coverage`
+4. `test: add derived HP MP and traits migration tests`
+5. `chore: install and initialize convex`
+6. `chore: add convex provider`
+7. `chore: initialize better-auth with npx auth@latest init`
+8. `chore: generate better-auth secret and configure providers`
+9. `chore: run better-auth generate/info and adapt schema to Convex`
+10. `feat: add user profile and settings schema/functions`
+11. `feat: add character schema/functions`
+12. `feat: preserve useCharacterHistory with backend persistence bridge`
+13. `feat: add local character claim/import flow`
+14. `feat: add campaign schema/functions`
+15. `feat: add join code and invite flows`
+16. `feat: add frontend auth screens and session hooks`
+17. `feat: connect FabU character persistence to Convex`
+18. `feat: add offline sync queue`
+19. `test: add permissions and sync coverage`
 
 ## Done criteria for MVP backend
 
@@ -560,8 +648,12 @@ Rules:
 - A local character can be claimed/imported into a signed-in account.
 - A signed-in user gets a `userProfile` and `userSettings` record.
 - A signed-in user can create, list, open, update, and archive their own characters.
-- `Character` state from `src/pages/FabU/atoms.ts` persists across reloads and devices.
-- Status effects persist with the character or campaign-specific state as appropriate.
+- Current `Character` state from `src/pages/FabU/atoms.ts` persists across reloads and devices.
+- Traits persist, including multi-value identity.
+- HP/MP maxes are derived from attribute die + level + bonus and are not saved as stale totals.
+- Status effects persist with all six current flags.
+- Active tab/sub-tab persistence remains a user/per-device preference, not campaign canonical state.
+- Session-scoped undo/redo continues to work and is not persisted to Convex.
 - A signed-in user can create a campaign and is automatically its GM.
 - Campaign joining works through join code, email/account invite, and GM manual add.
 - A user can add multiple characters to the same campaign.
