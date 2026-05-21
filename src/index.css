@@ -1,3 +1,13 @@
-/* 
-  you can have your global css here if needed
-*/
+html,
+body,
+#root {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: #315c4d !important;
+}
