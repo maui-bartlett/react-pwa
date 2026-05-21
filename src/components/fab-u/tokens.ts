@@ -51,8 +51,8 @@ type FabUTokens = {
 const fabUTokens: FabUTokens = {
   isDark: false,
   color: {
-    page: '#ffffff', // pure white outer app wrapper
-    canvas: '#f3f8f5', // scroll-content backdrop — slightly more green than page
+    page: '#f5efe3', // warm paper outer app wrapper
+    canvas: '#f7f2e8', // slightly lighter than the reference paper shell
     surface: '#ffffff',
     surfaceCard: '#ecf2ee', // soft light-green tint for SurfaceCards
     pillSurface: '#ffffff', // same as surface in light mode; pills look lifted via shadow.card

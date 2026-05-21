@@ -5,7 +5,11 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 const POSITION_TOLERANCE = 5; // px — scaled 16px edit inputs can shift a few pixels visually
 
 async function measureShift(
-  page: ReturnType<typeof test['info']>['project'] extends infer P ? never : Parameters<typeof test>[1] extends (args: { page: infer Pg }) => unknown ? Pg : never,
+  page: ReturnType<(typeof test)['info']>['project'] extends infer P
+    ? never
+    : Parameters<typeof test>[1] extends (args: { page: infer Pg }) => unknown
+      ? Pg
+      : never,
   pillLocator: ReturnType<typeof page.locator>,
   valueLocator: ReturnType<typeof page.locator>,
   inputLocator: ReturnType<typeof page.locator>,
@@ -121,12 +125,12 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
     expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
   });
 
-  test('Gear Zennit (SummaryStrip, no suffix) — x stable within 2px', async ({ page }) => {
+  test('Gear Zenit (SummaryStrip, no suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Gear' }).first().click();
     await page.waitForLoadState('networkidle');
-    const pill = page.locator('[data-pw="metric-zennit"]');
+    const pill = page.locator('[data-pw="metric-zenit"]');
     const valueEl = pill.locator('p').first();
-    const input = page.locator('[data-pw="metric-zennit-input"]');
+    const input = page.locator('[data-pw="metric-zenit-input"]');
     const valueBB = await valueEl.boundingBox();
     await pill.click();
     await input.waitFor({ state: 'visible' });

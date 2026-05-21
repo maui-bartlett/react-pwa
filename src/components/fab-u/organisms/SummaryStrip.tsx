@@ -78,7 +78,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
           const insertMiddleAfter = middleAction && metricIndex === 0;
           const isEditing = editing?.label === metric.label;
           const editable = !!metric.onChange;
-          const showZennitIcon = metric.pw === 'zennit';
+          const showZenitIcon = metric.pw === 'zenit';
           const isXpMetric = metric.label === 'XP';
           const tc = metric.toneColor;
           const bgColor = tc && fabUTokens.isDark ? alpha(tc, 0.07) : fabUTokens.color.pillSurface;
@@ -200,7 +200,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                         {metric.value}
                       </Typography>
                     )}
-                    {showZennitIcon ? (
+                    {showZenitIcon ? (
                       <Box
                         component={Coins}
                         size={15}
@@ -213,7 +213,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                         }}
                       />
                     ) : null}
-                    {!showZennitIcon && metric.trailingIcon ? (
+                    {!showZenitIcon && metric.trailingIcon ? (
                       <Box
                         sx={{
                           ml: 'auto',

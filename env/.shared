@@ -1,4 +1,4 @@
-# replace with your environment variables
-
-VITE_ENV_VAR_1=
-VITE_ENV_VAR_2=
+# Public client-side values. Local development values are written to .env.local by `npx convex dev`.
+VITE_CONVEX_URL=
+VITE_CONVEX_SITE_URL=
+VITE_SITE_URL=http://localhost:5173

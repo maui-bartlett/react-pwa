@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
@@ -34,6 +32,7 @@ import {
 } from 'lucide-react';
 
 import {
+  AccountMenu,
   AttributesStatsCard,
   BondType,
   BondsCard,
@@ -64,12 +63,7 @@ import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
-import {
-  MAX_CHARACTER_LEVEL,
-  activeCombatTabState,
-  activeTabState,
-  statusEffectsState,
-} from './atoms';
+import { MAX_CHARACTER_LEVEL, activeCombatTabState, activeTabState } from './atoms';
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
 import { useCharacterHistory } from './useCharacterHistory';
@@ -603,11 +597,14 @@ function FabU() {
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
   const [pendingCombatTraitsScroll, setPendingCombatTraitsScroll] = useState(false);
   const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
-  const [statusEffects, setStatusEffects] = useAtom(statusEffectsState);
-  const handleToggleEffect = (id: string) => {
-    setStatusEffects((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
   const [character, setCharacter, characterHistory] = useCharacterHistory();
+  const statusEffects = character.statusEffects;
+  const handleToggleEffect = (id: string) => {
+    setCharacter((c) => ({
+      ...c,
+      statusEffects: { ...c.statusEffects, [id]: !c.statusEffects[id] },
+    }));
+  };
   // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
   // deferred mutation; clicking Delete runs it then pops the undo button.
   const [pendingDelete, setPendingDelete] = useState<{
@@ -691,7 +688,7 @@ function FabU() {
     });
   const setLevel = (v: number) =>
     setCharacter((c) => ({ ...c, level: Math.min(Math.max(1, v), MAX_CHARACTER_LEVEL) }));
-  const setZennit = (v: number) => setCharacter((c) => ({ ...c, zennit: v }));
+  const setZenit = (v: number) => setCharacter((c) => ({ ...c, zenit: v }));
 
   // Die-value lookup used to derive max HP and MP from attributes + level + bonus
   const DIE_VALUES: Record<string, number> = { d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
@@ -700,10 +697,10 @@ function FabU() {
   const totalMP =
     (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + character.mpBonus;
 
-  // Spend 100 Zennit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
+  // Spend 100 Zenit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
   const handleBuyIP = () =>
     setCharacter((c) =>
-      c.zennit >= 10 ? { ...c, zennit: c.zennit - 10, inventoryPoints: c.inventoryPoints + 1 } : c,
+      c.zenit >= 10 ? { ...c, zenit: c.zenit - 10, inventoryPoints: c.inventoryPoints + 1 } : c,
     );
   const toggleBondType = (id: string, type: BondType) =>
     setCharacter((c) => ({
@@ -1678,14 +1675,16 @@ function FabU() {
                 description: '-2 IP · Clear Status',
                 color: fabUTokens.color.success,
                 onUse: () => {
-                  setIP(Math.max(0, character.inventoryPoints - 2));
-                  setStatusEffects({
-                    slow: false,
-                    dazed: false,
-                    weak: false,
-                    shaken: false,
-                    enraged: false,
-                    poisoned: false,
+                  setCharacter((c) => {
+                    const nextStatusEffects = Object.fromEntries(
+                      Object.keys(c.statusEffects).map((id) => [id, false]),
+                    );
+
+                    return {
+                      ...c,
+                      inventoryPoints: Math.max(0, c.inventoryPoints - 2),
+                      statusEffects: nextStatusEffects,
+                    };
                   });
                   setInventoryAnchorEl(null);
                 },
@@ -2162,7 +2161,7 @@ function FabU() {
                 <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
               ),
             },
-            { label: 'ZENIT', value: String(character.zennit), pw: 'zennit', onChange: setZennit },
+            { label: 'ZENIT', value: String(character.zenit), pw: 'zenit', onChange: setZenit },
           ]}
           middleAction={
             <Box
@@ -2380,6 +2379,13 @@ function FabU() {
     );
 
   const header = (() => {
+    const settingsAction = (
+      <AccountMenu
+        themeMode={themeMode === ThemeMode.DARK ? 'dark' : 'light'}
+        onToggleTheme={toggleTheme}
+      />
+    );
+
     if (activeTab === 'combat') {
       return (
         <HeaderBar
@@ -2387,6 +2393,7 @@ function FabU() {
           title="Combat"
           subtitle="Stats, status effects, and battle actions"
           actionLabel="Combat"
+          action={settingsAction}
         />
       );
     }
@@ -2405,6 +2412,7 @@ function FabU() {
         title={headerTitle}
         subtitle={headerSubtitle}
         actionLabel={activeTab === 'overview' ? `LVL ${character.level}` : meta.actionLabel}
+        action={settingsAction}
       />
     );
   })();
@@ -2432,42 +2440,6 @@ function FabU() {
     <FabUThemeProvider>
       <>
         <meta name="title" content="Fab-u Preview" />
-        {/* Theme toggle button */}
-        <Box
-          data-pw="theme-toggle-container"
-          sx={{
-            position: 'fixed',
-            top: 12,
-            right: 12,
-            zIndex: 200,
-          }}
-        >
-          <IconButton
-            data-pw="theme-toggle"
-            onClick={toggleTheme}
-            size="small"
-            aria-label={
-              themeMode === ThemeMode.DARK ? 'Switch to light mode' : 'Switch to dark mode'
-            }
-            sx={{
-              bgcolor: fabUTokens.color.surface,
-              border: `1px solid ${fabUTokens.color.border}`,
-              color: fabUTokens.color.textSecondary,
-              width: 32,
-              height: 32,
-              '&:hover': {
-                bgcolor: fabUTokens.color.surfaceMuted,
-                color: fabUTokens.color.textPrimary,
-              },
-            }}
-          >
-            {themeMode === ThemeMode.DARK ? (
-              <LightModeIcon sx={{ fontSize: 16 }} />
-            ) : (
-              <DarkModeIcon sx={{ fontSize: 16 }} />
-            )}
-          </IconButton>
-        </Box>
         <Stack
           data-pw="app-canvas"
           alignItems="center"

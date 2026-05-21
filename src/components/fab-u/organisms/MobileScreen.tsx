@@ -78,8 +78,8 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
         width: '100%',
         maxWidth: 390,
         height: {
-          xs: 'min(780px, calc(100dvh - 32px))',
-          md: 'min(900px, calc(100dvh - 48px))',
+          xs: 'min(820px, calc(100dvh - 24px))',
+          md: 'min(920px, calc(100dvh - 40px))',
         },
         borderRadius: '14px',
         boxShadow: `0 5px 18px rgba(31, 42, 38, 0.05), 0 0 0 1px ${fabUTokens.color.border}`,
@@ -89,7 +89,7 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
       <Stack
         sx={{
           height: '100%',
-          bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
+          bgcolor: fabUTokens.color.canvas,
         }}
       >
         <Box
@@ -145,9 +145,9 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           px: 1,
           py: 0.85,
           zIndex: 10,
-          borderLeft: '1px solid #ffffff',
-          borderRight: '1px solid #ffffff',
-          bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : '#ffffff',
+          borderLeft: `1px solid ${fabUTokens.color.border}`,
+          borderRight: `1px solid ${fabUTokens.color.border}`,
+          bgcolor: fabUTokens.color.canvas,
         }}
       >
         {footer}
