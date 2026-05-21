@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useMemo, useState } from 'react';
 
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -38,7 +38,7 @@ type AuthResult = {
 };
 
 type OAuthProviderConfig = {
-  icon: JSX.Element;
+  icon: ReactNode;
   label: string;
   provider: OAuthProvider;
 };
