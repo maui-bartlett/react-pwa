@@ -12,10 +12,9 @@ test.describe('Fab U account flow', () => {
     await page.locator('[data-pw="auth-mode-signUp"]').click();
     await expect(page.locator('[data-pw="auth-submit"]')).toContainText('Create account');
 
-    await page.locator('[data-pw="auth-mode-magicLink"]').click();
-    await expect(page.locator('[data-pw="auth-submit"]')).toContainText('Send magic link');
     await expect(page.locator('[data-pw="oauth-google"]')).toBeVisible();
     await expect(page.locator('[data-pw="oauth-discord"]')).toBeVisible();
-    await expect(page.locator('[data-pw="oauth-apple"]')).toBeVisible();
+    await expect(page.locator('[data-pw="auth-mode-magicLink"]')).toHaveCount(0);
+    await expect(page.locator('[data-pw="oauth-apple"]')).toHaveCount(0);
   });
 });

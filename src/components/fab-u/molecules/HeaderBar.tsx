@@ -43,9 +43,9 @@ function HeaderBar({
         borderRadius: compact ? '9px' : 0,
         color: '#fff',
         px: compact ? 1.6 : 1.95,
-        pt: compact ? 1.15 : 'max(42px, calc(env(safe-area-inset-top) + 30px))',
+        pt: compact ? 1.15 : 'max(22px, calc(env(safe-area-inset-top) + 10px))',
         pb: compact ? 1.15 : 2.25,
-        minHeight: compact ? undefined : 136,
+        minHeight: compact ? undefined : 116,
         boxSizing: 'border-box',
         boxShadow: '0 6px 14px rgba(30, 49, 40, 0.08)',
       }}
@@ -121,9 +121,9 @@ function HeaderBar({
           data-pw="header-action"
           sx={{
             position: 'absolute',
-            top: compact ? '50%' : 'max(70px, calc(env(safe-area-inset-top) + 58px))',
+            top: compact ? '50%' : 'max(13px, calc(env(safe-area-inset-top) + 9px))',
             bottom: 'auto',
-            right: compact ? 10 : 24,
+            right: compact ? 10 : 58,
             transform: compact ? 'translateY(-50%)' : 'none',
             minWidth: compact ? 78 : 72,
             minHeight: compact ? 30 : 32,
