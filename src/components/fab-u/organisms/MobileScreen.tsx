@@ -75,14 +75,17 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
       data-pw="mobile-screen"
       sx={{
         position: 'relative',
-        width: '100%',
-        maxWidth: 390,
+        width: { xs: '100vw', md: '100%' },
+        maxWidth: { xs: 'none', md: 390 },
         height: {
-          xs: 'min(820px, calc(100dvh - 24px))',
+          xs: '100vh',
           md: 'min(920px, calc(100dvh - 40px))',
         },
-        borderRadius: '14px',
-        boxShadow: `0 5px 18px rgba(31, 42, 38, 0.05), 0 0 0 1px ${fabUTokens.color.border}`,
+        borderRadius: { xs: 0, md: '14px' },
+        boxShadow: {
+          xs: 'none',
+          md: `0 5px 18px rgba(31, 42, 38, 0.05), 0 0 0 1px ${fabUTokens.color.border}`,
+        },
         overflow: 'hidden',
       }}
     >
@@ -120,15 +123,15 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
         ref={headerRef}
         sx={{
           position: 'absolute',
-          top: '-1px',
-          left: '-1px',
-          right: '-1px',
+          top: { xs: 0, md: '-1px' },
+          left: { xs: 0, md: '-1px' },
+          right: { xs: 0, md: '-1px' },
           zIndex: 2,
           pb: 1.5,
           bgcolor: 'transparent',
-          borderLeft: `1px solid ${fabUTokens.color.brand}`,
-          borderRight: `1px solid ${fabUTokens.color.brand}`,
-          borderTop: `1px solid ${fabUTokens.color.brand}`,
+          borderLeft: { xs: 0, md: `1px solid ${fabUTokens.color.brand}` },
+          borderRight: { xs: 0, md: `1px solid ${fabUTokens.color.brand}` },
+          borderTop: { xs: 0, md: `1px solid ${fabUTokens.color.brand}` },
         }}
       >
         {header}

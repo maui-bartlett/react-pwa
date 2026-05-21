@@ -2444,13 +2444,14 @@ function FabU() {
           data-pw="app-canvas"
           alignItems="center"
           sx={{
-            minHeight: '100dvh',
-            height: '100dvh',
+            minHeight: { xs: '100vh', md: '100dvh' },
+            height: { xs: '100vh', md: '100dvh' },
+            width: { xs: '100vw', md: '100%' },
             overflow: 'hidden',
             bgcolor: fabUTokens.color.page,
-            pt: { xs: 'max(20px, calc(env(safe-area-inset-top) + 12px))', md: 3 },
-            pb: { xs: 2, md: 3 },
-            px: 1.5,
+            pt: { xs: 0, md: 3 },
+            pb: { xs: 0, md: 3 },
+            px: { xs: 0, md: 1.5 },
             boxSizing: 'border-box',
           }}
         >
