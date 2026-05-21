@@ -5,7 +5,7 @@
   "theme_color": "#ffffff",
   "background_color": "#315c4d",
   "display": "standalone",
-  "pwa_version": "2026.05.21.2",
+  "pwa_version": "2026.05.21.3",
   "icons": [
     {
       "src": "pwa-192x192.png",
