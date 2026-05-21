@@ -43,7 +43,7 @@ function HeaderBar({
         borderRadius: compact ? '9px' : 0,
         color: '#fff',
         px: compact ? 1.6 : 1.95,
-        pt: compact ? 1.15 : 'max(36px, calc(env(safe-area-inset-top) + 24px))',
+        pt: compact ? 1.15 : 'max(42px, calc(env(safe-area-inset-top) + 30px))',
         pb: compact ? 1.15 : 2.25,
         minHeight: compact ? undefined : 136,
         boxSizing: 'border-box',
@@ -56,7 +56,6 @@ function HeaderBar({
           flex: 1,
           minWidth: 0,
           pr: action || actionLabel ? (compact ? 9 : 11) : 0,
-          mt: compact ? 0 : 1,
         }}
       >
         {eyebrow ? (
@@ -122,9 +121,10 @@ function HeaderBar({
           data-pw="header-action"
           sx={{
             position: 'absolute',
-            top: compact ? '50%' : 'calc(50% + 8px)',
+            top: compact ? '50%' : 'max(70px, calc(env(safe-area-inset-top) + 58px))',
+            bottom: 'auto',
             right: compact ? 10 : 24,
-            transform: 'translateY(-50%)',
+            transform: compact ? 'translateY(-50%)' : 'none',
             minWidth: compact ? 78 : 72,
             minHeight: compact ? 30 : 32,
             borderRadius: '7px',
