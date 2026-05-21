@@ -241,7 +241,7 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
             border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
             borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
             px: 1.25,
-            py: 0.9,
+            py: 1.05,
             bgcolor: fabUTokens.color.pillSurface,
             // Inset highlight + right-edge drop shadow. At rest the drop
             // shadow extends past the inner overflow:hidden boundary and is
@@ -259,7 +259,7 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
             sx={{
               color: fabUTokens.color.textSecondary,
               fontWeight: 700,
-              fontSize: '0.72rem',
+              fontSize: '0.76rem',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
               whiteSpace: 'nowrap',
@@ -283,7 +283,7 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
                 '& input': {
                   p: 0,
                   textAlign: 'right',
-                  fontSize: '0.82rem',
+                  fontSize: '0.87rem',
                   fontWeight: 400,
                   color: fabUTokens.color.textPrimary,
                 },
@@ -294,7 +294,7 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
               sx={{
                 flex: 1,
                 textAlign: 'right',
-                fontSize: '0.82rem',
+                fontSize: '0.87rem',
                 fontWeight: 400,
                 color: fabUTokens.color.textPrimary,
               }}
@@ -448,7 +448,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
               border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
               borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
               px: 1.25,
-              py: 0.9,
+              py: 1.05,
               bgcolor: fabUTokens.color.pillSurface,
               // Inset highlight + right-edge drop shadow. The drop shadow is
               // clipped at rest by the outer overflow:hidden, then becomes
@@ -466,7 +466,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
               sx={{
                 color: fabUTokens.color.textSecondary,
                 fontWeight: 700,
-                fontSize: '0.72rem',
+                fontSize: '0.76rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 whiteSpace: 'nowrap',
@@ -491,7 +491,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
                   '& input': {
                     p: 0,
                     textAlign: 'right',
-                    fontSize: '0.82rem',
+                    fontSize: '0.87rem',
                     fontWeight: 400,
                     color: fabUTokens.color.textPrimary,
                   },
@@ -502,7 +502,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
                 sx={{
                   flex: 1,
                   textAlign: 'right',
-                  fontSize: '0.82rem',
+                  fontSize: '0.87rem',
                   fontWeight: 400,
                   color: fabUTokens.color.textPrimary,
                 }}

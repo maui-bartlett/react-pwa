@@ -65,7 +65,7 @@ function HeaderBar({
             sx={{
               color: 'rgba(255,255,255,0.78)',
               fontWeight: 700,
-              fontSize: compact ? '0.58rem' : '0.63rem',
+              fontSize: compact ? '0.62rem' : '0.67rem',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               display: 'flex',
@@ -82,7 +82,7 @@ function HeaderBar({
           sx={{
             fontWeight: 700,
             lineHeight: 1.1,
-            fontSize: compact ? '0.98rem' : '1.28rem',
+            fontSize: compact ? '1.05rem' : '1.36rem',
             letterSpacing: compact ? '0.07em' : '0.005em',
             textTransform: compact ? 'uppercase' : 'none',
           }}
@@ -95,7 +95,7 @@ function HeaderBar({
             sx={{
               color: 'rgba(255,255,255,0.8)',
               maxWidth: compact ? 140 : 'none',
-              fontSize: compact ? '0.69rem' : '0.78rem',
+              fontSize: compact ? '0.73rem' : '0.83rem',
               lineHeight: 1.32,
             }}
           >
