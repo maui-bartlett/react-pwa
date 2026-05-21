@@ -54,6 +54,7 @@ function HeaderBar({
           flex: 1,
           minWidth: 0,
           pr: action || actionLabel ? (compact ? 9 : 11) : 0,
+          mt: compact ? 0 : 1,
         }}
       >
         {eyebrow ? (
@@ -119,7 +120,7 @@ function HeaderBar({
           data-pw="header-action"
           sx={{
             position: 'absolute',
-            top: '50%',
+            top: compact ? '50%' : 'calc(50% + 8px)',
             right: compact ? 10 : 24,
             transform: 'translateY(-50%)',
             minWidth: compact ? 78 : 72,
