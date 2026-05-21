@@ -37,7 +37,9 @@ function HeaderBar({
       sx={{
         position: 'relative',
         bgcolor: fabUTokens.color.brand,
-        border: `1px solid ${alpha('#ffffff', 0.12)}`,
+        borderColor: alpha('#ffffff', 0.12),
+        borderStyle: 'solid',
+        borderWidth: compact ? 1 : { xs: '0 0 1px', md: 1 },
         borderRadius: compact ? '9px' : 0,
         color: '#fff',
         px: compact ? 1.6 : 1.95,

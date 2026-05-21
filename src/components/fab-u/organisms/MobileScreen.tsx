@@ -107,6 +107,13 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
             overflowY: 'auto',
             overflowX: 'hidden',
             overscrollBehavior: 'contain',
+            '@media (max-width: 899.95px)': {
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+            },
           }}
         >
           {/* Content — top padding reserves space below the floating header + 10px breathing room */}
@@ -142,14 +149,15 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
         data-pw="app-footer"
         sx={{
           position: 'absolute',
-          right: '-1px',
-          bottom: '-1px',
-          left: '-1px',
+          right: { xs: 0, md: '-1px' },
+          bottom: { xs: 0, md: '-1px' },
+          left: { xs: 0, md: '-1px' },
           px: 1,
-          py: 0.85,
+          pt: 0.85,
+          pb: { xs: 'max(10px, calc(env(safe-area-inset-bottom) + 8px))', md: 0.85 },
           zIndex: 10,
-          borderLeft: `1px solid ${fabUTokens.color.border}`,
-          borderRight: `1px solid ${fabUTokens.color.border}`,
+          borderLeft: { xs: 0, md: `1px solid ${fabUTokens.color.border}` },
+          borderRight: { xs: 0, md: `1px solid ${fabUTokens.color.border}` },
           bgcolor: fabUTokens.color.canvas,
         }}
       >
