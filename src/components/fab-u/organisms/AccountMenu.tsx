@@ -12,24 +12,14 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import {
-  CheckCircle,
-  KeyRound,
-  LogOut,
-  Mail,
-  Moon,
-  Settings,
-  ShieldCheck,
-  Sun,
-  X,
-} from 'lucide-react';
+import { CheckCircle, KeyRound, LogOut, Moon, Settings, ShieldCheck, Sun, X } from 'lucide-react';
 
 import { authClient } from '@/lib/auth-client';
 
 import { useFabUTokens } from '../ThemeContext';
 
-type AuthMode = 'signIn' | 'signUp' | 'magicLink';
-type OAuthProvider = 'google' | 'discord' | 'apple';
+type AuthMode = 'signIn' | 'signUp';
+type OAuthProvider = 'google' | 'discord';
 
 type AuthSession = {
   user?: {
@@ -50,13 +40,11 @@ type AuthResult = {
 const authModes: Array<{ label: string; value: AuthMode }> = [
   { label: 'Sign in', value: 'signIn' },
   { label: 'Create', value: 'signUp' },
-  { label: 'Magic link', value: 'magicLink' },
 ];
 
 const oauthProviders: Array<{ label: string; provider: OAuthProvider }> = [
   { label: 'Google', provider: 'google' },
   { label: 'Discord', provider: 'discord' },
-  { label: 'Apple', provider: 'apple' },
 ];
 
 function getAuthErrorMessage(error: unknown) {
@@ -168,14 +156,6 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
         assertAuthSuccess(result);
         setStatus('Account created.');
         await refetch();
-      } else {
-        setStatus('Requesting magic link...');
-        const result = await authClient.signIn.magicLink({
-          email,
-          callbackURL: window.location.href,
-        });
-        assertAuthSuccess(result);
-        setStatus('Magic link requested. Check your email.');
       }
     } catch (authError) {
       setError(getAuthErrorMessage(authError));
@@ -429,20 +409,18 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
                     autoComplete="email"
                     onChange={setEmail}
                   />
-                  {mode !== 'magicLink' ? (
-                    <AuthField
-                      label="Password"
-                      type="password"
-                      value={password}
-                      autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
-                      onChange={setPassword}
-                    />
-                  ) : null}
+                  <AuthField
+                    label="Password"
+                    type="password"
+                    value={password}
+                    autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                    onChange={setPassword}
+                  />
                   <Button
                     data-pw="auth-submit"
                     type="submit"
-                    disabled={submitting || !email || (mode !== 'magicLink' && !password)}
-                    startIcon={mode === 'magicLink' ? <Mail size={16} /> : <KeyRound size={16} />}
+                    disabled={submitting || !email || !password}
+                    startIcon={<KeyRound size={16} />}
                     sx={{
                       height: 40,
                       borderRadius: '8px',
@@ -457,11 +435,7 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
                       },
                     }}
                   >
-                    {mode === 'signIn'
-                      ? 'Sign in'
-                      : mode === 'signUp'
-                        ? 'Create account'
-                        : 'Send magic link'}
+                    {mode === 'signIn' ? 'Sign in' : 'Create account'}
                   </Button>
                 </Stack>
 
