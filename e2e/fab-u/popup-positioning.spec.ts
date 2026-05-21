@@ -167,7 +167,10 @@ test.describe('Popup positioning and border styling', () => {
 
   test('attr popup border is brand green in light mode', async ({ page }) => {
     // Switch to light mode
-    await page.locator('[data-pw="theme-toggle"]').click();
+    await page.locator('[data-pw="account-menu-button"]').click();
+    await page.locator('[data-pw="settings-theme-toggle"]').click();
+    await page.keyboard.press('Escape');
+    await page.locator('[data-pw="account-dialog"]').waitFor({ state: 'hidden' });
 
     await page.locator('[data-pw="attr-pill-dexterity"]').click();
 
@@ -199,7 +202,10 @@ test.describe('Popup positioning and border styling', () => {
 
   test('bond type menu border is brand green in light mode', async ({ page }) => {
     // Switch to light mode
-    await page.locator('[data-pw="theme-toggle"]').click();
+    await page.locator('[data-pw="account-menu-button"]').click();
+    await page.locator('[data-pw="settings-theme-toggle"]').click();
+    await page.keyboard.press('Escape');
+    await page.locator('[data-pw="account-dialog"]').waitFor({ state: 'hidden' });
 
     await page.locator('[data-pw="bond-add-jelena"]').click();
 

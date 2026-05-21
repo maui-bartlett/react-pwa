@@ -164,7 +164,9 @@ test.describe('Dark mode', () => {
   // ── Theme toggle works ─────────────────────────────────────────────────────
 
   test('theme toggle button exists and switches from dark to light', async ({ page }) => {
-    const toggle = page.locator('[data-pw="theme-toggle"]');
+    await page.locator('[data-pw="account-menu-button"]').click();
+
+    const toggle = page.locator('[data-pw="settings-theme-toggle"]');
     await expect(toggle).toBeVisible();
 
     // Currently dark — section labels should be green (G > R); both modes use #315c4d.
