@@ -193,6 +193,28 @@ Browser smoke:
 - Added `e2e/fab-u/account-flow.spec.ts` for the account dialog mode-switching smoke test.
 - Visual smoke at `430x900` confirmed the settings gear stays inside the mobile shell/header and no browser console errors remain.
 
+## Production blank-screen investigation
+
+Branch: `codex/troubleshoot-production-blank`
+
+Finding:
+
+- A production-style build with `VITE_CONVEX_URL=` and `VITE_CONVEX_SITE_URL=` produced a blank page.
+- The built `root` chunk contained a startup-time `throw new Error("Missing VITE_CONVEX_URL")`, so React never mounted when Vercel did not provide the public Convex env vars or provided them as empty strings.
+- The in-app browser preview on `127.0.0.1:4173` was additionally affected by an old service-worker-cached bundle; verifying the same rebuilt preview on `localhost:4173` loaded the new assets and rendered the FabU page.
+
+Fix in progress:
+
+- `src/lib/convexClient.ts` now falls back to `https://polite-rooster-646.convex.cloud` when `VITE_CONVEX_URL` is missing or empty.
+- `src/lib/auth-client.ts` now falls back to `https://polite-rooster-646.convex.site` when `VITE_CONVEX_SITE_URL` is missing or empty.
+
+Validation on this branch:
+
+- `VITE_CONVEX_URL= VITE_CONVEX_SITE_URL= npm run build`
+- `npm run ts:check`
+- `npm run lint:check`
+- Production preview on `http://localhost:4173/?verify=fixed` rendered the FabU character sheet with `TRAITS` present and a non-empty `#root`.
+
 ## Resume point
 
 Resume `backend-dev-plan.md` at Phase 8:

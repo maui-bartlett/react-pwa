@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useMemo, useState } from 'react';
 
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -12,24 +12,14 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import {
-  CheckCircle,
-  KeyRound,
-  LogOut,
-  Mail,
-  Moon,
-  Settings,
-  ShieldCheck,
-  Sun,
-  X,
-} from 'lucide-react';
+import { CheckCircle, KeyRound, LogOut, Moon, Settings, ShieldCheck, Sun, X } from 'lucide-react';
 
 import { authClient } from '@/lib/auth-client';
 
 import { useFabUTokens } from '../ThemeContext';
 
-type AuthMode = 'signIn' | 'signUp' | 'magicLink';
-type OAuthProvider = 'google' | 'discord' | 'apple';
+type AuthMode = 'signIn' | 'signUp';
+type OAuthProvider = 'google' | 'discord';
 
 type AuthSession = {
   user?: {
@@ -47,16 +37,64 @@ type AuthResult = {
   error?: { message?: string } | null;
 };
 
+type OAuthProviderConfig = {
+  icon: ReactNode;
+  label: string;
+  provider: OAuthProvider;
+};
+
 const authModes: Array<{ label: string; value: AuthMode }> = [
   { label: 'Sign in', value: 'signIn' },
   { label: 'Create', value: 'signUp' },
-  { label: 'Magic link', value: 'magicLink' },
 ];
 
-const oauthProviders: Array<{ label: string; provider: OAuthProvider }> = [
-  { label: 'Google', provider: 'google' },
-  { label: 'Discord', provider: 'discord' },
-  { label: 'Apple', provider: 'apple' },
+function GoogleLogo() {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      sx={{ display: 'block', width: 16, height: 16 }}
+    >
+      <path
+        fill="#4285F4"
+        d="M21.6 12.23c0-.78-.07-1.53-.2-2.23H12v4.22h5.37a4.6 4.6 0 0 1-1.99 3.02v2.5h3.22c1.88-1.73 3-4.28 3-7.51Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 4.96-.9 6.6-2.44l-3.22-2.5c-.9.6-2.04.95-3.38.95-2.6 0-4.8-1.76-5.59-4.13H3.08v2.58A9.99 9.99 0 0 0 12 22Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.41 13.88a6 6 0 0 1 0-3.76V7.54H3.08a10.01 10.01 0 0 0 0 8.92l3.33-2.58Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.99c1.47 0 2.78.5 3.82 1.49l2.86-2.86C16.95 3.01 14.7 2 12 2a9.99 9.99 0 0 0-8.92 5.54l3.33 2.58C7.2 7.75 9.4 5.99 12 5.99Z"
+      />
+    </Box>
+  );
+}
+
+function DiscordLogo() {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      sx={{ display: 'block', width: 16, height: 16 }}
+    >
+      <path
+        fill="#5865F2"
+        d="M19.54 5.34A16.08 16.08 0 0 0 15.57 4a10.9 10.9 0 0 0-.51 1.05 14.95 14.95 0 0 0-4.42 0A10.9 10.9 0 0 0 10.13 4a16.33 16.33 0 0 0-3.98 1.34C3.63 9.12 2.94 12.8 3.28 16.42a16.1 16.1 0 0 0 4.88 2.47c.39-.54.74-1.1 1.04-1.7a10.52 10.52 0 0 1-1.64-.79c.14-.1.27-.2.4-.3a11.55 11.55 0 0 0 10.08 0c.13.1.26.2.4.3-.52.31-1.07.58-1.65.8.3.58.65 1.15 1.04 1.69a16.05 16.05 0 0 0 4.89-2.47c.4-4.2-.68-7.84-3.18-11.08ZM9.66 14.17c-.95 0-1.72-.87-1.72-1.94 0-1.07.76-1.94 1.72-1.94.96 0 1.74.88 1.72 1.94 0 1.07-.76 1.94-1.72 1.94Zm4.68 0c-.95 0-1.72-.87-1.72-1.94 0-1.07.76-1.94 1.72-1.94.96 0 1.74.88 1.72 1.94 0 1.07-.76 1.94-1.72 1.94Z"
+      />
+    </Box>
+  );
+}
+
+const oauthProviders: OAuthProviderConfig[] = [
+  { label: 'Google', provider: 'google', icon: <GoogleLogo /> },
+  { label: 'Discord', provider: 'discord', icon: <DiscordLogo /> },
 ];
 
 function getAuthErrorMessage(error: unknown) {
@@ -168,14 +206,6 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
         assertAuthSuccess(result);
         setStatus('Account created.');
         await refetch();
-      } else {
-        setStatus('Requesting magic link...');
-        const result = await authClient.signIn.magicLink({
-          email,
-          callbackURL: window.location.href,
-        });
-        assertAuthSuccess(result);
-        setStatus('Magic link requested. Check your email.');
       }
     } catch (authError) {
       setError(getAuthErrorMessage(authError));
@@ -429,20 +459,18 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
                     autoComplete="email"
                     onChange={setEmail}
                   />
-                  {mode !== 'magicLink' ? (
-                    <AuthField
-                      label="Password"
-                      type="password"
-                      value={password}
-                      autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
-                      onChange={setPassword}
-                    />
-                  ) : null}
+                  <AuthField
+                    label="Password"
+                    type="password"
+                    value={password}
+                    autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                    onChange={setPassword}
+                  />
                   <Button
                     data-pw="auth-submit"
                     type="submit"
-                    disabled={submitting || !email || (mode !== 'magicLink' && !password)}
-                    startIcon={mode === 'magicLink' ? <Mail size={16} /> : <KeyRound size={16} />}
+                    disabled={submitting || !email || !password}
+                    startIcon={<KeyRound size={16} />}
                     sx={{
                       height: 40,
                       borderRadius: '8px',
@@ -457,21 +485,18 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
                       },
                     }}
                   >
-                    {mode === 'signIn'
-                      ? 'Sign in'
-                      : mode === 'signUp'
-                        ? 'Create account'
-                        : 'Send magic link'}
+                    {mode === 'signIn' ? 'Sign in' : 'Create account'}
                   </Button>
                 </Stack>
 
                 <Stack direction="row" gap={0.7}>
-                  {oauthProviders.map(({ provider, label }) => (
+                  {oauthProviders.map(({ provider, label, icon }) => (
                     <Button
                       key={provider}
                       data-pw={`oauth-${provider}`}
                       onClick={() => startOAuth(provider)}
                       disabled={submitting}
+                      startIcon={icon}
                       sx={{
                         flex: 1,
                         minWidth: 0,
@@ -482,6 +507,9 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
                         textTransform: 'none',
                         fontSize: '0.74rem',
                         fontWeight: 800,
+                        '& .MuiButton-startIcon': {
+                          mr: 0.7,
+                        },
                       }}
                     >
                       {label}
