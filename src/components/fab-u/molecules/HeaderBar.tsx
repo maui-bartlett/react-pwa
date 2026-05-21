@@ -35,6 +35,7 @@ function HeaderBar({
       justifyContent="space-between"
       spacing={compact ? 2 : 1}
       sx={{
+        position: 'relative',
         bgcolor: fabUTokens.color.brand,
         border: `1px solid ${alpha('#ffffff', 0.12)}`,
         borderRadius: compact ? '9px' : 0,
@@ -42,10 +43,19 @@ function HeaderBar({
         px: compact ? 1.6 : 1.95,
         pt: compact ? 1.15 : 'max(36px, calc(env(safe-area-inset-top) + 24px))',
         pb: compact ? 1.15 : 2.25,
+        minHeight: compact ? undefined : 136,
+        boxSizing: 'border-box',
         boxShadow: '0 6px 14px rgba(30, 49, 40, 0.08)',
       }}
     >
-      <Stack spacing={compact ? 0.16 : 0.3} sx={{ flex: 1, minWidth: 0 }}>
+      <Stack
+        spacing={compact ? 0.16 : 0.3}
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          pr: action || actionLabel ? (compact ? 9 : 11) : 0,
+        }}
+      >
         {eyebrow ? (
           <Typography
             data-pw="header-eyebrow"
@@ -91,37 +101,45 @@ function HeaderBar({
           </Typography>
         ) : null}
       </Stack>
-      {action || actionLabel ? (
-        <Stack
-          alignItems="flex-end"
-          spacing={0.8}
-          sx={{ alignSelf: compact ? 'center' : 'flex-start' }}
+      {action ? (
+        <Box
+          data-pw="header-settings-action"
+          sx={{
+            position: 'absolute',
+            top: compact ? 9 : 'max(12px, calc(env(safe-area-inset-top) + 8px))',
+            right: compact ? 10 : 12,
+            zIndex: 1,
+          }}
         >
           {action}
-          {actionLabel ? (
-            <Box
-              data-pw="header-action"
-              sx={{
-                minWidth: compact ? 78 : 72,
-                minHeight: compact ? 30 : 32,
-                borderRadius: '7px',
-                bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : alpha('#ffffff', 0.96),
-                color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brandStrong,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                px: 1.15,
-                boxShadow: 'none',
-                cursor: 'default',
-                textTransform: 'none',
-                fontWeight: 700,
-                fontSize: compact ? '0.72rem' : '0.74rem',
-              }}
-            >
-              {actionLabel}
-            </Box>
-          ) : null}
-        </Stack>
+        </Box>
+      ) : null}
+      {actionLabel ? (
+        <Box
+          data-pw="header-action"
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            right: compact ? 10 : 24,
+            transform: 'translateY(-50%)',
+            minWidth: compact ? 78 : 72,
+            minHeight: compact ? 30 : 32,
+            borderRadius: '7px',
+            bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : alpha('#ffffff', 0.96),
+            color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brandStrong,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            px: 1.15,
+            boxShadow: 'none',
+            cursor: 'default',
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: compact ? '0.72rem' : '0.74rem',
+          }}
+        >
+          {actionLabel}
+        </Box>
       ) : null}
     </Stack>
   );
