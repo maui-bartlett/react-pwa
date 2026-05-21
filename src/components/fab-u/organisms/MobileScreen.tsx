@@ -154,7 +154,7 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           left: { xs: 0, md: '-1px' },
           px: 1,
           pt: 0.85,
-          pb: { xs: 'max(10px, calc(env(safe-area-inset-bottom) + 8px))', md: 0.85 },
+          pb: { xs: 'max(20px, calc(env(safe-area-inset-bottom) + 18px))', md: 0.85 },
           zIndex: 10,
           borderLeft: { xs: 0, md: `1px solid ${fabUTokens.color.border}` },
           borderRight: { xs: 0, md: `1px solid ${fabUTokens.color.border}` },
