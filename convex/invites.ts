@@ -5,7 +5,6 @@ import {
   getOrCreateUserProfile,
   requireActiveUserProfile,
   requireCampaignGM,
-  requireCampaignMember,
 } from './lib/auth';
 import { generateJoinCode, hashSecret } from './lib/hash';
 

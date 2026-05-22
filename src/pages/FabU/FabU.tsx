@@ -67,6 +67,7 @@ import { MAX_CHARACTER_LEVEL, activeCombatTabState, activeTabState } from './ato
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
 import { useCharacterHistory } from './useCharacterHistory';
+import { useConvexCharacterSync } from './useConvexCharacterSync';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Traits', value: 'traits' },
@@ -598,6 +599,7 @@ function FabU() {
   const [pendingCombatTraitsScroll, setPendingCombatTraitsScroll] = useState(false);
   const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
+  useConvexCharacterSync(character, characterHistory);
   const statusEffects = character.statusEffects;
   const handleToggleEffect = (id: string) => {
     setCharacter((c) => ({

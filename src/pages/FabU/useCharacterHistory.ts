@@ -21,6 +21,8 @@ export type CharacterHistoryControls = {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  /** Replace the current character without adding an undo entry. */
+  replace: (character: Character) => void;
   /** Drop the entire undo/redo stack — useful after destructive resets. */
   clear: () => void;
 };
@@ -94,6 +96,14 @@ function useCharacterHistory(): [Character, SetCharacter, CharacterHistoryContro
     setHistory({ past: [], future: [] });
   }, [setHistory]);
 
+  const replace = useCallback(
+    (nextValue: Character) => {
+      setCharacterRaw(nextValue);
+      setHistory({ past: [], future: [] });
+    },
+    [setCharacterRaw, setHistory],
+  );
+
   return [
     character,
     setCharacter,
@@ -102,6 +112,7 @@ function useCharacterHistory(): [Character, SetCharacter, CharacterHistoryContro
       redo,
       canUndo: history.past.length > 0,
       canRedo: history.future.length > 0,
+      replace,
       clear,
     },
   ];
