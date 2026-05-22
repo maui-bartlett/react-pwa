@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMutation, useQuery } from 'convex/react';
 
@@ -14,15 +14,53 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import type { Character } from './atoms';
 import type { CharacterHistoryControls } from './useCharacterHistory';
 
+const PENDING_SYNC_KEY_PREFIX = 'fab-u-convex-pending-character';
+
+type PendingCharacterSync = {
+  character: Character;
+  savedAt: number;
+};
+
 function getCharacterName(character: Character) {
   const name = [character.firstName, character.lastName].filter(Boolean).join(' ').trim();
   return name || character.nickName || 'Fab U Character';
+}
+
+function getPendingSyncKey(userId: string, characterId: Id<'characters'>) {
+  return `${PENDING_SYNC_KEY_PREFIX}:${userId}:${characterId}`;
+}
+
+function readPendingSync(key: string): PendingCharacterSync | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PendingCharacterSync>;
+    if (!parsed.character || typeof parsed.savedAt !== 'number') return null;
+    return { character: parsed.character, savedAt: parsed.savedAt };
+  } catch {
+    return null;
+  }
+}
+
+function writePendingSync(key: string, character: Character) {
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      character,
+      savedAt: Date.now(),
+    } satisfies PendingCharacterSync),
+  );
+}
+
+function clearPendingSync(key: string) {
+  localStorage.removeItem(key);
 }
 
 function useConvexCharacterSync(character: Character, history: CharacterHistoryControls) {
   const { data: session } = authClient.useSession();
   const { replace } = history;
   const [characterId, setCharacterId] = useState<Id<'characters'> | null>(null);
+  const [syncRetryToken, setSyncRetryToken] = useState(0);
   const createFromLocalImport = useMutation(api.characters.createFromLocalImport);
   const updateState = useMutation(api.characters.updateState);
   const characters = useQuery(
@@ -38,6 +76,21 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
   const readyToPersistRef = useRef(false);
   const lastSyncedJsonRef = useRef<string | null>(null);
   const lastRemoteUpdatedAtRef = useRef<number | null>(null);
+  const pendingSyncKey =
+    session?.user && characterId ? getPendingSyncKey(session.user.id, characterId) : null;
+
+  const persistCharacter = useCallback(
+    async (targetCharacter: Character) => {
+      if (!characterId) return;
+      await updateState({
+        characterId,
+        schemaVersion: CHARACTER_SCHEMA_VERSION,
+        characterState: serializeCharacterForBackend(targetCharacter),
+        statusEffects: targetCharacter.statusEffects,
+      });
+    },
+    [characterId, updateState],
+  );
 
   useEffect(() => {
     if (!session?.user) {
@@ -47,6 +100,19 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
       lastRemoteUpdatedAtRef.current = null;
     }
   }, [session?.user]);
+
+  useEffect(() => {
+    const retry = () => setSyncRetryToken((token) => token + 1);
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    document.addEventListener('visibilitychange', retry);
+
+    return () => {
+      window.removeEventListener('online', retry);
+      window.removeEventListener('focus', retry);
+      document.removeEventListener('visibilitychange', retry);
+    };
+  }, []);
 
   useEffect(() => {
     if (!session?.user || characters === undefined || creatingRef.current) return;
@@ -73,11 +139,16 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     if (!characterId) {
       setCharacterId(characters[0]._id);
     }
-  }, [character, characterId, characters, createFromLocalImport, session?.user]);
+  }, [character, characterId, characters, createFromLocalImport, session?.user, syncRetryToken]);
 
   useEffect(() => {
     if (!activeRemoteCharacter) return;
     if (lastRemoteUpdatedAtRef.current === activeRemoteCharacter.updatedAt) return;
+
+    if (pendingSyncKey && readPendingSync(pendingSyncKey)) {
+      readyToPersistRef.current = true;
+      return;
+    }
 
     const remoteCharacter = deserializeCharacterFromBackend(activeRemoteCharacter.characterState);
     const remoteJson = JSON.stringify(remoteCharacter);
@@ -89,7 +160,21 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     }
 
     readyToPersistRef.current = true;
-  }, [activeRemoteCharacter, replace]);
+  }, [activeRemoteCharacter, pendingSyncKey, replace]);
+
+  useEffect(() => {
+    if (!pendingSyncKey || !readyToPersistRef.current) return;
+    const pending = readPendingSync(pendingSyncKey);
+    if (!pending) return;
+    if (!navigator.onLine) return;
+
+    void persistCharacter(pending.character)
+      .then(() => {
+        lastSyncedJsonRef.current = JSON.stringify(pending.character);
+        clearPendingSync(pendingSyncKey);
+      })
+      .catch(() => {});
+  }, [pendingSyncKey, persistCharacter, syncRetryToken]);
 
   useEffect(() => {
     if (!session?.user || !characterId || !readyToPersistRef.current) return undefined;
@@ -97,19 +182,26 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     const nextJson = JSON.stringify(character);
     if (nextJson === lastSyncedJsonRef.current) return undefined;
 
+    if (!pendingSyncKey) return undefined;
+
     const timeoutId = window.setTimeout(() => {
-      void updateState({
-        characterId,
-        schemaVersion: CHARACTER_SCHEMA_VERSION,
-        characterState: serializeCharacterForBackend(character),
-        statusEffects: character.statusEffects,
-      }).then(() => {
-        lastSyncedJsonRef.current = nextJson;
-      });
+      if (!navigator.onLine) {
+        writePendingSync(pendingSyncKey, character);
+        return;
+      }
+
+      void persistCharacter(character)
+        .then(() => {
+          lastSyncedJsonRef.current = nextJson;
+          clearPendingSync(pendingSyncKey);
+        })
+        .catch(() => {
+          writePendingSync(pendingSyncKey, character);
+        });
     }, 450);
 
     return () => window.clearTimeout(timeoutId);
-  }, [character, characterId, session?.user, updateState]);
+  }, [character, characterId, pendingSyncKey, persistCharacter, session?.user]);
 
   return {
     characterId,
