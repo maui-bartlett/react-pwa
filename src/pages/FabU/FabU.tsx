@@ -63,11 +63,11 @@ import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
+import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import { MAX_CHARACTER_LEVEL, activeCombatTabState, activeTabState } from './atoms';
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
 import { useCharacterHistory } from './useCharacterHistory';
-import { useConvexCharacterSync } from './useConvexCharacterSync';
 
 const combatTabs: TabOption<CombatSubTab>[] = [
   { label: 'Traits', value: 'traits' },
@@ -599,7 +599,6 @@ function FabU() {
   const [pendingCombatTraitsScroll, setPendingCombatTraitsScroll] = useState(false);
   const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
-  useConvexCharacterSync(character, characterHistory);
   const statusEffects = character.statusEffects;
   const handleToggleEffect = (id: string) => {
     setCharacter((c) => ({
@@ -2441,6 +2440,7 @@ function FabU() {
   return (
     <FabUThemeProvider>
       <>
+        <ConvexCharacterSyncBoundary character={character} history={characterHistory} />
         <meta name="title" content="Fab-u Preview" />
         <Stack
           data-pw="app-canvas"
