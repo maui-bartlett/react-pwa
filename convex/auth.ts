@@ -8,7 +8,13 @@ import type { DataModel } from './_generated/dataModel';
 import { query } from './_generated/server';
 import authConfig from './auth.config';
 
-const siteUrl = process.env.SITE_URL ?? 'http://localhost:5173';
+const productionSiteUrl = 'https://react-pwa-lime.vercel.app';
+const localSiteUrl = 'http://localhost:5173';
+const siteUrl = process.env.SITE_URL ?? productionSiteUrl;
+const extraTrustedOrigins =
+  process.env.ADDITIONAL_TRUSTED_ORIGINS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
 
 function optionalSocialProviders(): BetterAuthOptions['socialProviders'] {
   return {
@@ -71,7 +77,13 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
   betterAuth({
     appName: 'Fab U',
     baseURL: process.env.CONVEX_SITE_URL,
-    trustedOrigins: [siteUrl, 'https://appleid.apple.com'],
+    trustedOrigins: [
+      siteUrl,
+      productionSiteUrl,
+      localSiteUrl,
+      'https://appleid.apple.com',
+      ...extraTrustedOrigins,
+    ],
     secret: process.env.BETTER_AUTH_SECRET,
     database: authComponent.adapter(ctx),
     emailAndPassword: {
