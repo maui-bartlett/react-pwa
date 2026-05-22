@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useMutation, useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 
 import { CHARACTER_SCHEMA_VERSION } from '@/domain/fabU/characterDefaults';
 import {
@@ -30,9 +30,20 @@ function getPendingSyncKey(userId: string, characterId: Id<'characters'>) {
   return `${PENDING_SYNC_KEY_PREFIX}:${userId}:${characterId}`;
 }
 
-function readPendingSync(key: string): PendingCharacterSync | null {
+function getLocalStorage() {
   try {
-    const raw = localStorage.getItem(key);
+    return globalThis.window?.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function readPendingSync(key: string): PendingCharacterSync | null {
+  const storage = getLocalStorage();
+  if (!storage) return null;
+
+  try {
+    const raw = storage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PendingCharacterSync>;
     if (!parsed.character || typeof parsed.savedAt !== 'number') return null;
@@ -43,29 +54,49 @@ function readPendingSync(key: string): PendingCharacterSync | null {
 }
 
 function writePendingSync(key: string, character: Character) {
-  localStorage.setItem(
-    key,
-    JSON.stringify({
-      character,
-      savedAt: Date.now(),
-    } satisfies PendingCharacterSync),
-  );
+  const storage = getLocalStorage();
+  if (!storage) return;
+
+  try {
+    storage.setItem(
+      key,
+      JSON.stringify({
+        character,
+        savedAt: Date.now(),
+      } satisfies PendingCharacterSync),
+    );
+  } catch {
+    // Offline sync is best effort when browser storage is unavailable or full.
+  }
 }
 
 function clearPendingSync(key: string) {
-  localStorage.removeItem(key);
+  const storage = getLocalStorage();
+  if (!storage) return;
+
+  try {
+    storage.removeItem(key);
+  } catch {
+    // Nothing to clear when storage is unavailable.
+  }
+}
+
+function isBrowserOnline() {
+  return globalThis.navigator?.onLine ?? true;
 }
 
 function useConvexCharacterSync(character: Character, history: CharacterHistoryControls) {
   const { data: session } = authClient.useSession();
+  const convexAuth = useConvexAuth();
   const { replace } = history;
   const [characterId, setCharacterId] = useState<Id<'characters'> | null>(null);
   const [syncRetryToken, setSyncRetryToken] = useState(0);
   const createFromLocalImport = useMutation(api.characters.createFromLocalImport);
   const updateState = useMutation(api.characters.updateState);
+  const canSync = Boolean(session?.user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
   const characters = useQuery(
     api.characters.listMine,
-    session?.user ? { includeArchived: false } : 'skip',
+    canSync ? { includeArchived: false } : 'skip',
   );
   const activeRemoteCharacter = useMemo(
     () => characters?.find((item) => item._id === characterId) ?? characters?.[0] ?? null,
@@ -81,7 +112,7 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
 
   const persistCharacter = useCallback(
     async (targetCharacter: Character) => {
-      if (!characterId) return;
+      if (!characterId || !canSync) return;
       await updateState({
         characterId,
         schemaVersion: CHARACTER_SCHEMA_VERSION,
@@ -89,17 +120,17 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
         statusEffects: targetCharacter.statusEffects,
       });
     },
-    [characterId, updateState],
+    [canSync, characterId, updateState],
   );
 
   useEffect(() => {
-    if (!session?.user) {
+    if (!session?.user || (!convexAuth.isLoading && !convexAuth.isAuthenticated)) {
       setCharacterId(null);
       readyToPersistRef.current = false;
       lastSyncedJsonRef.current = null;
       lastRemoteUpdatedAtRef.current = null;
     }
-  }, [session?.user]);
+  }, [convexAuth.isAuthenticated, convexAuth.isLoading, session?.user]);
 
   useEffect(() => {
     const retry = () => setSyncRetryToken((token) => token + 1);
@@ -115,7 +146,7 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
   }, []);
 
   useEffect(() => {
-    if (!session?.user || characters === undefined || creatingRef.current) return;
+    if (!canSync || characters === undefined || creatingRef.current) return;
 
     if (characters.length === 0) {
       creatingRef.current = true;
@@ -130,6 +161,13 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
           lastSyncedJsonRef.current = JSON.stringify(character);
           readyToPersistRef.current = true;
         })
+        .catch((error) => {
+          console.error('[sync] failed to create Convex character from local state', {
+            error,
+            characterName: getCharacterName(character),
+            canSync,
+          });
+        })
         .finally(() => {
           creatingRef.current = false;
         });
@@ -139,7 +177,7 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     if (!characterId) {
       setCharacterId(characters[0]._id);
     }
-  }, [character, characterId, characters, createFromLocalImport, session?.user, syncRetryToken]);
+  }, [canSync, character, characterId, characters, createFromLocalImport, syncRetryToken]);
 
   useEffect(() => {
     if (!activeRemoteCharacter) return;
@@ -166,18 +204,26 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     if (!pendingSyncKey || !readyToPersistRef.current) return;
     const pending = readPendingSync(pendingSyncKey);
     if (!pending) return;
-    if (!navigator.onLine) return;
+    if (!isBrowserOnline()) return;
 
     void persistCharacter(pending.character)
       .then(() => {
         lastSyncedJsonRef.current = JSON.stringify(pending.character);
         clearPendingSync(pendingSyncKey);
       })
-      .catch(() => {});
-  }, [pendingSyncKey, persistCharacter, syncRetryToken]);
+      .catch((error) => {
+        console.warn('[sync] pending character flush failed; keeping local retry payload', {
+          error,
+          pendingSyncKey,
+          characterId,
+          savedAt: pending.savedAt,
+          characterName: getCharacterName(pending.character),
+        });
+      });
+  }, [characterId, pendingSyncKey, persistCharacter, syncRetryToken]);
 
   useEffect(() => {
-    if (!session?.user || !characterId || !readyToPersistRef.current) return undefined;
+    if (!canSync || !characterId || !readyToPersistRef.current) return undefined;
 
     const nextJson = JSON.stringify(character);
     if (nextJson === lastSyncedJsonRef.current) return undefined;
@@ -185,7 +231,7 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     if (!pendingSyncKey) return undefined;
 
     const timeoutId = window.setTimeout(() => {
-      if (!navigator.onLine) {
+      if (!isBrowserOnline()) {
         writePendingSync(pendingSyncKey, character);
         return;
       }
@@ -195,18 +241,25 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
           lastSyncedJsonRef.current = nextJson;
           clearPendingSync(pendingSyncKey);
         })
-        .catch(() => {
+        .catch((error) => {
+          console.warn('[sync] character update failed; queued local retry payload', {
+            error,
+            pendingSyncKey,
+            characterId,
+            characterName: getCharacterName(character),
+          });
           writePendingSync(pendingSyncKey, character);
         });
     }, 450);
 
     return () => window.clearTimeout(timeoutId);
-  }, [character, characterId, pendingSyncKey, persistCharacter, session?.user]);
+  }, [canSync, character, characterId, pendingSyncKey, persistCharacter]);
 
   return {
     characterId,
     isSignedIn: Boolean(session?.user),
-    isLoading: Boolean(session?.user) && characters === undefined,
+    isLoading:
+      Boolean(session?.user) && (convexAuth.isLoading || (canSync && characters === undefined)),
   };
 }
 
