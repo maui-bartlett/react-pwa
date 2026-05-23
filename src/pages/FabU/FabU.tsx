@@ -596,6 +596,7 @@ function FabU() {
   const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
   const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
+  const [pendingCombatSkillsScroll, setPendingCombatSkillsScroll] = useState(false);
   const [pendingCombatTraitsScroll, setPendingCombatTraitsScroll] = useState(false);
   const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
@@ -873,6 +874,22 @@ function FabU() {
     }, 100);
     return () => clearTimeout(timer);
   }, [pendingCombatGearScroll]);
+
+  useEffect(() => {
+    if (!pendingCombatSkillsScroll) return;
+    const timer = setTimeout(() => {
+      const scrollViewport = document.querySelector('[data-pw="content-area"]');
+      const skillsSection = document.querySelector('[data-section="combat-skills"]');
+      if (scrollViewport && skillsSection) {
+        const rect = skillsSection.getBoundingClientRect();
+        const viewportRect = scrollViewport.getBoundingClientRect();
+        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+      }
+      setPendingCombatSkillsScroll(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingCombatSkillsScroll]);
 
   useEffect(() => {
     if (!pendingCombatTraitsScroll) return;
@@ -1493,6 +1510,11 @@ function FabU() {
                           setActiveCombatTab('gear');
                           setPendingCombatGearScroll(true);
                         }
+                        if (action === 'Skill') {
+                          setActiveTab('combat');
+                          setActiveCombatTab('skills');
+                          setPendingCombatSkillsScroll(true);
+                        }
                         if (action === 'Inventory') {
                           const rect = event.currentTarget.getBoundingClientRect();
                           setInventoryAnchorDir(
@@ -1856,7 +1878,7 @@ function FabU() {
         ) : null}
 
         {activeCombatTab === 'skills' ? (
-          <>
+          <Box data-section="combat-skills">
             {character.skillGroups.map((group) => {
               const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
               return (
@@ -1885,7 +1907,7 @@ function FabU() {
                 />
               );
             })}
-          </>
+          </Box>
         ) : null}
 
         {activeCombatTab === 'spells' ? (
