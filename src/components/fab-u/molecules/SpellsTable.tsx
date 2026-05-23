@@ -662,7 +662,7 @@ function SwipeableSpellRow({
                   textTransform: 'none',
                   boxShadow: `0 3px 10px ${alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.5 : 0.18)}`,
                   mr: 1,
-                  border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : alpha(fabUTokens.color.highlight, 0.5)}`,
+                  border: `1.5px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.highlight}`,
                   '&:hover': {
                     bgcolor: fabUTokens.isDark
                       ? fabUTokens.color.highlight

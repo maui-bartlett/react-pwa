@@ -1447,6 +1447,9 @@ function FabU() {
                     'Inventory',
                   ] as const
                 ).map((action) => {
+                  const isRightColumnBattleAction = ['Guard', 'Hinder', 'Study', 'Inventory']
+                    .map(String)
+                    .includes(action);
                   const icon =
                     action === 'Attack' ? (
                       <Sword size={14} />
@@ -1508,7 +1511,11 @@ function FabU() {
                         bgcolor: fabUTokens.isDark ? fabUTokens.color.pillSurface : '#ffffff',
                         color: fabUTokens.isDark ? '#fff' : fabUTokens.color.textPrimary,
                         boxShadow: fabUTokens.shadow.card,
-                        border: `1px solid ${fabUTokens.color.highlight}`,
+                        border: `1px solid ${
+                          isRightColumnBattleAction
+                            ? fabUTokens.color.brand
+                            : fabUTokens.color.highlight
+                        }`,
                         '&:hover': {
                           bgcolor: fabUTokens.isDark
                             ? alpha(fabUTokens.color.brandText, 0.12)
