@@ -6,7 +6,6 @@ import {
   canWriteCanonicalCharacter,
   getActiveUserProfile,
   getOrCreateUserProfile,
-  requireActiveUserProfile,
   requireCharacterOwner,
 } from './lib/auth';
 
