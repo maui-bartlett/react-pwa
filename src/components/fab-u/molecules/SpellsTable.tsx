@@ -835,7 +835,7 @@ function SpellsTable({
       <Box
         data-pw="spells-table-container"
         sx={{
-          border: `1px solid ${fabUTokens.color.border}`,
+          border: `1px solid ${headerBorderColor}`,
           borderRadius: '9px',
           overflow: 'hidden',
           boxShadow: fabUTokens.shadow.card,
@@ -849,7 +849,6 @@ function SpellsTable({
             px: 1.2,
             py: 0.75,
             bgcolor: fabUTokens.color.pillSurface,
-            border: `1px solid ${headerBorderColor}`,
             borderBottom: `1px solid ${headerBorderColor}`,
           }}
         >
