@@ -65,6 +65,7 @@ type SwipeableSkillRowProps = {
   hasAddLevels: boolean;
   canAddLevels: boolean;
   onOpenLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
+  onOpenEditLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
   onUpdateSkillDescription?: (skillName: string, description: string) => void;
 };
 
@@ -82,6 +83,7 @@ function SwipeableSkillRow({
   hasAddLevels,
   canAddLevels,
   onOpenLevelMenu,
+  onOpenEditLevelMenu,
   onUpdateSkillDescription,
 }: SwipeableSkillRowProps) {
   const fabUTokens = useFabUTokens();
@@ -335,35 +337,31 @@ function SwipeableSkillRow({
                 justifyContent: 'flex-end',
               }}
             >
-              <InputBase
-                value={editDraft.level}
-                type="text"
-                inputProps={{
-                  'aria-label': `${editDraft.name || 'Skill'} level`,
-                  inputMode: 'numeric',
-                  pattern: '[0-9]*',
-                }}
-                onChange={(e) => {
-                  const nextLevel = e.target.value.replace(/\D/g, '').slice(0, 2);
-                  onEditDraftChange({ ...editDraft, level: nextLevel });
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onCommitEdit();
-                  if (e.key === 'Escape') onRevertEdit();
+              <Box
+                component="button"
+                type="button"
+                aria-label={`${editDraft.name || 'Skill'} level`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenEditLevelMenu(e);
                 }}
                 sx={{
                   width: 40,
+                  height: 24,
+                  p: 0,
+                  border: 'none',
+                  bgcolor: 'transparent',
                   color: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
-                  '& input': {
-                    p: 0,
-                    width: 40,
-                    textAlign: 'right',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    lineHeight: 1.5,
-                  },
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  lineHeight: 1.5,
+                  textAlign: 'right',
                 }}
-              />
+              >
+                {editDraft.level || '0'}
+              </Box>
             </Box>
             {hasAddLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
           </Box>
@@ -612,9 +610,11 @@ function SkillsTable({
 }: SkillsTableProps) {
   const fabUTokens = useFabUTokens();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [menuState, setMenuState] = useState<{ anchorEl: HTMLElement; skillName: string } | null>(
-    null,
-  );
+  const [menuState, setMenuState] = useState<{
+    anchorEl: HTMLElement;
+    skillName: string;
+    mode: 'add' | 'edit';
+  } | null>(null);
   const [draftSkill, setDraftSkill] = useState<{
     name: string;
     level: string;
@@ -641,7 +641,11 @@ function SkillsTable({
   }
 
   function openLevelMenu(e: React.MouseEvent<HTMLElement>, skillName: string) {
-    setMenuState({ anchorEl: e.currentTarget, skillName });
+    setMenuState({ anchorEl: e.currentTarget, skillName, mode: 'add' });
+  }
+
+  function openEditLevelMenu(e: React.MouseEvent<HTMLElement>, skillName: string) {
+    setMenuState({ anchorEl: e.currentTarget, skillName, mode: 'edit' });
   }
 
   function closeLevelMenu() {
@@ -649,10 +653,22 @@ function SkillsTable({
   }
 
   function selectLevel(targetLevel: number) {
-    if (!menuState || !onAddSkillLevels || !activeSkill) return;
+    if (!menuState || !activeSkill) return;
     const currentLevel = parseInt(activeSkill.level ?? '0', 10);
-    const delta = targetLevel - currentLevel;
-    if (delta > 0) onAddSkillLevels(menuState.skillName, delta);
+    if (menuState.mode === 'add') {
+      const delta = targetLevel - currentLevel;
+      if (delta > 0 && onAddSkillLevels) onAddSkillLevels(menuState.skillName, delta);
+    } else if (editingSkill && onEditSkill) {
+      const nextDraft = { ...editingSkill, level: String(targetLevel) };
+      setEditingSkill(nextDraft);
+      onEditSkill(nextDraft.originalName, {
+        name: nextDraft.name.trim() || nextDraft.originalName,
+        level: nextDraft.level,
+        maxLevel: activeSkill.maxLevel,
+        effect: activeSkill.effect,
+        description: activeSkill.description,
+      });
+    }
     closeLevelMenu();
   }
 
@@ -754,7 +770,7 @@ function SkillsTable({
               alignItems: 'center',
               px: 1.2,
               py: 0.75,
-              bgcolor: fabUTokens.isDark ? '#1c1e1e' : '#4a4f4d',
+              bgcolor: fabUTokens.color.success,
               borderBottom: `1px solid rgba(0,0,0,0.15)`,
             }}
           >
@@ -800,6 +816,7 @@ function SkillsTable({
                 hasAddLevels={!!onAddSkillLevels}
                 canAddLevels={canAddLevels}
                 onOpenLevelMenu={(e) => openLevelMenu(e, row.name)}
+                onOpenEditLevelMenu={(e) => openEditLevelMenu(e, row.name)}
                 onUpdateSkillDescription={onUpdateSkillDescription}
               />
             );
@@ -942,8 +959,15 @@ function SkillsTable({
             (_, i) => i,
           ).map((level) => {
             const currentLevel = parseInt(activeSkill.level ?? '0', 10);
+            const totalWithoutActive = tableTotal - (isNaN(currentLevel) ? 0 : currentLevel);
             const isSelected = level === currentLevel;
-            const canSelect = level > currentLevel && level <= currentLevel + activeSkillAvailable;
+            const fitsClassTotal = totalWithoutActive + level <= 10;
+            const canSelect =
+              menuState?.mode === 'edit'
+                ? fitsClassTotal
+                : level > currentLevel &&
+                  level <= currentLevel + activeSkillAvailable &&
+                  fitsClassTotal;
             const isDisabled = !isSelected && !canSelect;
             return (
               <MenuItem
