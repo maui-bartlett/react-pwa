@@ -1238,7 +1238,7 @@ function FabU() {
             valueSuffix: ` / ${character.totalXP}`,
             pw: `${progressPwPrefix}-xp`,
             onChange: setCurrentXP,
-            valueColor: fabUTokens.color.brandText,
+            valueColor: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
             borderColor: fabUTokens.color.textPrimary,
           },
           {
@@ -1247,7 +1247,7 @@ function FabU() {
             pw: `${progressPwPrefix}-level`,
             onChange: setLevel,
             maxValue: MAX_CHARACTER_LEVEL,
-            valueColor: fabUTokens.color.brandText,
+            valueColor: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
             borderColor: fabUTokens.color.brandText,
           },
         ]}

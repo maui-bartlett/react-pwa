@@ -292,7 +292,7 @@ function SwipeableSkillRow({
 
         {/* Main row */}
         {isEditing && editDraft ? (
-          /* Edit mode — name editable, level read-only */
+          /* Edit mode */
           <Box
             sx={{
               position: 'relative',
@@ -335,12 +335,35 @@ function SwipeableSkillRow({
                 justifyContent: 'flex-end',
               }}
             >
-              <Typography
-                variant="body2"
-                sx={{ fontSize: '0.74rem', color: fabUTokens.color.textSecondary }}
-              >
-                {editDraft.level}
-              </Typography>
+              <InputBase
+                value={editDraft.level}
+                type="text"
+                inputProps={{
+                  'aria-label': `${editDraft.name || 'Skill'} level`,
+                  inputMode: 'numeric',
+                  pattern: '[0-9]*',
+                }}
+                onChange={(e) => {
+                  const nextLevel = e.target.value.replace(/\D/g, '').slice(0, 2);
+                  onEditDraftChange({ ...editDraft, level: nextLevel });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onCommitEdit();
+                  if (e.key === 'Escape') onRevertEdit();
+                }}
+                sx={{
+                  width: 40,
+                  color: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
+                  '& input': {
+                    p: 0,
+                    width: 40,
+                    textAlign: 'right',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    lineHeight: 1.5,
+                  },
+                }}
+              />
             </Box>
             {hasAddLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
           </Box>
@@ -763,7 +786,8 @@ function SkillsTable({
                   if (onEditSkill) {
                     onEditSkill(draft.originalName, {
                       name: draft.name.trim() || draft.originalName,
-                      level: draft.level,
+                      level: draft.level || '0',
+                      maxLevel: row.maxLevel,
                       effect: row.effect,
                       description: row.description,
                     });
