@@ -133,8 +133,12 @@ function assertAuthSuccess(result: unknown) {
 function getCharacterDisplayName(character: { name?: string; characterState?: unknown }) {
   try {
     const state = deserializeCharacterFromBackend(character.characterState);
-    const fullName = [state.firstName, state.lastName].filter(Boolean).join(' ').trim();
-    return fullName || state.nickName || character.name || 'Unnamed character';
+    const nameParts = [
+      state.firstName,
+      state.nickName ? `"${state.nickName}"` : '',
+      state.lastName,
+    ].filter(Boolean);
+    return nameParts.join(' ').trim() || character.name || 'Unnamed character';
   } catch {
     return character.name || 'Unnamed character';
   }
