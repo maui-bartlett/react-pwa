@@ -13,13 +13,14 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import {
   CheckCircle,
   ChevronLeft,
   KeyRound,
   LogOut,
   Moon,
+  Plus,
   Settings,
   ShieldCheck,
   Sun,
@@ -27,14 +28,20 @@ import {
   X,
 } from 'lucide-react';
 
-import { deserializeCharacterFromBackend } from '@/domain/fabU/characterMigration';
+import { CHARACTER_SCHEMA_VERSION, createDefaultCharacter } from '@/domain/fabU/characterDefaults';
+import {
+  deserializeCharacterFromBackend,
+  serializeCharacterForBackend,
+} from '@/domain/fabU/characterMigration';
 import { authClient } from '@/lib/auth-client';
+import { FAB_U_SELECT_CHARACTER_EVENT } from '@/pages/FabU/useConvexCharacterSync';
 
 import { api } from '../../../../convex/_generated/api';
+import type { Id } from '../../../../convex/_generated/dataModel';
 import { useFabUTokens } from '../ThemeContext';
 
 type AuthMode = 'signIn' | 'signUp';
-type AccountModalScreen = 'profile' | 'characters';
+type AccountModalScreen = 'profile' | 'characters' | 'campaigns';
 type OAuthProvider = 'google' | 'discord';
 
 type AuthSession = {
@@ -145,6 +152,15 @@ function getCharacterDisplayName(character: { name?: string; characterState?: un
   }
 }
 
+function getCharacterName(character: ReturnType<typeof createDefaultCharacter>) {
+  const parts = [
+    character.firstName,
+    character.nickName ? `"${character.nickName}"` : '',
+    character.lastName,
+  ].filter(Boolean);
+  return parts.join(' ').trim() || 'Fab U Character';
+}
+
 function AuthField({
   label,
   type = 'text',
@@ -214,9 +230,20 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const canLoadCharacters = Boolean(user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
+  const createCharacter = useMutation(api.characters.createFromLocalImport);
+  const setActiveCharacter = useMutation(api.characters.setActiveMine);
+  const createCampaign = useMutation(api.campaigns.create);
   const characters = useQuery(
     api.characters.listMine,
     open && screen === 'characters' && canLoadCharacters ? { includeArchived: false } : 'skip',
+  );
+  const campaigns = useQuery(
+    api.campaigns.listMine,
+    open && screen === 'campaigns' && canLoadCharacters ? { includeArchived: false } : 'skip',
+  );
+  const visibleCampaigns = useMemo(
+    () => campaigns?.filter((item) => item !== null) ?? [],
+    [campaigns],
   );
 
   const accountLabel = useMemo(() => {
@@ -289,6 +316,32 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     }
   }
 
+  async function addCharacter() {
+    if (!canLoadCharacters) return;
+    const nextCharacter = createDefaultCharacter();
+    const characterId = await createCharacter({
+      name: getCharacterName(nextCharacter),
+      schemaVersion: CHARACTER_SCHEMA_VERSION,
+      characterState: serializeCharacterForBackend(nextCharacter),
+      statusEffects: nextCharacter.statusEffects,
+    });
+    await selectCharacter(characterId);
+  }
+
+  async function selectCharacter(characterId: Id<'characters'>) {
+    await setActiveCharacter({ characterId });
+    window.dispatchEvent(
+      new CustomEvent(FAB_U_SELECT_CHARACTER_EVENT, {
+        detail: { characterId },
+      }),
+    );
+  }
+
+  async function addCampaign() {
+    if (!canLoadCharacters) return;
+    await createCampaign({ name: 'New Campaign' });
+  }
+
   function closeDialog() {
     setOpen(false);
     setScreen('profile');
@@ -356,78 +409,70 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
       >
         <DialogTitle sx={{ p: 1.6, pb: 0.8 }}>
           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
-            <Stack spacing={0.45} sx={{ minWidth: 0 }}>
-              <Typography
-                sx={{ fontSize: '0.68rem', fontWeight: 800, color: fabUTokens.color.textSecondary }}
-              >
-                SETTINGS
-              </Typography>
-              <Typography
-                sx={{ fontSize: '1.05rem', fontWeight: 800, color: fabUTokens.color.textPrimary }}
-              >
-                {screen === 'characters' ? 'Characters' : accountLabel}
-              </Typography>
+            <Stack direction="row" alignItems="flex-start" gap={0.7} sx={{ minWidth: 0 }}>
+              {screen !== 'profile' ? (
+                <IconButton
+                  aria-label="Back to profile"
+                  onClick={() => setScreen('profile')}
+                  size="small"
+                  sx={{ mt: -0.35, ml: -0.7, color: fabUTokens.color.textSecondary }}
+                >
+                  <ChevronLeft size={18} />
+                </IconButton>
+              ) : null}
+              <Stack spacing={0.45} sx={{ minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    color: fabUTokens.color.textSecondary,
+                  }}
+                >
+                  SETTINGS
+                </Typography>
+                <Typography
+                  sx={{ fontSize: '1.05rem', fontWeight: 800, color: fabUTokens.color.textPrimary }}
+                >
+                  {screen === 'characters'
+                    ? 'Characters'
+                    : screen === 'campaigns'
+                      ? 'Campaigns'
+                      : accountLabel}
+                </Typography>
+              </Stack>
             </Stack>
-            {screen === 'characters' ? (
-              <IconButton
-                aria-label="Back to profile"
-                onClick={() => setScreen('profile')}
-                size="small"
-                sx={{ color: fabUTokens.color.textSecondary }}
-              >
-                <ChevronLeft size={18} />
-              </IconButton>
-            ) : (
-              <IconButton
-                aria-label="Close account dialog"
-                onClick={closeDialog}
-                size="small"
-                sx={{ color: fabUTokens.color.textSecondary }}
-              >
-                <X size={17} />
-              </IconButton>
-            )}
+            <IconButton
+              aria-label="Close account dialog"
+              onClick={closeDialog}
+              size="small"
+              sx={{ color: fabUTokens.color.textSecondary }}
+            >
+              <X size={17} />
+            </IconButton>
           </Stack>
         </DialogTitle>
 
-        <DialogContent sx={{ p: 1.6, pt: 0.8 }}>
-          {screen === 'characters' ? (
-            <Stack spacing={1.1}>
-              {!user ? (
-                <Box
-                  sx={{
-                    border: `1px solid ${fabUTokens.color.border}`,
-                    borderRadius: '9px',
-                    bgcolor: fabUTokens.color.surfaceMuted,
-                    px: 1.2,
-                    py: 0.95,
-                  }}
-                >
-                  <Stack spacing={0.25}>
-                    <Typography
-                      sx={{
-                        color: fabUTokens.color.textSecondary,
-                        fontSize: '0.62rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Local Character
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
-                      {localCharacterName}
-                    </Typography>
-                  </Stack>
-                </Box>
-              ) : characters === undefined ? (
-                <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
-                  Loading characters...
-                </Typography>
-              ) : characters.length > 0 ? (
-                characters.map((character) => (
+        <DialogContent sx={{ p: 1.6, pt: 0.8, overflow: 'hidden' }}>
+          <Box
+            key={screen}
+            sx={{
+              animation: 'accountPaneSlide 180ms ease both',
+              '@keyframes accountPaneSlide': {
+                from: {
+                  opacity: 0.72,
+                  transform: screen === 'profile' ? 'translateX(-18px)' : 'translateX(18px)',
+                },
+                to: {
+                  opacity: 1,
+                  transform: 'translateX(0)',
+                },
+              },
+            }}
+          >
+            {screen === 'characters' ? (
+              <Stack spacing={1.1}>
+                {!user ? (
                   <Box
-                    key={character._id}
                     sx={{
                       border: `1px solid ${fabUTokens.color.border}`,
                       borderRadius: '9px',
@@ -436,267 +481,413 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       py: 0.95,
                     }}
                   >
-                    <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
-                      {getCharacterDisplayName(character)}
-                    </Typography>
-                  </Box>
-                ))
-              ) : (
-                <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
-                  No characters saved to this account yet.
-                </Typography>
-              )}
-            </Stack>
-          ) : (
-            <Stack spacing={1.35}>
-              <Box
-                sx={{
-                  border: `1px solid ${fabUTokens.color.border}`,
-                  borderRadius: '9px',
-                  bgcolor: fabUTokens.color.surfaceMuted,
-                  px: 1.15,
-                  py: 0.9,
-                }}
-              >
-                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-                  <Stack spacing={0.15}>
-                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 800 }}>Theme</Typography>
-                    <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.74rem' }}>
-                      {themeMode === 'dark' ? 'Dark mode' : 'Light mode'}
-                    </Typography>
-                  </Stack>
-                  <IconButton
-                    data-pw="settings-theme-toggle"
-                    onClick={onToggleTheme}
-                    aria-label={
-                      themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
-                    }
-                    size="small"
-                    sx={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: '8px',
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      color: fabUTokens.color.textSecondary,
-                      bgcolor: fabUTokens.color.pillSurface,
-                    }}
-                  >
-                    {themeMode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                  </IconButton>
-                </Stack>
-              </Box>
-
-              {user ? (
-                <>
-                  <Box
-                    sx={{
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      borderRadius: '9px',
-                      bgcolor: fabUTokens.color.surfaceMuted,
-                      px: 1.25,
-                      py: 1.05,
-                    }}
-                  >
-                    <Stack direction="row" alignItems="center" gap={0.9}>
-                      <ShieldCheck size={18} color={fabUTokens.color.brandText} />
-                      <Stack spacing={0.1} sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontSize: '0.84rem', fontWeight: 800 }}>
-                          {user.name || 'Signed in'}
-                        </Typography>
-                        {user.email ? (
-                          <Typography
-                            sx={{
-                              color: fabUTokens.color.textSecondary,
-                              fontSize: '0.76rem',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {user.email}
-                          </Typography>
-                        ) : null}
-                      </Stack>
+                    <Stack spacing={0.25}>
+                      <Typography
+                        sx={{
+                          color: fabUTokens.color.textSecondary,
+                          fontSize: '0.62rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Local Character
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                        {localCharacterName}
+                      </Typography>
                     </Stack>
                   </Box>
+                ) : (
                   <Button
-                    data-pw="account-characters"
-                    onClick={() => setScreen('characters')}
-                    startIcon={<UserRound size={16} />}
+                    onClick={() => void addCharacter()}
+                    startIcon={<Plus size={17} />}
                     sx={{
-                      height: 40,
-                      borderRadius: '8px',
-                      bgcolor: fabUTokens.color.brand,
-                      color: '#ffffff',
-                      textTransform: 'none',
-                      fontWeight: 800,
-                      '&:hover': { bgcolor: fabUTokens.color.brandStrong },
-                    }}
-                  >
-                    Characters
-                  </Button>
-                  <Button
-                    data-pw="account-sign-out"
-                    onClick={signOut}
-                    disabled={submitting}
-                    startIcon={<LogOut size={16} />}
-                    sx={{
-                      height: 40,
-                      borderRadius: '8px',
-                      border: `1px solid ${fabUTokens.color.danger}`,
-                      color: fabUTokens.color.danger,
-                      textTransform: 'none',
-                      fontWeight: 800,
-                    }}
-                  >
-                    Sign out
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    data-pw="account-characters"
-                    onClick={() => setScreen('characters')}
-                    startIcon={<UserRound size={16} />}
-                    sx={{
-                      height: 40,
-                      borderRadius: '8px',
-                      bgcolor: fabUTokens.color.brand,
-                      color: '#ffffff',
-                      textTransform: 'none',
-                      fontWeight: 800,
-                      '&:hover': { bgcolor: fabUTokens.color.brandStrong },
-                    }}
-                  >
-                    Characters
-                  </Button>
-
-                  <Stack
-                    direction="row"
-                    gap={0.5}
-                    sx={{
-                      p: 0.35,
+                      minHeight: 54,
                       borderRadius: '9px',
-                      bgcolor: fabUTokens.color.surfaceMuted,
-                      border: `1px solid ${fabUTokens.color.border}`,
+                      border: `1px dashed ${fabUTokens.color.border}`,
+                      color: fabUTokens.color.textPrimary,
+                      textTransform: 'none',
+                      fontWeight: 800,
                     }}
                   >
-                    {authModes.map((authMode) => {
-                      const selected = mode === authMode.value;
-
-                      return (
-                        <Button
-                          key={authMode.value}
-                          data-pw={`auth-mode-${authMode.value}`}
-                          onClick={() => {
-                            setMode(authMode.value);
-                            setError(null);
-                            setStatus(null);
-                          }}
-                          sx={{
-                            flex: 1,
-                            minWidth: 0,
-                            minHeight: 32,
-                            borderRadius: '7px',
-                            bgcolor: selected ? fabUTokens.color.surface : 'transparent',
-                            color: selected
-                              ? fabUTokens.color.textPrimary
-                              : fabUTokens.color.textSecondary,
-                            boxShadow: selected ? fabUTokens.shadow.card : 'none',
-                            textTransform: 'none',
-                            fontSize: '0.72rem',
-                            fontWeight: 800,
-                          }}
-                        >
-                          {authMode.label}
-                        </Button>
-                      );
-                    })}
-                  </Stack>
-
-                  <Stack component="form" spacing={1.05} onSubmit={submitAuth}>
-                    {mode === 'signUp' ? (
-                      <AuthField label="Name" value={name} autoComplete="name" onChange={setName} />
-                    ) : null}
-                    <AuthField
-                      label="Email"
-                      type="email"
-                      value={email}
-                      autoComplete="email"
-                      onChange={setEmail}
-                    />
-                    <AuthField
-                      label="Password"
-                      type="password"
-                      value={password}
-                      autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
-                      onChange={setPassword}
-                    />
+                    Add character
+                  </Button>
+                )}
+                {user && characters === undefined ? (
+                  <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
+                    Loading characters...
+                  </Typography>
+                ) : user && characters && characters.length > 0 ? (
+                  characters.map((character) => (
                     <Button
-                      data-pw="auth-submit"
-                      type="submit"
-                      disabled={submitting || !email || !password}
-                      startIcon={<KeyRound size={16} />}
+                      key={character._id}
+                      onClick={() => void selectCharacter(character._id)}
                       sx={{
-                        height: 40,
+                        justifyContent: 'flex-start',
+                        textAlign: 'left',
+                        textTransform: 'none',
+                        minHeight: 54,
+                        border: `1px solid ${fabUTokens.color.border}`,
+                        borderRadius: '9px',
+                        bgcolor: fabUTokens.color.surfaceMuted,
+                        px: 1.2,
+                        py: 0.95,
+                        color: fabUTokens.color.textPrimary,
+                        '&:hover': { bgcolor: fabUTokens.color.pillSurface },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                        {getCharacterDisplayName(character)}
+                      </Typography>
+                    </Button>
+                  ))
+                ) : user ? (
+                  <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
+                    No characters saved to this account yet.
+                  </Typography>
+                ) : null}
+              </Stack>
+            ) : screen === 'campaigns' ? (
+              <Stack spacing={1.1}>
+                <Button
+                  onClick={() => void addCampaign()}
+                  startIcon={<Plus size={17} />}
+                  disabled={!canLoadCharacters}
+                  sx={{
+                    minHeight: 54,
+                    borderRadius: '9px',
+                    border: `1px dashed ${fabUTokens.color.border}`,
+                    color: fabUTokens.color.textPrimary,
+                    textTransform: 'none',
+                    fontWeight: 800,
+                  }}
+                >
+                  Add campaign
+                </Button>
+                {!user ? (
+                  <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
+                    Sign in to save campaigns to your account.
+                  </Typography>
+                ) : campaigns === undefined ? (
+                  <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
+                    Loading campaigns...
+                  </Typography>
+                ) : visibleCampaigns.length > 0 ? (
+                  visibleCampaigns.map((item) => (
+                    <Box
+                      key={item.campaign._id}
+                      sx={{
+                        minHeight: 54,
+                        border: `1px solid ${fabUTokens.color.border}`,
+                        borderRadius: '9px',
+                        bgcolor: fabUTokens.color.surfaceMuted,
+                        px: 1.2,
+                        py: 0.95,
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                        {item.campaign.name}
+                      </Typography>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
+                    No campaigns saved to this account yet.
+                  </Typography>
+                )}
+              </Stack>
+            ) : (
+              <Stack spacing={1.35}>
+                <Box
+                  sx={{
+                    border: `1px solid ${fabUTokens.color.border}`,
+                    borderRadius: '9px',
+                    bgcolor: fabUTokens.color.surfaceMuted,
+                    px: 1.15,
+                    py: 0.9,
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+                    <Stack spacing={0.15}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 800 }}>Theme</Typography>
+                      <Typography
+                        sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.74rem' }}
+                      >
+                        {themeMode === 'dark' ? 'Dark mode' : 'Light mode'}
+                      </Typography>
+                    </Stack>
+                    <IconButton
+                      data-pw="settings-theme-toggle"
+                      onClick={onToggleTheme}
+                      aria-label={
+                        themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+                      }
+                      size="small"
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: '8px',
+                        border: `1px solid ${fabUTokens.color.border}`,
+                        color: fabUTokens.color.textSecondary,
+                        bgcolor: fabUTokens.color.pillSurface,
+                      }}
+                    >
+                      {themeMode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                    </IconButton>
+                  </Stack>
+                </Box>
+
+                {user ? (
+                  <>
+                    <Button
+                      data-pw="account-characters"
+                      onClick={() => setScreen('characters')}
+                      startIcon={<UserRound size={16} />}
+                      sx={{
+                        minHeight: 62,
                         borderRadius: '8px',
                         bgcolor: fabUTokens.color.brand,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
                         '&:hover': { bgcolor: fabUTokens.color.brandStrong },
-                        '&.Mui-disabled': {
-                          bgcolor: alpha(fabUTokens.color.brand, 0.45),
-                          color: alpha('#ffffff', 0.7),
-                        },
                       }}
                     >
-                      {mode === 'signIn' ? 'Sign in' : 'Create account'}
+                      Characters
                     </Button>
-                  </Stack>
+                    <Button
+                      data-pw="account-campaigns"
+                      onClick={() => setScreen('campaigns')}
+                      startIcon={<ShieldCheck size={16} />}
+                      sx={{
+                        minHeight: 62,
+                        borderRadius: '8px',
+                        bgcolor: fabUTokens.color.brand,
+                        color: '#ffffff',
+                        textTransform: 'none',
+                        fontWeight: 800,
+                        '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                      }}
+                    >
+                      Campaigns
+                    </Button>
+                    <Box
+                      sx={{
+                        border: `1px solid ${fabUTokens.color.border}`,
+                        borderRadius: '9px',
+                        bgcolor: fabUTokens.color.surfaceMuted,
+                        px: 1.25,
+                        py: 1.05,
+                        minHeight: 62,
+                      }}
+                    >
+                      <Stack direction="row" alignItems="center" gap={0.9}>
+                        <ShieldCheck size={18} color={fabUTokens.color.brandText} />
+                        <Stack spacing={0.1} sx={{ minWidth: 0 }}>
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 800 }}>
+                            {user.name || 'Signed in'}
+                          </Typography>
+                          {user.email ? (
+                            <Typography
+                              sx={{
+                                color: fabUTokens.color.textSecondary,
+                                fontSize: '0.76rem',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {user.email}
+                            </Typography>
+                          ) : null}
+                        </Stack>
+                      </Stack>
+                    </Box>
+                    <Button
+                      data-pw="account-sign-out"
+                      onClick={signOut}
+                      disabled={submitting}
+                      startIcon={<LogOut size={16} />}
+                      sx={{
+                        height: 40,
+                        borderRadius: '8px',
+                        border: `1px solid ${fabUTokens.color.danger}`,
+                        color: fabUTokens.color.danger,
+                        textTransform: 'none',
+                        fontWeight: 800,
+                      }}
+                    >
+                      Sign out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      data-pw="account-characters"
+                      onClick={() => setScreen('characters')}
+                      startIcon={<UserRound size={16} />}
+                      sx={{
+                        minHeight: 54,
+                        borderRadius: '8px',
+                        bgcolor: fabUTokens.color.brand,
+                        color: '#ffffff',
+                        textTransform: 'none',
+                        fontWeight: 800,
+                        '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                      }}
+                    >
+                      Characters
+                    </Button>
+                    <Button
+                      data-pw="account-campaigns"
+                      onClick={() => setScreen('campaigns')}
+                      startIcon={<ShieldCheck size={16} />}
+                      sx={{
+                        minHeight: 54,
+                        borderRadius: '8px',
+                        bgcolor: fabUTokens.color.brand,
+                        color: '#ffffff',
+                        textTransform: 'none',
+                        fontWeight: 800,
+                        '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                      }}
+                    >
+                      Campaigns
+                    </Button>
 
-                  <Stack direction="row" gap={0.7}>
-                    {oauthProviders.map(({ provider, label, icon }) => (
+                    <Stack
+                      direction="row"
+                      gap={0.5}
+                      sx={{
+                        p: 0.35,
+                        borderRadius: '9px',
+                        bgcolor: fabUTokens.color.surfaceMuted,
+                        border: `1px solid ${fabUTokens.color.border}`,
+                      }}
+                    >
+                      {authModes.map((authMode) => {
+                        const selected = mode === authMode.value;
+
+                        return (
+                          <Button
+                            key={authMode.value}
+                            data-pw={`auth-mode-${authMode.value}`}
+                            onClick={() => {
+                              setMode(authMode.value);
+                              setError(null);
+                              setStatus(null);
+                            }}
+                            sx={{
+                              flex: 1,
+                              minWidth: 0,
+                              minHeight: 32,
+                              borderRadius: '7px',
+                              bgcolor: selected ? fabUTokens.color.surface : 'transparent',
+                              color: selected
+                                ? fabUTokens.color.textPrimary
+                                : fabUTokens.color.textSecondary,
+                              boxShadow: selected ? fabUTokens.shadow.card : 'none',
+                              textTransform: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                            }}
+                          >
+                            {authMode.label}
+                          </Button>
+                        );
+                      })}
+                    </Stack>
+
+                    <Stack component="form" spacing={1.05} onSubmit={submitAuth}>
+                      {mode === 'signUp' ? (
+                        <AuthField
+                          label="Name"
+                          value={name}
+                          autoComplete="name"
+                          onChange={setName}
+                        />
+                      ) : null}
+                      <AuthField
+                        label="Email"
+                        type="email"
+                        value={email}
+                        autoComplete="email"
+                        onChange={setEmail}
+                      />
+                      <AuthField
+                        label="Password"
+                        type="password"
+                        value={password}
+                        autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                        onChange={setPassword}
+                      />
                       <Button
-                        key={provider}
-                        data-pw={`oauth-${provider}`}
-                        onClick={() => startOAuth(provider)}
-                        disabled={submitting}
-                        startIcon={icon}
+                        data-pw="auth-submit"
+                        type="submit"
+                        disabled={submitting || !email || !password}
+                        startIcon={<KeyRound size={16} />}
                         sx={{
-                          flex: 1,
-                          minWidth: 0,
-                          height: 44,
+                          height: 40,
                           borderRadius: '8px',
-                          border: `1px solid ${fabUTokens.color.border}`,
-                          color: fabUTokens.color.textPrimary,
+                          bgcolor: fabUTokens.color.brand,
+                          color: '#ffffff',
                           textTransform: 'none',
-                          fontSize: '0.74rem',
                           fontWeight: 800,
-                          '& .MuiButton-startIcon': {
-                            mr: 0.7,
+                          '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                          '&.Mui-disabled': {
+                            bgcolor: alpha(fabUTokens.color.brand, 0.45),
+                            color: alpha('#ffffff', 0.7),
                           },
                         }}
                       >
-                        {label}
+                        {mode === 'signIn' ? 'Sign in' : 'Create account'}
                       </Button>
-                    ))}
-                  </Stack>
-                </>
-              )}
+                    </Stack>
 
-              {status ? (
-                <Alert severity="success" sx={{ borderRadius: '8px', py: 0.4 }}>
-                  {status}
-                </Alert>
-              ) : null}
-              {error ? (
-                <Alert severity="error" sx={{ borderRadius: '8px', py: 0.4 }}>
-                  {error}
-                </Alert>
-              ) : null}
-            </Stack>
-          )}
+                    <Stack direction="row" gap={0.7}>
+                      {oauthProviders.map(({ provider, label, icon }) => (
+                        <Button
+                          key={provider}
+                          data-pw={`oauth-${provider}`}
+                          onClick={() => startOAuth(provider)}
+                          disabled={submitting}
+                          startIcon={icon}
+                          sx={{
+                            flex: 1,
+                            minWidth: 0,
+                            height: 44,
+                            borderRadius: '8px',
+                            border: `1px solid ${fabUTokens.color.border}`,
+                            color: fabUTokens.color.textPrimary,
+                            textTransform: 'none',
+                            fontSize: '0.74rem',
+                            fontWeight: 800,
+                            '& .MuiButton-startIcon': {
+                              mr: 0.7,
+                            },
+                          }}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </Stack>
+                  </>
+                )}
+
+                {status ? (
+                  <Alert severity="success" sx={{ borderRadius: '8px', py: 0.4 }}>
+                    {status}
+                  </Alert>
+                ) : null}
+                {error ? (
+                  <Alert severity="error" sx={{ borderRadius: '8px', py: 0.4 }}>
+                    {error}
+                  </Alert>
+                ) : null}
+              </Stack>
+            )}
+          </Box>
         </DialogContent>
       </Dialog>
     </>

@@ -9,6 +9,7 @@ import {
   requireCampaignMember,
   requireCharacterOwner,
 } from './lib/auth';
+import { isFabulaUltimaDocument, withFabulaMeta } from './lib/fabulaMeta';
 
 export const listMine = query({
   args: { includeArchived: v.optional(v.boolean()) },
@@ -29,7 +30,10 @@ export const listMine = query({
     );
 
     return campaigns.filter(
-      (item) => item && (args.includeArchived || item.campaign.status !== 'archived'),
+      (item) =>
+        item &&
+        isFabulaUltimaDocument(item.campaign) &&
+        (args.includeArchived || item.campaign.status !== 'archived'),
     );
   },
 });
@@ -39,7 +43,9 @@ export const get = query({
   handler: async (ctx, args) => {
     await requireCampaignMember(ctx, args.campaignId);
     const campaign = await ctx.db.get(args.campaignId);
-    if (!campaign || campaign.archivedAt) throw new ConvexError('CAMPAIGN_NOT_FOUND');
+    if (!campaign || campaign.archivedAt || !isFabulaUltimaDocument(campaign)) {
+      throw new ConvexError('CAMPAIGN_NOT_FOUND');
+    }
     return campaign;
   },
 });
@@ -55,6 +61,7 @@ export const create = mutation({
     const now = Date.now();
     const campaignId = await ctx.db.insert('campaigns', {
       ownerUserId: profile._id,
+      meta: withFabulaMeta(),
       name: args.name,
       description: args.description,
       status: 'active',
@@ -84,6 +91,8 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     await requireCampaignGM(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     await ctx.db.patch(args.campaignId, {
       name: args.name,
       description: args.description,
@@ -97,6 +106,8 @@ export const archive = mutation({
   args: { campaignId: v.id('campaigns') },
   handler: async (ctx, args) => {
     await requireCampaignGM(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     await ctx.db.patch(args.campaignId, {
       status: 'archived',
       archivedAt: Date.now(),
@@ -109,6 +120,8 @@ export const restore = mutation({
   args: { campaignId: v.id('campaigns') },
   handler: async (ctx, args) => {
     await requireCampaignGM(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     await ctx.db.patch(args.campaignId, {
       status: 'active',
       archivedAt: undefined,
@@ -121,6 +134,8 @@ export const listMembers = query({
   args: { campaignId: v.id('campaigns') },
   handler: async (ctx, args) => {
     await requireCampaignMember(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     return await ctx.db
       .query('campaignMembers')
       .withIndex('by_campaignId', (q) => q.eq('campaignId', args.campaignId))
@@ -136,6 +151,8 @@ export const manualAddMember = mutation({
   },
   handler: async (ctx, args) => {
     const gm = await requireCampaignGM(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     const now = Date.now();
     const existing = await ctx.db
       .query('campaignMembers')
@@ -172,6 +189,8 @@ export const removeMember = mutation({
   args: { campaignId: v.id('campaigns'), userId: v.id('userProfiles') },
   handler: async (ctx, args) => {
     await requireCampaignGM(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     const member = await ctx.db
       .query('campaignMembers')
       .withIndex('by_campaignId_userId', (q) =>
@@ -190,6 +209,8 @@ export const setMemberRole = mutation({
   },
   handler: async (ctx, args) => {
     await requireCampaignGM(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     const member = await ctx.db
       .query('campaignMembers')
       .withIndex('by_campaignId_userId', (q) =>
@@ -212,6 +233,8 @@ export const addCharacter = mutation({
     const profile = await requireActiveUserProfile(ctx);
     const character = await requireCharacterOwner(ctx, args.characterId);
     const member = await requireCampaignMember(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     if (member.role === 'observer') throw new ConvexError('FORBIDDEN');
     const now = Date.now();
     return await ctx.db.insert('campaignCharacters', {
@@ -238,6 +261,8 @@ export const removeCharacter = mutation({
     const link = await ctx.db.get(args.campaignCharacterId);
     if (!link || link.removedAt) return;
     const member = await requireCampaignMember(ctx, link.campaignId);
+    const campaign = await ctx.db.get(link.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     if (link.ownerUserId !== profile._id && member.role !== 'gm')
       throw new ConvexError('FORBIDDEN');
     await ctx.db.patch(link._id, { removedAt: Date.now(), updatedAt: Date.now() });
@@ -248,6 +273,8 @@ export const listCharacters = query({
   args: { campaignId: v.id('campaigns') },
   handler: async (ctx, args) => {
     await requireCampaignMember(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     return await ctx.db
       .query('campaignCharacters')
       .withIndex('by_campaignId', (q) => q.eq('campaignId', args.campaignId))
@@ -264,6 +291,10 @@ export const updateCampaignCharacterState = mutation({
     if (!(await canWriteCampaignCharacterState(ctx, args.campaignCharacterId))) {
       throw new ConvexError('FORBIDDEN');
     }
+    const link = await ctx.db.get(args.campaignCharacterId);
+    if (!link) throw new ConvexError('CAMPAIGN_CHARACTER_NOT_FOUND');
+    const campaign = await ctx.db.get(link.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     await ctx.db.patch(args.campaignCharacterId, {
       campaignState: args.campaignState,
       updatedAt: Date.now(),
@@ -283,6 +314,8 @@ export const setCampaignCharacterPermissions = mutation({
     const link = await ctx.db.get(args.campaignCharacterId);
     if (!link || link.removedAt) throw new ConvexError('CAMPAIGN_CHARACTER_NOT_FOUND');
     await requireCampaignGM(ctx, link.campaignId);
+    const campaign = await ctx.db.get(link.campaignId);
+    if (!isFabulaUltimaDocument(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
     await ctx.db.patch(link._id, { permissions: args.permissions, updatedAt: Date.now() });
   },
 });

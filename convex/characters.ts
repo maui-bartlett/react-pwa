@@ -8,6 +8,7 @@ import {
   getOrCreateUserProfile,
   requireCharacterOwner,
 } from './lib/auth';
+import { FABULA_ULTIMA_TYPE, isActiveForProfile, withFabulaMeta } from './lib/fabulaMeta';
 
 const statusEffectsValidator = v.record(v.string(), v.boolean());
 
@@ -19,9 +20,34 @@ export const listMine = query({
 
     const characters = await ctx.db
       .query('characters')
-      .withIndex('by_ownerUserId', (q) => q.eq('ownerUserId', profile._id))
+      .withIndex('by_ownerUserId_metaType', (q) =>
+        q.eq('ownerUserId', profile._id).eq('meta.type', FABULA_ULTIMA_TYPE),
+      )
       .collect();
     return args.includeArchived ? characters : characters.filter((c) => !c.archivedAt);
+  },
+});
+
+export const getActiveMine = query({
+  args: {},
+  handler: async (ctx) => {
+    const profile = await getActiveUserProfile(ctx);
+    if (!profile) return null;
+
+    const characters = await ctx.db
+      .query('characters')
+      .withIndex('by_ownerUserId_metaType', (q) =>
+        q.eq('ownerUserId', profile._id).eq('meta.type', FABULA_ULTIMA_TYPE),
+      )
+      .collect();
+
+    return (
+      characters.find(
+        (character) => !character.archivedAt && isActiveForProfile(character, profile._id),
+      ) ??
+      characters.find((character) => !character.archivedAt) ??
+      null
+    );
   },
 });
 
@@ -48,6 +74,7 @@ export const create = mutation({
     const now = Date.now();
     return await ctx.db.insert('characters', {
       ownerUserId: profile._id,
+      meta: withFabulaMeta({ activeForUserProfileId: profile._id }),
       name: args.name,
       summary: args.summary,
       portraitUrl: args.portraitUrl,
@@ -72,6 +99,7 @@ export const createFromLocalImport = mutation({
     const now = Date.now();
     return await ctx.db.insert('characters', {
       ownerUserId: profile._id,
+      meta: withFabulaMeta({ activeForUserProfileId: profile._id }),
       name: args.name,
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
@@ -79,6 +107,37 @@ export const createFromLocalImport = mutation({
       createdAt: now,
       updatedAt: now,
     });
+  },
+});
+
+export const setActiveMine = mutation({
+  args: { characterId: v.id('characters') },
+  handler: async (ctx, args) => {
+    const profile = await getOrCreateUserProfile(ctx);
+    const target = await requireCharacterOwner(ctx, args.characterId);
+    const now = Date.now();
+
+    const characters = await ctx.db
+      .query('characters')
+      .withIndex('by_ownerUserId_metaType', (q) =>
+        q.eq('ownerUserId', profile._id).eq('meta.type', FABULA_ULTIMA_TYPE),
+      )
+      .collect();
+
+    await Promise.all(
+      characters.map((character) => {
+        const activeForUserProfileId = character._id === target._id ? profile._id : undefined;
+        return ctx.db.patch(character._id, {
+          meta: withFabulaMeta({
+            ...character.meta,
+            activeForUserProfileId,
+          }),
+          updatedAt: character._id === target._id ? now : character.updatedAt,
+        });
+      }),
+    );
+
+    return target._id;
   },
 });
 

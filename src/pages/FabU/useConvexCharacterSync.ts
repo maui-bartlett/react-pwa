@@ -15,6 +15,7 @@ import type { Character } from './atoms';
 import type { CharacterHistoryControls } from './useCharacterHistory';
 
 const PENDING_SYNC_KEY_PREFIX = 'fab-u-convex-pending-character';
+const FAB_U_SELECT_CHARACTER_EVENT = 'fab-u-select-character';
 
 type PendingCharacterSync = {
   character: Character;
@@ -92,6 +93,7 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
   const [characterId, setCharacterId] = useState<Id<'characters'> | null>(null);
   const [syncRetryToken, setSyncRetryToken] = useState(0);
   const createFromLocalImport = useMutation(api.characters.createFromLocalImport);
+  const setActiveMine = useMutation(api.characters.setActiveMine);
   const updateState = useMutation(api.characters.updateState);
   const canSync = Boolean(session?.user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
   const characters = useQuery(
@@ -99,7 +101,11 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     canSync ? { includeArchived: false } : 'skip',
   );
   const activeRemoteCharacter = useMemo(
-    () => characters?.find((item) => item._id === characterId) ?? characters?.[0] ?? null,
+    () =>
+      characters?.find((item) => item._id === characterId) ??
+      characters?.find((item) => item.meta?.activeForUserProfileId) ??
+      characters?.[0] ??
+      null,
     [characterId, characters],
   );
 
@@ -133,17 +139,29 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
   }, [convexAuth.isAuthenticated, convexAuth.isLoading, session?.user]);
 
   useEffect(() => {
+    const selectCharacter = (event: Event) => {
+      const detail = (event as CustomEvent<{ characterId?: Id<'characters'> }>).detail;
+      if (!detail?.characterId) return;
+      setCharacterId(detail.characterId);
+      readyToPersistRef.current = false;
+      lastRemoteUpdatedAtRef.current = null;
+      void setActiveMine({ characterId: detail.characterId }).catch((error) => {
+        console.warn('[sync] failed to set active character', { error });
+      });
+    };
     const retry = () => setSyncRetryToken((token) => token + 1);
+    window.addEventListener(FAB_U_SELECT_CHARACTER_EVENT, selectCharacter);
     window.addEventListener('online', retry);
     window.addEventListener('focus', retry);
     document.addEventListener('visibilitychange', retry);
 
     return () => {
+      window.removeEventListener(FAB_U_SELECT_CHARACTER_EVENT, selectCharacter);
       window.removeEventListener('online', retry);
       window.removeEventListener('focus', retry);
       document.removeEventListener('visibilitychange', retry);
     };
-  }, []);
+  }, [setActiveMine]);
 
   useEffect(() => {
     if (!canSync || characters === undefined || creatingRef.current) return;
@@ -175,7 +193,9 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     }
 
     if (!characterId) {
-      setCharacterId(characters[0]._id);
+      const activeCharacter =
+        characters.find((item) => item.meta?.activeForUserProfileId) ?? characters[0];
+      setCharacterId(activeCharacter._id);
     }
   }, [canSync, character, characterId, characters, createFromLocalImport, syncRetryToken]);
 
@@ -263,4 +283,4 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
   };
 }
 
-export { useConvexCharacterSync };
+export { FAB_U_SELECT_CHARACTER_EVENT, useConvexCharacterSync };
