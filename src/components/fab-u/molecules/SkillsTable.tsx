@@ -333,8 +333,10 @@ function SwipeableSkillRow({
               sx={{
                 width: 40,
                 flexShrink: 0,
-                display: 'flex',
-                justifyContent: 'flex-end',
+                textAlign: 'right',
+                ...cellTextSx,
+                color: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
+                fontWeight: 700,
               }}
             >
               <Box
@@ -346,18 +348,20 @@ function SwipeableSkillRow({
                   onOpenEditLevelMenu(e);
                 }}
                 sx={{
-                  width: 40,
-                  height: 24,
+                  display: 'inline',
+                  minWidth: 0,
+                  width: 'auto',
+                  height: 'auto',
                   p: 0,
                   border: 'none',
                   bgcolor: 'transparent',
-                  color: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
+                  color: 'inherit',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  lineHeight: 1.5,
-                  textAlign: 'right',
+                  fontSize: 'inherit',
+                  fontWeight: 'inherit',
+                  lineHeight: 'inherit',
+                  textAlign: 'inherit',
                 }}
               >
                 {editDraft.level || '0'}
