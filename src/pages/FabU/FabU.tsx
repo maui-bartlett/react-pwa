@@ -15,6 +15,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   Backpack,
@@ -60,9 +61,11 @@ import {
   useFabUTokens,
 } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
+import { authClient } from '@/lib/auth-client';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
+import { api } from '../../../convex/_generated/api';
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import { MAX_CHARACTER_LEVEL, activeCombatTabState, activeTabState } from './atoms';
 import { selectableClasses } from './selectableClasses';
@@ -552,11 +555,46 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
 function FabU() {
   const themeMode = useAtomValue(themeModeState);
   const [, setThemeMode] = useAtom(themeModeState);
+  const { data: session } = authClient.useSession();
+  const convexAuth = useConvexAuth();
+  const canSyncProfileTheme =
+    Boolean(session?.user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
+  const storedTheme = useQuery(api.users.getCurrentTheme, canSyncProfileTheme ? {} : 'skip');
+  const updateCurrentTheme = useMutation(api.users.updateCurrentTheme);
+  const [hasLoadedStoredTheme, setHasLoadedStoredTheme] = useState(false);
+  const lastPersistedThemeRef = useRef<ThemeMode | null>(null);
   const fabUTokens = themeMode === ThemeMode.DARK ? darkFabUTokens : lightFabUTokens;
   const toggleTheme = () =>
     setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
   const [activeTab, setActiveTab] = useAtom(activeTabState);
   const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
+
+  useEffect(() => {
+    if (!canSyncProfileTheme) {
+      setHasLoadedStoredTheme(false);
+      lastPersistedThemeRef.current = null;
+      return;
+    }
+
+    if (storedTheme === undefined || hasLoadedStoredTheme) return;
+
+    setHasLoadedStoredTheme(true);
+    if (storedTheme) {
+      lastPersistedThemeRef.current = storedTheme;
+      if (storedTheme !== themeMode) setThemeMode(storedTheme);
+    }
+  }, [canSyncProfileTheme, hasLoadedStoredTheme, setThemeMode, storedTheme, themeMode]);
+
+  useEffect(() => {
+    if (!canSyncProfileTheme || storedTheme === undefined || !hasLoadedStoredTheme) return;
+    if (lastPersistedThemeRef.current === themeMode) return;
+
+    lastPersistedThemeRef.current = themeMode;
+    void updateCurrentTheme({ currentTheme: themeMode }).catch((error) => {
+      console.warn('[profile] failed to persist theme preference', error);
+      lastPersistedThemeRef.current = null;
+    });
+  }, [canSyncProfileTheme, hasLoadedStoredTheme, storedTheme, themeMode, updateCurrentTheme]);
 
   // Per-tab scroll position persistence
   const scrollPositions = useRef<Record<string, number>>({});
@@ -1532,13 +1570,14 @@ function FabU() {
                         textTransform: 'none',
                         fontWeight: 700,
                         fontSize: '0.78rem',
-                        bgcolor: fabUTokens.isDark ? '#3d7060' : '#ffffff',
+                        bgcolor: fabUTokens.isDark ? fabUTokens.color.pillSurface : '#ffffff',
                         color: fabUTokens.isDark ? '#fff' : fabUTokens.color.textPrimary,
                         boxShadow: fabUTokens.shadow.card,
-                        border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.brandText}`,
+                        border: `1px solid ${fabUTokens.isDark ? fabUTokens.color.border : fabUTokens.color.brandText}`,
                         '&:hover': {
-                          bgcolor: fabUTokens.isDark ? '#3d7060' : alpha('#3d7060', 0.06),
-                          filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
+                          bgcolor: fabUTokens.isDark
+                            ? alpha(fabUTokens.color.brandText, 0.12)
+                            : alpha('#3d7060', 0.06),
                           boxShadow: fabUTokens.shadow.card,
                         },
                       }}

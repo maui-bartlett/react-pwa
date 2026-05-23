@@ -6,6 +6,7 @@ export default defineSchema({
     authUserId: v.string(),
     displayName: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
+    settings: v.optional(v.any()),
     archivedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),

@@ -43,6 +43,7 @@ async function getOrCreateUserProfile(ctx: MutationCtx): Promise<Doc<'userProfil
     authUserId: authUser._id,
     displayName: authUser.name ?? undefined,
     avatarUrl: authUser.image ?? undefined,
+    settings: {},
     createdAt: now,
     updatedAt: now,
   });
