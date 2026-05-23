@@ -707,8 +707,9 @@ function SkillsTable({
     setEditingSkill(null);
   }
 
+  const headerBorderColor = fabUTokens.isDark ? fabUTokens.color.brandText : fabUTokens.color.brand;
   const headerCellSx = {
-    color: '#ffffff',
+    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.textPrimary,
     fontSize: '0.62rem',
     fontWeight: 700,
     letterSpacing: '0.045em',
@@ -774,8 +775,9 @@ function SkillsTable({
               alignItems: 'center',
               px: 1.2,
               py: 0.75,
-              bgcolor: fabUTokens.color.fp,
-              borderBottom: `1px solid rgba(0,0,0,0.15)`,
+              bgcolor: fabUTokens.color.pillSurface,
+              border: `1px solid ${headerBorderColor}`,
+              borderBottom: `1px solid ${headerBorderColor}`,
             }}
           >
             <Box sx={{ flex: 1, minWidth: 0, ...headerCellSx }}>Skill</Box>
