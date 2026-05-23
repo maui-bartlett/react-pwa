@@ -1438,13 +1438,13 @@ function FabU() {
                 {(
                   [
                     'Attack',
-                    'Spell',
                     'Guard',
-                    'Inventory',
+                    'Spell',
                     'Hinder',
-                    'Equipment',
-                    'Study',
                     'Skill',
+                    'Study',
+                    'Equipment',
+                    'Inventory',
                   ] as const
                 ).map((action) => {
                   const icon =
@@ -2384,6 +2384,7 @@ function FabU() {
   const header = (() => {
     const settingsAction = (
       <AccountMenu
+        localCharacterName={`${character.firstName} "${character.nickName}" ${character.lastName}`}
         themeMode={themeMode === ThemeMode.DARK ? 'dark' : 'light'}
         onToggleTheme={toggleTheme}
       />

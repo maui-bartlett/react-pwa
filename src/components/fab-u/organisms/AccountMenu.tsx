@@ -46,6 +46,7 @@ type AuthSession = {
 } | null;
 
 type AccountMenuProps = {
+  localCharacterName: string;
   onToggleTheme: () => void;
   themeMode: 'dark' | 'light';
 };
@@ -197,7 +198,7 @@ function AuthField({
   );
 }
 
-function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
+function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMenuProps) {
   const fabUTokens = useFabUTokens();
   const { data: session, isPending, refetch } = authClient.useSession();
   const convexAuth = useConvexAuth();
@@ -222,7 +223,7 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
     if (isPending) return 'Checking account';
     if (user?.name) return user.name;
     if (user?.email) return user.email;
-    return 'Local character';
+    return 'Settings';
   }, [isPending, user?.email, user?.name]);
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
@@ -392,7 +393,34 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
         <DialogContent sx={{ p: 1.6, pt: 0.8 }}>
           {screen === 'characters' ? (
             <Stack spacing={1.1}>
-              {characters === undefined ? (
+              {!user ? (
+                <Box
+                  sx={{
+                    border: `1px solid ${fabUTokens.color.border}`,
+                    borderRadius: '9px',
+                    bgcolor: fabUTokens.color.surfaceMuted,
+                    px: 1.2,
+                    py: 0.95,
+                  }}
+                >
+                  <Stack spacing={0.25}>
+                    <Typography
+                      sx={{
+                        color: fabUTokens.color.textSecondary,
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Local Character
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                      {localCharacterName}
+                    </Typography>
+                  </Stack>
+                </Box>
+              ) : characters === undefined ? (
                 <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
                   Loading characters...
                 </Typography>
@@ -526,6 +554,23 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
                 </>
               ) : (
                 <>
+                  <Button
+                    data-pw="account-characters"
+                    onClick={() => setScreen('characters')}
+                    startIcon={<UserRound size={16} />}
+                    sx={{
+                      height: 40,
+                      borderRadius: '8px',
+                      bgcolor: fabUTokens.color.brand,
+                      color: '#ffffff',
+                      textTransform: 'none',
+                      fontWeight: 800,
+                      '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                    }}
+                  >
+                    Characters
+                  </Button>
+
                   <Stack
                     direction="row"
                     gap={0.5}
