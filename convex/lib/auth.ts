@@ -59,10 +59,16 @@ async function getOrCreateUserProfile(ctx: MutationCtx): Promise<Doc<'userProfil
   return profile;
 }
 
-async function requireActiveUserProfile(ctx: ReadCtx): Promise<Doc<'userProfiles'>> {
+async function getActiveUserProfile(ctx: ReadCtx): Promise<Doc<'userProfiles'> | null> {
   const authUser = await requireAuthUser(ctx);
   const profile = await findUserProfileByAuthUserId(ctx, authUser._id);
-  if (!profile || profile.archivedAt) throw new ConvexError('PROFILE_NOT_FOUND');
+  if (!profile || profile.archivedAt) return null;
+  return profile;
+}
+
+async function requireActiveUserProfile(ctx: ReadCtx): Promise<Doc<'userProfiles'>> {
+  const profile = await getActiveUserProfile(ctx);
+  if (!profile) throw new ConvexError('PROFILE_NOT_FOUND');
   return profile;
 }
 
@@ -181,6 +187,7 @@ export {
   canReadCharacter,
   canWriteCampaignCharacterState,
   canWriteCanonicalCharacter,
+  getActiveUserProfile,
   getAuthUser,
   getOrCreateUserProfile,
   requireActiveUserProfile,

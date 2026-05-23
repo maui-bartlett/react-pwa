@@ -1,6 +1,7 @@
 import { FormEvent, ReactNode, useMemo, useState } from 'react';
 
 import Alert from '@mui/material/Alert';
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -24,6 +25,7 @@ type OAuthProvider = 'google' | 'discord';
 type AuthSession = {
   user?: {
     email?: string | null;
+    image?: string | null;
     name?: string | null;
   } | null;
 } | null;
@@ -270,7 +272,23 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
           },
         }}
       >
-        {user ? <CheckCircle size={17} /> : <Settings size={17} />}
+        {user?.image ? (
+          <Avatar
+            src={user.image}
+            alt={user.name || user.email || 'Account'}
+            sx={{
+              width: 26,
+              height: 26,
+              fontSize: '0.72rem',
+              bgcolor: fabUTokens.color.brand,
+              color: '#ffffff',
+            }}
+          />
+        ) : user ? (
+          <CheckCircle size={17} />
+        ) : (
+          <Settings size={17} />
+        )}
       </IconButton>
 
       <Dialog
@@ -500,7 +518,7 @@ function AccountMenu({ onToggleTheme, themeMode }: AccountMenuProps) {
                       sx={{
                         flex: 1,
                         minWidth: 0,
-                        height: 36,
+                        height: 44,
                         borderRadius: '8px',
                         border: `1px solid ${fabUTokens.color.border}`,
                         color: fabUTokens.color.textPrimary,

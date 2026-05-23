@@ -4,6 +4,7 @@ import { mutation, query } from './_generated/server';
 import {
   canReadCharacter,
   canWriteCanonicalCharacter,
+  getActiveUserProfile,
   getOrCreateUserProfile,
   requireActiveUserProfile,
   requireCharacterOwner,
@@ -14,7 +15,9 @@ const statusEffectsValidator = v.record(v.string(), v.boolean());
 export const listMine = query({
   args: { includeArchived: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
-    const profile = await requireActiveUserProfile(ctx);
+    const profile = await getActiveUserProfile(ctx);
+    if (!profile) return [];
+
     const characters = await ctx.db
       .query('characters')
       .withIndex('by_ownerUserId', (q) => q.eq('ownerUserId', profile._id))
