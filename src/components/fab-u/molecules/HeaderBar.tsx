@@ -121,12 +121,13 @@ function HeaderBar({
           data-pw="header-action"
           sx={{
             position: 'absolute',
-            top: compact ? '50%' : 'max(13px, calc(env(safe-area-inset-top) + 9px))',
+            top: compact ? 9 : 'max(12px, calc(env(safe-area-inset-top) + 8px))',
             bottom: 'auto',
             right: compact ? 10 : 58,
-            transform: compact ? 'translateY(-50%)' : 'none',
+            transform: 'none',
             minWidth: compact ? 78 : 72,
-            minHeight: compact ? 30 : 32,
+            minHeight: compact ? 34 : 34,
+            height: 34,
             borderRadius: '7px',
             bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : alpha('#ffffff', 0.96),
             color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brandStrong,

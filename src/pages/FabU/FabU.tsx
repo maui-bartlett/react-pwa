@@ -15,6 +15,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   Backpack,
@@ -60,9 +61,11 @@ import {
   useFabUTokens,
 } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
+import { authClient } from '@/lib/auth-client';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
+import { api } from '../../../convex/_generated/api';
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import { MAX_CHARACTER_LEVEL, activeCombatTabState, activeTabState } from './atoms';
 import { selectableClasses } from './selectableClasses';
@@ -552,11 +555,46 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
 function FabU() {
   const themeMode = useAtomValue(themeModeState);
   const [, setThemeMode] = useAtom(themeModeState);
+  const { data: session } = authClient.useSession();
+  const convexAuth = useConvexAuth();
+  const canSyncProfileTheme =
+    Boolean(session?.user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
+  const storedTheme = useQuery(api.users.getCurrentTheme, canSyncProfileTheme ? {} : 'skip');
+  const updateCurrentTheme = useMutation(api.users.updateCurrentTheme);
+  const [hasLoadedStoredTheme, setHasLoadedStoredTheme] = useState(false);
+  const lastPersistedThemeRef = useRef<ThemeMode | null>(null);
   const fabUTokens = themeMode === ThemeMode.DARK ? darkFabUTokens : lightFabUTokens;
   const toggleTheme = () =>
     setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
   const [activeTab, setActiveTab] = useAtom(activeTabState);
   const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
+
+  useEffect(() => {
+    if (!canSyncProfileTheme) {
+      setHasLoadedStoredTheme(false);
+      lastPersistedThemeRef.current = null;
+      return;
+    }
+
+    if (storedTheme === undefined || hasLoadedStoredTheme) return;
+
+    setHasLoadedStoredTheme(true);
+    if (storedTheme) {
+      lastPersistedThemeRef.current = storedTheme;
+      if (storedTheme !== themeMode) setThemeMode(storedTheme);
+    }
+  }, [canSyncProfileTheme, hasLoadedStoredTheme, setThemeMode, storedTheme, themeMode]);
+
+  useEffect(() => {
+    if (!canSyncProfileTheme || storedTheme === undefined || !hasLoadedStoredTheme) return;
+    if (lastPersistedThemeRef.current === themeMode) return;
+
+    lastPersistedThemeRef.current = themeMode;
+    void updateCurrentTheme({ currentTheme: themeMode }).catch((error) => {
+      console.warn('[profile] failed to persist theme preference', error);
+      lastPersistedThemeRef.current = null;
+    });
+  }, [canSyncProfileTheme, hasLoadedStoredTheme, storedTheme, themeMode, updateCurrentTheme]);
 
   // Per-tab scroll position persistence
   const scrollPositions = useRef<Record<string, number>>({});
@@ -594,10 +632,7 @@ function FabU() {
   const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
   const [fabulaAnchorEl, setFabulaAnchorEl] = useState<HTMLElement | null>(null);
   const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
-  const [pendingCombatSpellScroll, setPendingCombatSpellScroll] = useState(false);
-  const [pendingCombatGearScroll, setPendingCombatGearScroll] = useState(false);
-  const [pendingCombatTraitsScroll, setPendingCombatTraitsScroll] = useState(false);
-  const [pendingBondsScroll, setPendingBondsScroll] = useState(false);
+  const [pendingCombatSubTabScroll, setPendingCombatSubTabScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
   const statusEffects = character.statusEffects;
   const handleToggleEffect = (id: string) => {
@@ -843,68 +878,23 @@ function FabU() {
   }, [activeTab, targetClassName]);
 
   useEffect(() => {
-    if (!pendingCombatSpellScroll) return;
+    if (!pendingCombatSubTabScroll) return;
     const timer = setTimeout(() => {
       const scrollViewport = document.querySelector('[data-pw="content-area"]');
-      const spellsSection = document.querySelector('[data-section="combat-spells"]');
-      if (scrollViewport && spellsSection) {
-        const rect = spellsSection.getBoundingClientRect();
+      const combatSubTabs = document.querySelector('[data-section="combat-sub-tabs"]');
+      if (scrollViewport && combatSubTabs) {
+        const headerBar = document.querySelector('[data-pw="header-bar"]');
+        const headerOffset = headerBar instanceof HTMLElement ? headerBar.offsetHeight + 12 : 10;
+        const rect = combatSubTabs.getBoundingClientRect();
         const viewportRect = scrollViewport.getBoundingClientRect();
-        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
+        const targetScrollTop =
+          rect.top - viewportRect.top + scrollViewport.scrollTop - headerOffset;
         (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
       }
-      setPendingCombatSpellScroll(false);
+      setPendingCombatSubTabScroll(false);
     }, 100);
     return () => clearTimeout(timer);
-  }, [pendingCombatSpellScroll]);
-
-  useEffect(() => {
-    if (!pendingCombatGearScroll) return;
-    const timer = setTimeout(() => {
-      const scrollViewport = document.querySelector('[data-pw="content-area"]');
-      const gearSection = document.querySelector('[data-section="combat-gear"]');
-      if (scrollViewport && gearSection) {
-        const rect = gearSection.getBoundingClientRect();
-        const viewportRect = scrollViewport.getBoundingClientRect();
-        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
-        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-      }
-      setPendingCombatGearScroll(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [pendingCombatGearScroll]);
-
-  useEffect(() => {
-    if (!pendingCombatTraitsScroll) return;
-    const timer = setTimeout(() => {
-      const scrollViewport = document.querySelector('[data-pw="content-area"]');
-      const traitsSection = document.querySelector('[data-section="combat-traits"]');
-      if (scrollViewport && traitsSection) {
-        const rect = traitsSection.getBoundingClientRect();
-        const viewportRect = scrollViewport.getBoundingClientRect();
-        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
-        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-      }
-      setPendingCombatTraitsScroll(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [pendingCombatTraitsScroll]);
-
-  useEffect(() => {
-    if (!pendingBondsScroll) return;
-    const timer = setTimeout(() => {
-      const scrollViewport = document.querySelector('[data-pw="content-area"]');
-      const bondsSection = document.querySelector('[data-section="combat-bonds"]');
-      if (scrollViewport && bondsSection) {
-        const rect = bondsSection.getBoundingClientRect();
-        const viewportRect = scrollViewport.getBoundingClientRect();
-        const targetScrollTop = rect.top - viewportRect.top + scrollViewport.scrollTop - 24;
-        (scrollViewport as HTMLElement).scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-      }
-      setPendingBondsScroll(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [pendingBondsScroll]);
+  }, [pendingCombatSubTabScroll]);
 
   const classPickerOpen = Boolean(classPickerAnchorEl);
 
@@ -1448,15 +1438,18 @@ function FabU() {
                 {(
                   [
                     'Attack',
-                    'Spell',
                     'Guard',
-                    'Inventory',
+                    'Spell',
                     'Hinder',
-                    'Equipment',
-                    'Study',
                     'Skill',
+                    'Study',
+                    'Equipment',
+                    'Inventory',
                   ] as const
                 ).map((action) => {
+                  const isRightColumnBattleAction = ['Guard', 'Hinder', 'Study', 'Inventory']
+                    .map(String)
+                    .includes(action);
                   const icon =
                     action === 'Attack' ? (
                       <Sword size={14} />
@@ -1482,16 +1475,21 @@ function FabU() {
                       onClick={(event) => {
                         if (action === 'Attack') {
                           setActiveCombatTab('gear');
-                          setPendingCombatGearScroll(true);
+                          setPendingCombatSubTabScroll(true);
                         }
                         if (action === 'Spell') {
                           setActiveCombatTab('spells');
-                          setPendingCombatSpellScroll(true);
+                          setPendingCombatSubTabScroll(true);
                         }
                         if (action === 'Equipment') {
                           setActiveTab('combat');
                           setActiveCombatTab('gear');
-                          setPendingCombatGearScroll(true);
+                          setPendingCombatSubTabScroll(true);
+                        }
+                        if (action === 'Skill') {
+                          setActiveTab('combat');
+                          setActiveCombatTab('skills');
+                          setPendingCombatSubTabScroll(true);
                         }
                         if (action === 'Inventory') {
                           const rect = event.currentTarget.getBoundingClientRect();
@@ -1510,13 +1508,18 @@ function FabU() {
                         textTransform: 'none',
                         fontWeight: 700,
                         fontSize: '0.78rem',
-                        bgcolor: fabUTokens.isDark ? '#3d7060' : '#ffffff',
+                        bgcolor: fabUTokens.isDark ? fabUTokens.color.pillSurface : '#ffffff',
                         color: fabUTokens.isDark ? '#fff' : fabUTokens.color.textPrimary,
                         boxShadow: fabUTokens.shadow.card,
-                        border: `1px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.45)' : fabUTokens.color.brandText}`,
+                        border: `1px solid ${
+                          isRightColumnBattleAction
+                            ? fabUTokens.color.brand
+                            : fabUTokens.color.highlight
+                        }`,
                         '&:hover': {
-                          bgcolor: fabUTokens.isDark ? '#3d7060' : alpha('#3d7060', 0.06),
-                          filter: fabUTokens.isDark ? 'brightness(0.88)' : 'none',
+                          bgcolor: fabUTokens.isDark
+                            ? alpha(fabUTokens.color.brandText, 0.12)
+                            : alpha('#3d7060', 0.06),
                           boxShadow: fabUTokens.shadow.card,
                         },
                       }}
@@ -1775,11 +1778,11 @@ function FabU() {
                   if (name === 'Re-roll') {
                     setActiveTab('combat');
                     setActiveCombatTab('traits');
-                    setPendingCombatTraitsScroll(true);
+                    setPendingCombatSubTabScroll(true);
                   } else if (name === 'Add 1') {
                     setActiveTab('combat');
                     setActiveCombatTab('bonds');
-                    setPendingBondsScroll(true);
+                    setPendingCombatSubTabScroll(true);
                   }
                 }}
                 sx={{
@@ -1816,7 +1819,13 @@ function FabU() {
           </Stack>
         </Popover>
 
-        <SegmentedTabs options={combatTabs} value={activeCombatTab} onChange={setActiveCombatTab} />
+        <Box data-section="combat-sub-tabs">
+          <SegmentedTabs
+            options={combatTabs}
+            value={activeCombatTab}
+            onChange={setActiveCombatTab}
+          />
+        </Box>
 
         {activeCombatTab === 'traits' ? (
           <Box data-section="combat-traits">
@@ -1856,7 +1865,7 @@ function FabU() {
         ) : null}
 
         {activeCombatTab === 'skills' ? (
-          <>
+          <Stack data-section="combat-skills" spacing={2.775}>
             {character.skillGroups.map((group) => {
               const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
               return (
@@ -1885,7 +1894,7 @@ function FabU() {
                 />
               );
             })}
-          </>
+          </Stack>
         ) : null}
 
         {activeCombatTab === 'spells' ? (
@@ -2382,6 +2391,7 @@ function FabU() {
   const header = (() => {
     const settingsAction = (
       <AccountMenu
+        localCharacterName={`${character.firstName} "${character.nickName}" ${character.lastName}`}
         themeMode={themeMode === ThemeMode.DARK ? 'dark' : 'light'}
         onToggleTheme={toggleTheme}
       />

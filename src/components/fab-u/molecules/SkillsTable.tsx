@@ -333,8 +333,10 @@ function SwipeableSkillRow({
               sx={{
                 width: 40,
                 flexShrink: 0,
-                display: 'flex',
-                justifyContent: 'flex-end',
+                textAlign: 'right',
+                ...cellTextSx,
+                color: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
+                fontWeight: 700,
               }}
             >
               <Box
@@ -346,18 +348,20 @@ function SwipeableSkillRow({
                   onOpenEditLevelMenu(e);
                 }}
                 sx={{
-                  width: 40,
-                  height: 24,
+                  display: 'inline',
+                  minWidth: 0,
+                  width: 'auto',
+                  height: 'auto',
                   p: 0,
                   border: 'none',
                   bgcolor: 'transparent',
-                  color: fabUTokens.isDark ? fabUTokens.color.brandText : '#3d7060',
+                  color: 'inherit',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  lineHeight: 1.5,
-                  textAlign: 'right',
+                  fontSize: 'inherit',
+                  fontWeight: 'inherit',
+                  lineHeight: 'inherit',
+                  textAlign: 'inherit',
                 }}
               >
                 {editDraft.level || '0'}
@@ -703,8 +707,9 @@ function SkillsTable({
     setEditingSkill(null);
   }
 
+  const headerBorderColor = fabUTokens.isDark ? fabUTokens.color.brandText : fabUTokens.color.brand;
   const headerCellSx = {
-    color: '#ffffff',
+    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.textPrimary,
     fontSize: '0.62rem',
     fontWeight: 700,
     letterSpacing: '0.045em',
@@ -757,7 +762,7 @@ function SkillsTable({
       >
         <Box
           sx={{
-            border: `1px solid ${fabUTokens.color.border}`,
+            border: `1px solid ${headerBorderColor}`,
             borderRadius: '9px',
             overflow: 'hidden',
             boxShadow: fabUTokens.shadow.card,
@@ -770,8 +775,8 @@ function SkillsTable({
               alignItems: 'center',
               px: 1.2,
               py: 0.75,
-              bgcolor: fabUTokens.color.success,
-              borderBottom: `1px solid rgba(0,0,0,0.15)`,
+              bgcolor: fabUTokens.color.pillSurface,
+              borderBottom: `1px solid ${headerBorderColor}`,
             }}
           >
             <Box sx={{ flex: 1, minWidth: 0, ...headerCellSx }}>Skill</Box>

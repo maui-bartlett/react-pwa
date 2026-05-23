@@ -662,7 +662,7 @@ function SwipeableSpellRow({
                   textTransform: 'none',
                   boxShadow: `0 3px 10px ${alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.5 : 0.18)}`,
                   mr: 1,
-                  border: `1.5px solid ${fabUTokens.isDark ? 'rgba(255,255,255,0.5)' : alpha(fabUTokens.color.highlight, 0.5)}`,
+                  border: `1.5px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.highlight}`,
                   '&:hover': {
                     bgcolor: fabUTokens.isDark
                       ? fabUTokens.color.highlight
@@ -781,8 +781,9 @@ function SpellsTable({
       }
     };
 
+  const headerBorderColor = fabUTokens.isDark ? fabUTokens.color.brandText : fabUTokens.color.brand;
   const headerCellSx = {
-    color: '#ffffff',
+    color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.textPrimary,
     fontSize: '0.62rem',
     fontWeight: 700,
     letterSpacing: '0.045em',
@@ -834,7 +835,7 @@ function SpellsTable({
       <Box
         data-pw="spells-table-container"
         sx={{
-          border: `1px solid ${fabUTokens.color.border}`,
+          border: `1px solid ${headerBorderColor}`,
           borderRadius: '9px',
           overflow: 'hidden',
           boxShadow: fabUTokens.shadow.card,
@@ -847,8 +848,8 @@ function SpellsTable({
             alignItems: 'center',
             px: 1.2,
             py: 0.75,
-            bgcolor: fabUTokens.color.success,
-            borderBottom: `1px solid rgba(0,0,0,0.15)`,
+            bgcolor: fabUTokens.color.pillSurface,
+            borderBottom: `1px solid ${headerBorderColor}`,
           }}
         >
           <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
