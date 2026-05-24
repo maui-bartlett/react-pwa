@@ -7,32 +7,53 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { BookOpen, CircleUserRound, Heart, NotebookTabs, ScrollText } from 'lucide-react';
+import { Heart } from 'lucide-react';
+
+import boinkPortrait from './assets/bond-boink.png';
+import qiWeiPortrait from './assets/bond-qi-wei.png';
+import yoruPortrait from './assets/bond-yoru.png';
+import qingPortrait from './assets/character-qing.jpg';
+import airGlyph from './assets/glyph-air.png';
+import earthGlyph from './assets/glyph-earth.png';
+import fireGlyph from './assets/glyph-fire.png';
+import headerGlyph from './assets/glyph-header.png';
+import moveGlyph from './assets/glyph-move.png';
+import techEarthGlyph from './assets/glyph-tech-earth.png';
+import techWaterGlyph from './assets/glyph-tech-water.png';
+import waterGlyph from './assets/glyph-water.png';
+import bagImage from './assets/journal-bag.jpg';
+import notebookImage from './assets/journal-notebook.jpg';
+import professorImage from './assets/journal-professor.jpg';
+import universityImage from './assets/journal-university.jpg';
+import navBonds from './assets/nav-bonds.png';
+import navCharacter from './assets/nav-character.png';
+import navJournal from './assets/nav-journal.png';
+import navMoves from './assets/nav-moves.png';
+import navTechniques from './assets/nav-techniques.png';
 
 type AvatarTab = 'character' | 'moves' | 'techniques' | 'bonds' | 'journal';
 
 type TabConfig = {
   label: string;
   value: AvatarTab;
-  icon: typeof CircleUserRound;
+  iconSrc: string;
 };
 
-const ink = '#17385c';
-const deepInk = '#062945';
-const parchment = '#f8f1e6';
-const parchmentDeep = '#efe1cd';
-const border = '#d9c6aa';
-const ember = '#a1443e';
-const water = '#5075a9';
-const air = '#7d9b92';
-const earth = '#6d806f';
+const ink = '#182f59';
+const deepInk = '#002b47';
+const parchment = '#fbf6ee';
+const border = '#dfceb8';
+const ember = '#af3f3f';
+const water = '#3e67a5';
+const air = '#617d84';
+const earth = '#6f7d6b';
 
 const tabs: TabConfig[] = [
-  { label: 'Character', value: 'character', icon: CircleUserRound },
-  { label: 'Moves', value: 'moves', icon: BookOpen },
-  { label: 'Techniques', value: 'techniques', icon: ScrollText },
-  { label: 'Bonds', value: 'bonds', icon: Heart },
-  { label: 'Journal', value: 'journal', icon: NotebookTabs },
+  { label: 'Character', value: 'character', iconSrc: navCharacter },
+  { label: 'Moves', value: 'moves', iconSrc: navMoves },
+  { label: 'Techniques', value: 'techniques', iconSrc: navTechniques },
+  { label: 'Bonds', value: 'bonds', iconSrc: navBonds },
+  { label: 'Journal', value: 'journal', iconSrc: navJournal },
 ];
 
 const moves = [
@@ -51,20 +72,46 @@ const techniques = [
 ];
 
 const bonds = [
-  ['Qi Wei', 'Female ancestor', 'A brilliant and respected leader in our lineage.'],
-  ['Yoru', 'Friend', 'He taught me patience, timing, and where to look first.'],
-  ['Professor Zei', 'Mentor', 'Sees potential in people before they can name it.'],
+  [
+    'Boink',
+    'Black wooly pig',
+    'My loyal companion and constant source of joy. He roots around for snacks and keeps me grounded.',
+    boinkPortrait,
+  ],
+  [
+    'Qi Wei',
+    'Female ancestor',
+    'A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.',
+    qiWeiPortrait,
+  ],
+  ['Yoru', 'Friend', 'He taught me patience, timing, and where to look first.', yoruPortrait],
 ];
 
 const journal = [
-  ['Note', "Qing's Notebook", 'A worn notebook filled with themes about bending and identity.'],
-  ['Important NPC', 'Professor Zei', 'Head of Bending Theory at the University of Elements.'],
+  [
+    'Note',
+    "Rad's Notebook",
+    'A worn notebook filled with themes about bending and identity.',
+    notebookImage,
+  ],
+  [
+    'Important NPC',
+    'Professor Zei',
+    "Head of Bending Theory at UoE. Believes in Rad's potential.",
+    professorImage,
+  ],
   [
     'Location',
     'The University of Elements',
-    'A neutral sanctuary where benders from all nations study.',
+    'A neutral sanctuary where benders from all nations study in peace.',
+    universityImage,
   ],
-  ['Item', 'Messenger Bag', 'Carried since leaving home. Inside are notes, tools, and keepsakes.'],
+  [
+    'Item',
+    'Messenger Bag',
+    'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
+    bagImage,
+  ],
 ];
 
 function BrushBand({ bottom = false }: { bottom?: boolean }) {
@@ -75,13 +122,13 @@ function BrushBand({ bottom = false }: { bottom?: boolean }) {
         left: 0,
         right: 0,
         [bottom ? 'bottom' : 'top']: 0,
-        height: bottom ? 74 : 88,
+        height: bottom ? 74 : 102,
         bgcolor: deepInk,
         overflow: 'hidden',
         '&:before': {
           content: '""',
           position: 'absolute',
-          inset: bottom ? '-26px -18px 30px' : '46px -20px -30px',
+          inset: bottom ? '-26px -18px 30px' : '68px -20px -30px',
           bgcolor: parchment,
           borderRadius: bottom ? '42% 55% 0 0' : '0 0 48% 40%',
           transform: bottom ? 'rotate(-1.5deg)' : 'rotate(1.4deg)',
@@ -91,7 +138,7 @@ function BrushBand({ bottom = false }: { bottom?: boolean }) {
           position: 'absolute',
           left: 18,
           right: 34,
-          [bottom ? 'top' : 'bottom']: bottom ? 17 : 14,
+          [bottom ? 'top' : 'bottom']: bottom ? 17 : 22,
           height: 8,
           bgcolor: alpha('#ffffff', 0.08),
           borderRadius: '999px',
@@ -102,7 +149,7 @@ function BrushBand({ bottom = false }: { bottom?: boolean }) {
   );
 }
 
-function ElementMark({ color, label }: { color: string; label: string }) {
+function ElementMark({ color, label, src }: { color: string; label?: string; src?: string }) {
   return (
     <Box
       sx={{
@@ -117,10 +164,37 @@ function ElementMark({ color, label }: { color: string; label: string }) {
         fontFamily: 'Georgia, serif',
         fontWeight: 900,
         boxShadow: `0 0 0 3px ${alpha(color, 0.22)}`,
+        overflow: 'hidden',
       }}
     >
-      {label}
+      {src ? (
+        <Box
+          component="img"
+          src={src}
+          alt=""
+          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        label
+      )}
     </Box>
+  );
+}
+
+function InkGlyph({ src, size = 30 }: { src: string; size?: number }) {
+  return (
+    <Box
+      component="img"
+      src={src}
+      alt=""
+      sx={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        objectFit: 'cover',
+        boxShadow: `0 0 0 2px ${alpha(ink, 0.16)}`,
+      }}
+    />
   );
 }
 
@@ -130,7 +204,7 @@ function Panel({ children, compact = false }: { children: React.ReactNode; compa
       sx={{
         border: `1px solid ${border}`,
         borderRadius: '8px',
-        bgcolor: alpha('#fffaf2', 0.86),
+        bgcolor: alpha('#fffaf2', 0.9),
         boxShadow: `0 1px 0 ${alpha('#fff', 0.8)} inset`,
         p: compact ? 1 : 1.25,
       }}
@@ -182,39 +256,21 @@ function CharacterPane() {
       <Panel>
         <Stack direction="row" gap={1.2}>
           <Box
+            component="img"
+            src={qingPortrait}
+            alt="Qing Shui portrait"
             sx={{
               width: 92,
               height: 112,
               borderRadius: '46% 46% 14px 14px',
-              bgcolor: '#d9b27f',
               border: `2px solid ${ink}`,
-              position: 'relative',
-              overflow: 'hidden',
+              objectFit: 'cover',
               flex: '0 0 auto',
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                inset: '16px 12px auto',
-                height: 56,
-                borderRadius: '50%',
-                bgcolor: '#f1c99b',
-                boxShadow: `0 -18px 0 4px #24211e`,
-              },
-              '&:after': {
-                content: '""',
-                position: 'absolute',
-                left: 16,
-                right: 16,
-                bottom: 0,
-                height: 42,
-                borderRadius: '18px 18px 0 0',
-                bgcolor: water,
-              },
             }}
           />
           <Stack spacing={0.45} sx={{ flex: 1, minWidth: 0 }}>
             <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontSize: '1.5rem' }}>
-              Qing Shui
+              Qi Gong
             </Typography>
             <Typography sx={{ color: deepInk, fontSize: '0.68rem', fontWeight: 900 }}>
               THE SUCCESSOR
@@ -227,7 +283,7 @@ function CharacterPane() {
               ))}
             </Stack>
           </Stack>
-          <ElementMark color={water} label="水" />
+          <InkGlyph src={headerGlyph} size={34} />
         </Stack>
       </Panel>
 
@@ -335,7 +391,7 @@ function MovesPane() {
       {moves.map(([title, body]) => (
         <Panel key={title}>
           <Stack direction="row" gap={0.8}>
-            <ElementMark color={water} label="◇" />
+            <InkGlyph src={moveGlyph} size={18} />
             <Stack spacing={0.45} sx={{ flex: 1 }}>
               <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontWeight: 900 }}>
                 {title}
@@ -357,14 +413,14 @@ function TechniquesPane() {
     <Stack spacing={1}>
       <Stack direction="row" justifyContent="space-between">
         {[
-          ['All', ink],
-          ['Water', water],
-          ['Earth', earth],
-          ['Fire', ember],
-          ['Air', air],
-        ].map(([label, color]) => (
+          ['All', ink, headerGlyph],
+          ['Water', water, waterGlyph],
+          ['Earth', earth, earthGlyph],
+          ['Fire', ember, fireGlyph],
+          ['Air', air, airGlyph],
+        ].map(([label, color, src]) => (
           <Stack key={label} alignItems="center" spacing={0.35}>
-            <ElementMark color={color} label={label.slice(0, 1)} />
+            <ElementMark color={color} label={label.slice(0, 1)} src={src} />
             <Typography sx={{ color: ink, fontSize: '0.58rem', fontWeight: 900 }}>
               {label}
             </Typography>
@@ -389,6 +445,7 @@ function TechniquesPane() {
             >
               {index + 1}
             </Box>
+            <InkGlyph src={index % 2 ? techEarthGlyph : techWaterGlyph} size={34} />
             <Stack spacing={0.45} sx={{ flex: 1 }}>
               <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontWeight: 900 }}>
                 {title}
@@ -410,29 +467,20 @@ function TechniquesPane() {
 function BondsPane() {
   return (
     <Stack spacing={1}>
-      {bonds.map(([name, role, note], index) => (
+      {bonds.map(([name, role, note, portrait], index) => (
         <Panel key={name}>
           <Stack direction="row" gap={1}>
             <Box
+              component="img"
+              src={portrait}
+              alt={`${name} portrait`}
               sx={{
                 width: 68,
                 height: 68,
                 borderRadius: '50%',
                 border: `2px solid ${ink}`,
-                bgcolor: [parchmentDeep, '#d7b08b', '#b8c7c4'][index],
+                objectFit: 'cover',
                 flex: '0 0 auto',
-                position: 'relative',
-                overflow: 'hidden',
-                '&:after': {
-                  content: '""',
-                  position: 'absolute',
-                  left: 12,
-                  right: 12,
-                  bottom: 0,
-                  height: 28,
-                  borderRadius: '15px 15px 0 0',
-                  bgcolor: [earth, ember, water][index],
-                },
               }}
             />
             <Stack spacing={0.3} sx={{ flex: 1 }}>
@@ -485,7 +533,7 @@ function JournalPane() {
           </Box>
         ))}
       </Stack>
-      {journal.map(([type, title, body], index) => (
+      {journal.map(([type, title, body, image]) => (
         <Panel key={title}>
           <Stack direction="row" gap={1}>
             <Stack spacing={0.45} sx={{ flex: 1 }}>
@@ -500,11 +548,15 @@ function JournalPane() {
               </Typography>
             </Stack>
             <Box
+              component="img"
+              src={image}
+              alt=""
               sx={{
-                width: 72,
-                minHeight: 72,
+                width: 76,
+                height: 84,
                 borderRadius: '10px',
-                bgcolor: [parchmentDeep, '#e1d0bb', '#d9d2c7', '#b98552'][index],
+                objectFit: 'contain',
+                bgcolor: alpha('#fffaf2', 0.72),
                 border: `1px solid ${border}`,
                 boxShadow: `6px 7px 0 ${alpha(deepInk, 0.08)}`,
               }}
@@ -554,7 +606,7 @@ function AvatarLegends() {
         <BrushBand bottom />
 
         <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
-          <Box sx={{ px: 1.4, pt: 1, pb: 0.8, color: '#fff' }}>
+          <Box sx={{ px: 1.4, pt: 1, pb: 2, color: '#fff' }}>
             <Stack
               direction="row"
               justifyContent="space-between"
@@ -563,16 +615,21 @@ function AvatarLegends() {
               <span>9:41</span>
               <span>●●●</span>
             </Stack>
-            <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.1 }}>
-              <ElementMark color={water} label="◎" />
+            <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 0.75 }}>
+              <InkGlyph src={headerGlyph} size={34} />
               <Stack spacing={0}>
                 <Typography
-                  sx={{ fontFamily: 'Georgia, serif', fontSize: '1.08rem', fontWeight: 900 }}
+                  sx={{ fontFamily: 'Georgia, serif', fontSize: '1rem', fontWeight: 900 }}
                 >
                   The Successor
                 </Typography>
                 <Typography
-                  sx={{ color: alpha('#fff', 0.82), fontSize: '0.68rem', fontWeight: 800 }}
+                  sx={{
+                    color: alpha('#fff', 0.82),
+                    fontSize: '0.58rem',
+                    fontWeight: 800,
+                    lineHeight: 0.9,
+                  }}
                 >
                   Avatar Legends RPG
                 </Typography>
@@ -609,7 +666,6 @@ function AvatarLegends() {
           <Box sx={{ px: 0.8, pb: 0.75, pt: 0.4, bgcolor: deepInk }}>
             <Stack direction="row" justifyContent="space-between">
               {tabs.map((tab) => {
-                const Icon = tab.icon;
                 const selected = tab.value === activeTab;
                 return (
                   <ButtonBase
@@ -624,7 +680,18 @@ function AvatarLegends() {
                     }}
                   >
                     <Stack alignItems="center" spacing={0.2}>
-                      <Icon size={17} strokeWidth={selected ? 2.8 : 2} />
+                      <Box
+                        component="img"
+                        src={tab.iconSrc}
+                        alt=""
+                        sx={{
+                          width: 18,
+                          height: 18,
+                          objectFit: 'contain',
+                          borderRadius: '4px',
+                          opacity: selected ? 1 : 0.72,
+                        }}
+                      />
                       <Typography sx={{ fontSize: '0.58rem', fontWeight: selected ? 900 : 700 }}>
                         {tab.label}
                       </Typography>
