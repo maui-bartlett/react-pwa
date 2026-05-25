@@ -8,10 +8,6 @@ import { alpha } from '@mui/material/styles';
 
 import { Heart } from 'lucide-react';
 
-import boinkPortrait from './assets/bond-boink.png';
-import qiWeiPortrait from './assets/bond-qi-wei.png';
-import yoruPortrait from './assets/bond-yoru.png';
-import qingPortrait from './assets/character-qing.jpg';
 // The six elemental symbols cropped directly from the official Avatar Legends
 // character sheet "Your Training" row (assets/original-character-sheet.jpg).
 import elementAir from './assets/element-air.png';
@@ -25,10 +21,6 @@ import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
 import headerGlyph from './assets/glyph-header.png';
 import waterGlyph from './assets/glyph-water.png';
-import bagImage from './assets/journal-bag.jpg';
-import notebookImage from './assets/journal-notebook.jpg';
-import professorImage from './assets/journal-professor.jpg';
-import universityImage from './assets/journal-university.jpg';
 import navBonds from './assets/nav-bonds.png';
 import navCharacter from './assets/nav-character.png';
 import navJournal from './assets/nav-journal.png';
@@ -98,41 +90,27 @@ const bonds = [
     'Boink',
     'Black wooly pig',
     'My loyal companion and constant source of joy. He roots around for snacks and keeps me grounded.',
-    boinkPortrait,
   ],
   [
     'Qi Wei',
     'Female ancestor',
     'A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.',
-    qiWeiPortrait,
   ],
-  ['Yoru', 'Friend', 'He taught me patience, timing, and where to look first.', yoruPortrait],
+  ['Yoru', 'Friend', 'He taught me patience, timing, and where to look first.'],
 ];
 
 const journal = [
-  [
-    'Note',
-    "Rad's Notebook",
-    'A worn notebook filled with themes about bending and identity.',
-    notebookImage,
-  ],
-  [
-    'Important NPC',
-    'Professor Zei',
-    "Head of Bending Theory at UoE. Believes in Rad's potential.",
-    professorImage,
-  ],
+  ['Note', "Rad's Notebook", 'A worn notebook filled with themes about bending and identity.'],
+  ['Important NPC', 'Professor Zei', "Head of Bending Theory at UoE. Believes in Rad's potential."],
   [
     'Location',
     'The University of Elements',
     'A neutral sanctuary where benders from all nations study in peace.',
-    universityImage,
   ],
   [
     'Item',
     'Messenger Bag',
     'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
-    bagImage,
   ],
 ];
 
@@ -430,79 +408,65 @@ function CharacterPane() {
   return (
     <Stack spacing={1.1}>
       <Panel>
-        <Stack direction="row" gap={1.2} alignItems="center">
-          <Box
-            component="img"
-            src={qingPortrait}
-            alt="Qi Gong portrait"
+        {/* Image-free header: large serif name centered, with a flourish
+            underline of the playbook and the character's facts below. */}
+        <Stack alignItems="center" spacing={0.55} sx={{ py: 0.8, px: 0.6 }}>
+          <Typography
             sx={{
-              width: 92,
-              height: 112,
-              borderRadius: '46% 46% 14px 14px',
-              border: `2px solid ${alpha(washDeep, 0.7)}`,
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              display: 'block',
-              flex: '0 0 auto',
-              boxShadow: `0 0 0 3px ${alpha(parchmentLight, 0.7)}, 0 2px 4px ${alpha(deepInk, 0.18)}`,
+              color: deepInk,
+              fontFamily: '"IM Fell English", Georgia, serif',
+              fontSize: '1.85rem',
+              fontWeight: 700,
+              lineHeight: 1,
+              textAlign: 'center',
             }}
-          />
-          <Stack spacing={0.45} sx={{ flex: 1, minWidth: 0 }}>
+          >
+            Qi Gong
+          </Typography>
+          <Stack direction="row" alignItems="center" gap={0.7}>
+            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(gold, 0.55) }} />
+            <MoveDiamond color={gold} size={9} />
             <Typography
               sx={{
-                color: deepInk,
-                fontFamily: '"IM Fell English", Georgia, serif',
-                fontSize: '1.55rem',
-                fontWeight: 700,
-                lineHeight: 1.05,
+                color: ember,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.72rem',
+                fontWeight: 900,
+                letterSpacing: '0.16em',
               }}
             >
-              Qi Gong
+              THE SUCCESSOR
             </Typography>
-            <Stack direction="row" alignItems="center" gap={0.5}>
-              <Box sx={{ width: 12, height: '1px', bgcolor: alpha(gold, 0.5), flex: '0 0 auto' }} />
-              <Typography
-                sx={{
-                  color: ember,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.68rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.12em',
-                }}
-              >
-                THE SUCCESSOR
-              </Typography>
-              <Box sx={{ width: 12, height: '1px', bgcolor: alpha(gold, 0.5) }} />
-            </Stack>
-            <Stack direction="row" gap={0.6} flexWrap="wrap">
-              {['He / Him', 'Age 18', 'Infinita'].map((item, i) => (
-                <Stack key={item} direction="row" alignItems="center" gap={0.5}>
-                  {i > 0 ? (
-                    <Box
-                      sx={{
-                        width: 3,
-                        height: 3,
-                        borderRadius: '50%',
-                        bgcolor: alpha(brown, 0.5),
-                      }}
-                    />
-                  ) : null}
-                  <Typography
-                    sx={{
-                      color: brown,
-                      fontFamily: 'Georgia, serif',
-                      fontSize: '0.66rem',
-                      fontWeight: 700,
-                      fontStyle: 'italic',
-                    }}
-                  >
-                    {item}
-                  </Typography>
-                </Stack>
-              ))}
-            </Stack>
+            <MoveDiamond color={gold} size={9} />
+            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(gold, 0.55) }} />
           </Stack>
-          <InkGlyph src={headerGlyph} size={34} />
+          <Stack direction="row" gap={0.6} flexWrap="wrap" justifyContent="center">
+            {['He / Him', 'Age 18', 'Infinita'].map((item, i) => (
+              <Stack key={item} direction="row" alignItems="center" gap={0.6}>
+                {i > 0 ? (
+                  <Box
+                    sx={{
+                      width: 3,
+                      height: 3,
+                      borderRadius: '50%',
+                      bgcolor: alpha(brown, 0.5),
+                    }}
+                  />
+                ) : null}
+                <Typography
+                  sx={{
+                    color: brown,
+                    fontFamily: 'Georgia, serif',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontStyle: 'italic',
+                  }}
+                >
+                  {item}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
         </Stack>
       </Panel>
 
@@ -861,78 +825,73 @@ function TechniquesPane() {
 function BondsPane() {
   return (
     <Stack spacing={1}>
-      {bonds.map(([name, role, note, portrait], index) => (
-        <Panel key={name}>
-          <Stack direction="row" gap={1}>
-            <Box
-              component="img"
-              src={portrait}
-              alt={`${name} portrait`}
-              sx={{
-                width: 68,
-                height: 68,
-                borderRadius: '50%',
-                border: `2px solid ${alpha(washDeep, 0.7)}`,
-                objectFit: 'cover',
-                objectPosition: 'center',
-                display: 'block',
-                flex: '0 0 auto',
-                boxShadow: `0 0 0 3px ${alpha(parchmentLight, 0.6)}, 0 1px 3px ${alpha(deepInk, 0.18)}`,
-              }}
-            />
-            <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+      {bonds.map(([name, role, note], index) => (
+        <Panel key={name as string}>
+          {/* Image-free bond card. Heart icon stays as the right-side accent;
+              name, role and influence stack at the top, body note below. */}
+          <Stack spacing={0.45}>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Stack spacing={0.2} sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                   sx={{
                     color: deepInk,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.95rem',
+                    fontSize: '1rem',
                     fontWeight: 900,
-                    letterSpacing: '0.05em',
+                    letterSpacing: '0.06em',
                     textTransform: 'uppercase',
-                    lineHeight: 1.1,
+                    lineHeight: 1.05,
                   }}
                 >
                   {name}
                 </Typography>
-                <Heart size={16} fill={index < 2 ? ember : 'transparent'} color={ember} />
-              </Stack>
-              <Typography
-                sx={{
-                  color: brownSoft,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  fontStyle: 'italic',
-                }}
-              >
-                {role}
-              </Typography>
-              <Stack direction="row" alignItems="center" gap={0.6}>
                 <Typography
                   sx={{
-                    color: alpha(brown, 0.7),
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.54rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.1em',
+                    color: brownSoft,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontStyle: 'italic',
                   }}
                 >
-                  INFLUENCE
+                  {role}
                 </Typography>
-                <StatDots value={4 - index} color={washDeep} />
               </Stack>
-              <Typography
-                sx={{
-                  color: brown,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.74rem',
-                  lineHeight: 1.45,
-                }}
-              >
-                {note}
-              </Typography>
+              <Stack direction="row" alignItems="center" gap={0.55}>
+                <Stack alignItems="flex-end" spacing={0.2}>
+                  <Typography
+                    sx={{
+                      color: alpha(brown, 0.7),
+                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: '0.54rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.12em',
+                    }}
+                  >
+                    INFLUENCE
+                  </Typography>
+                  <StatDots value={4 - index} color={washDeep} />
+                </Stack>
+                <Heart size={18} fill={index < 2 ? ember : 'transparent'} color={ember} />
+              </Stack>
             </Stack>
+            {/* Hairline gold divider between meta and body */}
+            <Box
+              sx={{
+                height: '1px',
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.45)} 12%, ${alpha(gold, 0.45)} 88%, transparent 100%)`,
+              }}
+            />
+            <Typography
+              sx={{
+                color: brown,
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontSize: '0.78rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {note}
+            </Typography>
           </Stack>
         </Panel>
       ))}
@@ -970,61 +929,55 @@ function JournalPane() {
   return (
     <Stack spacing={1}>
       <FilterTabs labels={['Notes', 'Inventory', 'Lore', 'Sessions']} activeIndex={0} />
-      {journal.map(([type, title, body, image]) => (
+      {journal.map(([type, title, body]) => (
         <Panel key={title}>
-          <Stack direction="row" gap={1} alignItems="flex-start">
-            <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
+          {/* Image-free journal card. Type tag and title sit at the top, body
+              text spans the full width below a gold hairline divider. */}
+          <Stack spacing={0.5}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography
                 sx={{
                   color: ember,
                   fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                   fontSize: '0.58rem',
                   fontWeight: 900,
-                  letterSpacing: '0.1em',
+                  letterSpacing: '0.14em',
                   textTransform: 'uppercase',
                 }}
               >
                 {type}
               </Typography>
-              <Typography
-                sx={{
-                  color: deepInk,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.92rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.1,
-                }}
-              >
-                {title}
-              </Typography>
-              <Typography
-                sx={{
-                  color: brown,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.74rem',
-                  lineHeight: 1.45,
-                }}
-              >
-                {body}
-              </Typography>
+              <MoveDiamond color={alpha(gold, 0.8)} size={8} />
             </Stack>
-            <Box
-              component="img"
-              src={image}
-              alt=""
+            <Typography
               sx={{
-                width: 76,
-                height: 84,
-                borderRadius: '4px',
-                objectFit: 'contain',
-                bgcolor: alpha(parchmentLight, 0.72),
-                border: `1px solid ${border}`,
-                boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.4)}, 4px 5px 0 ${alpha(deepInk, 0.08)}`,
-                flex: '0 0 auto',
+                color: deepInk,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.98rem',
+                fontWeight: 900,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                lineHeight: 1.1,
+              }}
+            >
+              {title}
+            </Typography>
+            <Box
+              sx={{
+                height: '1px',
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.45)} 12%, ${alpha(gold, 0.45)} 88%, transparent 100%)`,
               }}
             />
+            <Typography
+              sx={{
+                color: brown,
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontSize: '0.78rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {body}
+            </Typography>
           </Stack>
         </Panel>
       ))}
