@@ -32,7 +32,6 @@ import universityImage from './assets/journal-university.jpg';
 import navBonds from './assets/nav-bonds.png';
 import navCharacter from './assets/nav-character.png';
 import navJournal from './assets/nav-journal.png';
-import navMoves from './assets/nav-moves.png';
 import navTechniques from './assets/nav-techniques.png';
 
 type AvatarTab = 'character' | 'moves' | 'techniques' | 'bonds' | 'journal';
@@ -40,7 +39,10 @@ type AvatarTab = 'character' | 'moves' | 'techniques' | 'bonds' | 'journal';
 type TabConfig = {
   label: string;
   value: AvatarTab;
-  iconSrc: string;
+  // Either provide an image icon (iconSrc) or a custom inline icon (renderIcon).
+  // The Moves tab uses the signature diamond-in-diamond glyph rendered inline.
+  iconSrc?: string;
+  renderIcon?: (props: { color: string; size: number }) => React.ReactNode;
 };
 
 // Parchment + watercolor blue palette drawn from the Avatar Legends character sheet
@@ -64,7 +66,13 @@ const tech = '#7a5d8a';
 
 const tabs: TabConfig[] = [
   { label: 'Character', value: 'character', iconSrc: navCharacter },
-  { label: 'Moves', value: 'moves', iconSrc: navMoves },
+  {
+    label: 'Moves',
+    value: 'moves',
+    // Use the signature diamond-in-diamond glyph (the Moves bullet from the
+    // character sheet) as the bottom-nav icon for consistency.
+    renderIcon: ({ color, size }) => <MoveDiamond color={color} size={size} />,
+  },
   { label: 'Techniques', value: 'techniques', iconSrc: navTechniques },
   { label: 'Bonds', value: 'bonds', iconSrc: navBonds },
   { label: 'Journal', value: 'journal', iconSrc: navJournal },
@@ -304,6 +312,8 @@ function ElementMark({
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            objectPosition: 'center',
+            display: 'block',
           }}
         />
       ) : (
@@ -328,6 +338,8 @@ function InkGlyph({ src, size = 30 }: { src: string; size?: number }) {
         height: size,
         borderRadius: '50%',
         objectFit: 'cover',
+        objectPosition: 'center',
+        display: 'block',
         border: `1.5px solid ${alpha(border, 0.85)}`,
         boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.5)}`,
       }}
@@ -429,6 +441,8 @@ function CharacterPane() {
               borderRadius: '46% 46% 14px 14px',
               border: `2px solid ${alpha(washDeep, 0.7)}`,
               objectFit: 'cover',
+              objectPosition: 'center top',
+              display: 'block',
               flex: '0 0 auto',
               boxShadow: `0 0 0 3px ${alpha(parchmentLight, 0.7)}, 0 2px 4px ${alpha(deepInk, 0.18)}`,
             }}
@@ -860,6 +874,8 @@ function BondsPane() {
                 borderRadius: '50%',
                 border: `2px solid ${alpha(washDeep, 0.7)}`,
                 objectFit: 'cover',
+                objectPosition: 'center',
+                display: 'block',
                 flex: '0 0 auto',
                 boxShadow: `0 0 0 3px ${alpha(parchmentLight, 0.6)}, 0 1px 3px ${alpha(deepInk, 0.18)}`,
               }}
@@ -1285,19 +1301,41 @@ function AvatarLegends() {
                       }}
                     />
                     <Stack alignItems="center" spacing={0.3} sx={{ pt: '10px' }}>
-                      <Box
-                        component="img"
-                        src={tab.iconSrc}
-                        alt=""
-                        sx={{
-                          width: 22,
-                          height: 22,
-                          objectFit: 'contain',
-                          opacity: selected ? 1 : 0.5,
-                          filter: 'brightness(0) invert(1)',
-                          transition: 'opacity 0.2s ease',
-                        }}
-                      />
+                      {tab.renderIcon ? (
+                        // Inline SVG icon (e.g. Moves diamond) — color comes from
+                        // current selection so we don't need the brightness/invert
+                        // filter that the PNG icons use.
+                        <Box
+                          sx={{
+                            width: 22,
+                            height: 22,
+                            display: 'grid',
+                            placeItems: 'center',
+                            opacity: selected ? 1 : 0.6,
+                            transition: 'opacity 0.2s ease',
+                          }}
+                        >
+                          {tab.renderIcon({
+                            color: parchmentLight,
+                            size: 20,
+                          })}
+                        </Box>
+                      ) : (
+                        <Box
+                          component="img"
+                          src={tab.iconSrc}
+                          alt=""
+                          sx={{
+                            width: 22,
+                            height: 22,
+                            objectFit: 'contain',
+                            objectPosition: 'center',
+                            opacity: selected ? 1 : 0.5,
+                            filter: 'brightness(0) invert(1)',
+                            transition: 'opacity 0.2s ease',
+                          }}
+                        />
+                      )}
                       <Typography
                         sx={{
                           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
