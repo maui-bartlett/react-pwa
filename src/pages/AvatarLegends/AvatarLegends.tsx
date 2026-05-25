@@ -149,7 +149,15 @@ function BrushBand({ bottom = false }: { bottom?: boolean }) {
   );
 }
 
-function ElementMark({ color, label, src }: { color: string; label?: string; src?: string }) {
+function ElementMark({
+  color,
+  label,
+  src,
+}: {
+  color: string;
+  label?: string;
+  src?: string | undefined;
+}) {
   return (
     <Box
       sx={{
@@ -365,29 +373,49 @@ function CharacterPane() {
   );
 }
 
-function MovesPane() {
+function FilterTabs({ labels, activeIndex }: { labels: string[]; activeIndex: number }) {
   return (
-    <Stack spacing={1}>
-      <Stack direction="row" gap={0.6}>
-        {['Basic', 'Playbook', 'Learned', 'Combat'].map((label, index) => (
+    <Stack
+      direction="row"
+      gap={0.5}
+      sx={{
+        bgcolor: alpha(ink, 0.07),
+        borderRadius: '8px',
+        p: '3px',
+      }}
+    >
+      {labels.map((label, index) => {
+        const active = index === activeIndex;
+        return (
           <Box
             key={label}
             sx={{
               flex: 1,
-              py: 0.65,
-              borderRadius: '5px',
-              bgcolor: index === 3 ? ink : alpha(ink, 0.08),
-              color: index === 3 ? '#fff' : ink,
+              py: '5px',
+              borderRadius: '6px',
+              bgcolor: active ? ink : 'transparent',
+              color: active ? '#fff' : alpha(ink, 0.55),
               textAlign: 'center',
-              fontSize: '0.62rem',
-              fontWeight: 900,
+              fontSize: '0.6rem',
+              fontWeight: active ? 900 : 700,
               textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              boxShadow: active ? `0 1px 3px ${alpha(ink, 0.28)}` : 'none',
+              transition: 'all 0.15s ease',
             }}
           >
             {label}
           </Box>
-        ))}
-      </Stack>
+        );
+      })}
+    </Stack>
+  );
+}
+
+function MovesPane() {
+  return (
+    <Stack spacing={1}>
+      <FilterTabs labels={['Basic', 'Playbook', 'Learned', 'Combat']} activeIndex={3} />
       {moves.map(([title, body]) => (
         <Panel key={title}>
           <Stack direction="row" gap={0.8}>
@@ -411,6 +439,7 @@ function MovesPane() {
 function TechniquesPane() {
   return (
     <Stack spacing={1}>
+      <FilterTabs labels={['Notes', 'Inventory', 'Mastered']} activeIndex={0} />
       <Stack direction="row" justifyContent="space-between">
         {[
           ['All', ink, headerGlyph],
@@ -418,9 +447,14 @@ function TechniquesPane() {
           ['Earth', earth, earthGlyph],
           ['Fire', ember, fireGlyph],
           ['Air', air, airGlyph],
+          ['Other', alpha(ink, 0.5), undefined],
         ].map(([label, color, src]) => (
-          <Stack key={label} alignItems="center" spacing={0.35}>
-            <ElementMark color={color} label={label.slice(0, 1)} src={src} />
+          <Stack key={label as string} alignItems="center" spacing={0.35}>
+            <ElementMark
+              color={color as string}
+              label={(label as string).slice(0, 1)}
+              src={src as string | undefined}
+            />
             <Typography sx={{ color: ink, fontSize: '0.58rem', fontWeight: 900 }}>
               {label}
             </Typography>
@@ -513,26 +547,7 @@ function BondsPane() {
 function JournalPane() {
   return (
     <Stack spacing={1}>
-      <Stack direction="row" gap={0.6}>
-        {['Notes', 'Inventory', 'Lore', 'Sessions'].map((label, index) => (
-          <Box
-            key={label}
-            sx={{
-              flex: 1,
-              py: 0.65,
-              borderRadius: '5px',
-              bgcolor: index === 0 ? ink : alpha(ink, 0.08),
-              color: index === 0 ? '#fff' : ink,
-              textAlign: 'center',
-              fontSize: '0.62rem',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-            }}
-          >
-            {label}
-          </Box>
-        ))}
-      </Stack>
+      <FilterTabs labels={['Notes', 'Inventory', 'Lore', 'Sessions']} activeIndex={0} />
       {journal.map(([type, title, body, image]) => (
         <Panel key={title}>
           <Stack direction="row" gap={1}>
@@ -663,8 +678,16 @@ function AvatarLegends() {
             {activeTab === 'journal' ? <JournalPane /> : null}
           </Box>
 
-          <Box sx={{ px: 0.8, pb: 0.75, pt: 0.4, bgcolor: deepInk }}>
-            <Stack direction="row" justifyContent="space-between">
+          <Box
+            sx={{
+              px: 0.5,
+              pb: 1,
+              pt: 0,
+              bgcolor: deepInk,
+              borderTop: `1px solid ${alpha('#ffffff', 0.08)}`,
+            }}
+          >
+            <Stack direction="row">
               {tabs.map((tab) => {
                 const selected = tab.value === activeTab;
                 return (
@@ -675,24 +698,49 @@ function AvatarLegends() {
                       flex: 1,
                       minWidth: 0,
                       borderRadius: '10px',
-                      py: 0.45,
-                      color: selected ? '#fff' : alpha('#fff', 0.58),
+                      pt: 0,
+                      pb: 0.5,
+                      color: selected ? '#fff' : alpha('#fff', 0.45),
+                      position: 'relative',
+                      overflow: 'visible',
                     }}
                   >
-                    <Stack alignItems="center" spacing={0.2}>
+                    {/* Active indicator pill sits flush at the top edge */}
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 32,
+                        height: 3,
+                        borderRadius: '0 0 4px 4px',
+                        bgcolor: selected ? '#fff' : 'transparent',
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    />
+                    <Stack alignItems="center" spacing={0.25} sx={{ pt: '10px' }}>
                       <Box
                         component="img"
                         src={tab.iconSrc}
                         alt=""
                         sx={{
-                          width: 18,
-                          height: 18,
+                          width: 22,
+                          height: 22,
                           objectFit: 'contain',
-                          borderRadius: '4px',
-                          opacity: selected ? 1 : 0.72,
+                          opacity: selected ? 1 : 0.45,
+                          filter: 'brightness(0) invert(1)',
+                          transition: 'opacity 0.2s ease',
                         }}
                       />
-                      <Typography sx={{ fontSize: '0.58rem', fontWeight: selected ? 900 : 700 }}>
+                      <Typography
+                        sx={{
+                          fontSize: '0.6rem',
+                          fontWeight: selected ? 900 : 600,
+                          letterSpacing: '0.01em',
+                          lineHeight: 1,
+                        }}
+                      >
                         {tab.label}
                       </Typography>
                     </Stack>
