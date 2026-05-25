@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
-import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -17,7 +16,6 @@ import airGlyph from './assets/glyph-air.png';
 import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
 import headerGlyph from './assets/glyph-header.png';
-import moveGlyph from './assets/glyph-move.png';
 import techEarthGlyph from './assets/glyph-tech-earth.png';
 import techWaterGlyph from './assets/glyph-tech-water.png';
 import waterGlyph from './assets/glyph-water.png';
@@ -39,14 +37,24 @@ type TabConfig = {
   iconSrc: string;
 };
 
-const ink = '#182f59';
-const deepInk = '#002b47';
-const parchment = '#fbf6ee';
-const border = '#dfceb8';
-const ember = '#af3f3f';
-const water = '#3e67a5';
-const air = '#617d84';
-const earth = '#6f7d6b';
+// Parchment + watercolor blue palette drawn from the Avatar Legends character sheet
+const parchment = '#f0e6cf'; // warm cream page background
+const parchmentLight = '#f9f1dd'; // lighter highlight cream
+const parchmentDeep = '#e6d8b8'; // shaded parchment for recessed areas
+const washDeep = '#6f9bba'; // deeper watercolor blue
+const ink = '#23456b'; // ink for headings (darker but bluish)
+const deepInk = '#162a45'; // deepest navy used in brush strokes
+const brown = '#5a4733'; // hand-written brown for body text
+const brownSoft = '#7a6147'; // softer brown for secondary text
+const border = '#c9b58c'; // tan border for containers
+const ember = '#a8413a'; // muted brick red accent
+const gold = '#a47b29'; // warm gold for decorations
+const water = '#4a7fa8';
+const earth = '#7d8c5a';
+const fire = '#a8413a';
+const air = '#a3bbc4';
+const martial = '#3d3d4a';
+const tech = '#7a5d8a';
 
 const tabs: TabConfig[] = [
   { label: 'Character', value: 'character', iconSrc: navCharacter },
@@ -114,7 +122,21 @@ const journal = [
   ],
 ];
 
-function BrushBand({ bottom = false }: { bottom?: boolean }) {
+/**
+ * Watercolor blue brush stroke band — irregular wavy bottom edge mimicking a
+ * sumi-e wash painted across parchment. Two stacked layers create depth: a
+ * deeper wash behind, a lighter wash in front, slightly offset.
+ */
+function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; height?: number }) {
+  // The path is a closed shape: top edge straight, bottom edge wavy with brush-stroke variation
+  const wavyPath = bottom
+    ? `M0,${height} L430,${height} L430,28 Q400,8 360,18 Q320,30 280,14 Q240,0 200,18 Q160,34 120,16 Q80,0 40,22 Q15,32 0,18 Z`
+    : `M0,0 L430,0 L430,${height - 30} Q400,${height - 8} 360,${height - 18} Q320,${height - 30} 280,${height - 12} Q240,${height + 4} 200,${height - 18} Q160,${height - 34} 120,${height - 14} Q80,${height + 2} 40,${height - 22} Q15,${height - 32} 0,${height - 16} Z`;
+
+  const wavyPathLight = bottom
+    ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
+    : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
+
   return (
     <Box
       sx={{
@@ -122,57 +144,143 @@ function BrushBand({ bottom = false }: { bottom?: boolean }) {
         left: 0,
         right: 0,
         [bottom ? 'bottom' : 'top']: 0,
-        height: bottom ? 74 : 102,
-        bgcolor: deepInk,
-        overflow: 'hidden',
-        '&:before': {
-          content: '""',
-          position: 'absolute',
-          inset: bottom ? '-26px -18px 30px' : '68px -20px -30px',
-          bgcolor: parchment,
-          borderRadius: bottom ? '42% 55% 0 0' : '0 0 48% 40%',
-          transform: bottom ? 'rotate(-1.5deg)' : 'rotate(1.4deg)',
-        },
-        '&:after': {
-          content: '""',
-          position: 'absolute',
-          left: 18,
-          right: 34,
-          [bottom ? 'top' : 'bottom']: bottom ? 17 : 22,
-          height: 8,
-          bgcolor: alpha('#ffffff', 0.08),
-          borderRadius: '999px',
-          filter: 'blur(1px)',
-        },
+        height,
+        pointerEvents: 'none',
+        zIndex: 0,
       }}
-    />
+    >
+      <Box
+        component="svg"
+        viewBox={`0 0 430 ${height}`}
+        preserveAspectRatio="none"
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          display: 'block',
+        }}
+      >
+        {/* Deeper wash layer */}
+        <path d={wavyPath} fill={alpha(deepInk, 0.92)} />
+        {/* Lighter watercolor layer offset slightly for depth */}
+        <path d={wavyPathLight} fill={alpha(washDeep, 0.5)} />
+        {/* Top sheen — a soft highlight where the brush starts */}
+        <rect
+          x={20}
+          y={bottom ? height - 8 : 4}
+          width={380}
+          height={3}
+          rx={2}
+          fill={alpha('#ffffff', 0.18)}
+        />
+      </Box>
+    </Box>
   );
 }
 
+/**
+ * Diamond-within-diamond bullet — the signature glyph for Moves in the
+ * Avatar Legends character sheet. Outer outline + inner filled diamond.
+ */
+function MoveDiamond({ color = ink, size = 18 }: { color?: string; size?: number }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+    >
+      <polygon
+        points="12,2 22,12 12,22 2,12"
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+      <polygon points="12,8.5 15.5,12 12,15.5 8.5,12" fill={color} />
+    </Box>
+  );
+}
+
+/**
+ * Subtle corner ornament — a small flourish using paired diamond shapes.
+ * Sits in the corners of containers and the page frame.
+ */
+function CornerOrnament({
+  position,
+  color = gold,
+  size = 14,
+}: {
+  position: 'tl' | 'tr' | 'bl' | 'br';
+  color?: string;
+  size?: number;
+}) {
+  const rotation = { tl: 0, tr: 90, br: 180, bl: 270 }[position];
+  const placement = {
+    tl: { top: 4, left: 4 },
+    tr: { top: 4, right: 4 },
+    br: { bottom: 4, right: 4 },
+    bl: { bottom: 4, left: 4 },
+  }[position];
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 20 20"
+      sx={{
+        position: 'absolute',
+        ...placement,
+        width: size,
+        height: size,
+        transform: `rotate(${rotation}deg)`,
+        pointerEvents: 'none',
+        opacity: 0.65,
+      }}
+    >
+      <path
+        d="M0 6 L0 0 L6 0 M2 4 L4 4 L4 2"
+        fill="none"
+        stroke={color}
+        strokeWidth={1.2}
+        strokeLinecap="round"
+      />
+      <circle cx={1.5} cy={1.5} r={0.8} fill={color} />
+    </Box>
+  );
+}
+
+/**
+ * Stylized element badge — a watercolor-washed disc with a soft halo, mimicking
+ * the elemental glyphs in the character sheet's "Your Training" row. Each badge
+ * has a colored watercolor wash background and a tan border.
+ */
 function ElementMark({
   color,
   label,
   src,
+  size = 32,
 }: {
   color: string;
   label?: string;
   src?: string | undefined;
+  size?: number;
 }) {
   return (
     <Box
       sx={{
-        width: 30,
-        height: 30,
+        width: size,
+        height: size,
         borderRadius: '50%',
-        border: `1px solid ${alpha('#ffffff', 0.55)}`,
-        bgcolor: alpha(color, 0.9),
+        border: `1.5px solid ${alpha(color, 0.7)}`,
+        background: `radial-gradient(circle at 30% 30%, ${alpha(color, 0.35)} 0%, ${alpha(color, 0.65)} 60%, ${alpha(color, 0.55)} 100%)`,
         display: 'grid',
         placeItems: 'center',
-        color: '#fff',
-        fontFamily: 'Georgia, serif',
+        color: deepInk,
+        fontFamily: '"IM Fell English", Georgia, serif',
         fontWeight: 900,
-        boxShadow: `0 0 0 3px ${alpha(color, 0.22)}`,
+        fontSize: size * 0.42,
+        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.6)}, 0 1px 3px ${alpha(deepInk, 0.18)}`,
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
       {src ? (
@@ -180,7 +288,12 @@ function ElementMark({
           component="img"
           src={src}
           alt=""
-          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            mixBlendMode: 'multiply',
+          }}
         />
       ) : (
         label
@@ -189,6 +302,10 @@ function ElementMark({
   );
 }
 
+/**
+ * InkGlyph — a circular image badge used for inline character / move glyphs.
+ * Now styled with a parchment ring rather than the previous ink shadow.
+ */
 function InkGlyph({ src, size = 30 }: { src: string; size?: number }) {
   return (
     <Box
@@ -200,23 +317,45 @@ function InkGlyph({ src, size = 30 }: { src: string; size?: number }) {
         height: size,
         borderRadius: '50%',
         objectFit: 'cover',
-        boxShadow: `0 0 0 2px ${alpha(ink, 0.16)}`,
+        border: `1.5px solid ${alpha(border, 0.85)}`,
+        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.5)}`,
       }}
     />
   );
 }
 
-function Panel({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
+/**
+ * Panel — parchment-textured container with a tan border and subtle corner
+ * ornaments. Mirrors the boxed sections on the character sheet.
+ */
+function Panel({
+  children,
+  compact = false,
+  ornament = true,
+}: {
+  children: React.ReactNode;
+  compact?: boolean;
+  ornament?: boolean;
+}) {
   return (
     <Box
       sx={{
+        position: 'relative',
         border: `1px solid ${border}`,
-        borderRadius: '8px',
-        bgcolor: alpha('#fffaf2', 0.9),
-        boxShadow: `0 1px 0 ${alpha('#fff', 0.8)} inset`,
+        borderRadius: '4px',
+        background: `linear-gradient(180deg, ${alpha(parchmentLight, 0.92)} 0%, ${alpha(parchment, 0.85)} 100%)`,
+        boxShadow: `0 1px 0 ${alpha('#fff', 0.6)} inset, 0 1px 2px ${alpha(deepInk, 0.06)}`,
         p: compact ? 1 : 1.25,
       }}
     >
+      {ornament ? (
+        <>
+          <CornerOrnament position="tl" />
+          <CornerOrnament position="tr" />
+          <CornerOrnament position="bl" />
+          <CornerOrnament position="br" />
+        </>
+      ) : null}
       {children}
     </Box>
   );
@@ -242,19 +381,25 @@ function StatDots({ value, color }: { value: number; color: string }) {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
+  // Mimics the character-sheet section labels (e.g. STATS, CONDITIONS) — a small
+  // caps serif with a hairline gold underline drawn via box-shadow.
   return (
-    <Typography
-      sx={{
-        color: ink,
-        fontFamily: 'Georgia, serif',
-        fontSize: '0.86rem',
-        fontWeight: 900,
-        letterSpacing: '0.02em',
-        textTransform: 'uppercase',
-      }}
-    >
-      {children}
-    </Typography>
+    <Stack direction="row" alignItems="center" gap={0.6}>
+      <MoveDiamond color={gold} size={9} />
+      <Typography
+        sx={{
+          color: deepInk,
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.82rem',
+          fontWeight: 900,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {children}
+      </Typography>
+      <Box sx={{ flex: 1, height: '1px', bgcolor: alpha(gold, 0.4) }} />
+    </Stack>
   );
 }
 
@@ -262,32 +407,73 @@ function CharacterPane() {
   return (
     <Stack spacing={1.1}>
       <Panel>
-        <Stack direction="row" gap={1.2}>
+        <Stack direction="row" gap={1.2} alignItems="center">
           <Box
             component="img"
             src={qingPortrait}
-            alt="Qing Shui portrait"
+            alt="Qi Gong portrait"
             sx={{
               width: 92,
               height: 112,
               borderRadius: '46% 46% 14px 14px',
-              border: `2px solid ${ink}`,
+              border: `2px solid ${alpha(washDeep, 0.7)}`,
               objectFit: 'cover',
               flex: '0 0 auto',
+              boxShadow: `0 0 0 3px ${alpha(parchmentLight, 0.7)}, 0 2px 4px ${alpha(deepInk, 0.18)}`,
             }}
           />
           <Stack spacing={0.45} sx={{ flex: 1, minWidth: 0 }}>
-            <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontSize: '1.5rem' }}>
+            <Typography
+              sx={{
+                color: deepInk,
+                fontFamily: '"IM Fell English", Georgia, serif',
+                fontSize: '1.55rem',
+                fontWeight: 700,
+                lineHeight: 1.05,
+              }}
+            >
               Qi Gong
             </Typography>
-            <Typography sx={{ color: deepInk, fontSize: '0.68rem', fontWeight: 900 }}>
-              THE SUCCESSOR
-            </Typography>
-            <Stack direction="row" gap={0.8} flexWrap="wrap">
-              {['He / Him', 'Age 18', 'Republic City'].map((item) => (
-                <Typography key={item} sx={{ color: ink, fontSize: '0.68rem', fontWeight: 800 }}>
-                  {item}
-                </Typography>
+            <Stack direction="row" alignItems="center" gap={0.5}>
+              <Box sx={{ width: 12, height: '1px', bgcolor: alpha(gold, 0.5), flex: '0 0 auto' }} />
+              <Typography
+                sx={{
+                  color: ember,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.68rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.12em',
+                }}
+              >
+                THE SUCCESSOR
+              </Typography>
+              <Box sx={{ width: 12, height: '1px', bgcolor: alpha(gold, 0.5) }} />
+            </Stack>
+            <Stack direction="row" gap={0.6} flexWrap="wrap">
+              {['He / Him', 'Age 18', 'Infinita'].map((item, i) => (
+                <Stack key={item} direction="row" alignItems="center" gap={0.5}>
+                  {i > 0 ? (
+                    <Box
+                      sx={{
+                        width: 3,
+                        height: 3,
+                        borderRadius: '50%',
+                        bgcolor: alpha(brown, 0.5),
+                      }}
+                    />
+                  ) : null}
+                  <Typography
+                    sx={{
+                      color: brown,
+                      fontFamily: 'Georgia, serif',
+                      fontSize: '0.66rem',
+                      fontWeight: 700,
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    {item}
+                  </Typography>
+                </Stack>
               ))}
             </Stack>
           </Stack>
@@ -305,11 +491,20 @@ function CharacterPane() {
                   sx={{
                     width: 10,
                     height: 10,
-                    border: `1px solid ${ink}`,
-                    bgcolor: i < 3 ? ink : 'transparent',
+                    border: `1.2px solid ${deepInk}`,
+                    bgcolor: i < 3 ? deepInk : 'transparent',
+                    borderRadius: '1px',
                   }}
                 />
-                <Typography sx={{ fontSize: '0.68rem', color: deepInk }}>{item}</Typography>
+                <Typography
+                  sx={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: '0.7rem',
+                    color: brown,
+                  }}
+                >
+                  {item}
+                </Typography>
               </Stack>
             ),
           )}
@@ -318,11 +513,27 @@ function CharacterPane() {
 
       <Panel>
         <SectionTitle>Balance</SectionTitle>
-        <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1 }}>
-          <Typography sx={{ color: ink, fontSize: '0.66rem', fontWeight: 900 }}>
+        <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.2, mb: 0.4 }}>
+          <Typography
+            sx={{
+              color: deepInk,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.62rem',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+            }}
+          >
             TRADITION
           </Typography>
-          <Box sx={{ flex: 1, height: 2, bgcolor: ink, position: 'relative' }}>
+          <Box
+            sx={{
+              flex: 1,
+              height: 2,
+              background: `linear-gradient(90deg, ${alpha(washDeep, 0.5)} 0%, ${alpha(deepInk, 0.7)} 50%, ${alpha(washDeep, 0.5)} 100%)`,
+              position: 'relative',
+              borderRadius: '1px',
+            }}
+          >
             <Box
               sx={{
                 position: 'absolute',
@@ -331,25 +542,35 @@ function CharacterPane() {
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                bgcolor: '#f8f1e6',
-                border: `2px solid ${ink}`,
+                background: `radial-gradient(circle at 30% 30%, ${parchmentLight}, ${parchment})`,
+                border: `2px solid ${deepInk}`,
                 display: 'grid',
                 placeItems: 'center',
-                color: ink,
+                color: deepInk,
                 fontWeight: 900,
+                fontSize: '0.95rem',
+                boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
               }}
             >
               ☯
             </Box>
           </Box>
-          <Typography sx={{ color: ink, fontSize: '0.66rem', fontWeight: 900 }}>
+          <Typography
+            sx={{
+              color: deepInk,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.62rem',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+            }}
+          >
             PROGRESS
           </Typography>
         </Stack>
       </Panel>
 
       <Panel>
-        <SectionTitle>Attributes & Stats</SectionTitle>
+        <SectionTitle>Attributes &amp; Stats</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
           {[
             ['Creativity', 2, ember],
@@ -358,10 +579,27 @@ function CharacterPane() {
             ['Passion', 1, '#bc5753'],
           ].map(([label, value, color]) => (
             <Stack key={label as string} spacing={0.45} alignItems="center">
-              <Typography sx={{ color: color as string, fontSize: '0.62rem', fontWeight: 900 }}>
+              <Typography
+                sx={{
+                  color: color as string,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.6rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
                 {label}
               </Typography>
-              <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontSize: '1.28rem' }}>
+              <Typography
+                sx={{
+                  color: deepInk,
+                  fontFamily: '"IM Fell English", Georgia, serif',
+                  fontSize: '1.4rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
+              >
                 {value}
               </Typography>
               <StatDots value={Number(value)} color={color as string} />
@@ -373,15 +611,23 @@ function CharacterPane() {
   );
 }
 
+/**
+ * FilterTabs — segmented filter row styled as parchment chips on a deeper
+ * parchment groove. The active chip uses a watercolor wash fill and a thin
+ * gold underline, mirroring the way the character sheet highlights selected
+ * items.
+ */
 function FilterTabs({ labels, activeIndex }: { labels: string[]; activeIndex: number }) {
   return (
     <Stack
       direction="row"
-      gap={0.5}
+      gap={0.4}
       sx={{
-        bgcolor: alpha(ink, 0.07),
-        borderRadius: '8px',
+        bgcolor: alpha(parchmentDeep, 0.55),
+        borderRadius: '4px',
+        border: `1px solid ${alpha(border, 0.6)}`,
         p: '3px',
+        boxShadow: `inset 0 1px 2px ${alpha(deepInk, 0.08)}`,
       }}
     >
       {labels.map((label, index) => {
@@ -392,16 +638,21 @@ function FilterTabs({ labels, activeIndex }: { labels: string[]; activeIndex: nu
             sx={{
               flex: 1,
               py: '5px',
-              borderRadius: '6px',
-              bgcolor: active ? ink : 'transparent',
-              color: active ? '#fff' : alpha(ink, 0.55),
+              borderRadius: '3px',
+              background: active
+                ? `linear-gradient(180deg, ${alpha(washDeep, 0.85)} 0%, ${alpha(deepInk, 0.92)} 100%)`
+                : 'transparent',
+              color: active ? parchmentLight : alpha(brown, 0.75),
               textAlign: 'center',
-              fontSize: '0.6rem',
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.62rem',
               fontWeight: active ? 900 : 700,
               textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              boxShadow: active ? `0 1px 3px ${alpha(ink, 0.28)}` : 'none',
-              transition: 'all 0.15s ease',
+              letterSpacing: '0.08em',
+              boxShadow: active
+                ? `0 1px 2px ${alpha(deepInk, 0.28)}, inset 0 0 0 1px ${alpha(gold, 0.4)}`
+                : 'none',
+              transition: 'all 0.18s ease',
             }}
           >
             {label}
@@ -418,17 +669,39 @@ function MovesPane() {
       <FilterTabs labels={['Basic', 'Playbook', 'Learned', 'Combat']} activeIndex={3} />
       {moves.map(([title, body]) => (
         <Panel key={title}>
-          <Stack direction="row" gap={0.8}>
-            <InkGlyph src={moveGlyph} size={18} />
-            <Stack spacing={0.45} sx={{ flex: 1 }}>
-              <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontWeight: 900 }}>
+          <Stack direction="row" gap={0.9} alignItems="flex-start">
+            {/* Signature diamond-within-diamond bullet for Moves */}
+            <Box sx={{ pt: '2px' }}>
+              <MoveDiamond color={deepInk} size={18} />
+            </Box>
+            <Stack spacing={0.4} sx={{ flex: 1 }}>
+              <Typography
+                sx={{
+                  color: deepInk,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.92rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.1,
+                }}
+              >
                 {title}
               </Typography>
-              <Typography sx={{ color: deepInk, fontSize: '0.72rem', lineHeight: 1.45 }}>
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.74rem',
+                  lineHeight: 1.45,
+                }}
+              >
                 {body}
               </Typography>
             </Stack>
-            <Typography sx={{ color: ink, fontWeight: 900 }}>›</Typography>
+            <Typography sx={{ color: alpha(deepInk, 0.55), fontWeight: 900, fontSize: '1rem' }}>
+              ›
+            </Typography>
           </Stack>
         </Panel>
       ))}
@@ -437,63 +710,126 @@ function MovesPane() {
 }
 
 function TechniquesPane() {
+  // The six elements from the character sheet's "Your Training" row, in order.
+  // Symbols are placeholders until character-sheet.png is added to assets/ and
+  // the six glyphs are cropped out.
+  const elements: Array<[string, string, string | undefined]> = [
+    ['Water', water, waterGlyph],
+    ['Earth', earth, earthGlyph],
+    ['Fire', fire, fireGlyph],
+    ['Air', air, airGlyph],
+    ['Martial', martial, undefined],
+    ['Tech', tech, undefined],
+  ];
   return (
     <Stack spacing={1}>
       <FilterTabs labels={['Notes', 'Inventory', 'Mastered']} activeIndex={0} />
-      <Stack direction="row" justifyContent="space-between">
-        {[
-          ['All', ink, headerGlyph],
-          ['Water', water, waterGlyph],
-          ['Earth', earth, earthGlyph],
-          ['Fire', ember, fireGlyph],
-          ['Air', air, airGlyph],
-          ['Other', alpha(ink, 0.5), undefined],
-        ].map(([label, color, src]) => (
-          <Stack key={label as string} alignItems="center" spacing={0.35}>
-            <ElementMark
-              color={color as string}
-              label={(label as string).slice(0, 1)}
-              src={src as string | undefined}
-            />
-            <Typography sx={{ color: ink, fontSize: '0.58rem', fontWeight: 900 }}>
+      <Stack direction="row" justifyContent="space-between" sx={{ px: 0.5, pt: 0.4 }}>
+        {elements.map(([label, color, src]) => (
+          <Stack key={label} alignItems="center" spacing={0.4}>
+            <ElementMark color={color} label={label.slice(0, 1)} src={src} size={34} />
+            <Typography
+              sx={{
+                color: brown,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.58rem',
+                fontWeight: 900,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+              }}
+            >
               {label}
             </Typography>
           </Stack>
         ))}
       </Stack>
-      {techniques.map(([title, body], index) => (
-        <Panel key={title}>
-          <Stack direction="row" gap={0.85}>
-            <Box
-              sx={{
-                width: 20,
-                height: 20,
-                borderRadius: '5px',
-                bgcolor: index % 2 ? earth : water,
-                color: '#fff',
-                display: 'grid',
-                placeItems: 'center',
-                fontSize: '0.68rem',
-                fontWeight: 900,
-              }}
-            >
-              {index + 1}
-            </Box>
-            <InkGlyph src={index % 2 ? techEarthGlyph : techWaterGlyph} size={34} />
-            <Stack spacing={0.45} sx={{ flex: 1 }}>
-              <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontWeight: 900 }}>
-                {title}
-              </Typography>
-              <Typography sx={{ color: deepInk, fontSize: '0.72rem', lineHeight: 1.45 }}>
-                {body}
-              </Typography>
+      {techniques.map(([title, body], index) => {
+        const techColor = index % 2 ? earth : water;
+        return (
+          <Panel key={title}>
+            <Stack direction="row" gap={0.9} alignItems="flex-start">
+              {/* Tier number rendered as a small parchment-disc with the element color */}
+              <Box
+                sx={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle at 35% 30%, ${alpha(techColor, 0.5)} 0%, ${alpha(techColor, 0.85)} 100%)`,
+                  border: `1px solid ${alpha(techColor, 0.7)}`,
+                  color: parchmentLight,
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontFamily: '"IM Fell English", Georgia, serif',
+                  fontSize: '0.72rem',
+                  fontWeight: 900,
+                  flex: '0 0 auto',
+                  boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.55)}`,
+                  mt: '2px',
+                }}
+              >
+                {index + 1}
+              </Box>
+              <ElementMark
+                color={techColor}
+                src={index % 2 ? techEarthGlyph : techWaterGlyph}
+                size={30}
+              />
+              <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    color: deepInk,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.92rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {title}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: brown,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.74rem',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {body}
+                </Typography>
+              </Stack>
+              <Stack alignItems="center" spacing={0.25} sx={{ pt: '2px' }}>
+                <Typography
+                  sx={{
+                    color: techColor,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.58rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  FATIGUE
+                </Typography>
+                <Stack direction="row" gap={0.3}>
+                  {[0, 1].map((i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: '50%',
+                        border: `1px solid ${techColor}`,
+                        bgcolor: i === 0 ? techColor : 'transparent',
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </Stack>
             </Stack>
-            <Typography sx={{ color: water, fontSize: '0.65rem', fontWeight: 900 }}>
-              FATIGUE
-            </Typography>
-          </Stack>
-        </Panel>
-      ))}
+          </Panel>
+        );
+      })}
     </Stack>
   );
 }
@@ -512,33 +848,93 @@ function BondsPane() {
                 width: 68,
                 height: 68,
                 borderRadius: '50%',
-                border: `2px solid ${ink}`,
+                border: `2px solid ${alpha(washDeep, 0.7)}`,
                 objectFit: 'cover',
                 flex: '0 0 auto',
+                boxShadow: `0 0 0 3px ${alpha(parchmentLight, 0.6)}, 0 1px 3px ${alpha(deepInk, 0.18)}`,
               }}
             />
-            <Stack spacing={0.3} sx={{ flex: 1 }}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontWeight: 900 }}>
+            <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography
+                  sx={{
+                    color: deepInk,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.95rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
                   {name}
                 </Typography>
                 <Heart size={16} fill={index < 2 ? ember : 'transparent'} color={ember} />
               </Stack>
-              <Typography sx={{ color: deepInk, fontSize: '0.66rem', fontWeight: 800 }}>
+              <Typography
+                sx={{
+                  color: brownSoft,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  fontStyle: 'italic',
+                }}
+              >
                 {role}
               </Typography>
-              <StatDots value={4 - index} color={water} />
-              <Typography sx={{ color: deepInk, fontSize: '0.72rem', lineHeight: 1.45 }}>
+              <Stack direction="row" alignItems="center" gap={0.6}>
+                <Typography
+                  sx={{
+                    color: alpha(brown, 0.7),
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.54rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.1em',
+                  }}
+                >
+                  INFLUENCE
+                </Typography>
+                <StatDots value={4 - index} color={washDeep} />
+              </Stack>
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.74rem',
+                  lineHeight: 1.45,
+                }}
+              >
                 {note}
               </Typography>
             </Stack>
           </Stack>
         </Panel>
       ))}
-      <Panel>
-        <Typography sx={{ color: ink, textAlign: 'center', fontWeight: 900 }}>
-          + ADD BOND
-        </Typography>
+      <Panel ornament={false}>
+        <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
+          <Typography
+            sx={{
+              color: deepInk,
+              fontSize: '0.95rem',
+              fontWeight: 900,
+              fontFamily: 'Georgia, serif',
+            }}
+          >
+            +
+          </Typography>
+          <Typography
+            sx={{
+              color: deepInk,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.78rem',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Add Bond
+          </Typography>
+        </Stack>
       </Panel>
     </Stack>
   );
@@ -550,15 +946,41 @@ function JournalPane() {
       <FilterTabs labels={['Notes', 'Inventory', 'Lore', 'Sessions']} activeIndex={0} />
       {journal.map(([type, title, body, image]) => (
         <Panel key={title}>
-          <Stack direction="row" gap={1}>
-            <Stack spacing={0.45} sx={{ flex: 1 }}>
-              <Typography sx={{ color: ember, fontSize: '0.62rem', fontWeight: 900 }}>
+          <Stack direction="row" gap={1} alignItems="flex-start">
+            <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                sx={{
+                  color: ember,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.58rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
                 {type}
               </Typography>
-              <Typography sx={{ color: ink, fontFamily: 'Georgia, serif', fontWeight: 900 }}>
+              <Typography
+                sx={{
+                  color: deepInk,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.92rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.1,
+                }}
+              >
                 {title}
               </Typography>
-              <Typography sx={{ color: deepInk, fontSize: '0.72rem', lineHeight: 1.45 }}>
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.74rem',
+                  lineHeight: 1.45,
+                }}
+              >
                 {body}
               </Typography>
             </Stack>
@@ -569,20 +991,42 @@ function JournalPane() {
               sx={{
                 width: 76,
                 height: 84,
-                borderRadius: '10px',
+                borderRadius: '4px',
                 objectFit: 'contain',
-                bgcolor: alpha('#fffaf2', 0.72),
+                bgcolor: alpha(parchmentLight, 0.72),
                 border: `1px solid ${border}`,
-                boxShadow: `6px 7px 0 ${alpha(deepInk, 0.08)}`,
+                boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.4)}, 4px 5px 0 ${alpha(deepInk, 0.08)}`,
+                flex: '0 0 auto',
               }}
             />
           </Stack>
         </Panel>
       ))}
-      <Panel>
-        <Typography sx={{ color: ink, textAlign: 'center', fontWeight: 900 }}>
-          + NEW NOTE
-        </Typography>
+      <Panel ornament={false}>
+        <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
+          <Typography
+            sx={{
+              color: deepInk,
+              fontSize: '0.95rem',
+              fontWeight: 900,
+              fontFamily: 'Georgia, serif',
+            }}
+          >
+            +
+          </Typography>
+          <Typography
+            sx={{
+              color: deepInk,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.78rem',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            New Note
+          </Typography>
+        </Stack>
       </Panel>
     </Stack>
   );
@@ -595,12 +1039,26 @@ function AvatarLegends() {
     [activeTab],
   );
 
+  // Repeating background watermark — faint elemental glyphs scattered across the
+  // parchment, mimicking the character sheet's watermarked element motifs.
+  const watermarkBg = `
+    url(${waterGlyph}),
+    url(${earthGlyph}),
+    url(${fireGlyph}),
+    url(${airGlyph}),
+    url(${waterGlyph}),
+    url(${earthGlyph})
+  `;
+  const watermarkPosition = '8% 14%, 78% 22%, 22% 48%, 88% 56%, 14% 76%, 76% 88%';
+  const watermarkSize = '64px, 58px, 52px, 60px, 56px, 50px';
+
   return (
     <Box
       sx={{
         minHeight: '100svh',
-        bgcolor: '#052a47',
-        backgroundImage: `radial-gradient(circle at 20% 0%, ${alpha(water, 0.42)}, transparent 34%), linear-gradient(120deg, #041d33 0%, #0c3b5d 46%, #08243c 100%)`,
+        // Outer area uses a deep watercolor wash so the parchment "card" sits
+        // on a darker mat. Mimics the character sheet's outer trim.
+        background: `radial-gradient(circle at 20% 0%, ${alpha(washDeep, 0.45)}, transparent 36%), linear-gradient(140deg, ${deepInk} 0%, #0e2e4a 50%, ${deepInk} 100%)`,
         display: 'grid',
         placeItems: 'center',
         p: { xs: 0, sm: 2 },
@@ -610,40 +1068,104 @@ function AvatarLegends() {
         sx={{
           width: 'min(100vw, 430px)',
           height: { xs: '100svh', sm: 'min(860px, calc(100svh - 32px))' },
-          borderRadius: { xs: 0, sm: '24px' },
-          bgcolor: parchment,
+          borderRadius: { xs: 0, sm: '12px' },
+          // Parchment with subtle vignette + paper grain
+          background: `
+            radial-gradient(circle at 50% 0%, ${alpha(parchmentLight, 0.95)} 0%, ${parchment} 60%, ${alpha(parchmentDeep, 0.55)} 100%),
+            ${parchment}
+          `,
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: { xs: 'none', sm: '0 26px 70px rgba(0, 0, 0, 0.42)' },
+          boxShadow: {
+            xs: 'none',
+            sm: `0 26px 70px ${alpha(deepInk, 0.55)}, 0 0 0 1px ${alpha(border, 0.45)}`,
+          },
         }}
       >
-        <BrushBand />
-        <BrushBand bottom />
+        {/* Watermark layer — repeating elemental glyphs at very low opacity */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: watermarkBg,
+            backgroundPosition: watermarkPosition,
+            backgroundSize: watermarkSize,
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.06,
+            filter: 'sepia(40%) brightness(0.6)',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+        {/* Paper grain via repeating radial noise */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: `repeating-radial-gradient(circle at 25% 25%, transparent 0, transparent 2px, ${alpha(brown, 0.025)} 3px, transparent 4px)`,
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+
+        {/* Top watercolor brush stroke header band */}
+        <WatercolorBand height={92} />
+        {/* Bottom watercolor brush stroke (sits behind the nav) */}
+        <WatercolorBand bottom height={86} />
+
+        {/* Page corner ornaments */}
+        <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
+          <CornerOrnament position="tl" color={parchmentLight} size={18} />
+          <CornerOrnament position="tr" color={parchmentLight} size={18} />
+        </Box>
 
         <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
-          <Box sx={{ px: 1.4, pt: 1, pb: 2, color: '#fff' }}>
+          {/* Top header — title + subtitle sit on the watercolor brush stroke */}
+          <Box sx={{ px: 1.6, pt: 1, pb: 2, color: parchmentLight }}>
             <Stack
               direction="row"
               justifyContent="space-between"
-              sx={{ fontSize: '0.72rem', fontWeight: 900 }}
+              alignItems="center"
+              sx={{
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                letterSpacing: '0.08em',
+                opacity: 0.85,
+              }}
             >
               <span>9:41</span>
-              <span>●●●</span>
+              <Stack direction="row" gap={0.4}>
+                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: parchmentLight }} />
+                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: parchmentLight }} />
+                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: parchmentLight }} />
+              </Stack>
             </Stack>
-            <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 0.75 }}>
-              <InkGlyph src={headerGlyph} size={34} />
-              <Stack spacing={0}>
+            <Stack direction="row" alignItems="center" gap={1.1} sx={{ mt: 0.85 }}>
+              <InkGlyph src={headerGlyph} size={38} />
+              <Stack spacing={0.15}>
                 <Typography
-                  sx={{ fontFamily: 'Georgia, serif', fontSize: '1rem', fontWeight: 900 }}
+                  sx={{
+                    fontFamily: '"IM Fell English", Georgia, serif',
+                    fontSize: '1.1rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    color: parchmentLight,
+                  }}
                 >
                   The Successor
                 </Typography>
                 <Typography
                   sx={{
-                    color: alpha('#fff', 0.82),
-                    fontSize: '0.58rem',
+                    color: alpha(parchmentLight, 0.78),
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.56rem',
                     fontWeight: 800,
-                    lineHeight: 0.9,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1,
                   }}
                 >
                   Avatar Legends RPG
@@ -652,22 +1174,48 @@ function AvatarLegends() {
             </Stack>
           </Box>
 
-          <Box sx={{ px: 1.25, pt: 0.8, pb: 0.45 }}>
+          {/* Active-tab title bar — sits below the brush stroke on parchment */}
+          <Box sx={{ px: 1.4, pt: 1.1, pb: 0.5 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Typography
+              <Stack direction="row" alignItems="center" gap={0.8}>
+                <MoveDiamond color={gold} size={11} />
+                <Typography
+                  sx={{
+                    color: deepInk,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '1.05rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {activeConfig.label}
+                </Typography>
+              </Stack>
+              <Box
                 sx={{
-                  color: ink,
-                  fontFamily: 'Georgia, serif',
-                  fontSize: '1.02rem',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '4px',
+                  border: `1px solid ${alpha(border, 0.7)}`,
+                  background: alpha(parchmentLight, 0.6),
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: deepInk,
+                  fontSize: '0.85rem',
                   fontWeight: 900,
-                  textTransform: 'uppercase',
                 }}
               >
-                {activeConfig.label}
-              </Typography>
-              <Typography sx={{ color: ink, fontWeight: 900, fontSize: '1.15rem' }}>☷</Typography>
+                ☷
+              </Box>
             </Stack>
-            <Divider sx={{ mt: 0.8, borderColor: border }} />
+            <Box
+              sx={{
+                mt: 0.7,
+                height: '1px',
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.55)} 20%, ${alpha(gold, 0.55)} 80%, transparent 100%)`,
+              }}
+            />
           </Box>
 
           <Box sx={{ flex: 1, overflowY: 'auto', px: 1.25, pb: 1.2 }}>
@@ -678,13 +1226,17 @@ function AvatarLegends() {
             {activeTab === 'journal' ? <JournalPane /> : null}
           </Box>
 
+          {/* Bottom nav sits on top of the bottom watercolor brush stroke. The
+              nav itself has no background — it lets the watercolor band show
+              through. The active indicator is a small parchment-gold pill at
+              the top of the active tab. */}
           <Box
             sx={{
               px: 0.5,
               pb: 1,
-              pt: 0,
-              bgcolor: deepInk,
-              borderTop: `1px solid ${alpha('#ffffff', 0.08)}`,
+              pt: 0.3,
+              position: 'relative',
+              zIndex: 2,
             }}
           >
             <Stack direction="row">
@@ -700,26 +1252,29 @@ function AvatarLegends() {
                       borderRadius: '10px',
                       pt: 0,
                       pb: 0.5,
-                      color: selected ? '#fff' : alpha('#fff', 0.45),
+                      color: selected ? parchmentLight : alpha(parchmentLight, 0.55),
                       position: 'relative',
                       overflow: 'visible',
                     }}
                   >
-                    {/* Active indicator pill sits flush at the top edge */}
+                    {/* Active indicator — small gold pill at the top edge */}
                     <Box
                       sx={{
                         position: 'absolute',
-                        top: 0,
+                        top: -2,
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        width: 32,
+                        width: 28,
                         height: 3,
                         borderRadius: '0 0 4px 4px',
-                        bgcolor: selected ? '#fff' : 'transparent',
-                        transition: 'background-color 0.2s ease',
+                        background: selected
+                          ? `linear-gradient(180deg, ${gold} 0%, ${alpha(gold, 0.6)} 100%)`
+                          : 'transparent',
+                        boxShadow: selected ? `0 0 6px ${alpha(gold, 0.6)}` : 'none',
+                        transition: 'all 0.2s ease',
                       }}
                     />
-                    <Stack alignItems="center" spacing={0.25} sx={{ pt: '10px' }}>
+                    <Stack alignItems="center" spacing={0.3} sx={{ pt: '10px' }}>
                       <Box
                         component="img"
                         src={tab.iconSrc}
@@ -728,16 +1283,18 @@ function AvatarLegends() {
                           width: 22,
                           height: 22,
                           objectFit: 'contain',
-                          opacity: selected ? 1 : 0.45,
+                          opacity: selected ? 1 : 0.5,
                           filter: 'brightness(0) invert(1)',
                           transition: 'opacity 0.2s ease',
                         }}
                       />
                       <Typography
                         sx={{
-                          fontSize: '0.6rem',
-                          fontWeight: selected ? 900 : 600,
-                          letterSpacing: '0.01em',
+                          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                          fontSize: '0.58rem',
+                          fontWeight: selected ? 900 : 700,
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
                           lineHeight: 1,
                         }}
                       >
