@@ -12,12 +12,18 @@ import boinkPortrait from './assets/bond-boink.png';
 import qiWeiPortrait from './assets/bond-qi-wei.png';
 import yoruPortrait from './assets/bond-yoru.png';
 import qingPortrait from './assets/character-qing.jpg';
+// The six elemental symbols cropped directly from the official Avatar Legends
+// character sheet "Your Training" row (assets/original-character-sheet.jpg).
+import elementAir from './assets/element-air.png';
+import elementEarth from './assets/element-earth.png';
+import elementFire from './assets/element-fire.png';
+import elementMartial from './assets/element-martial.png';
+import elementTech from './assets/element-tech.png';
+import elementWater from './assets/element-water.png';
 import airGlyph from './assets/glyph-air.png';
 import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
 import headerGlyph from './assets/glyph-header.png';
-import techEarthGlyph from './assets/glyph-tech-earth.png';
-import techWaterGlyph from './assets/glyph-tech-water.png';
 import waterGlyph from './assets/glyph-water.png';
 import bagImage from './assets/journal-bag.jpg';
 import notebookImage from './assets/journal-notebook.jpg';
@@ -249,9 +255,13 @@ function CornerOrnament({
 }
 
 /**
- * Stylized element badge — a watercolor-washed disc with a soft halo, mimicking
- * the elemental glyphs in the character sheet's "Your Training" row. Each badge
- * has a colored watercolor wash background and a tan border.
+ * Stylized element badge. When `src` is provided we render the image directly
+ * (the cropped character-sheet glyphs already include their own watercolor
+ * colored background); otherwise we fall back to a watercolor wash with the
+ * element letter, used as a generic placeholder.
+ *
+ * The badge always has a parchment halo and a soft tan ring, mimicking the
+ * way the icons appear over the parchment in the original sheet.
  */
 function ElementMark({
   color,
@@ -270,15 +280,17 @@ function ElementMark({
         width: size,
         height: size,
         borderRadius: '50%',
-        border: `1.5px solid ${alpha(color, 0.7)}`,
-        background: `radial-gradient(circle at 30% 30%, ${alpha(color, 0.35)} 0%, ${alpha(color, 0.65)} 60%, ${alpha(color, 0.55)} 100%)`,
+        border: `1.5px solid ${alpha(color, 0.55)}`,
+        background: src
+          ? 'transparent'
+          : `radial-gradient(circle at 30% 30%, ${alpha(color, 0.35)} 0%, ${alpha(color, 0.65)} 60%, ${alpha(color, 0.55)} 100%)`,
         display: 'grid',
         placeItems: 'center',
         color: deepInk,
         fontFamily: '"IM Fell English", Georgia, serif',
         fontWeight: 900,
         fontSize: size * 0.42,
-        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.6)}, 0 1px 3px ${alpha(deepInk, 0.18)}`,
+        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.7)}, 0 1px 3px ${alpha(deepInk, 0.22)}`,
         overflow: 'hidden',
         position: 'relative',
       }}
@@ -292,7 +304,6 @@ function ElementMark({
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            mixBlendMode: 'multiply',
           }}
         />
       ) : (
@@ -710,16 +721,15 @@ function MovesPane() {
 }
 
 function TechniquesPane() {
-  // The six elements from the character sheet's "Your Training" row, in order.
-  // Symbols are placeholders until character-sheet.png is added to assets/ and
-  // the six glyphs are cropped out.
-  const elements: Array<[string, string, string | undefined]> = [
-    ['Water', water, waterGlyph],
-    ['Earth', earth, earthGlyph],
-    ['Fire', fire, fireGlyph],
-    ['Air', air, airGlyph],
-    ['Martial', martial, undefined],
-    ['Tech', tech, undefined],
+  // Six elements from the character sheet's "Your Training" row, in order.
+  // Symbols are cropped from assets/original-character-sheet.jpg.
+  const elements: Array<[string, string, string]> = [
+    ['Water', water, elementWater],
+    ['Earth', earth, elementEarth],
+    ['Fire', fire, elementFire],
+    ['Air', air, elementAir],
+    ['Martial', martial, elementMartial],
+    ['Tech', tech, elementTech],
   ];
   return (
     <Stack spacing={1}>
@@ -771,8 +781,8 @@ function TechniquesPane() {
               </Box>
               <ElementMark
                 color={techColor}
-                src={index % 2 ? techEarthGlyph : techWaterGlyph}
-                size={30}
+                src={index % 2 ? elementEarth : elementWater}
+                size={32}
               />
               <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
