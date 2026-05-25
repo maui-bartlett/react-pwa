@@ -19,7 +19,6 @@ import elementWater from './assets/element-water.png';
 import airGlyph from './assets/glyph-air.png';
 import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
-import headerGlyph from './assets/glyph-header.png';
 import waterGlyph from './assets/glyph-water.png';
 import navBonds from './assets/nav-bonds.png';
 import navCharacter from './assets/nav-character.png';
@@ -299,30 +298,6 @@ function ElementMark({
         label
       )}
     </Box>
-  );
-}
-
-/**
- * InkGlyph — a circular image badge used for inline character / move glyphs.
- * Now styled with a parchment ring rather than the previous ink shadow.
- */
-function InkGlyph({ src, size = 30 }: { src: string; size?: number }) {
-  return (
-    <Box
-      component="img"
-      src={src}
-      alt=""
-      sx={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        objectFit: 'cover',
-        objectPosition: 'center',
-        display: 'block',
-        border: `1.5px solid ${alpha(border, 0.85)}`,
-        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.5)}`,
-      }}
-    />
   );
 }
 
@@ -1081,57 +1056,11 @@ function AvatarLegends() {
         </Box>
 
         <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
-          {/* Top header — title + subtitle sit on the watercolor brush stroke */}
-          <Box sx={{ px: 1.6, pt: 1, pb: 2, color: parchmentLight }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                letterSpacing: '0.08em',
-                opacity: 0.85,
-              }}
-            >
-              <span>9:41</span>
-              <Stack direction="row" gap={0.4}>
-                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: parchmentLight }} />
-                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: parchmentLight }} />
-                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: parchmentLight }} />
-              </Stack>
-            </Stack>
-            <Stack direction="row" alignItems="center" gap={1.1} sx={{ mt: 0.85 }}>
-              <InkGlyph src={headerGlyph} size={38} />
-              <Stack spacing={0.15}>
-                <Typography
-                  sx={{
-                    fontFamily: '"IM Fell English", Georgia, serif',
-                    fontSize: '1.1rem',
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    color: parchmentLight,
-                  }}
-                >
-                  The Successor
-                </Typography>
-                <Typography
-                  sx={{
-                    color: alpha(parchmentLight, 0.78),
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.56rem',
-                    fontWeight: 800,
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    lineHeight: 1,
-                  }}
-                >
-                  Avatar Legends RPG
-                </Typography>
-              </Stack>
-            </Stack>
-          </Box>
+          {/* Top header — clean dark navy band (no status-bar content, no
+              title); the WatercolorBand above provides the visual. The empty
+              box reserves the band's height so the page content below starts
+              at the right offset. */}
+          <Box sx={{ height: 76, flex: '0 0 auto' }} />
 
           {/* Active-tab title bar — sits below the brush stroke on parchment */}
           <Box sx={{ px: 1.4, pt: 1.1, pb: 0.5 }}>
