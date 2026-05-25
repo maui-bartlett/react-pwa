@@ -37,18 +37,19 @@ type TabConfig = {
   renderIcon?: (props: { color: string; size: number }) => React.ReactNode;
 };
 
-// Parchment + watercolor blue palette drawn from the Avatar Legends character sheet
-const parchment = '#f0e6cf'; // warm cream page background
-const parchmentLight = '#f9f1dd'; // lighter highlight cream
-const parchmentDeep = '#e6d8b8'; // shaded parchment for recessed areas
+// Light watercolor-blue palette — sampled from the soft brush-stroke wash
+// on the Avatar Legends character sheet. Replaces the prior parchment cream.
+const parchment = '#e3ecf4'; // pale watercolor-blue page background
+const parchmentLight = '#f3f7fb'; // near-white blue-tinted highlight
+const parchmentDeep = '#cdd9e5'; // deeper pale blue for recessed grooves
 const washDeep = '#6f9bba'; // deeper watercolor blue
 const ink = '#23456b'; // ink for headings (darker but bluish)
 const deepInk = '#162a45'; // deepest navy used in brush strokes
-const brown = '#5a4733'; // hand-written brown for body text
-const brownSoft = '#7a6147'; // softer brown for secondary text
-const border = '#c9b58c'; // tan border for containers
+const brown = '#3a4e63'; // body text — deep slate blue (replaces brown)
+const brownSoft = '#5a6f86'; // secondary text — softer slate blue
+const border = '#b1c3d3'; // soft blue-grey container border
 const ember = '#a8413a'; // muted brick red accent
-const gold = '#a47b29'; // warm gold for decorations
+const gold = '#a47b29'; // warm gold for decorations (still works against pale blue)
 const water = '#4a7fa8';
 const earth = '#7d8c5a';
 const fire = '#a8413a';
@@ -241,13 +242,11 @@ function CornerOrnament({
 }
 
 /**
- * Stylized element badge. When `src` is provided we render the image directly
- * (the cropped character-sheet glyphs already include their own watercolor
- * colored background); otherwise we fall back to a watercolor wash with the
- * element letter, used as a generic placeholder.
- *
- * The badge always has a parchment halo and a soft tan ring, mimicking the
- * way the icons appear over the parchment in the original sheet.
+ * Element badge — a square frame holding the cropped colored panel + symbol
+ * from the character sheet. The source image is already a tight square of just
+ * the colored panel, so we display it edge-to-edge with a subtle blue-grey
+ * frame and a soft halo. Falls back to a watercolor wash + letter when src is
+ * absent.
  */
 function ElementMark({
   color,
@@ -265,20 +264,22 @@ function ElementMark({
       sx={{
         width: size,
         height: size,
-        borderRadius: '50%',
-        border: `1.5px solid ${alpha(color, 0.55)}`,
+        borderRadius: '3px',
+        border: `1px solid ${alpha(deepInk, 0.35)}`,
         background: src
           ? 'transparent'
-          : `radial-gradient(circle at 30% 30%, ${alpha(color, 0.35)} 0%, ${alpha(color, 0.65)} 60%, ${alpha(color, 0.55)} 100%)`,
-        display: 'grid',
-        placeItems: 'center',
+          : `linear-gradient(180deg, ${alpha(color, 0.45)} 0%, ${alpha(color, 0.7)} 100%)`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         color: deepInk,
         fontFamily: '"IM Fell English", Georgia, serif',
         fontWeight: 900,
         fontSize: size * 0.42,
-        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.7)}, 0 1px 3px ${alpha(deepInk, 0.22)}`,
+        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
         overflow: 'hidden',
         position: 'relative',
+        flex: '0 0 auto',
       }}
     >
       {src ? (
@@ -290,7 +291,7 @@ function ElementMark({
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            objectPosition: 'center',
+            objectPosition: 'center center',
             display: 'block',
           }}
         />
@@ -736,31 +737,10 @@ function TechniquesPane() {
         return (
           <Panel key={title}>
             <Stack direction="row" gap={0.9} alignItems="flex-start">
-              {/* Tier number rendered as a small parchment-disc with the element color */}
-              <Box
-                sx={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: '50%',
-                  background: `radial-gradient(circle at 35% 30%, ${alpha(techColor, 0.5)} 0%, ${alpha(techColor, 0.85)} 100%)`,
-                  border: `1px solid ${alpha(techColor, 0.7)}`,
-                  color: parchmentLight,
-                  display: 'grid',
-                  placeItems: 'center',
-                  fontFamily: '"IM Fell English", Georgia, serif',
-                  fontSize: '0.72rem',
-                  fontWeight: 900,
-                  flex: '0 0 auto',
-                  boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.55)}`,
-                  mt: '2px',
-                }}
-              >
-                {index + 1}
-              </Box>
               <ElementMark
                 color={techColor}
                 src={index % 2 ? elementEarth : elementWater}
-                size={32}
+                size={36}
               />
               <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
