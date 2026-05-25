@@ -21,11 +21,10 @@ import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
 import waterGlyph from './assets/glyph-water.png';
 import navBonds from './assets/nav-bonds.png';
-import navCharacter from './assets/nav-character.png';
 import navJournal from './assets/nav-journal.png';
 import navTechniques from './assets/nav-techniques.png';
 
-type AvatarTab = 'character' | 'moves' | 'techniques' | 'bonds' | 'journal';
+type AvatarTab = 'character' | 'moves' | 'combat' | 'bonds' | 'backpack';
 
 type TabConfig = {
   label: string;
@@ -57,7 +56,13 @@ const martial = '#3d3d4a';
 const tech = '#7a5d8a';
 
 const tabs: TabConfig[] = [
-  { label: 'Character', value: 'character', iconSrc: navCharacter },
+  {
+    label: 'Character',
+    value: 'character',
+    // Stylized person silhouette — head + shoulders, drawn inline so it
+    // shares the bottom-nav color and works at any size.
+    renderIcon: ({ color, size }) => <PersonIcon color={color} size={size} />,
+  },
   {
     label: 'Moves',
     value: 'moves',
@@ -65,9 +70,9 @@ const tabs: TabConfig[] = [
     // character sheet) as the bottom-nav icon for consistency.
     renderIcon: ({ color, size }) => <MoveDiamond color={color} size={size} />,
   },
-  { label: 'Techniques', value: 'techniques', iconSrc: navTechniques },
+  { label: 'Combat', value: 'combat', iconSrc: navTechniques },
   { label: 'Bonds', value: 'bonds', iconSrc: navBonds },
-  { label: 'Journal', value: 'journal', iconSrc: navJournal },
+  { label: 'Backpack', value: 'backpack', iconSrc: navJournal },
 ];
 
 const moves = [
@@ -96,7 +101,6 @@ const bonds = [
     'Female ancestor',
     'A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.',
   ],
-  ['Yoru', 'Friend', 'He taught me patience, timing, and where to look first.'],
 ];
 
 const journal = [
@@ -167,6 +171,25 @@ function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; hei
           fill={alpha('#ffffff', 0.18)}
         />
       </Box>
+    </Box>
+  );
+}
+
+/**
+ * Stylized person silhouette — head + shoulders. Used as the Character
+ * bottom-nav icon. Drawn as a single closed path for crisp scaling.
+ */
+function PersonIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+    >
+      {/* Head */}
+      <circle cx={12} cy={7.5} r={3.6} fill={color} />
+      {/* Shoulders / torso silhouette */}
+      <path d="M3.5 21 C 4 16, 7.5 13.5, 12 13.5 C 16.5 13.5, 20 16, 20.5 21 Z" fill={color} />
     </Box>
   );
 }
@@ -674,7 +697,7 @@ function MovesPane() {
   );
 }
 
-function TechniquesPane() {
+function CombatPane() {
   // Six elements from the character sheet's "Your Training" row, in order.
   // Symbols are cropped from assets/original-character-sheet.jpg.
   const elements: Array<[string, string, string]> = [
@@ -687,7 +710,8 @@ function TechniquesPane() {
   ];
   return (
     <Stack spacing={1}>
-      <FilterTabs labels={['Notes', 'Inventory', 'Mastered']} activeIndex={0} />
+      {/* Combat sub-tabs — Techniques is the default active view */}
+      <FilterTabs labels={['Techniques', 'Notes', 'Inventory', 'Mastered']} activeIndex={0} />
       <Stack direction="row" justifyContent="space-between" sx={{ px: 0.5, pt: 0.4 }}>
         {elements.map(([label, color, src]) => (
           <Stack key={label} alignItems="center" spacing={0.4}>
@@ -707,16 +731,13 @@ function TechniquesPane() {
           </Stack>
         ))}
       </Stack>
-      {techniques.map(([title, body], index) => {
-        const techColor = index % 2 ? earth : water;
+      {techniques.map(([title, body]) => {
+        // All starter techniques are water-element for this character
+        const techColor = water;
         return (
           <Panel key={title}>
             <Stack direction="row" gap={0.9} alignItems="flex-start">
-              <ElementMark
-                color={techColor}
-                src={index % 2 ? elementEarth : elementWater}
-                size={36}
-              />
+              <ElementMark color={techColor} src={elementWater} size={36} />
               <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                   sx={{
@@ -880,7 +901,7 @@ function BondsPane() {
   );
 }
 
-function JournalPane() {
+function BackpackPane() {
   return (
     <Stack spacing={1}>
       <FilterTabs labels={['Notes', 'Inventory', 'Lore', 'Sessions']} activeIndex={0} />
@@ -1109,9 +1130,9 @@ function AvatarLegends() {
           <Box sx={{ flex: 1, overflowY: 'auto', px: 1.25, pb: 1.2 }}>
             {activeTab === 'character' ? <CharacterPane /> : null}
             {activeTab === 'moves' ? <MovesPane /> : null}
-            {activeTab === 'techniques' ? <TechniquesPane /> : null}
+            {activeTab === 'combat' ? <CombatPane /> : null}
             {activeTab === 'bonds' ? <BondsPane /> : null}
-            {activeTab === 'journal' ? <JournalPane /> : null}
+            {activeTab === 'backpack' ? <BackpackPane /> : null}
           </Box>
 
           {/* Bottom nav sits on top of the bottom watercolor brush stroke. The

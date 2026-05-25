@@ -12,10 +12,16 @@ import { Routes } from './types';
 
 const routes: Routes = [
   {
-    component: asyncComponentLoader(() => import('@/pages/FabU')),
+    component: asyncComponentLoader(() => import('@/pages/AvatarLegends')),
     path: '/',
-    title: 'Fab-u',
-    icon: AutoAwesomeIcon,
+    title: 'Avatar Legends',
+    icon: PublicIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/AvatarLegends')),
+    path: '/avatar-legends',
+    title: 'Avatar Legends',
+    icon: PublicIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/Welcome')),
@@ -26,12 +32,8 @@ const routes: Routes = [
   {
     component: asyncComponentLoader(() => import('@/pages/FabU')),
     path: '/fab-u',
-  },
-  {
-    component: asyncComponentLoader(() => import('@/pages/AvatarLegends')),
-    path: '/avatar-legends',
-    title: 'Avatar Legends',
-    icon: PublicIcon,
+    title: 'Fab-u',
+    icon: AutoAwesomeIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/Page1')),
