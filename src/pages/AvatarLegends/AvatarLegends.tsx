@@ -6,7 +6,9 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Heart } from 'lucide-react';
+import { Backpack, HandFist, Heart } from 'lucide-react';
+
+import AccountSettings from '@/sections/AccountSettings';
 
 // The six elemental symbols cropped directly from the official Avatar Legends
 // character sheet "Your Training" row (assets/original-character-sheet.jpg).
@@ -56,7 +58,9 @@ const tabs: TabConfig[] = [
   {
     label: 'Character',
     value: 'character',
-    renderIcon: ({ color, size }) => <PersonIcon color={color} size={size} />,
+    // Lucide has no yin-yang glyph, so we use a local SVG that follows the
+    // same currentColor / strokeWidth style as the lucide icons.
+    renderIcon: ({ color, size }) => <YinYangIcon color={color} size={size} />,
   },
   {
     label: 'Moves',
@@ -66,12 +70,12 @@ const tabs: TabConfig[] = [
   {
     label: 'Combat',
     value: 'combat',
-    renderIcon: ({ color, size }) => <OpenHandIcon color={color} size={size} />,
+    renderIcon: ({ color, size }) => <HandFist color={color} size={size} strokeWidth={1.75} />,
   },
   {
     label: 'Backpack',
     value: 'backpack',
-    renderIcon: ({ color, size }) => <BackpackIcon color={color} size={size} />,
+    renderIcon: ({ color, size }) => <Backpack color={color} size={size} strokeWidth={1.75} />,
   },
 ];
 
@@ -90,7 +94,7 @@ const techniques = [
   ['Water Jab', 'Surround your fist in water and strike from unexpected angles.'],
 ];
 
-const bonds = [
+const connections = [
   [
     'Boink',
     'Black wooly pig',
@@ -214,90 +218,41 @@ function Checkbox({ checked, size = 12 }: { checked: boolean; size?: number }) {
 }
 
 /**
- * Stylized open hand icon — palm facing the viewer with four fingers
- * extended and the thumb angled out to the side. Used as the Combat
- * bottom-nav icon.
+ * Yin-yang SVG drawn in the lucide style (24x24 viewBox, currentColor
+ * stroke, 2px stroke width) — used both as the Character bottom-nav icon
+ * and as the marker in the Balance section.
  */
-function OpenHandIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
+function YinYangIcon({
+  color = 'currentColor',
+  size = 20,
+  strokeWidth = 1.75,
+}: {
+  color?: string;
+  size?: number;
+  strokeWidth?: number;
+}) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
     >
-      {/* Palm */}
-      <path
-        d="M8 12 L 8 20 C 8 21, 8.7 21.5, 9.6 21.5 L 15 21.5 C 16 21.5, 16.7 21, 16.7 20 L 16.7 12 Z"
-        fill={color}
-      />
-      {/* Four fingers */}
-      <rect x={8} y={4.5} width={1.9} height={8} rx={0.95} fill={color} />
-      <rect x={10.4} y={3.5} width={1.9} height={9} rx={0.95} fill={color} />
-      <rect x={12.8} y={3.5} width={1.9} height={9} rx={0.95} fill={color} />
-      <rect x={15.2} y={5} width={1.9} height={7.5} rx={0.95} fill={color} />
-      {/* Thumb angled out to the side */}
-      <path
-        d="M8 13 L 4.7 16.4 C 4.1 17, 4.1 17.9, 4.7 18.5 C 5.3 19.1, 6.2 19.1, 6.8 18.5 L 8 17.3 Z"
-        fill={color}
-      />
-    </Box>
-  );
-}
-
-/**
- * Stylized backpack icon — main compartment with a top strap loop and
- * front pocket. Used as the Backpack bottom-nav icon.
- */
-function BackpackIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
-  return (
-    <Box
-      component="svg"
-      viewBox="0 0 24 24"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
-    >
-      {/* Top strap loop */}
-      <path
-        d="M9 5 C 9 3.5, 10 3, 12 3 C 14 3, 15 3.5, 15 5 L 15 7"
-        fill="none"
-        stroke={color}
-        strokeWidth={1.4}
-        strokeLinecap="round"
-      />
-      {/* Main pack body */}
-      <rect x={5} y={6.5} width={14} height={14.5} rx={2.5} fill={color} />
-      {/* Front pocket */}
-      <rect
-        x={7.5}
-        y={13}
-        width={9}
-        height={5.5}
-        rx={1}
-        fill="none"
-        stroke="#fff"
-        strokeWidth={0.9}
-        opacity={0.55}
-      />
-      {/* Pocket buckle */}
-      <rect x={10.5} y={15.3} width={3} height={1} rx={0.3} fill="#fff" opacity={0.55} />
-    </Box>
-  );
-}
-
-/**
- * Stylized person silhouette — head + shoulders. Used as the Character
- * bottom-nav icon. Drawn as a single closed path for crisp scaling.
- */
-function PersonIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
-  return (
-    <Box
-      component="svg"
-      viewBox="0 0 24 24"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
-    >
-      {/* Head */}
-      <circle cx={12} cy={7.5} r={3.6} fill={color} />
-      {/* Shoulders / torso silhouette */}
-      <path d="M3.5 21 C 4 16, 7.5 13.5, 12 13.5 C 16.5 13.5, 20 16, 20.5 21 Z" fill={color} />
+      {/* Outer circle */}
+      <circle cx={12} cy={12} r={10} />
+      {/* The yin-yang S curve: top half forms the boundary of the dark teardrop;
+          bottom half mirrors it. Built from two semicircles of radius 5. */}
+      <path d="M12 2 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 22" />
+      {/* Dark teardrop filled half (top) */}
+      <path d="M12 2 A 10 10 0 0 1 12 22 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 2 Z" fill={color} />
+      {/* Small dot in dark half */}
+      <circle cx={12} cy={17} r={1.4} fill="none" stroke={color} />
+      {/* Small dot in light half */}
+      <circle cx={12} cy={7} r={1.4} fill={color} />
     </Box>
   );
 }
@@ -635,12 +590,10 @@ function CharacterPane() {
                 display: 'grid',
                 placeItems: 'center',
                 color: deepInk,
-                fontWeight: 900,
-                fontSize: '0.95rem',
                 boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
               }}
             >
-              ☯
+              <YinYangIcon color={deepInk} size={20} strokeWidth={1.5} />
             </Box>
           </Box>
           <Typography
@@ -696,8 +649,8 @@ function CharacterPane() {
         </Box>
       </Panel>
 
-      {/* Bonds is now a section on the Character tab rather than a standalone tab */}
-      <BondsSection />
+      {/* Connections is a section on the Character tab (formerly the standalone Bonds tab) */}
+      <ConnectionsSection />
     </Stack>
   );
 }
@@ -902,14 +855,14 @@ function CombatPane() {
 }
 
 /**
- * Bonds section — rendered inside the Character tab. A SectionTitle header
- * followed by one panel per bond + an "Add Bond" action.
+ * Connections section — rendered inside the Character tab. A SectionTitle
+ * header followed by one panel per connection + an "Add Connection" action.
  */
-function BondsSection() {
+function ConnectionsSection() {
   return (
     <Stack spacing={1}>
-      <SectionTitle>Bonds</SectionTitle>
-      {bonds.map(([name, role, note], index) => (
+      <SectionTitle>Connections</SectionTitle>
+      {connections.map(([name, role, note], index) => (
         <Panel key={name as string}>
           <Stack spacing={0.45}>
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -998,7 +951,7 @@ function BondsSection() {
               textTransform: 'uppercase',
             }}
           >
-            Add Bond
+            Add Connection
           </Typography>
         </Stack>
       </Panel>
@@ -1206,22 +1159,11 @@ function AvatarLegends() {
                   {activeConfig.label}
                 </Typography>
               </Stack>
-              <Box
-                sx={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '4px',
-                  border: `1px solid ${alpha(border, 0.7)}`,
-                  background: alpha(parchmentLight, 0.6),
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: deepInk,
-                  fontSize: '0.85rem',
-                  fontWeight: 900,
-                }}
-              >
-                ☷
-              </Box>
+              {/* App-level settings / account menu — same component used in
+                  the fab-u UI, just told that we're in the avatar-legends
+                  game-system context so downstream queries can filter
+                  accordingly. */}
+              <AccountSettings gameSystem="avatar-legends" />
             </Stack>
             <Box
               sx={{
