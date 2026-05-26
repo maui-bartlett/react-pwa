@@ -46,7 +46,10 @@ const brown = '#3a4e63'; // body text — deep slate blue (replaces brown)
 const brownSoft = '#5a6f86'; // secondary text — softer slate blue
 const border = '#b1c3d3'; // soft blue-grey container border
 const ember = '#a8413a'; // muted brick red accent
-const gold = '#a47b29'; // warm gold for decorations (still works against pale blue)
+// Accent color used for diamond bullets, hairline dividers, and ornamental
+// flourishes. Previously a warm bronze; now a dark red so the trim reads
+// as the same red used for "THE SUCCESSOR" eyebrow text.
+const gold = '#7a2424';
 const water = '#4a7fa8';
 const earth = '#7d8c5a';
 const fire = '#a8413a';
@@ -218,6 +221,102 @@ function Checkbox({ checked, size = 12 }: { checked: boolean; size?: number }) {
 }
 
 /**
+ * Toggleable diamond marker used in the Fatigue tracker (and any other
+ * track of binary diamond pips). Filled when `filled` is true; otherwise
+ * just a thin outline diamond.
+ */
+function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+    >
+      <polygon
+        points="12,2 22,12 12,22 2,12"
+        fill={filled ? deepInk : 'none'}
+        stroke={deepInk}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    </Box>
+  );
+}
+
+/**
+ * Collapsible class-trait card. Renders a parchment heading row with a
+ * disclosure chevron; clicking the heading toggles the body open/closed.
+ * Title appears in the same small-caps serif as the SectionTitle component.
+ */
+function ClassTraitAccordion({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Stack spacing={0.6}>
+      <SectionTitle>Class Trait</SectionTitle>
+      <Box
+        component="button"
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        sx={{
+          mt: 0.4,
+          display: 'flex',
+          alignItems: 'center',
+          width: '100%',
+          gap: 0.7,
+          p: 0,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: deepInk,
+          textAlign: 'left',
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.92rem',
+          fontWeight: 900,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+        }}
+      >
+        <MoveDiamond color={gold} size={11} />
+        <Box sx={{ flex: 1 }}>{title}</Box>
+        <Box
+          sx={{
+            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+            color: alpha(deepInk, 0.55),
+            fontSize: '0.95rem',
+            lineHeight: 1,
+          }}
+        >
+          ›
+        </Box>
+      </Box>
+      {open ? (
+        <Typography
+          sx={{
+            color: brown,
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            fontSize: '0.78rem',
+            lineHeight: 1.5,
+            mt: 0.4,
+          }}
+        >
+          {children}
+        </Typography>
+      ) : null}
+    </Stack>
+  );
+}
+
+/**
  * Yin-yang SVG drawn in the lucide style (24x24 viewBox, currentColor
  * stroke, 2px stroke width) — used both as the Character bottom-nav icon
  * and as the marker in the Balance section.
@@ -249,9 +348,9 @@ function YinYangIcon({
       <path d="M12 2 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 22" />
       {/* Dark teardrop filled half (top) */}
       <path d="M12 2 A 10 10 0 0 1 12 22 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 2 Z" fill={color} />
-      {/* Small dot in dark half */}
-      <circle cx={12} cy={17} r={1.4} fill="none" stroke={color} />
-      {/* Small dot in light half */}
+      {/* Light dot in dark half (filled with surrounding light color) */}
+      <circle cx={12} cy={17} r={1.4} fill="#ffffff" stroke="none" />
+      {/* Dark dot in light half */}
       <circle cx={12} cy={7} r={1.4} fill={color} />
     </Box>
   );
@@ -555,6 +654,45 @@ function CharacterPane() {
       </Panel>
 
       <Panel>
+        <SectionTitle>Stats</SectionTitle>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
+          {[
+            ['Creativity', 2, ember],
+            ['Focus', 2, water],
+            ['Harmony', 1, earth],
+            ['Passion', 1, '#bc5753'],
+          ].map(([label, value, color]) => (
+            <Stack key={label as string} spacing={0.45} alignItems="center">
+              <Typography
+                sx={{
+                  color: color as string,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.6rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {label}
+              </Typography>
+              <Typography
+                sx={{
+                  color: deepInk,
+                  fontFamily: '"IM Fell English", Georgia, serif',
+                  fontSize: '1.4rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
+              >
+                {value}
+              </Typography>
+              <StatDots value={Number(value)} color={color as string} />
+            </Stack>
+          ))}
+        </Box>
+      </Panel>
+
+      <Panel>
         <SectionTitle>Balance</SectionTitle>
         <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.2, mb: 0.4 }}>
           <Typography
@@ -611,42 +749,26 @@ function CharacterPane() {
       </Panel>
 
       <Panel>
-        <SectionTitle>Attributes &amp; Stats</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
-          {[
-            ['Creativity', 2, ember],
-            ['Focus', 2, water],
-            ['Harmony', 1, earth],
-            ['Passion', 1, '#bc5753'],
-          ].map(([label, value, color]) => (
-            <Stack key={label as string} spacing={0.45} alignItems="center">
-              <Typography
-                sx={{
-                  color: color as string,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.6rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                }}
-              >
+        <SectionTitle>Conditions</SectionTitle>
+        <Stack spacing={0.6} sx={{ mt: 0.9 }}>
+          {['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'].map((label) => (
+            <Stack key={label} direction="row" alignItems="center" gap={0.6}>
+              <Checkbox checked={false} />
+              <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '0.78rem', color: brown }}>
                 {label}
               </Typography>
-              <Typography
-                sx={{
-                  color: deepInk,
-                  fontFamily: '"IM Fell English", Georgia, serif',
-                  fontSize: '1.4rem',
-                  fontWeight: 700,
-                  lineHeight: 1,
-                }}
-              >
-                {value}
-              </Typography>
-              <StatDots value={Number(value)} color={color as string} />
             </Stack>
           ))}
-        </Box>
+        </Stack>
+      </Panel>
+
+      <Panel>
+        <ClassTraitAccordion title="A Tainted Past">
+          You carry a heavy legacy — a name, a debt, or a deed that shadows your every step. Once
+          per session, when your past complicates the situation, the GM may offer you an opportunity
+          to mark fatigue and either reveal a useful connection from your old life or learn a
+          fragment of hidden lore that bears on the current scene.
+        </ClassTraitAccordion>
       </Panel>
 
       {/* Connections is a section on the Character tab (formerly the standalone Bonds tab) */}
@@ -764,8 +886,73 @@ function CombatPane() {
     ['Martial', martial, elementMartial],
     ['Tech', tech, elementTech],
   ];
+  const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
+  const negativeStatuses = ['Doomed', 'Impaired', 'Trapped', 'Stunned'];
   return (
     <Stack spacing={1}>
+      <Panel>
+        <SectionTitle>Statuses</SectionTitle>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9, mt: 0.9 }}>
+          <Stack spacing={0.55}>
+            <Typography
+              sx={{
+                color: alpha(brown, 0.7),
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.56rem',
+                fontWeight: 900,
+                letterSpacing: '0.12em',
+              }}
+            >
+              POSITIVE
+            </Typography>
+            {positiveStatuses.map((label) => (
+              <Stack key={label} direction="row" alignItems="center" gap={0.55}>
+                <Checkbox checked={false} />
+                <Typography
+                  sx={{ fontFamily: 'Georgia, serif', fontSize: '0.74rem', color: brown }}
+                >
+                  {label}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+          <Stack spacing={0.55}>
+            <Typography
+              sx={{
+                color: alpha(brown, 0.7),
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.56rem',
+                fontWeight: 900,
+                letterSpacing: '0.12em',
+              }}
+            >
+              NEGATIVE
+            </Typography>
+            {negativeStatuses.map((label) => (
+              <Stack key={label} direction="row" alignItems="center" gap={0.55}>
+                <Checkbox checked={false} />
+                <Typography
+                  sx={{ fontFamily: 'Georgia, serif', fontSize: '0.74rem', color: brown }}
+                >
+                  {label}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Box>
+      </Panel>
+
+      <Panel>
+        <SectionTitle>Fatigue</SectionTitle>
+        <Stack direction="row" gap={0.85} sx={{ mt: 1, justifyContent: 'flex-start' }}>
+          {[0, 1, 2, 3, 4].map((index) => (
+            // First two pips ship as "filled" placeholders; toggling is
+            // wiring to be added later.
+            <FatigueDiamond key={index} filled={index < 2} size={20} />
+          ))}
+        </Stack>
+      </Panel>
+
       {/* Combat sub-tabs — Techniques is the default active view */}
       <FilterTabs labels={['Techniques', 'Notes', 'Inventory', 'Mastered']} activeIndex={0} />
       <Stack direction="row" justifyContent="space-between" sx={{ px: 0.5, pt: 0.4 }}>
