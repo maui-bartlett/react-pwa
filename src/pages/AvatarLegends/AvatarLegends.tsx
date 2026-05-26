@@ -6,9 +6,11 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { atom, useAtom } from 'jotai';
 import { Backpack, HandFist, Heart } from 'lucide-react';
 
 import AccountSettings from '@/sections/AccountSettings';
+import { useThemeMode } from '@/theme/hooks';
 
 // The six elemental symbols cropped directly from the official Avatar Legends
 // character sheet "Your Training" row (assets/original-character-sheet.jpg).
@@ -22,6 +24,22 @@ import airGlyph from './assets/glyph-air.png';
 import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
 import waterGlyph from './assets/glyph-water.png';
+
+// Minimal dark-mode swap for the avatar-legends page. The deep navy
+// brush-stroke band stays identical (it's already dark); these are the
+// surfaces that switch between light and dark.
+type AvatarPalette = {
+  pageBg: string; // outer mat around the parchment card
+  cardBg: string; // the parchment-card background
+};
+const lightAvatarPalette: AvatarPalette = {
+  pageBg: 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)',
+  cardBg: '#e3ecf4',
+};
+const darkAvatarPalette: AvatarPalette = {
+  pageBg: 'linear-gradient(140deg, #050b15 0%, #08172a 50%, #050b15 100%)',
+  cardBg: '#101a2c',
+};
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -84,6 +102,19 @@ const tabs: TabConfig[] = [
     renderIcon: ({ color, size }) => <Backpack color={color} size={size} strokeWidth={1.75} />,
   },
 ];
+
+// Atoms that persist UI state across main-tab switches. Each pane's
+// sub-tab selection lives in jotai so switching away and back keeps the
+// same view active. Toggle state (statuses / conditions / fatigue) is
+// stored centrally so the same data is shared between the Character and
+// Combat surfaces.
+const movesSubTabAtom = atom(0);
+const combatSubTabAtom = atom(0);
+const backpackSubTabAtom = atom(0);
+const techniqueFilterAtom = atom(0); // 0 = Learned, 1 = Practiced, 2 = Mastered
+const activeStatusesAtom = atom<Record<string, boolean>>({});
+const activeConditionsAtom = atom<Record<string, boolean>>({});
+const fatigueAtom = atom<boolean[]>([true, true, false, false, false]);
 
 // Moves grouped by sub-tab. Each entry is just a button label; tap behavior
 // (rolling, GM prompt, etc.) is wired separately.
@@ -259,6 +290,23 @@ function Checkbox({ checked, size = 18 }: { checked: boolean; size?: number }) {
 }
 
 /**
+ * Toggleable condition button bound to the shared `activeConditionsAtom`.
+ * Used on both the Character tab and the Combat > Conditions sub-tab so the
+ * two surfaces stay in sync.
+ */
+function ConditionButtonShared({ label }: { label: string }) {
+  const [active, setActive] = useAtom(activeConditionsAtom);
+  return (
+    <StatusButton
+      label={label}
+      active={Boolean(active[label])}
+      activeColor={gold}
+      onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
+    />
+  );
+}
+
+/**
  * Toggleable status pill. Unfilled by default (just an outline); when active
  * it fills with `activeColor` (blue for Positive statuses, dark red for
  * Negative). Tap to toggle.
@@ -281,7 +329,8 @@ function StatusButton({
       onClick={onToggle}
       aria-pressed={active}
       sx={{
-        py: '6px',
+        // Doubled vertical padding so the button is twice as tall.
+        py: '14px',
         px: 1,
         borderRadius: '4px',
         border: `1.5px solid ${activeColor}`,
@@ -962,16 +1011,19 @@ function CharacterPane() {
 
       <Panel>
         <SectionTitle>Conditions</SectionTitle>
-        {/* 3-column grid so the five condition checkboxes share the
-            horizontal space (matches the Background panel's grid above). */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
+        {/* Selectable buttons (state shared with the Combat tab's Conditions
+            sub-tab). Two-column grid so each button has room to breathe. */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: 1,
+            rowGap: 1.2,
+            mt: 0.9,
+          }}
+        >
           {['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'].map((label) => (
-            <Stack key={label} direction="row" alignItems="center" gap={0.5}>
-              <Checkbox checked={false} />
-              <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '0.74rem', color: brown }}>
-                {label}
-              </Typography>
-            </Stack>
+            <ConditionButtonShared key={label} label={label} />
           ))}
         </Box>
       </Panel>
@@ -1076,7 +1128,7 @@ function FilterTabs({
 }
 
 function MovesPane() {
-  const [subTab, setSubTab] = useState(0);
+  const [subTab, setSubTab] = useAtom(movesSubTabAtom);
   const categoryKey: 'basic' | 'balance' | 'class' = (['basic', 'balance', 'class'] as const)[
     subTab
   ];
@@ -1263,16 +1315,19 @@ function CombatPane() {
   const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
   const negativeStatuses = ['Doomed', 'Impaired', 'Trapped', 'Stunned'];
   const conditions = ['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'];
-  const [subTab, setSubTab] = useState(0);
-  // Fatigue pips — toggleable by tapping. First two start filled to mirror the
-  // previous static placeholder state.
-  const [fatigue, setFatigue] = useState<boolean[]>([true, true, false, false, false]);
+  // All UI state lives in jotai atoms so it persists when switching between
+  // the Character / Moves / Combat / Backpack main tabs.
+  const [subTab, setSubTab] = useAtom(combatSubTabAtom);
+  const [techFilter, setTechFilter] = useAtom(techniqueFilterAtom);
+  const [fatigue, setFatigue] = useAtom(fatigueAtom);
   const toggleFatigue = (index: number) =>
     setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
-  // Status toggle state — one boolean per status name in each column.
-  const [activeStatuses, setActiveStatuses] = useState<Record<string, boolean>>({});
+  const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
+  const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
+  const toggleCondition = (label: string) =>
+    setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
 
   return (
     <Stack spacing={1}>
@@ -1340,6 +1395,12 @@ function CombatPane() {
               </Stack>
             ))}
           </Stack>
+          {/* Secondary filter row — proficiency level for the techniques list. */}
+          <FilterTabs
+            labels={['Learned', 'Practiced', 'Mastered']}
+            activeIndex={techFilter}
+            onChange={setTechFilter}
+          />
           {techniques.map(([title, summary, body]) => (
             <TechniqueAccordion
               key={title}
@@ -1359,7 +1420,7 @@ function CombatPane() {
       {subTab === 1 ? (
         <Panel>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9 }}>
-            <Stack spacing={0.6}>
+            <Stack spacing={1.2}>
               <Typography
                 sx={{
                   color: alpha(brown, 0.7),
@@ -1381,7 +1442,7 @@ function CombatPane() {
                 />
               ))}
             </Stack>
-            <Stack spacing={0.6}>
+            <Stack spacing={1.2}>
               <Typography
                 sx={{
                   color: gold,
@@ -1407,19 +1468,20 @@ function CombatPane() {
         </Panel>
       ) : null}
 
-      {/* Conditions sub-tab — mirrors the Character tab's Conditions panel */}
+      {/* Conditions sub-tab — same toggleable button pattern as Statuses
+          and the Character tab's Conditions panel. Shared state via atom
+          means toggling here also reflects on the Character tab. */}
       {subTab === 2 ? (
         <Panel>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, rowGap: 1.2 }}>
             {conditions.map((label) => (
-              <Stack key={label} direction="row" alignItems="center" gap={0.5}>
-                <Checkbox checked={false} />
-                <Typography
-                  sx={{ fontFamily: 'Georgia, serif', fontSize: '0.78rem', color: brown }}
-                >
-                  {label}
-                </Typography>
-              </Stack>
+              <StatusButton
+                key={label}
+                label={label}
+                active={Boolean(activeConditions[label])}
+                activeColor={gold}
+                onToggle={() => toggleCondition(label)}
+              />
             ))}
           </Box>
         </Panel>
@@ -1642,7 +1704,7 @@ function NoteAccordion({ type, title, body }: { type: string; title: string; bod
 }
 
 function BackpackPane() {
-  const [subTab, setSubTab] = useState(0);
+  const [subTab, setSubTab] = useAtom(backpackSubTabAtom);
   // Split the journal entries: the first three (Note / Important NPC /
   // Location) live in the Notes sub-tab; the Item (Messenger Bag) goes
   // under Inventory.
@@ -1775,6 +1837,12 @@ function AvatarLegends() {
     [activeTab],
   );
 
+  // Dark mode for the avatar-legends UI. Right now this swaps the outer
+  // mat + the parchment-card background only (a starter dark mode that's
+  // clearly distinct from light). Full surface-level theming is a follow-up.
+  const { isDarkMode } = useThemeMode();
+  const avatarPalette = isDarkMode ? darkAvatarPalette : lightAvatarPalette;
+
   // Repeating background watermark — faint elemental glyphs scattered across the
   // parchment, mimicking the character sheet's watermarked element motifs.
   const watermarkBg = `
@@ -1792,9 +1860,8 @@ function AvatarLegends() {
     <Box
       sx={{
         minHeight: '100svh',
-        // Outer area uses a deep watercolor wash so the parchment "card" sits
-        // on a darker mat. Mimics the character sheet's outer trim.
-        background: `radial-gradient(circle at 20% 0%, ${alpha(washDeep, 0.45)}, transparent 36%), linear-gradient(140deg, ${deepInk} 0%, #0e2e4a 50%, ${deepInk} 100%)`,
+        // Outer mat around the parchment card — gradient switches with mode.
+        background: avatarPalette.pageBg,
         display: 'grid',
         placeItems: 'center',
         p: { xs: 0, sm: 2 },
@@ -1805,11 +1872,8 @@ function AvatarLegends() {
           width: 'min(100vw, 430px)',
           height: { xs: '100svh', sm: 'min(860px, calc(100svh - 32px))' },
           borderRadius: { xs: 0, sm: '12px' },
-          // Parchment with subtle vignette + paper grain
-          background: `
-            radial-gradient(circle at 50% 0%, ${alpha(parchmentLight, 0.95)} 0%, ${parchment} 60%, ${alpha(parchmentDeep, 0.55)} 100%),
-            ${parchment}
-          `,
+          // Card background flips between cream and deep navy based on mode.
+          background: avatarPalette.cardBg,
           position: 'relative',
           overflow: 'hidden',
           boxShadow: {
@@ -1895,7 +1959,9 @@ function AvatarLegends() {
                 Avatar Legends
               </Typography>
             ) : (
-              <Stack spacing={0.1}>
+              // spacing=0.6 (~4.8px) gives ~4px more between the eyebrow and
+              // the character name compared to the original tight 0.1.
+              <Stack spacing={0.6}>
                 <Typography
                   sx={{
                     color: alpha(parchmentLight, 0.7),
