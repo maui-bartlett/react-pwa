@@ -20,11 +20,8 @@ import airGlyph from './assets/glyph-air.png';
 import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
 import waterGlyph from './assets/glyph-water.png';
-import navBonds from './assets/nav-bonds.png';
-import navJournal from './assets/nav-journal.png';
-import navTechniques from './assets/nav-techniques.png';
 
-type AvatarTab = 'character' | 'moves' | 'combat' | 'bonds' | 'backpack';
+type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
 type TabConfig = {
   label: string;
@@ -59,20 +56,23 @@ const tabs: TabConfig[] = [
   {
     label: 'Character',
     value: 'character',
-    // Stylized person silhouette — head + shoulders, drawn inline so it
-    // shares the bottom-nav color and works at any size.
     renderIcon: ({ color, size }) => <PersonIcon color={color} size={size} />,
   },
   {
     label: 'Moves',
     value: 'moves',
-    // Use the signature diamond-in-diamond glyph (the Moves bullet from the
-    // character sheet) as the bottom-nav icon for consistency.
     renderIcon: ({ color, size }) => <MoveDiamond color={color} size={size} />,
   },
-  { label: 'Combat', value: 'combat', iconSrc: navTechniques },
-  { label: 'Bonds', value: 'bonds', iconSrc: navBonds },
-  { label: 'Backpack', value: 'backpack', iconSrc: navJournal },
+  {
+    label: 'Combat',
+    value: 'combat',
+    renderIcon: ({ color, size }) => <FistIcon color={color} size={size} />,
+  },
+  {
+    label: 'Backpack',
+    value: 'backpack',
+    renderIcon: ({ color, size }) => <BackpackIcon color={color} size={size} />,
+  },
 ];
 
 const moves = [
@@ -171,6 +171,115 @@ function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; hei
           fill={alpha('#ffffff', 0.18)}
         />
       </Box>
+    </Box>
+  );
+}
+
+/**
+ * Square checkbox with optional white checkmark. When `checked` is true the
+ * box fills with deep ink and a white check stroke is drawn inside.
+ */
+function Checkbox({ checked, size = 12 }: { checked: boolean; size?: number }) {
+  return (
+    <Box
+      sx={{
+        width: size,
+        height: size,
+        border: `1.2px solid ${deepInk}`,
+        bgcolor: checked ? deepInk : 'transparent',
+        borderRadius: '1px',
+        display: 'grid',
+        placeItems: 'center',
+        flex: '0 0 auto',
+      }}
+    >
+      {checked ? (
+        <Box
+          component="svg"
+          viewBox="0 0 12 12"
+          sx={{ width: size * 0.85, height: size * 0.85, display: 'block' }}
+        >
+          <path
+            d="M2.5 6.3 L 5 8.6 L 9.5 3.4"
+            fill="none"
+            stroke="#fff"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+/**
+ * Stylized fist icon — closed hand, knuckles facing the viewer. Used as
+ * the Combat bottom-nav icon.
+ */
+function FistIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+    >
+      {/* Main fist body */}
+      <path
+        d="M5.5 9 C 5.5 7.6, 6.6 6.5, 8 6.5 L 16 6.5 C 17.4 6.5, 18.5 7.6, 18.5 9 L 18.5 16.5 C 18.5 18.4, 17 19.5, 15 19.5 L 9 19.5 C 7 19.5, 5.5 18.4, 5.5 16.5 Z"
+        fill={color}
+      />
+      {/* Knuckle creases */}
+      <line x1={8.5} y1={10} x2={8.5} y2={14} stroke="#fff" strokeWidth={0.6} opacity={0.35} />
+      <line x1={11.5} y1={10} x2={11.5} y2={14} stroke="#fff" strokeWidth={0.6} opacity={0.35} />
+      <line x1={14.5} y1={10} x2={14.5} y2={14} stroke="#fff" strokeWidth={0.6} opacity={0.35} />
+      {/* Thumb tucked across */}
+      <path
+        d="M5.5 12.5 C 4.5 12.5, 4 13.5, 4 14.5 C 4 15.5, 4.7 16.4, 5.8 16.4 L 7 16.4"
+        fill="none"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+    </Box>
+  );
+}
+
+/**
+ * Stylized backpack icon — main compartment with a top strap loop and
+ * front pocket. Used as the Backpack bottom-nav icon.
+ */
+function BackpackIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+    >
+      {/* Top strap loop */}
+      <path
+        d="M9 5 C 9 3.5, 10 3, 12 3 C 14 3, 15 3.5, 15 5 L 15 7"
+        fill="none"
+        stroke={color}
+        strokeWidth={1.4}
+        strokeLinecap="round"
+      />
+      {/* Main pack body */}
+      <rect x={5} y={6.5} width={14} height={14.5} rx={2.5} fill={color} />
+      {/* Front pocket */}
+      <rect
+        x={7.5}
+        y={13}
+        width={9}
+        height={5.5}
+        rx={1}
+        fill="none"
+        stroke="#fff"
+        strokeWidth={0.9}
+        opacity={0.55}
+      />
+      {/* Pocket buckle */}
+      <rect x={10.5} y={15.3} width={3} height={1} rx={0.3} fill="#fff" opacity={0.55} />
     </Box>
   );
 }
@@ -475,15 +584,7 @@ function CharacterPane() {
           {['Urban', 'Privileged', 'Tradition', 'Outlaw', 'Military', 'Wilderness'].map(
             (item, i) => (
               <Stack key={item} direction="row" alignItems="center" gap={0.5}>
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    border: `1.2px solid ${deepInk}`,
-                    bgcolor: i < 3 ? deepInk : 'transparent',
-                    borderRadius: '1px',
-                  }}
-                />
+                <Checkbox checked={i < 3} />
                 <Typography
                   sx={{
                     fontFamily: 'Georgia, serif',
@@ -595,6 +696,9 @@ function CharacterPane() {
           ))}
         </Box>
       </Panel>
+
+      {/* Bonds is now a section on the Character tab rather than a standalone tab */}
+      <BondsSection />
     </Stack>
   );
 }
@@ -798,13 +902,16 @@ function CombatPane() {
   );
 }
 
-function BondsPane() {
+/**
+ * Bonds section — rendered inside the Character tab. A SectionTitle header
+ * followed by one panel per bond + an "Add Bond" action.
+ */
+function BondsSection() {
   return (
     <Stack spacing={1}>
+      <SectionTitle>Bonds</SectionTitle>
       {bonds.map(([name, role, note], index) => (
         <Panel key={name as string}>
-          {/* Image-free bond card. Heart icon stays as the right-side accent;
-              name, role and influence stack at the top, body note below. */}
           <Stack spacing={0.45}>
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
               <Stack spacing={0.2} sx={{ flex: 1, minWidth: 0 }}>
@@ -851,7 +958,6 @@ function BondsPane() {
                 <Heart size={18} fill={index < 2 ? ember : 'transparent'} color={ember} />
               </Stack>
             </Stack>
-            {/* Hairline gold divider between meta and body */}
             <Box
               sx={{
                 height: '1px',
@@ -1131,7 +1237,6 @@ function AvatarLegends() {
             {activeTab === 'character' ? <CharacterPane /> : null}
             {activeTab === 'moves' ? <MovesPane /> : null}
             {activeTab === 'combat' ? <CombatPane /> : null}
-            {activeTab === 'bonds' ? <BondsPane /> : null}
             {activeTab === 'backpack' ? <BackpackPane /> : null}
           </Box>
 
