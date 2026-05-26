@@ -139,5 +139,84 @@ function getToneStyles(tone: Tone = 'neutral') {
   };
 }
 
+/** Avatar Legends light tokens — same shape as fabUTokens, but with the
+ *  watercolor blue / parchment-cream palette used on the avatar-legends
+ *  page swapped in for greens. Used by AccountSettings when opened from
+ *  the avatar-legends UI so the account dialog feels at home there. */
+const avatarLightTokens: FabUTokens = {
+  isDark: false,
+  color: {
+    page: '#e3ecf4',
+    canvas: '#f3f7fb',
+    surface: '#ffffff',
+    surfaceCard: '#eaf1f7',
+    pillSurface: '#ffffff',
+    surfaceMuted: '#dfe7ef',
+    border: '#b1c3d3',
+    textPrimary: '#0b1a2c',
+    textSecondary: '#3a4e63',
+    brand: '#23456b',
+    brandStrong: '#162a45',
+    brandSoft: '#dde7f0',
+    brandText: '#3a6390',
+    brandFg: '#ffffff',
+    labelBg: '#23456b',
+    labelFg: '#ffffff',
+    highlight: '#7a2424',
+    highlightFg: '#ffffff',
+    fp: '#4a7fa8',
+    fpFg: '#ffffff',
+    hp: '#a8413a',
+    mp: '#4a7fa8',
+    warning: '#a47b29',
+    success: '#5a7a55',
+    danger: '#a8413a',
+    neutral: '#5a6f86',
+  },
+  radius: { pill: 999, sm: 9, md: 13, lg: 16 },
+  shadow: {
+    soft: '0 4px 14px rgba(22, 42, 69, 0.10)',
+    card: '0 4px 14px rgba(22, 42, 69, 0.16)',
+  },
+};
+
+/** Avatar Legends dark tokens — same blue family at higher contrast. */
+const avatarDarkTokens: FabUTokens = {
+  isDark: true,
+  color: {
+    page: '#070d16',
+    canvas: '#0d1422',
+    surface: '#121b2c',
+    surfaceCard: '#121b2c',
+    pillSurface: '#0f1726',
+    surfaceMuted: '#19243a',
+    border: '#26395a',
+    textPrimary: '#e6eef7',
+    textSecondary: '#8ea2bd',
+    brand: '#23456b',
+    brandStrong: '#162a45',
+    brandSoft: '#1a2c46',
+    brandText: '#7da4cf',
+    brandFg: '#ffffff',
+    labelBg: '#23456b',
+    labelFg: '#ffffff',
+    highlight: '#a8413a',
+    highlightFg: '#ffffff',
+    fp: '#3a6390',
+    fpFg: '#ffffff',
+    hp: '#a8413a',
+    mp: '#4a7fa8',
+    warning: '#a47b29',
+    success: '#5a7a55',
+    danger: '#a8413a',
+    neutral: '#6f7d8e',
+  },
+  radius: { pill: 999, sm: 9, md: 13, lg: 16 },
+  shadow: {
+    soft: '0 4px 14px rgba(0, 0, 0, 0.5)',
+    card: '0 4px 14px rgba(0, 0, 0, 0.5)',
+  },
+};
+
 export type { FabUTokens };
-export { fabUTokens, darkFabUTokens, getToneStyles };
+export { fabUTokens, darkFabUTokens, avatarLightTokens, avatarDarkTokens, getToneStyles };

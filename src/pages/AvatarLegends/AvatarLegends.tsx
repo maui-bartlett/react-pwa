@@ -61,9 +61,12 @@ const tabs: TabConfig[] = [
   {
     label: 'Character',
     value: 'character',
-    // Lucide has no yin-yang glyph, so we use a local SVG that follows the
-    // same currentColor / strokeWidth style as the lucide icons.
-    renderIcon: ({ color, size }) => <YinYangIcon color={color} size={size} />,
+    // Lucide has no yin-yang glyph, so we use a local SVG. We pass explicit
+    // dark/light colors so the symbol stays legible on the dark navy nav
+    // (dark dot visible inside the white section, light dot in the dark).
+    renderIcon: ({ color, size }) => (
+      <YinYangIcon darkColor={deepInk} lightColor={color} size={size} />
+    ),
   },
   {
     label: 'Moves',
@@ -126,19 +129,17 @@ const journal = [
 ];
 
 /**
- * Watercolor blue brush stroke band — irregular wavy bottom edge mimicking a
- * sumi-e wash painted across parchment. Two stacked layers create depth: a
- * deeper wash behind, a lighter wash in front, slightly offset.
+ * Painted brush-stroke band — a straight dark navy band with a painted
+ * (not wavy) edge, suggesting a flat brush dragged across the page. The
+ * far edge is built from a solid rectangle plus a few thin streaks that
+ * fade out to mimic dry brush bristles.
  */
 function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; height?: number }) {
-  // The path is a closed shape: top edge straight, bottom edge wavy with brush-stroke variation
-  const wavyPath = bottom
-    ? `M0,${height} L430,${height} L430,28 Q400,8 360,18 Q320,30 280,14 Q240,0 200,18 Q160,34 120,16 Q80,0 40,22 Q15,32 0,18 Z`
-    : `M0,0 L430,0 L430,${height - 30} Q400,${height - 8} 360,${height - 18} Q320,${height - 30} 280,${height - 12} Q240,${height + 4} 200,${height - 18} Q160,${height - 34} 120,${height - 14} Q80,${height + 2} 40,${height - 22} Q15,${height - 32} 0,${height - 16} Z`;
-
-  const wavyPathLight = bottom
-    ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
-    : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
+  // The "painted" edge has a thin straight terminator + a few short streaks
+  // beyond it that fade into the page. solidEdge marks where the solid fill
+  // ends, streakEdge is the soft outer reach of the bristle marks.
+  const solidEdge = height - 18; // depth of the solid fill (from the band's anchored side)
+  const streakEdge = height - 4; // outer reach of fading streaks
 
   return (
     <Box
@@ -156,19 +157,75 @@ function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; hei
         component="svg"
         viewBox={`0 0 430 ${height}`}
         preserveAspectRatio="none"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          display: 'block',
-        }}
+        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
       >
-        {/* Deeper wash layer */}
-        <path d={wavyPath} fill={alpha(deepInk, 0.92)} />
-        {/* Lighter watercolor layer offset slightly for depth */}
-        <path d={wavyPathLight} fill={alpha(washDeep, 0.5)} />
-        {/* Top sheen — a soft highlight where the brush starts */}
+        {/* Solid painted rectangle — straight edges, dark navy fill. The
+            `bottom ? height - solidEdge : 0` logic anchors the solid block
+            to the top of the band (for header) or the bottom (for footer). */}
+        <rect
+          x={0}
+          y={bottom ? height - solidEdge : 0}
+          width={430}
+          height={solidEdge}
+          fill={deepInk}
+        />
+        {/* Mid-density transition band — a thin strip of slightly lighter
+            wash just past the solid edge, suggesting a wetter pass of the
+            brush. */}
+        <rect
+          x={0}
+          y={bottom ? height - solidEdge - 3 : solidEdge}
+          width={430}
+          height={3}
+          fill={alpha(deepInk, 0.55)}
+        />
+        {/* Bristle streaks — a handful of short horizontal marks fading out
+            past the solid edge to imply dry-brush bristles. */}
+        {(() => {
+          const streakRowY = bottom ? height - solidEdge - 9 : solidEdge + 6;
+          const streaks = [
+            { x: 14, w: 70, opacity: 0.55 },
+            { x: 96, w: 50, opacity: 0.4 },
+            { x: 156, w: 90, opacity: 0.6 },
+            { x: 256, w: 60, opacity: 0.35 },
+            { x: 324, w: 78, opacity: 0.5 },
+          ];
+          return streaks.map((streak, index) => (
+            <rect
+              key={index}
+              x={streak.x}
+              y={streakRowY}
+              width={streak.w}
+              height={1.5}
+              fill={alpha(deepInk, streak.opacity)}
+            />
+          ));
+        })()}
+        {/* Even further-out faint streaks — barely-there hairline marks at
+            the very edge of the painted reach. */}
+        {(() => {
+          const farY = bottom ? height - solidEdge - 14 : solidEdge + 11;
+          if (farY < 0 || farY > streakEdge) return null;
+          const farStreaks = [
+            { x: 40, w: 36, opacity: 0.22 },
+            { x: 130, w: 50, opacity: 0.18 },
+            { x: 220, w: 30, opacity: 0.24 },
+            { x: 290, w: 44, opacity: 0.18 },
+            { x: 360, w: 30, opacity: 0.22 },
+          ];
+          return farStreaks.map((streak, index) => (
+            <rect
+              key={index}
+              x={streak.x}
+              y={farY}
+              width={streak.w}
+              height={1}
+              fill={alpha(deepInk, streak.opacity)}
+            />
+          ));
+        })()}
+        {/* Top sheen — soft highlight running along the inner edge of the
+            band where the brush starts. */}
         <rect
           x={20}
           y={bottom ? height - 8 : 4}
@@ -285,7 +342,6 @@ function ClassTraitAccordion({
           textTransform: 'uppercase',
         }}
       >
-        <MoveDiamond color={gold} size={11} />
         <Box sx={{ flex: 1 }}>{title}</Box>
         <Box
           sx={{
@@ -317,41 +373,54 @@ function ClassTraitAccordion({
 }
 
 /**
- * Yin-yang SVG drawn in the lucide style (24x24 viewBox, currentColor
- * stroke, 2px stroke width) — used both as the Character bottom-nav icon
- * and as the marker in the Balance section.
+ * Yin-yang SVG drawn in the lucide style (24x24 viewBox). Accepts an
+ * explicit pair of colors so the symbol stays readable on either a light
+ * or dark surface:
+ *   - `darkColor` paints the outline, the filled teardrop, and the dark
+ *     dot in the white section
+ *   - `lightColor` paints the filled "white" section and the light dot in
+ *     the dark section
+ *
+ * Defaults render correctly when used standalone — the Character
+ * bottom-nav icon passes explicit colors so both halves are visible
+ * against the dark navy header band.
  */
 function YinYangIcon({
-  color = 'currentColor',
   size = 20,
   strokeWidth = 1.75,
+  darkColor = 'currentColor',
+  lightColor = '#ffffff',
 }: {
-  color?: string;
   size?: number;
   strokeWidth?: number;
+  darkColor?: string;
+  lightColor?: string;
 }) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
+      stroke={darkColor}
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
     >
-      {/* Outer circle */}
-      <circle cx={12} cy={12} r={10} />
-      {/* The yin-yang S curve: top half forms the boundary of the dark teardrop;
-          bottom half mirrors it. Built from two semicircles of radius 5. */}
-      <path d="M12 2 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 22" />
-      {/* Dark teardrop filled half (top) */}
-      <path d="M12 2 A 10 10 0 0 1 12 22 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 2 Z" fill={color} />
-      {/* Light dot in dark half (filled with surrounding light color) */}
-      <circle cx={12} cy={17} r={1.4} fill="#ffffff" stroke="none" />
-      {/* Dark dot in light half */}
-      <circle cx={12} cy={7} r={1.4} fill={color} />
+      {/* Outer circle — filled with the light color so the "white section"
+          reads as solid white against any backdrop. */}
+      <circle cx={12} cy={12} r={10} fill={lightColor} />
+      {/* S-curve dividing line */}
+      <path d="M12 2 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 22" fill="none" />
+      {/* Dark teardrop (top half) — covers the upper portion of the disc. */}
+      <path
+        d="M12 2 A 10 10 0 0 1 12 22 A 5 5 0 0 1 12 12 A 5 5 0 0 0 12 2 Z"
+        fill={darkColor}
+        stroke="none"
+      />
+      {/* Light dot in the dark half */}
+      <circle cx={12} cy={17} r={1.6} fill={lightColor} stroke="none" />
+      {/* Dark dot in the white section */}
+      <circle cx={12} cy={7} r={1.6} fill={darkColor} stroke="none" />
     </Box>
   );
 }
@@ -602,7 +671,7 @@ function CharacterPane() {
             <Box sx={{ width: 28, height: '1px', bgcolor: alpha(gold, 0.55) }} />
           </Stack>
           <Stack direction="row" gap={0.6} flexWrap="wrap" justifyContent="center">
-            {['He / Him', 'Age 18', 'Infinita'].map((item, i) => (
+            {['He / Him', 'Age 32', 'Jasmine Island'].map((item, i) => (
               <Stack key={item} direction="row" alignItems="center" gap={0.6}>
                 {i > 0 ? (
                   <Box
@@ -634,10 +703,12 @@ function CharacterPane() {
       <Panel>
         <SectionTitle>Background</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
-          {['Urban', 'Privileged', 'Tradition', 'Outlaw', 'Military', 'Wilderness'].map(
+          {['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'].map(
             (item, i) => (
               <Stack key={item} direction="row" alignItems="center" gap={0.5}>
-                <Checkbox checked={i < 3} />
+                {/* Only the first two backgrounds (Urban, Privileged) are
+                    checked by default; Monastic and the others are not. */}
+                <Checkbox checked={i < 2} />
                 <Typography
                   sx={{
                     fontFamily: 'Georgia, serif',
@@ -731,7 +802,12 @@ function CharacterPane() {
                 boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
               }}
             >
-              <YinYangIcon color={deepInk} size={20} strokeWidth={1.5} />
+              <YinYangIcon
+                darkColor={deepInk}
+                lightColor={parchmentLight}
+                size={20}
+                strokeWidth={1.5}
+              />
             </Box>
           </Box>
           <Typography
@@ -750,16 +826,18 @@ function CharacterPane() {
 
       <Panel>
         <SectionTitle>Conditions</SectionTitle>
-        <Stack spacing={0.6} sx={{ mt: 0.9 }}>
+        {/* 3-column grid so the five condition checkboxes share the
+            horizontal space (matches the Background panel's grid above). */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
           {['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'].map((label) => (
-            <Stack key={label} direction="row" alignItems="center" gap={0.6}>
+            <Stack key={label} direction="row" alignItems="center" gap={0.5}>
               <Checkbox checked={false} />
-              <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '0.78rem', color: brown }}>
+              <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: '0.74rem', color: brown }}>
                 {label}
               </Typography>
             </Stack>
           ))}
-        </Stack>
+        </Box>
       </Panel>
 
       <Panel>
@@ -805,9 +883,9 @@ function FilterTabs({ labels, activeIndex }: { labels: string[]; activeIndex: nu
               flex: 1,
               py: '5px',
               borderRadius: '3px',
-              background: active
-                ? `linear-gradient(180deg, ${alpha(washDeep, 0.85)} 0%, ${alpha(deepInk, 0.92)} 100%)`
-                : 'transparent',
+              // Solid deep-ink fill on the active chip (matches the dark
+              // blue of the header/footer brush stroke).
+              background: active ? deepInk : 'transparent',
               color: active ? parchmentLight : alpha(brown, 0.75),
               textAlign: 'center',
               fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
@@ -919,7 +997,9 @@ function CombatPane() {
           <Stack spacing={0.55}>
             <Typography
               sx={{
-                color: alpha(brown, 0.7),
+                // Dark red — same accent color used for diamond bullets and
+                // the THE SUCCESSOR eyebrow.
+                color: gold,
                 fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                 fontSize: '0.56rem',
                 fontWeight: 900,
@@ -1322,11 +1402,24 @@ function AvatarLegends() {
         </Box>
 
         <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
-          {/* Top header — clean dark navy band (no status-bar content, no
-              title); the WatercolorBand above provides the visual. The empty
-              box reserves the band's height so the page content below starts
-              at the right offset. */}
-          <Box sx={{ height: 76, flex: '0 0 auto' }} />
+          {/* Top header — dark navy brush-stroke band. Holds the app-level
+              settings button in the top-right (where the iOS status-bar
+              chrome sits on a real phone). */}
+          <Box
+            sx={{
+              height: 76,
+              flex: '0 0 auto',
+              position: 'relative',
+              zIndex: 2,
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'flex-end',
+              px: 1.2,
+              pt: 1.4,
+            }}
+          >
+            <AccountSettings gameSystem="avatar-legends" />
+          </Box>
 
           {/* Active-tab title bar — sits below the brush stroke on parchment */}
           <Box sx={{ px: 1.4, pt: 1.1, pb: 0.5 }}>
@@ -1346,11 +1439,6 @@ function AvatarLegends() {
                   {activeConfig.label}
                 </Typography>
               </Stack>
-              {/* App-level settings / account menu — same component used in
-                  the fab-u UI, just told that we're in the avatar-legends
-                  game-system context so downstream queries can filter
-                  accordingly. */}
-              <AccountSettings gameSystem="avatar-legends" />
             </Stack>
             <Box
               sx={{
@@ -1399,7 +1487,9 @@ function AvatarLegends() {
                       overflow: 'visible',
                     }}
                   >
-                    {/* Active indicator — small gold pill at the top edge */}
+                    {/* Active indicator — solid dark-red pill at the top edge.
+                        Solid fill (was a gradient) so it matches the rest of
+                        the app's now-flat button surfaces. */}
                     <Box
                       sx={{
                         position: 'absolute',
@@ -1409,9 +1499,7 @@ function AvatarLegends() {
                         width: 28,
                         height: 3,
                         borderRadius: '0 0 4px 4px',
-                        background: selected
-                          ? `linear-gradient(180deg, ${gold} 0%, ${alpha(gold, 0.6)} 100%)`
-                          : 'transparent',
+                        background: selected ? gold : 'transparent',
                         boxShadow: selected ? `0 0 6px ${alpha(gold, 0.6)}` : 'none',
                         transition: 'all 0.2s ease',
                       }}
