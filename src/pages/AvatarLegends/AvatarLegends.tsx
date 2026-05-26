@@ -25,21 +25,9 @@ import earthGlyph from './assets/glyph-earth.png';
 import fireGlyph from './assets/glyph-fire.png';
 import waterGlyph from './assets/glyph-water.png';
 
-// Minimal dark-mode swap for the avatar-legends page. The deep navy
-// brush-stroke band stays identical (it's already dark); these are the
-// surfaces that switch between light and dark.
-type AvatarPalette = {
-  pageBg: string; // outer mat around the parchment card
-  cardBg: string; // the parchment-card background
-};
-const lightAvatarPalette: AvatarPalette = {
-  pageBg: 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)',
-  cardBg: '#e3ecf4',
-};
-const darkAvatarPalette: AvatarPalette = {
-  pageBg: 'linear-gradient(140deg, #050b15 0%, #08172a 50%, #050b15 100%)',
-  cardBg: '#101a2c',
-};
+// Outer-mat gradients used behind the parchment card. Theme-aware.
+const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
+const darkPageBg = 'linear-gradient(140deg, #020812 0%, #050f1f 50%, #020812 100%)';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -52,22 +40,88 @@ type TabConfig = {
   renderIcon?: (props: { color: string; size: number }) => React.ReactNode;
 };
 
-// Light watercolor-blue palette — sampled from the soft brush-stroke wash
-// on the Avatar Legends character sheet. Replaces the prior parchment cream.
-const parchment = '#e3ecf4'; // pale watercolor-blue page background
-const parchmentLight = '#f3f7fb'; // near-white blue-tinted highlight
-const parchmentDeep = '#cdd9e5'; // deeper pale blue for recessed grooves
-const washDeep = '#6f9bba'; // deeper watercolor blue
-const ink = '#23456b'; // ink for headings (darker but bluish)
-const deepInk = '#162a45'; // deepest navy used in brush strokes
-const brown = '#3a4e63'; // body text — deep slate blue (replaces brown)
-const brownSoft = '#5a6f86'; // secondary text — softer slate blue
-const border = '#b1c3d3'; // soft blue-grey container border
-const ember = '#a8413a'; // muted brick red accent
-// Accent color used for diamond bullets, hairline dividers, and ornamental
-// flourishes. Previously a warm bronze; now a dark red so the trim reads
-// as the same red used for "THE SUCCESSOR" eyebrow text.
-const gold = '#7a2424';
+// Theme-aware palette. The values below are mutable `let`s; the
+// AvatarLegends component reassigns them at the start of every render based
+// on the global light/dark theme mode so every helper component picks up
+// the active palette on its next render.
+type AvPaletteShape = {
+  parchment: string;
+  parchmentLight: string;
+  parchmentDeep: string;
+  washDeep: string;
+  ink: string;
+  deepInk: string;
+  brown: string;
+  brownSoft: string;
+  border: string;
+  ember: string;
+  gold: string;
+};
+
+const lightAvPalette: AvPaletteShape = {
+  // Watercolor-blue palette sampled from the brush-stroke wash on the
+  // character sheet.
+  parchment: '#e3ecf4',
+  parchmentLight: '#f3f7fb',
+  parchmentDeep: '#cdd9e5',
+  washDeep: '#6f9bba',
+  ink: '#23456b',
+  deepInk: '#162a45',
+  brown: '#3a4e63',
+  brownSoft: '#5a6f86',
+  border: '#b1c3d3',
+  ember: '#a8413a',
+  gold: '#7a2424',
+};
+
+const darkAvPalette: AvPaletteShape = {
+  // Dark mode: navy card surfaces + near-white text so everything on dark
+  // backgrounds reads as light text.
+  parchment: '#0e1828', // card / panel bg — deep navy
+  parchmentLight: '#1a2740', // slightly lighter for elevated panel surfaces
+  parchmentDeep: '#08111e', // deepest navy for recessed grooves
+  washDeep: '#8db4d6', // brighter watercolor blue accent
+  ink: '#e6efff', // light heading text
+  deepInk: '#050d1a', // deepest navy used in brush strokes
+  brown: '#f0f5fc', // body text — near-white
+  brownSoft: '#c2cee0', // secondary text — soft light grey-blue
+  border: '#324569', // subtle blue-grey border that still reads on dark
+  ember: '#e2685e', // brighter red accent so it pops on dark
+  gold: '#d05246', // brighter dark-red accent for visibility on dark
+};
+
+// Mutable swappable colors — re-assigned by AvatarLegends before its
+// children render. Components keep referencing these as if they were
+// module-level constants.
+let parchment = lightAvPalette.parchment;
+let parchmentLight = lightAvPalette.parchmentLight;
+let parchmentDeep = lightAvPalette.parchmentDeep;
+let washDeep = lightAvPalette.washDeep;
+let ink = lightAvPalette.ink;
+let deepInk = lightAvPalette.deepInk;
+let brown = lightAvPalette.brown;
+let brownSoft = lightAvPalette.brownSoft;
+let border = lightAvPalette.border;
+let ember = lightAvPalette.ember;
+let gold = lightAvPalette.gold;
+
+function applyAvatarPalette(isDarkMode: boolean) {
+  const next = isDarkMode ? darkAvPalette : lightAvPalette;
+  parchment = next.parchment;
+  parchmentLight = next.parchmentLight;
+  parchmentDeep = next.parchmentDeep;
+  washDeep = next.washDeep;
+  ink = next.ink;
+  deepInk = next.deepInk;
+  brown = next.brown;
+  brownSoft = next.brownSoft;
+  border = next.border;
+  ember = next.ember;
+  gold = next.gold;
+}
+
+// Element-specific colors stay constant — they identify the element, not
+// the theme.
 const water = '#4a7fa8';
 const earth = '#7d8c5a';
 const fire = '#a8413a';
@@ -400,7 +454,7 @@ function HistorySection({ questions }: { questions: string[] }) {
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          color: deepInk,
+          color: ink,
           textAlign: 'left',
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
           fontSize: '0.82rem',
@@ -430,7 +484,7 @@ function HistorySection({ questions }: { questions: string[] }) {
             <Stack key={question} spacing={0.4}>
               <Typography
                 sx={{
-                  color: deepInk,
+                  color: ink,
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   fontSize: '0.76rem',
                   fontStyle: 'italic',
@@ -506,7 +560,7 @@ function ClassTraitAccordion({
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          color: deepInk,
+          color: ink,
           textAlign: 'left',
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
           fontSize: '0.92rem',
@@ -706,7 +760,7 @@ function ElementMark({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: deepInk,
+        color: ink,
         fontFamily: '"IM Fell English", Georgia, serif',
         fontWeight: 900,
         fontSize: size * 0.42,
@@ -804,7 +858,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       <MoveDiamond color={gold} size={9} />
       <Typography
         sx={{
-          color: deepInk,
+          color: ink,
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
           fontSize: '0.82rem',
           fontWeight: 900,
@@ -828,7 +882,7 @@ function CharacterPane() {
         <Stack alignItems="center" spacing={0.55} sx={{ py: 0.8, px: 0.6 }}>
           <Typography
             sx={{
-              color: deepInk,
+              color: ink,
               fontFamily: '"IM Fell English", Georgia, serif',
               fontSize: '1.85rem',
               fontWeight: 700,
@@ -933,7 +987,7 @@ function CharacterPane() {
               </Typography>
               <Typography
                 sx={{
-                  color: deepInk,
+                  color: ink,
                   fontFamily: '"IM Fell English", Georgia, serif',
                   fontSize: '1.4rem',
                   fontWeight: 700,
@@ -953,7 +1007,7 @@ function CharacterPane() {
         <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.2, mb: 0.4 }}>
           <Typography
             sx={{
-              color: deepInk,
+              color: ink,
               fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
               fontSize: '0.62rem',
               fontWeight: 900,
@@ -983,7 +1037,7 @@ function CharacterPane() {
                 border: `2px solid ${deepInk}`,
                 display: 'grid',
                 placeItems: 'center',
-                color: deepInk,
+                color: ink,
                 boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
               }}
             >
@@ -997,7 +1051,7 @@ function CharacterPane() {
           </Box>
           <Typography
             sx={{
-              color: deepInk,
+              color: ink,
               fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
               fontSize: '0.62rem',
               fontWeight: 900,
@@ -1148,7 +1202,7 @@ function MovesPane() {
             <Typography
               sx={{
                 flex: 1,
-                color: deepInk,
+                color: ink,
                 fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                 fontSize: '0.92rem',
                 fontWeight: 900,
@@ -1214,7 +1268,7 @@ function TechniqueAccordion({
           <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               sx={{
-                color: deepInk,
+                color: ink,
                 fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                 fontSize: '0.92rem',
                 fontWeight: 900,
@@ -1522,7 +1576,7 @@ function ConnectionsSection() {
               <Stack spacing={0.2} sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                   sx={{
-                    color: deepInk,
+                    color: ink,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '1rem',
                     fontWeight: 900,
@@ -1586,7 +1640,7 @@ function ConnectionsSection() {
         <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
           <Typography
             sx={{
-              color: deepInk,
+              color: ink,
               fontSize: '0.95rem',
               fontWeight: 900,
               fontFamily: 'Georgia, serif',
@@ -1596,7 +1650,7 @@ function ConnectionsSection() {
           </Typography>
           <Typography
             sx={{
-              color: deepInk,
+              color: ink,
               fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
               fontSize: '0.78rem',
               fontWeight: 900,
@@ -1666,7 +1720,7 @@ function NoteAccordion({ type, title, body }: { type: string; title: string; bod
           </Stack>
           <Typography
             sx={{
-              color: deepInk,
+              color: ink,
               fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
               fontSize: '0.98rem',
               fontWeight: 900,
@@ -1729,7 +1783,7 @@ function BackpackPane() {
             <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
               <Typography
                 sx={{
-                  color: deepInk,
+                  color: ink,
                   fontSize: '0.95rem',
                   fontWeight: 900,
                   fontFamily: 'Georgia, serif',
@@ -1739,7 +1793,7 @@ function BackpackPane() {
               </Typography>
               <Typography
                 sx={{
-                  color: deepInk,
+                  color: ink,
                   fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                   fontSize: '0.78rem',
                   fontWeight: 900,
@@ -1777,7 +1831,7 @@ function BackpackPane() {
                 </Stack>
                 <Typography
                   sx={{
-                    color: deepInk,
+                    color: ink,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '0.98rem',
                     fontWeight: 900,
@@ -1837,11 +1891,13 @@ function AvatarLegends() {
     [activeTab],
   );
 
-  // Dark mode for the avatar-legends UI. Right now this swaps the outer
-  // mat + the parchment-card background only (a starter dark mode that's
-  // clearly distinct from light). Full surface-level theming is a follow-up.
+  // Dark mode for the avatar-legends UI. applyAvatarPalette mutates the
+  // module-level color `let`s so every helper component picks up the
+  // correct theme palette on its next render. Done at the start of
+  // render, before children read those colors during their own render.
   const { isDarkMode } = useThemeMode();
-  const avatarPalette = isDarkMode ? darkAvatarPalette : lightAvatarPalette;
+  applyAvatarPalette(isDarkMode);
+  const pageBg = isDarkMode ? darkPageBg : lightPageBg;
 
   // Repeating background watermark — faint elemental glyphs scattered across the
   // parchment, mimicking the character sheet's watermarked element motifs.
@@ -1861,7 +1917,7 @@ function AvatarLegends() {
       sx={{
         minHeight: '100svh',
         // Outer mat around the parchment card — gradient switches with mode.
-        background: avatarPalette.pageBg,
+        background: pageBg,
         display: 'grid',
         placeItems: 'center',
         p: { xs: 0, sm: 2 },
@@ -1872,8 +1928,9 @@ function AvatarLegends() {
           width: 'min(100vw, 430px)',
           height: { xs: '100svh', sm: 'min(860px, calc(100svh - 32px))' },
           borderRadius: { xs: 0, sm: '12px' },
-          // Card background flips between cream and deep navy based on mode.
-          background: avatarPalette.cardBg,
+          // Card background uses the dynamic `parchment` value, which is
+          // already swapped to deep-navy in dark mode by applyAvatarPalette.
+          background: `radial-gradient(circle at 50% 0%, ${alpha(parchmentLight, 0.95)} 0%, ${parchment} 60%, ${alpha(parchmentDeep, 0.55)} 100%), ${parchment}`,
           position: 'relative',
           overflow: 'hidden',
           boxShadow: {
@@ -1999,7 +2056,7 @@ function AvatarLegends() {
                 <MoveDiamond color={gold} size={11} />
                 <Typography
                   sx={{
-                    color: deepInk,
+                    color: ink,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '1.05rem',
                     fontWeight: 900,
