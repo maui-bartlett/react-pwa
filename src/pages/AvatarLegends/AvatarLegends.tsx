@@ -296,6 +296,50 @@ function Checkbox({ checked, size = 18 }: { checked: boolean; size?: number }) {
 }
 
 /**
+ * Toggleable status pill. Unfilled by default (just an outline); when active
+ * it fills with `activeColor` (blue for Positive statuses, dark red for
+ * Negative). Tap to toggle.
+ */
+function StatusButton({
+  label,
+  active,
+  activeColor,
+  onToggle,
+}: {
+  label: string;
+  active: boolean;
+  activeColor: string;
+  onToggle: () => void;
+}) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onToggle}
+      aria-pressed={active}
+      sx={{
+        py: '6px',
+        px: 1,
+        borderRadius: '4px',
+        border: `1.5px solid ${activeColor}`,
+        background: active ? activeColor : 'transparent',
+        color: active ? '#ffffff' : activeColor,
+        cursor: 'pointer',
+        textAlign: 'center',
+        fontFamily: 'Georgia, serif',
+        fontSize: '0.78rem',
+        fontWeight: 700,
+        letterSpacing: '0.02em',
+        transition: 'background-color 0.15s ease, color 0.15s ease',
+        width: '100%',
+      }}
+    >
+      {label}
+    </Box>
+  );
+}
+
+/**
  * Toggleable diamond marker used in the Fatigue tracker (and any other
  * track of binary diamond pips). Filled when `filled` is true; otherwise
  * just a thin outline diamond.
@@ -315,6 +359,105 @@ function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number 
         strokeLinejoin="round"
       />
     </Box>
+  );
+}
+
+/**
+ * Collapsible History section — a heading row with a chevron + a list of
+ * questions below. Each question is paired with a text box for the player's
+ * answer. The set of questions is data-driven so the list can grow.
+ */
+function HistorySection({ questions }: { questions: string[] }) {
+  const [open, setOpen] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  return (
+    <Stack spacing={0.6}>
+      <SectionTitle>History</SectionTitle>
+      <Box
+        component="button"
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        sx={{
+          mt: 0.4,
+          display: 'flex',
+          alignItems: 'center',
+          width: '100%',
+          gap: 0.7,
+          p: 0,
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: deepInk,
+          textAlign: 'left',
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.82rem',
+          fontWeight: 900,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+        }}
+      >
+        <Box sx={{ flex: 1 }}>
+          {questions.length} question{questions.length === 1 ? '' : 's'}
+        </Box>
+        <Box
+          sx={{
+            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+            color: alpha(deepInk, 0.55),
+            fontSize: '0.95rem',
+            lineHeight: 1,
+          }}
+        >
+          ›
+        </Box>
+      </Box>
+      {open ? (
+        <Stack spacing={1} sx={{ mt: 0.6 }}>
+          {questions.map((question, index) => (
+            <Stack key={question} spacing={0.4}>
+              <Typography
+                sx={{
+                  color: deepInk,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.76rem',
+                  fontStyle: 'italic',
+                  lineHeight: 1.4,
+                }}
+              >
+                {question}
+              </Typography>
+              <Box
+                component="textarea"
+                rows={2}
+                value={answers[index] ?? ''}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setAnswers((prev) => ({ ...prev, [index]: e.target.value }))
+                }
+                sx={{
+                  width: '100%',
+                  resize: 'vertical',
+                  minHeight: 44,
+                  borderRadius: '4px',
+                  border: `1px solid ${border}`,
+                  background: alpha(parchmentLight, 0.85),
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.78rem',
+                  lineHeight: 1.45,
+                  p: 1,
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                  '&:focus': {
+                    borderColor: deepInk,
+                  },
+                }}
+              />
+            </Stack>
+          ))}
+        </Stack>
+      ) : null}
+    </Stack>
   );
 }
 
@@ -878,6 +1021,18 @@ function CharacterPane() {
         </ClassTraitAccordion>
       </Panel>
 
+      <Panel>
+        <HistorySection
+          questions={[
+            'Where did you grow up, and who raised you?',
+            'What event most shaped who you are today?',
+            'Who do you owe something to — and what is it?',
+            'What did you leave behind when you took up this calling?',
+            'What lesson from your past still guides you?',
+          ]}
+        />
+      </Panel>
+
       {/* Connections is a section on the Character tab (formerly the standalone Bonds tab) */}
       <ConnectionsSection />
     </Stack>
@@ -927,7 +1082,7 @@ function FilterTabs({
             onClick={interactive ? () => onChange?.(index) : undefined}
             sx={{
               flex: 1,
-              py: '5px',
+              py: '10px',
               borderRadius: '3px',
               // Solid deep-ink fill on the active chip (matches the dark
               // blue of the header/footer brush stroke).
@@ -1031,7 +1186,9 @@ function TechniqueAccordion({
           aria-expanded={open}
           sx={{
             display: 'flex',
-            alignItems: 'flex-start',
+            // Center vertically so the element badge aligns with the
+            // middle of the title / summary text block.
+            alignItems: 'center',
             width: '100%',
             gap: 0.9,
             p: 0,
@@ -1041,7 +1198,7 @@ function TechniqueAccordion({
             textAlign: 'left',
           }}
         >
-          <ElementMark color={techColor} src={src} size={36} height={31} />
+          <ElementMark color={techColor} src={src} size={36} height={34} />
           <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               sx={{
@@ -1147,14 +1304,44 @@ function CombatPane() {
   const negativeStatuses = ['Doomed', 'Impaired', 'Trapped', 'Stunned'];
   const conditions = ['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'];
   const [subTab, setSubTab] = useState(0);
+  // Fatigue pips — toggleable by tapping. First two start filled to mirror the
+  // previous static placeholder state.
+  const [fatigue, setFatigue] = useState<boolean[]>([true, true, false, false, false]);
+  const toggleFatigue = (index: number) =>
+    setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
+  // Status toggle state — one boolean per status name in each column.
+  const [activeStatuses, setActiveStatuses] = useState<Record<string, boolean>>({});
+  const toggleStatus = (label: string) =>
+    setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
+
   return (
     <Stack spacing={1}>
       <Panel>
-        <SectionTitle>Fatigue</SectionTitle>
-        <Stack direction="row" gap={0.85} sx={{ mt: 1, justifyContent: 'flex-start' }}>
-          {[0, 1, 2, 3, 4].map((index) => (
-            <FatigueDiamond key={index} filled={index < 2} size={20} />
-          ))}
+        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+          <SectionTitle>Fatigue</SectionTitle>
+          {/* Pips live on the right of the row, larger + tappable. */}
+          <Stack direction="row" gap={0.7}>
+            {fatigue.map((filled, index) => (
+              <Box
+                key={index}
+                component="button"
+                type="button"
+                onClick={() => toggleFatigue(index)}
+                aria-pressed={filled}
+                aria-label={`Fatigue ${index + 1}`}
+                sx={{
+                  background: 'none',
+                  border: 'none',
+                  p: 0,
+                  cursor: 'pointer',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <FatigueDiamond filled={filled} size={28} />
+              </Box>
+            ))}
+          </Stack>
         </Stack>
       </Panel>
 
@@ -1176,7 +1363,7 @@ function CombatPane() {
                   label={label.slice(0, 1)}
                   src={src}
                   size={34}
-                  height={29}
+                  height={32}
                 />
                 <Typography
                   sx={{
@@ -1206,11 +1393,13 @@ function CombatPane() {
         </>
       ) : null}
 
-      {/* Statuses sub-tab: moved from the top of the pane */}
+      {/* Statuses sub-tab: each status is a toggleable button — blue for
+          Positive, dark red for Negative. Empty / outlined by default,
+          filled when tapped. */}
       {subTab === 1 ? (
         <Panel>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9 }}>
-            <Stack spacing={0.55}>
+            <Stack spacing={0.6}>
               <Typography
                 sx={{
                   color: alpha(brown, 0.7),
@@ -1223,17 +1412,16 @@ function CombatPane() {
                 POSITIVE
               </Typography>
               {positiveStatuses.map((label) => (
-                <Stack key={label} direction="row" alignItems="center" gap={0.55}>
-                  <Checkbox checked={false} />
-                  <Typography
-                    sx={{ fontFamily: 'Georgia, serif', fontSize: '0.78rem', color: brown }}
-                  >
-                    {label}
-                  </Typography>
-                </Stack>
+                <StatusButton
+                  key={label}
+                  label={label}
+                  active={Boolean(activeStatuses[label])}
+                  activeColor={water}
+                  onToggle={() => toggleStatus(label)}
+                />
               ))}
             </Stack>
-            <Stack spacing={0.55}>
+            <Stack spacing={0.6}>
               <Typography
                 sx={{
                   color: gold,
@@ -1246,14 +1434,13 @@ function CombatPane() {
                 NEGATIVE
               </Typography>
               {negativeStatuses.map((label) => (
-                <Stack key={label} direction="row" alignItems="center" gap={0.55}>
-                  <Checkbox checked={false} />
-                  <Typography
-                    sx={{ fontFamily: 'Georgia, serif', fontSize: '0.78rem', color: brown }}
-                  >
-                    {label}
-                  </Typography>
-                </Stack>
+                <StatusButton
+                  key={label}
+                  label={label}
+                  active={Boolean(activeStatuses[label])}
+                  activeColor={gold}
+                  onToggle={() => toggleStatus(label)}
+                />
               ))}
             </Stack>
           </Box>
@@ -1796,7 +1983,8 @@ function AvatarLegends() {
           {/* Bottom nav floats over the bottom watercolor brush stroke and
               the page content scrolls UNDER it. Absolute positioning takes
               the nav out of the flex flow so the scrollable area above can
-              extend full-height. */}
+              extend full-height. A high zIndex makes sure the nav stays
+              above any in-page content that scrolls past. */}
           <Box
             sx={{
               px: 0.5,
@@ -1806,7 +1994,11 @@ function AvatarLegends() {
               bottom: 0,
               left: 0,
               right: 0,
-              zIndex: 2,
+              zIndex: 10,
+              // Solid backdrop matching the brush-stroke navy so body
+              // content scrolling behind the nav is fully occluded; the
+              // brush stroke continues to show below the nav.
+              backgroundColor: deepInk,
             }}
           >
             <Stack direction="row">
