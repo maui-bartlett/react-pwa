@@ -85,13 +85,34 @@ const tabs: TabConfig[] = [
   },
 ];
 
-const moves = [
-  ['Assess the Situation', 'When you carefully observe a situation, ask the GM one question.'],
-  ['Aid or Interfere', 'When you help or hinder someone, roll with Harmony.'],
-  ['Discern Reality', 'When you analyze a piece of information, roll with Focus.'],
-  ['Endure Harm', 'When you suffer harm, reduce the harm by 2 and roll.'],
-  ['Face Danger', 'When you act despite a looming threat, roll with the right approach.'],
-];
+// Moves grouped by sub-tab. Each entry is just a button label; tap behavior
+// (rolling, GM prompt, etc.) is wired separately.
+const movesByCategory: Record<'basic' | 'balance' | 'class', string[]> = {
+  basic: [
+    'Assess a Situation',
+    'Guide and Comfort',
+    'Intimidate',
+    'Plead',
+    'Push Your Luck',
+    'Rely on Skills & Training',
+    'Trick',
+    'Help',
+  ],
+  balance: [
+    'Live Up To Your Principle',
+    'Call Someone Out',
+    'Deny a Callout',
+    'Resist Shifting Your Balance',
+    'Lose Your Balance',
+  ],
+  class: [
+    'Way of the Future',
+    'Black Koala-Sheep',
+    'A Life of Regret',
+    'Walk This Way',
+    'Worldly Knowledge',
+  ],
+};
 
 // Each technique: [title, summary, fullBody]. The summary is what shows in
 // the collapsed accordion header; the fullBody renders when expanded.
@@ -153,11 +174,10 @@ const journal = [
  * fade out to mimic dry brush bristles.
  */
 function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; height?: number }) {
-  // The "painted" edge has a thin straight terminator + a few short streaks
-  // beyond it that fade into the page. solidEdge marks where the solid fill
-  // ends, streakEdge is the soft outer reach of the bristle marks.
-  const solidEdge = height - 18; // depth of the solid fill (from the band's anchored side)
-  const streakEdge = height - 4; // outer reach of fading streaks
+  // Solid navy block only — no bristle streaks or transition bleed past the
+  // edge. solidEdge defines the depth of the painted band; outside that,
+  // the parchment shows through cleanly.
+  const solidEdge = height - 18;
 
   return (
     <Box
@@ -177,9 +197,7 @@ function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; hei
         preserveAspectRatio="none"
         sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
       >
-        {/* Solid painted rectangle — straight edges, dark navy fill. The
-            `bottom ? height - solidEdge : 0` logic anchors the solid block
-            to the top of the band (for header) or the bottom (for footer). */}
+        {/* Solid painted rectangle — clean straight edges, dark navy fill. */}
         <rect
           x={0}
           y={bottom ? height - solidEdge : 0}
@@ -187,61 +205,6 @@ function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; hei
           height={solidEdge}
           fill={deepInk}
         />
-        {/* Mid-density transition band — a thin strip of slightly lighter
-            wash just past the solid edge, suggesting a wetter pass of the
-            brush. */}
-        <rect
-          x={0}
-          y={bottom ? height - solidEdge - 3 : solidEdge}
-          width={430}
-          height={3}
-          fill={alpha(deepInk, 0.55)}
-        />
-        {/* Bristle streaks — a handful of short horizontal marks fading out
-            past the solid edge to imply dry-brush bristles. */}
-        {(() => {
-          const streakRowY = bottom ? height - solidEdge - 9 : solidEdge + 6;
-          const streaks = [
-            { x: 14, w: 70, opacity: 0.55 },
-            { x: 96, w: 50, opacity: 0.4 },
-            { x: 156, w: 90, opacity: 0.6 },
-            { x: 256, w: 60, opacity: 0.35 },
-            { x: 324, w: 78, opacity: 0.5 },
-          ];
-          return streaks.map((streak, index) => (
-            <rect
-              key={index}
-              x={streak.x}
-              y={streakRowY}
-              width={streak.w}
-              height={1.5}
-              fill={alpha(deepInk, streak.opacity)}
-            />
-          ));
-        })()}
-        {/* Even further-out faint streaks — barely-there hairline marks at
-            the very edge of the painted reach. */}
-        {(() => {
-          const farY = bottom ? height - solidEdge - 14 : solidEdge + 11;
-          if (farY < 0 || farY > streakEdge) return null;
-          const farStreaks = [
-            { x: 40, w: 36, opacity: 0.22 },
-            { x: 130, w: 50, opacity: 0.18 },
-            { x: 220, w: 30, opacity: 0.24 },
-            { x: 290, w: 44, opacity: 0.18 },
-            { x: 360, w: 30, opacity: 0.22 },
-          ];
-          return farStreaks.map((streak, index) => (
-            <rect
-              key={index}
-              x={streak.x}
-              y={farY}
-              width={streak.w}
-              height={1}
-              fill={alpha(deepInk, streak.opacity)}
-            />
-          ));
-        })()}
         {/* Top sheen — soft highlight running along the inner edge of the
             band where the brush starts. */}
         <rect
@@ -711,10 +674,11 @@ function ElementMark({
           alt=""
           sx={{
             width: '100%',
-            // Render the source at its natural square aspect anchored to the
-            // top so reducing `height` crops the bottom of the symbol rather
-            // than the top.
+            // Render the source at its natural square aspect; mt:'2px' nudges
+            // the symbol down 2px within the frame (the bottom overflow
+            // grows by 2px, which is still hidden by overflow:hidden).
             height: size,
+            mt: '2px',
             objectFit: 'cover',
             objectPosition: 'center top',
             display: 'block',
@@ -1112,41 +1076,37 @@ function FilterTabs({
 }
 
 function MovesPane() {
+  const [subTab, setSubTab] = useState(0);
+  const categoryKey: 'basic' | 'balance' | 'class' = (['basic', 'balance', 'class'] as const)[
+    subTab
+  ];
+  const visibleMoves = movesByCategory[categoryKey];
   return (
     <Stack spacing={1}>
-      <FilterTabs labels={['Basic', 'Playbook', 'Learned', 'Combat']} activeIndex={3} />
-      {moves.map(([title, body]) => (
+      <FilterTabs
+        labels={['Basic', 'Balance', 'Class']}
+        activeIndex={subTab}
+        onChange={setSubTab}
+      />
+      {visibleMoves.map((title) => (
         <Panel key={title}>
-          <Stack direction="row" gap={0.9} alignItems="flex-start">
+          <Stack direction="row" gap={0.9} alignItems="center">
             {/* Signature diamond-within-diamond bullet for Moves */}
-            <Box sx={{ pt: '2px' }}>
-              <MoveDiamond color={deepInk} size={18} />
-            </Box>
-            <Stack spacing={0.4} sx={{ flex: 1 }}>
-              <Typography
-                sx={{
-                  color: deepInk,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.92rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.1,
-                }}
-              >
-                {title}
-              </Typography>
-              <Typography
-                sx={{
-                  color: brown,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.74rem',
-                  lineHeight: 1.45,
-                }}
-              >
-                {body}
-              </Typography>
-            </Stack>
+            <MoveDiamond color={deepInk} size={18} />
+            <Typography
+              sx={{
+                flex: 1,
+                color: deepInk,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.92rem',
+                fontWeight: 900,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                lineHeight: 1.1,
+              }}
+            >
+              {title}
+            </Typography>
             <Typography sx={{ color: alpha(deepInk, 0.55), fontWeight: 900, fontSize: '1rem' }}>
               ›
             </Typography>
@@ -1914,24 +1874,55 @@ function AvatarLegends() {
               justifyContent: 'space-between',
               gap: 1,
               px: 1.4,
-              // Bias the content upward a few pixels so it sits inside the
-              // solid brush-stroke region (the lower portion of the band is
-              // bristle streaks).
-              pb: '18px',
+              // Reserve room at the bottom for the part of the band that
+              // sits OUTSIDE the painted area (none now that bristle streaks
+              // are gone, but kept slightly inset so the content centers on
+              // the solid block).
+              pb: '14px',
             }}
           >
-            <Typography
-              sx={{
-                color: parchmentLight,
-                fontFamily: '"IM Fell English", Georgia, serif',
-                fontWeight: 700,
-                fontSize: activeTab === 'character' ? '1.15rem' : '1.25rem',
-                letterSpacing: '0.02em',
-                lineHeight: 1,
-              }}
-            >
-              {activeTab === 'character' ? 'Avatar Legends' : 'Qi Gong'}
-            </Typography>
+            {activeTab === 'character' ? (
+              <Typography
+                sx={{
+                  color: parchmentLight,
+                  fontFamily: '"IM Fell English", Georgia, serif',
+                  fontWeight: 700,
+                  fontSize: '1.15rem',
+                  letterSpacing: '0.02em',
+                  lineHeight: 1,
+                }}
+              >
+                Avatar Legends
+              </Typography>
+            ) : (
+              <Stack spacing={0.1}>
+                <Typography
+                  sx={{
+                    color: alpha(parchmentLight, 0.7),
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.55rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1,
+                  }}
+                >
+                  Avatar Legends
+                </Typography>
+                <Typography
+                  sx={{
+                    color: parchmentLight,
+                    fontFamily: '"IM Fell English", Georgia, serif',
+                    fontWeight: 700,
+                    fontSize: '1.25rem',
+                    letterSpacing: '0.02em',
+                    lineHeight: 1,
+                  }}
+                >
+                  Qi Gong
+                </Typography>
+              </Stack>
+            )}
             <AccountSettings gameSystem="avatar-legends" />
           </Box>
 
