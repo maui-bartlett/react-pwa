@@ -1005,8 +1005,9 @@ function ElementMark({
 }
 
 // Octagonal "card with notched corners" shape — the body of every Panel
-// has corners cut at this depth.
-const PANEL_CORNER = 18;
+// has corners cut at this depth. Kept small so the notches stay tasteful
+// and content has room near the edges.
+const PANEL_CORNER = 10;
 // Border-frame clip-path (after the user's spec): a 2px ring with 18px
 // corner cuts. The ring is the difference between the outer notched
 // rectangle and a 2px-inset inner notched rectangle.
@@ -1044,16 +1045,24 @@ function PanelBorderRing({ inset = 0 }: { inset?: number }) {
 function Panel({
   children,
   compact = false,
-  variant = 'major',
-  ornament = true,
+  variant = 'minor',
+  ornament,
 }: {
   children: React.ReactNode;
   compact?: boolean;
   variant?: 'major' | 'minor';
-  /** Back-compat: ornament=false → variant='minor'. */
+  /** Back-compat: kept for old callers; the underlying variant prop
+   *  controls the line style now. */
   ornament?: boolean;
 }) {
-  const resolvedVariant: 'major' | 'minor' = ornament === false ? 'minor' : variant;
+  // Honor the legacy `ornament` prop only when it's explicitly set; the
+  // new default is 'minor' so most cards render the single-line border.
+  const resolvedVariant: 'major' | 'minor' =
+    ornament === false ? 'minor' : ornament === true ? 'major' : variant;
+  // Inner content padding (extra space at the top/bottom/sides so content
+  // never falls under the notched corner cuts or the border ring(s)).
+  // Major variant has a second inset ring, so its safe-zone is larger.
+  const contentInset = resolvedVariant === 'major' ? 14 : 10;
   return (
     <Box
       sx={{
@@ -1061,9 +1070,7 @@ function Panel({
         // Outer notched silhouette so the parchment bg ends at the notches.
         clipPath: panelOctagonClipPath,
         background: `linear-gradient(180deg, ${alpha(parchmentLight, 0.92)} 0%, ${alpha(parchment, 0.85)} 100%)`,
-        // Padding biased a hair larger so content doesn't sit underneath
-        // the inner border line at the corner notches.
-        p: compact ? 1 : 1.4,
+        p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
       }}
     >
       <PanelBorderRing />
@@ -1118,7 +1125,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function CharacterPane() {
   return (
     <Stack spacing={1.1}>
-      <Panel>
+      {/* The main Character card is the only `major` (double-line) panel
+          on the page — every other card uses the single-line variant. */}
+      <Panel variant="major">
         {/* Image-free header: large serif name centered, with a flourish
             underline of the playbook and the character's facts below. */}
         <Stack alignItems="center" spacing={0.55} sx={{ py: 0.8, px: 0.6 }}>

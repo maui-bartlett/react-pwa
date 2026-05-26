@@ -139,30 +139,30 @@ function getToneStyles(tone: Tone = 'neutral') {
   };
 }
 
-/** Avatar Legends light tokens — same shape as fabUTokens, but with the
- *  watercolor blue / parchment-cream palette used on the avatar-legends
- *  page swapped in for greens. Used by AccountSettings when opened from
- *  the avatar-legends UI so the account dialog feels at home there. */
+/** Avatar Legends light tokens — values mirror the avatar-legends page
+ *  palette (pale watercolor-blue parchment + less-saturated dark-blue
+ *  chrome + dark-red accent). Used by AccountSettings when the menu is
+ *  opened from the avatar-legends UI so the account dialog feels native. */
 const avatarLightTokens: FabUTokens = {
   isDark: false,
   color: {
-    page: '#e3ecf4',
-    canvas: '#f3f7fb',
+    page: '#e3ecf4', // AL parchment
+    canvas: '#f3f7fb', // AL parchmentLight
     surface: '#ffffff',
-    surfaceCard: '#eaf1f7',
+    surfaceCard: '#f3f7fb',
     pillSurface: '#ffffff',
-    surfaceMuted: '#dfe7ef',
+    surfaceMuted: '#dde7ef',
     border: '#b1c3d3',
-    textPrimary: '#0b1a2c',
-    textSecondary: '#3a4e63',
-    brand: '#23456b',
-    brandStrong: '#162a45',
-    brandSoft: '#dde7f0',
-    brandText: '#3a6390',
+    textPrimary: '#1d2733', // AL deepInk (less-saturated dark blue)
+    textSecondary: '#3a4e63', // AL brown (slate blue body)
+    brand: '#1d2733',
+    brandStrong: '#10202e',
+    brandSoft: '#dde7ef',
+    brandText: '#23456b', // AL ink (heading blue)
     brandFg: '#ffffff',
-    labelBg: '#23456b',
+    labelBg: '#1d2733',
     labelFg: '#ffffff',
-    highlight: '#7a2424',
+    highlight: '#7a2424', // AL gold (dark-red accent)
     highlightFg: '#ffffff',
     fp: '#4a7fa8',
     fpFg: '#ffffff',
@@ -180,41 +180,43 @@ const avatarLightTokens: FabUTokens = {
   },
 };
 
-/** Avatar Legends dark tokens — same blue family at higher contrast. */
+/** Avatar Legends dark tokens — mirrors the extra-dark-blue body, less-
+ *  saturated chrome, and brighter dark-red accent used on the AL page in
+ *  dark mode, with near-white text on every surface. */
 const avatarDarkTokens: FabUTokens = {
   isDark: true,
   color: {
-    page: '#070d16',
-    canvas: '#0d1422',
-    surface: '#121b2c',
-    surfaceCard: '#121b2c',
-    pillSurface: '#0f1726',
-    surfaceMuted: '#19243a',
-    border: '#26395a',
-    textPrimary: '#e6eef7',
-    textSecondary: '#8ea2bd',
-    brand: '#23456b',
-    brandStrong: '#162a45',
-    brandSoft: '#1a2c46',
-    brandText: '#7da4cf',
+    page: '#030710', // AL parchment (dark) — extra-dark blue body
+    canvas: '#0a131e', // AL parchmentLight (dark)
+    surface: '#0a131e',
+    surfaceCard: '#0a131e',
+    pillSurface: '#10202e', // AL deepInk (chrome band)
+    surfaceMuted: '#0a131e',
+    border: '#13202f', // AL border (dark)
+    textPrimary: '#f0f5fc', // AL brown (dark) — near-white body
+    textSecondary: '#c2cee0', // AL brownSoft (dark)
+    brand: '#10202e',
+    brandStrong: '#10202e',
+    brandSoft: '#13202f',
+    brandText: '#e6efff', // AL ink (dark)
     brandFg: '#ffffff',
-    labelBg: '#23456b',
+    labelBg: '#10202e',
     labelFg: '#ffffff',
-    highlight: '#a8413a',
+    highlight: '#d05246', // AL gold (dark) — brighter dark red
     highlightFg: '#ffffff',
     fp: '#3a6390',
     fpFg: '#ffffff',
-    hp: '#a8413a',
+    hp: '#d05246',
     mp: '#4a7fa8',
     warning: '#a47b29',
     success: '#5a7a55',
-    danger: '#a8413a',
-    neutral: '#6f7d8e',
+    danger: '#d05246',
+    neutral: '#c2cee0',
   },
   radius: { pill: 999, sm: 9, md: 13, lg: 16 },
   shadow: {
-    soft: '0 4px 14px rgba(0, 0, 0, 0.5)',
-    card: '0 4px 14px rgba(0, 0, 0, 0.5)',
+    soft: '0 4px 14px rgba(0, 0, 0, 0.55)',
+    card: '0 4px 14px rgba(0, 0, 0, 0.55)',
   },
 };
 
