@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 
 test.describe('Fab U account flow', () => {
   test('opens account dialog and switches auth modes', async ({ page }) => {
-    await page.goto('/');
+    // Fab-U lives at /fab-u (home '/' now serves the Avatar Legends page)
+    await page.goto('/fab-u');
 
     await page.locator('[data-pw="account-menu-button"]').click();
     await expect(page.locator('[data-pw="account-dialog"]')).toBeVisible();
