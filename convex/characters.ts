@@ -20,8 +20,8 @@ export const listMine = query({
 
     const characters = await ctx.db
       .query('characters')
-      .withIndex('by_ownerUserId_metaType', (q) =>
-        q.eq('ownerUserId', profile._id).eq('meta.type', FABULA_ULTIMA_TYPE),
+      .withIndex('by_ownerUserId_metaGameSystem', (q) =>
+        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', FABULA_ULTIMA_TYPE),
       )
       .collect();
     return args.includeArchived ? characters : characters.filter((c) => !c.archivedAt);
@@ -36,8 +36,8 @@ export const getActiveMine = query({
 
     const characters = await ctx.db
       .query('characters')
-      .withIndex('by_ownerUserId_metaType', (q) =>
-        q.eq('ownerUserId', profile._id).eq('meta.type', FABULA_ULTIMA_TYPE),
+      .withIndex('by_ownerUserId_metaGameSystem', (q) =>
+        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', FABULA_ULTIMA_TYPE),
       )
       .collect();
 
@@ -119,8 +119,8 @@ export const setActiveMine = mutation({
 
     const characters = await ctx.db
       .query('characters')
-      .withIndex('by_ownerUserId_metaType', (q) =>
-        q.eq('ownerUserId', profile._id).eq('meta.type', FABULA_ULTIMA_TYPE),
+      .withIndex('by_ownerUserId_metaGameSystem', (q) =>
+        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', FABULA_ULTIMA_TYPE),
       )
       .collect();
 

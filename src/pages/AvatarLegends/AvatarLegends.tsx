@@ -66,7 +66,7 @@ const tabs: TabConfig[] = [
   {
     label: 'Combat',
     value: 'combat',
-    renderIcon: ({ color, size }) => <FistIcon color={color} size={size} />,
+    renderIcon: ({ color, size }) => <OpenHandIcon color={color} size={size} />,
   },
   {
     label: 'Backpack',
@@ -214,32 +214,31 @@ function Checkbox({ checked, size = 12 }: { checked: boolean; size?: number }) {
 }
 
 /**
- * Stylized fist icon — closed hand, knuckles facing the viewer. Used as
- * the Combat bottom-nav icon.
+ * Stylized open hand icon — palm facing the viewer with four fingers
+ * extended and the thumb angled out to the side. Used as the Combat
+ * bottom-nav icon.
  */
-function FistIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
+function OpenHandIcon({ color = ink, size = 20 }: { color?: string; size?: number }) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
       sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
     >
-      {/* Main fist body */}
+      {/* Palm */}
       <path
-        d="M5.5 9 C 5.5 7.6, 6.6 6.5, 8 6.5 L 16 6.5 C 17.4 6.5, 18.5 7.6, 18.5 9 L 18.5 16.5 C 18.5 18.4, 17 19.5, 15 19.5 L 9 19.5 C 7 19.5, 5.5 18.4, 5.5 16.5 Z"
+        d="M8 12 L 8 20 C 8 21, 8.7 21.5, 9.6 21.5 L 15 21.5 C 16 21.5, 16.7 21, 16.7 20 L 16.7 12 Z"
         fill={color}
       />
-      {/* Knuckle creases */}
-      <line x1={8.5} y1={10} x2={8.5} y2={14} stroke="#fff" strokeWidth={0.6} opacity={0.35} />
-      <line x1={11.5} y1={10} x2={11.5} y2={14} stroke="#fff" strokeWidth={0.6} opacity={0.35} />
-      <line x1={14.5} y1={10} x2={14.5} y2={14} stroke="#fff" strokeWidth={0.6} opacity={0.35} />
-      {/* Thumb tucked across */}
+      {/* Four fingers */}
+      <rect x={8} y={4.5} width={1.9} height={8} rx={0.95} fill={color} />
+      <rect x={10.4} y={3.5} width={1.9} height={9} rx={0.95} fill={color} />
+      <rect x={12.8} y={3.5} width={1.9} height={9} rx={0.95} fill={color} />
+      <rect x={15.2} y={5} width={1.9} height={7.5} rx={0.95} fill={color} />
+      {/* Thumb angled out to the side */}
       <path
-        d="M5.5 12.5 C 4.5 12.5, 4 13.5, 4 14.5 C 4 15.5, 4.7 16.4, 5.8 16.4 L 7 16.4"
-        fill="none"
-        stroke={color}
-        strokeWidth={1.6}
-        strokeLinecap="round"
+        d="M8 13 L 4.7 16.4 C 4.1 17, 4.1 17.9, 4.7 18.5 C 5.3 19.1, 6.2 19.1, 6.8 18.5 L 8 17.3 Z"
+        fill={color}
       />
     </Box>
   );

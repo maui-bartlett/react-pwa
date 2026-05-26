@@ -3,16 +3,16 @@ import type { Doc, Id } from '../_generated/dataModel';
 const FABULA_ULTIMA_TYPE = 'fabula-ultima';
 
 type FabulaMeta = {
-  type?: string;
+  gameSystem?: string;
   activeForUserProfileId?: Id<'userProfiles'>;
 };
 
 function isFabulaUltimaDocument(document: { meta?: FabulaMeta } | null | undefined) {
-  return document?.meta?.type === FABULA_ULTIMA_TYPE;
+  return document?.meta?.gameSystem === FABULA_ULTIMA_TYPE;
 }
 
 function withFabulaMeta(meta?: FabulaMeta): FabulaMeta {
-  return { ...meta, type: FABULA_ULTIMA_TYPE };
+  return { ...meta, gameSystem: FABULA_ULTIMA_TYPE };
 }
 
 function isActiveForProfile(
