@@ -1004,39 +1004,71 @@ function ElementMark({
   );
 }
 
+// Octagonal "card with notched corners" shape — the body of every Panel
+// has corners cut at this depth.
+const PANEL_CORNER = 18;
+// Border-frame clip-path (after the user's spec): a 2px ring with 18px
+// corner cuts. The ring is the difference between the outer notched
+// rectangle and a 2px-inset inner notched rectangle.
+const panelOctagonClipPath = `polygon(${PANEL_CORNER}px 0, calc(100% - ${PANEL_CORNER}px) 0, 100% ${PANEL_CORNER}px, 100% calc(100% - ${PANEL_CORNER}px), calc(100% - ${PANEL_CORNER}px) 100%, ${PANEL_CORNER}px 100%, 0 calc(100% - ${PANEL_CORNER}px), 0 ${PANEL_CORNER}px)`;
+const panelBorderFrameClipPath = `polygon(0 ${PANEL_CORNER}px,${PANEL_CORNER}px ${PANEL_CORNER}px,${PANEL_CORNER}px 0,calc(100% - ${PANEL_CORNER}px) 0,calc(100% - ${PANEL_CORNER}px) ${PANEL_CORNER}px,100% ${PANEL_CORNER}px,100% calc(100% - ${PANEL_CORNER}px),calc(100% - ${PANEL_CORNER}px) calc(100% - ${PANEL_CORNER}px),calc(100% - ${PANEL_CORNER}px) 100%,${PANEL_CORNER}px 100%,${PANEL_CORNER}px calc(100% - ${PANEL_CORNER}px),0 calc(100% - ${PANEL_CORNER}px),0 ${PANEL_CORNER}px,2px calc(${PANEL_CORNER}px + 2px),2px calc(100% - ${PANEL_CORNER}px - 2px),calc(${PANEL_CORNER}px + 2px) calc(100% - ${PANEL_CORNER}px - 2px),calc(${PANEL_CORNER}px + 2px) calc(100% - 2px),calc(100% - ${PANEL_CORNER}px - 2px) calc(100% - 2px),calc(100% - ${PANEL_CORNER}px - 2px) calc(100% - ${PANEL_CORNER}px - 2px),calc(100% - 2px) calc(100% - ${PANEL_CORNER}px - 2px),calc(100% - 2px) calc(${PANEL_CORNER}px + 2px),calc(100% - ${PANEL_CORNER}px - 2px) calc(${PANEL_CORNER}px + 2px),calc(100% - ${PANEL_CORNER}px - 2px) 2px,calc(${PANEL_CORNER}px + 2px) 2px,calc(${PANEL_CORNER}px + 2px) calc(${PANEL_CORNER}px + 2px),2px calc(${PANEL_CORNER}px + 2px))`;
+
 /**
- * Panel — parchment-textured container with a tan border and subtle corner
- * ornaments. Mirrors the boxed sections on the character sheet.
+ * Notched border ring — paints a single 2px line in the shape of a
+ * rectangle with corners cut off. Stacking two of these (one inset) gives
+ * the "double line" variant used on major cards.
+ */
+function PanelBorderRing({ inset = 0 }: { inset?: number }) {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        position: 'absolute',
+        inset,
+        background: border,
+        clipPath: panelBorderFrameClipPath,
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
+
+/**
+ * Panel — content card with notched corners and a 1- or 2-line border.
+ *   variant='major' → double line border (default)
+ *   variant='minor' → single line border (used for small or inset cards)
+ *
+ * The container is clipped to an octagonal (corner-notched) shape so the
+ * background doesn't show past the cut corners.
  */
 function Panel({
   children,
   compact = false,
+  variant = 'major',
   ornament = true,
 }: {
   children: React.ReactNode;
   compact?: boolean;
+  variant?: 'major' | 'minor';
+  /** Back-compat: ornament=false → variant='minor'. */
   ornament?: boolean;
 }) {
+  const resolvedVariant: 'major' | 'minor' = ornament === false ? 'minor' : variant;
   return (
     <Box
       sx={{
         position: 'relative',
-        border: `1px solid ${border}`,
-        borderRadius: '4px',
+        // Outer notched silhouette so the parchment bg ends at the notches.
+        clipPath: panelOctagonClipPath,
         background: `linear-gradient(180deg, ${alpha(parchmentLight, 0.92)} 0%, ${alpha(parchment, 0.85)} 100%)`,
-        boxShadow: `0 1px 0 ${alpha('#fff', 0.6)} inset, 0 1px 2px ${alpha(deepInk, 0.06)}`,
-        p: compact ? 1 : 1.25,
+        // Padding biased a hair larger so content doesn't sit underneath
+        // the inner border line at the corner notches.
+        p: compact ? 1 : 1.4,
       }}
     >
-      {ornament ? (
-        <>
-          <CornerOrnament position="tl" />
-          <CornerOrnament position="tr" />
-          <CornerOrnament position="bl" />
-          <CornerOrnament position="br" />
-        </>
-      ) : null}
-      {children}
+      <PanelBorderRing />
+      {resolvedVariant === 'major' ? <PanelBorderRing inset={5} /> : null}
+      <Box sx={{ position: 'relative', zIndex: 1 }}>{children}</Box>
     </Box>
   );
 }
@@ -1364,7 +1396,10 @@ function MovesPane() {
         <Panel key={title}>
           <Stack direction="row" gap={0.9} alignItems="center">
             {/* Signature diamond-within-diamond bullet for Moves */}
-            <MoveDiamond color={deepInk} size={18} />
+            {/* `ink` resolves to near-white in dark mode so the diamond
+                pops on the dark Moves card; in light mode it stays a
+                deep dark-blue, visually identical to the prior shade. */}
+            <MoveDiamond color={ink} size={18} />
             <Typography
               sx={{
                 flex: 1,
