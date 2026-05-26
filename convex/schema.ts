@@ -21,6 +21,12 @@ export default defineSchema({
 
   characters: defineTable({
     ownerUserId: v.id('userProfiles'),
+    meta: v.optional(
+      v.object({
+        gameSystem: v.optional(v.string()),
+        activeForUserProfileId: v.optional(v.id('userProfiles')),
+      }),
+    ),
     name: v.string(),
     summary: v.optional(v.string()),
     portraitUrl: v.optional(v.string()),
@@ -32,6 +38,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index('by_ownerUserId', ['ownerUserId'])
+    .index('by_ownerUserId_metaGameSystem', ['ownerUserId', 'meta.gameSystem'])
     .searchIndex('search_name', {
       searchField: 'name',
       filterFields: ['ownerUserId'],
@@ -39,6 +46,11 @@ export default defineSchema({
 
   campaigns: defineTable({
     ownerUserId: v.id('userProfiles'),
+    meta: v.optional(
+      v.object({
+        gameSystem: v.optional(v.string()),
+      }),
+    ),
     name: v.string(),
     description: v.optional(v.string()),
     status: v.union(v.literal('active'), v.literal('archived')),
@@ -48,6 +60,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index('by_ownerUserId', ['ownerUserId'])
+    .index('by_ownerUserId_metaGameSystem', ['ownerUserId', 'meta.gameSystem'])
     .index('by_status', ['status']),
 
   campaignMembers: defineTable({

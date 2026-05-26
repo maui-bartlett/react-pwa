@@ -3,6 +3,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import HomeIcon from '@mui/icons-material/Home';
+import PublicIcon from '@mui/icons-material/Public';
 import TerrainIcon from '@mui/icons-material/Terrain';
 
 import asyncComponentLoader from '@/utils/loader';
@@ -11,10 +12,16 @@ import { Routes } from './types';
 
 const routes: Routes = [
   {
-    component: asyncComponentLoader(() => import('@/pages/FabU')),
+    component: asyncComponentLoader(() => import('@/pages/AvatarLegends')),
     path: '/',
-    title: 'Fab-u',
-    icon: AutoAwesomeIcon,
+    title: 'Avatar Legends',
+    icon: PublicIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/AvatarLegends')),
+    path: '/avatar-legends',
+    title: 'Avatar Legends',
+    icon: PublicIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/Welcome')),
@@ -25,6 +32,8 @@ const routes: Routes = [
   {
     component: asyncComponentLoader(() => import('@/pages/FabU')),
     path: '/fab-u',
+    title: 'Fab-u',
+    icon: AutoAwesomeIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/Page1')),
