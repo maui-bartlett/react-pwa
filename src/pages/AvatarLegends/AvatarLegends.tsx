@@ -75,17 +75,21 @@ const lightAvPalette: AvPaletteShape = {
 };
 
 const darkAvPalette: AvPaletteShape = {
-  // Dark mode: navy card surfaces + near-white text so everything on dark
-  // backgrounds reads as light text.
-  parchment: '#0e1828', // card / panel bg — deep navy
-  parchmentLight: '#1a2740', // slightly lighter for elevated panel surfaces
-  parchmentDeep: '#08111e', // deepest navy for recessed grooves
+  // Dark mode: matte black body / card / panel surfaces (replacing the
+  // earlier dark navy) + near-white text. The header and footer still use
+  // `deepInk` (dark navy) for their brush-stroke band, so the navy reads
+  // only on those chrome surfaces.
+  parchment: '#0d0d0d', // card / panel bg — matte black
+  parchmentLight: '#1a1a1a', // slightly lighter for elevated panel surfaces
+  parchmentDeep: '#050505', // deepest matte for recessed grooves
   washDeep: '#8db4d6', // brighter watercolor blue accent
   ink: '#e6efff', // light heading text
-  deepInk: '#050d1a', // deepest navy used in brush strokes
+  // deepInk stays a true dark navy so the header / footer brush-stroke
+  // band keeps its blue character distinct from the matte-black body.
+  deepInk: '#0d2440',
   brown: '#f0f5fc', // body text — near-white
   brownSoft: '#c2cee0', // secondary text — soft light grey-blue
-  border: '#324569', // subtle blue-grey border that still reads on dark
+  border: '#2a2a2a', // subtle dark-grey border that reads on matte black
   ember: '#e2685e', // brighter red accent so it pops on dark
   gold: '#d05246', // brighter dark-red accent for visibility on dark
 };
@@ -119,6 +123,12 @@ function applyAvatarPalette(isDarkMode: boolean) {
   ember = next.ember;
   gold = next.gold;
 }
+
+// Constant near-white used for chrome surfaces that always sit on a dark
+// brush-stroke background — header text, footer nav text, FilterTabs active
+// chip text, corner ornaments. These never flip with theme so they stay
+// readable in both light and dark mode.
+const chromeText = '#f3f7fb';
 
 // Element-specific colors stay constant — they identify the element, not
 // the theme.
@@ -169,6 +179,13 @@ const techniqueFilterAtom = atom(0); // 0 = Learned, 1 = Practiced, 2 = Mastered
 const activeStatusesAtom = atom<Record<string, boolean>>({});
 const activeConditionsAtom = atom<Record<string, boolean>>({});
 const fatigueAtom = atom<boolean[]>([true, true, false, false, false]);
+// Background checkbox state — defaults to the two original "checked" entries
+// (Urban + Privileged) so the page matches its previous static display on
+// first load.
+const backgroundsAtom = atom<Record<string, boolean>>({
+  Urban: true,
+  Privileged: true,
+});
 
 // Moves grouped by sub-tab. Each entry is just a button label; tap behavior
 // (rolling, GM prompt, etc.) is wired separately.
@@ -309,37 +326,92 @@ function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; hei
  * Square checkbox with optional white checkmark. When `checked` is true the
  * box fills with deep ink and a white check stroke is drawn inside.
  */
-function Checkbox({ checked, size = 18 }: { checked: boolean; size?: number }) {
+function Checkbox({
+  checked,
+  size = 18,
+  onToggle,
+}: {
+  checked: boolean;
+  size?: number;
+  /**
+   * Optional. When provided, the checkbox renders as a real button and
+   * clicking it fires this callback. When omitted, the checkbox renders as
+   * a static display element (legacy behavior).
+   */
+  onToggle?: () => void;
+}) {
+  const interactive = Boolean(onToggle);
+  const checkmark = checked ? (
+    <Box
+      component="svg"
+      viewBox="0 0 12 12"
+      sx={{ width: size * 0.85, height: size * 0.85, display: 'block' }}
+    >
+      <path
+        d="M2.5 6.3 L 5 8.6 L 9.5 3.4"
+        fill="none"
+        // chromeText (near-white) ensures the check stays visible against
+        // the deepInk fill in both light and dark mode.
+        stroke={chromeText}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Box>
+  ) : null;
   return (
     <Box
+      component={interactive ? 'button' : 'div'}
+      type={interactive ? 'button' : undefined}
+      onClick={interactive ? onToggle : undefined}
+      aria-pressed={interactive ? checked : undefined}
       sx={{
         width: size,
         height: size,
-        border: `1.2px solid ${deepInk}`,
+        border: `1.2px solid ${ink}`,
         bgcolor: checked ? deepInk : 'transparent',
         borderRadius: '1px',
         display: 'grid',
         placeItems: 'center',
         flex: '0 0 auto',
+        p: 0,
+        cursor: interactive ? 'pointer' : 'default',
       }}
     >
-      {checked ? (
-        <Box
-          component="svg"
-          viewBox="0 0 12 12"
-          sx={{ width: size * 0.85, height: size * 0.85, display: 'block' }}
-        >
-          <path
-            d="M2.5 6.3 L 5 8.6 L 9.5 3.4"
-            fill="none"
-            stroke="#fff"
-            strokeWidth={1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Box>
-      ) : null}
+      {checkmark}
     </Box>
+  );
+}
+
+/**
+ * Background list row — a Checkbox + label bound to the shared
+ * `backgroundsAtom`. Tapping either the checkbox or the label toggles the
+ * value so the list is fully interactive.
+ */
+function BackgroundCheckRow({ label }: { label: string }) {
+  const [backgrounds, setBackgrounds] = useAtom(backgroundsAtom);
+  const checked = Boolean(backgrounds[label]);
+  const toggle = () => setBackgrounds((prev) => ({ ...prev, [label]: !prev[label] }));
+  return (
+    <Stack
+      key={label}
+      direction="row"
+      alignItems="center"
+      gap={0.5}
+      sx={{ cursor: 'pointer' }}
+      onClick={toggle}
+    >
+      <Checkbox checked={checked} onToggle={toggle} />
+      <Typography
+        sx={{
+          fontFamily: 'Georgia, serif',
+          fontSize: '0.74rem',
+          color: brown,
+        }}
+      >
+        {label}
+      </Typography>
+    </Stack>
   );
 }
 
@@ -942,24 +1014,9 @@ function CharacterPane() {
       <Panel>
         <SectionTitle>Background</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
-          {['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'].map(
-            (item, i) => (
-              <Stack key={item} direction="row" alignItems="center" gap={0.5}>
-                {/* Only the first two backgrounds (Urban, Privileged) are
-                    checked by default; Monastic and the others are not. */}
-                <Checkbox checked={i < 2} />
-                <Typography
-                  sx={{
-                    fontFamily: 'Georgia, serif',
-                    fontSize: '0.7rem',
-                    color: brown,
-                  }}
-                >
-                  {item}
-                </Typography>
-              </Stack>
-            ),
-          )}
+          {['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'].map((item) => (
+            <BackgroundCheckRow key={item} label={item} />
+          ))}
         </Box>
       </Panel>
 
@@ -1157,7 +1214,9 @@ function FilterTabs({
               // Solid deep-ink fill on the active chip (matches the dark
               // blue of the header/footer brush stroke).
               background: active ? deepInk : 'transparent',
-              color: active ? parchmentLight : alpha(brown, 0.75),
+              // Active chip bg is deep-ink in both modes, so its text stays
+              // near-white regardless of theme.
+              color: active ? chromeText : alpha(brown, 0.75),
               textAlign: 'center',
               fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
               fontSize: '0.62rem',
@@ -1974,8 +2033,8 @@ function AvatarLegends() {
 
         {/* Page corner ornaments */}
         <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
-          <CornerOrnament position="tl" color={parchmentLight} size={18} />
-          <CornerOrnament position="tr" color={parchmentLight} size={18} />
+          <CornerOrnament position="tl" color={chromeText} size={18} />
+          <CornerOrnament position="tr" color={chromeText} size={18} />
         </Box>
 
         <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
@@ -2005,7 +2064,7 @@ function AvatarLegends() {
             {activeTab === 'character' ? (
               <Typography
                 sx={{
-                  color: parchmentLight,
+                  color: chromeText,
                   fontFamily: '"IM Fell English", Georgia, serif',
                   fontWeight: 700,
                   fontSize: '1.15rem',
@@ -2021,7 +2080,7 @@ function AvatarLegends() {
               <Stack spacing={0.6}>
                 <Typography
                   sx={{
-                    color: alpha(parchmentLight, 0.7),
+                    color: alpha(chromeText, 0.7),
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '0.55rem',
                     fontWeight: 800,
@@ -2034,7 +2093,7 @@ function AvatarLegends() {
                 </Typography>
                 <Typography
                   sx={{
-                    color: parchmentLight,
+                    color: chromeText,
                     fontFamily: '"IM Fell English", Georgia, serif',
                     fontWeight: 700,
                     fontSize: '1.25rem',
@@ -2128,7 +2187,7 @@ function AvatarLegends() {
                       borderRadius: '10px',
                       pt: 0,
                       pb: 0.5,
-                      color: selected ? parchmentLight : alpha(parchmentLight, 0.55),
+                      color: selected ? chromeText : alpha(chromeText, 0.55),
                       position: 'relative',
                       overflow: 'visible',
                     }}
@@ -2166,7 +2225,7 @@ function AvatarLegends() {
                           }}
                         >
                           {tab.renderIcon({
-                            color: parchmentLight,
+                            color: chromeText,
                             size: 20,
                           })}
                         </Box>
