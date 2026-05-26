@@ -75,21 +75,21 @@ const lightAvPalette: AvPaletteShape = {
 };
 
 const darkAvPalette: AvPaletteShape = {
-  // Dark mode: matte black body / card / panel surfaces (replacing the
-  // earlier dark navy) + near-white text. The header and footer still use
-  // `deepInk` (dark navy) for their brush-stroke band, so the navy reads
-  // only on those chrome surfaces.
-  parchment: '#0d0d0d', // card / panel bg — matte black
-  parchmentLight: '#1a1a1a', // slightly lighter for elevated panel surfaces
-  parchmentDeep: '#050505', // deepest matte for recessed grooves
+  // Dark mode: very dark blue (not pure black) body / card / panel surfaces
+  // with near-white text. The header and footer still use `deepInk` (a
+  // brighter dark navy) for their brush-stroke band, so the chrome band
+  // is still distinct from the very dark-blue body.
+  parchment: '#070d18', // card / panel bg — very dark blue
+  parchmentLight: '#101a2a', // slightly lighter for elevated panel surfaces
+  parchmentDeep: '#040810', // deepest dark-blue for recessed grooves
   washDeep: '#8db4d6', // brighter watercolor blue accent
   ink: '#e6efff', // light heading text
-  // deepInk stays a true dark navy so the header / footer brush-stroke
-  // band keeps its blue character distinct from the matte-black body.
+  // deepInk stays a brighter dark navy so the header / footer brush-stroke
+  // band reads as a distinct band against the very dark blue body.
   deepInk: '#0d2440',
   brown: '#f0f5fc', // body text — near-white
   brownSoft: '#c2cee0', // secondary text — soft light grey-blue
-  border: '#2a2a2a', // subtle dark-grey border that reads on matte black
+  border: '#1d2c43', // subtle dark blue-grey border that reads on dark
   ember: '#e2685e', // brighter red accent so it pops on dark
   gold: '#d05246', // brighter dark-red accent for visibility on dark
 };
@@ -216,30 +216,49 @@ const movesByCategory: Record<'basic' | 'balance' | 'class', string[]> = {
   ],
 };
 
-// Each technique: [title, summary, fullBody]. The summary is what shows in
-// the collapsed accordion header; the fullBody renders when expanded.
-const techniques: Array<[string, string, string]> = [
-  [
-    'Stream the Water',
-    'Push a jet stream from a significant source to inflict fatigue.',
-    'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
-  ],
-  [
-    'Flow as Water',
-    'Use a jet of water to move quickly and shift position.',
-    'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
-  ],
-  [
-    'Refresh',
-    'Clear conditions and keep an ally steady under pressure.',
-    'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
-  ],
-  [
-    'Water Jab',
-    'Surround your fist in water and strike from unexpected angles.',
-    'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
-  ],
+// Each technique entry carries its category (used as the eyebrow on the
+// technique card), a title, a short summary line shown in the collapsed
+// accordion, and the full body shown when expanded.
+type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
+const techniques: Array<{
+  category: TechniqueCategory;
+  title: string;
+  summary: string;
+  body: string;
+}> = [
+  {
+    category: 'Advance & Attack',
+    title: 'Stream the Water',
+    summary: 'Push a jet stream from a significant source to inflict fatigue.',
+    body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
+  },
+  {
+    category: 'Defend & Maneuver',
+    title: 'Flow as Water',
+    summary: 'Use a jet of water to move quickly and shift position.',
+    body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
+  },
+  {
+    category: 'Evade & Observe',
+    title: 'Refresh',
+    summary: 'Clear conditions and keep an ally steady under pressure.',
+    body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
+  },
+  {
+    category: 'Advance & Attack',
+    title: 'Water Jab',
+    summary: 'Surround your fist in water and strike from unexpected angles.',
+    body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
+  },
 ];
+
+// Eyebrow colors keyed by category: red for attack, green for defend,
+// blue for evade.
+const techniqueCategoryColor: Record<TechniqueCategory, string> = {
+  'Advance & Attack': '#a8413a', // red
+  'Defend & Maneuver': earth, // green
+  'Evade & Observe': water, // blue
+};
 
 const connections = [
   [
@@ -384,6 +403,58 @@ function Checkbox({
 }
 
 /**
+ * Reusable Stats panel. Used on both the Character tab and the Combat tab
+ * so the same data shows in both contexts. Colors per the user spec:
+ *   - Creativity: blue (water)
+ *   - Focus:      green (earth)
+ *   - Harmony:    blue (water)
+ *   - Passion:    a warm red (its own hue)
+ */
+function StatsPanel() {
+  const rows: Array<[string, number, string]> = [
+    ['Creativity', 2, water],
+    ['Focus', 2, earth],
+    ['Harmony', 1, water],
+    ['Passion', 1, '#bc5753'],
+  ];
+  return (
+    <Panel>
+      <SectionTitle>Stats</SectionTitle>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
+        {rows.map(([label, value, color]) => (
+          <Stack key={label} spacing={0.45} alignItems="center">
+            <Typography
+              sx={{
+                color,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.6rem',
+                fontWeight: 900,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {label}
+            </Typography>
+            <Typography
+              sx={{
+                color: ink,
+                fontFamily: '"IM Fell English", Georgia, serif',
+                fontSize: '1.4rem',
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              {value}
+            </Typography>
+            <StatDots value={value} color={color} />
+          </Stack>
+        ))}
+      </Box>
+    </Panel>
+  );
+}
+
+/**
  * Background list row — a Checkbox + label bound to the shared
  * `backgroundsAtom`. Tapping either the checkbox or the label toggles the
  * value so the list is fully interactive.
@@ -491,8 +562,11 @@ function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number 
     >
       <polygon
         points="12,2 22,12 12,22 2,12"
-        fill={filled ? deepInk : 'none'}
-        stroke={deepInk}
+        // Fatigue pips paint in the dark-red accent (`gold` — the diamond
+        // bullet / hairline divider color) instead of deep-ink so they pop
+        // on both light parchment and dark surfaces.
+        fill={filled ? gold : 'none'}
+        stroke={gold}
         strokeWidth={1.5}
         strokeLinejoin="round"
       />
@@ -1020,44 +1094,7 @@ function CharacterPane() {
         </Box>
       </Panel>
 
-      <Panel>
-        <SectionTitle>Stats</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
-          {[
-            ['Creativity', 2, ember],
-            ['Focus', 2, water],
-            ['Harmony', 1, earth],
-            ['Passion', 1, '#bc5753'],
-          ].map(([label, value, color]) => (
-            <Stack key={label as string} spacing={0.45} alignItems="center">
-              <Typography
-                sx={{
-                  color: color as string,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.6rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {label}
-              </Typography>
-              <Typography
-                sx={{
-                  color: ink,
-                  fontFamily: '"IM Fell English", Georgia, serif',
-                  fontSize: '1.4rem',
-                  fontWeight: 700,
-                  lineHeight: 1,
-                }}
-              >
-                {value}
-              </Typography>
-              <StatDots value={Number(value)} color={color as string} />
-            </Stack>
-          ))}
-        </Box>
-      </Panel>
+      <StatsPanel />
 
       <Panel>
         <SectionTitle>Balance</SectionTitle>
@@ -1288,12 +1325,14 @@ function MovesPane() {
  * appends the full description text below the row.
  */
 function TechniqueAccordion({
+  category,
   title,
   summary,
   body,
   src,
   techColor,
 }: {
+  category: TechniqueCategory;
   title: string;
   summary: string;
   body: string;
@@ -1301,6 +1340,7 @@ function TechniqueAccordion({
   techColor: string;
 }) {
   const [open, setOpen] = useState(false);
+  const categoryColor = techniqueCategoryColor[category];
   return (
     <Panel>
       <Stack spacing={0.5}>
@@ -1324,7 +1364,21 @@ function TechniqueAccordion({
           }}
         >
           <ElementMark color={techColor} src={src} size={36} height={34} />
-          <Stack spacing={0.4} sx={{ flex: 1, minWidth: 0 }}>
+          <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
+            {/* Category eyebrow — color keyed to the technique's category. */}
+            <Typography
+              sx={{
+                color: categoryColor,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.58rem',
+                fontWeight: 900,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                lineHeight: 1,
+              }}
+            >
+              {category}
+            </Typography>
             <Typography
               sx={{
                 color: ink,
@@ -1444,6 +1498,9 @@ function CombatPane() {
 
   return (
     <Stack spacing={1}>
+      {/* Combat tab opens with the same Stats panel that lives on Character,
+          for at-a-glance reference during combat rolls. */}
+      <StatsPanel />
       <Panel>
         <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
           <SectionTitle>Fatigue</SectionTitle>
@@ -1514,12 +1571,13 @@ function CombatPane() {
             activeIndex={techFilter}
             onChange={setTechFilter}
           />
-          {techniques.map(([title, summary, body]) => (
+          {techniques.map((tech) => (
             <TechniqueAccordion
-              key={title}
-              title={title}
-              summary={summary}
-              body={body}
+              key={tech.title}
+              category={tech.category}
+              title={tech.title}
+              summary={tech.summary}
+              body={tech.body}
               src={elementWater}
               techColor={water}
             />
