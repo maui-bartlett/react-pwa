@@ -66,7 +66,8 @@ const lightAvPalette: AvPaletteShape = {
   parchmentDeep: '#cdd9e5',
   washDeep: '#6f9bba',
   ink: '#23456b',
-  deepInk: '#162a45',
+  // Less-saturated dark blue for the header / footer brush-stroke band.
+  deepInk: '#1d2733',
   brown: '#3a4e63',
   brownSoft: '#5a6f86',
   border: '#b1c3d3',
@@ -75,21 +76,19 @@ const lightAvPalette: AvPaletteShape = {
 };
 
 const darkAvPalette: AvPaletteShape = {
-  // Dark mode: very dark blue (not pure black) body / card / panel surfaces
-  // with near-white text. The header and footer still use `deepInk` (a
-  // brighter dark navy) for their brush-stroke band, so the chrome band
-  // is still distinct from the very dark-blue body.
-  parchment: '#070d18', // card / panel bg — very dark blue
-  parchmentLight: '#101a2a', // slightly lighter for elevated panel surfaces
-  parchmentDeep: '#040810', // deepest dark-blue for recessed grooves
+  // Dark mode: extra-dark blue body / card / panel surfaces with near-white
+  // text. Header / footer use a less-saturated, slightly lighter dark blue
+  // so the chrome reads as a distinct band against the very dark body.
+  parchment: '#030710', // card / panel bg — extra-dark blue
+  parchmentLight: '#0a131e', // slightly lighter for elevated panel surfaces
+  parchmentDeep: '#01040a', // deepest dark-blue for recessed grooves
   washDeep: '#8db4d6', // brighter watercolor blue accent
   ink: '#e6efff', // light heading text
-  // deepInk stays a brighter dark navy so the header / footer brush-stroke
-  // band reads as a distinct band against the very dark blue body.
-  deepInk: '#0d2440',
+  // Less-saturated dark blue for the chrome band.
+  deepInk: '#10202e',
   brown: '#f0f5fc', // body text — near-white
   brownSoft: '#c2cee0', // secondary text — soft light grey-blue
-  border: '#1d2c43', // subtle dark blue-grey border that reads on dark
+  border: '#13202f', // subtle dark blue-grey border that reads on dark
   ember: '#e2685e', // brighter red accent so it pops on dark
   gold: '#d05246', // brighter dark-red accent for visibility on dark
 };
@@ -176,6 +175,10 @@ const movesSubTabAtom = atom(0);
 const combatSubTabAtom = atom(0);
 const backpackSubTabAtom = atom(0);
 const techniqueFilterAtom = atom(0); // 0 = Learned, 1 = Practiced, 2 = Mastered
+// Element filter for the Techniques sub-tab. 'all' shows every card;
+// otherwise only techniques whose `element` matches are visible.
+type TechniqueElementFilter = TechniqueElement | 'all';
+const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 const activeStatusesAtom = atom<Record<string, boolean>>({});
 const activeConditionsAtom = atom<Record<string, boolean>>({});
 const fatigueAtom = atom<boolean[]>([true, true, false, false, false]);
@@ -216,39 +219,59 @@ const movesByCategory: Record<'basic' | 'balance' | 'class', string[]> = {
   ],
 };
 
-// Each technique entry carries its category (used as the eyebrow on the
-// technique card), a title, a short summary line shown in the collapsed
-// accordion, and the full body shown when expanded.
+// Each technique entry carries the element it belongs to (used by the
+// element filter row), the category eyebrow shown on its card, the title,
+// a short summary line, and the full body shown when expanded.
+type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 const techniques: Array<{
+  element: TechniqueElement;
   category: TechniqueCategory;
   title: string;
   summary: string;
   body: string;
 }> = [
   {
+    element: 'water',
     category: 'Advance & Attack',
     title: 'Stream the Water',
     summary: 'Push a jet stream from a significant source to inflict fatigue.',
     body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
   },
   {
+    element: 'water',
     category: 'Defend & Maneuver',
     title: 'Flow as Water',
     summary: 'Use a jet of water to move quickly and shift position.',
     body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
   },
   {
+    element: 'water',
     category: 'Evade & Observe',
     title: 'Refresh',
     summary: 'Clear conditions and keep an ally steady under pressure.',
     body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
   },
   {
+    element: 'water',
     category: 'Advance & Attack',
     title: 'Water Jab',
     summary: 'Surround your fist in water and strike from unexpected angles.',
     body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
+  },
+  {
+    element: 'basic',
+    category: 'Advance & Attack',
+    title: 'Smash',
+    summary: 'Drive a heavy blow through your target to bypass their guard.',
+    body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
+  },
+  {
+    element: 'basic',
+    category: 'Defend & Maneuver',
+    title: 'Pounce',
+    summary: 'Close the gap on a target with sudden speed.',
+    body: "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
   },
 ];
 
@@ -553,6 +576,32 @@ function StatusButton({
  * track of binary diamond pips). Filled when `filled` is true; otherwise
  * just a thin outline diamond.
  */
+/**
+ * Filled square inside an outline square — the icon for the "Basic"
+ * technique type. Drawn at 24x24 viewBox to match the element badges.
+ */
+function SquareInSquare({ color = ink, size = 36 }: { color?: string; size?: number }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 24 24"
+      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+    >
+      <rect
+        x={2.5}
+        y={2.5}
+        width={19}
+        height={19}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+      <rect x={7.5} y={7.5} width={9} height={9} fill={color} />
+    </Box>
+  );
+}
+
 function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number }) {
   return (
     <Box
@@ -1135,9 +1184,11 @@ function CharacterPane() {
                 boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
               }}
             >
+              {/* Balance yin-yang uses fixed light-mode colors so the
+                  symbol looks identical in light and dark mode. */}
               <YinYangIcon
-                darkColor={deepInk}
-                lightColor={parchmentLight}
+                darkColor={lightAvPalette.deepInk}
+                lightColor={lightAvPalette.parchmentLight}
                 size={20}
                 strokeWidth={1.5}
               />
@@ -1469,15 +1520,24 @@ function TechniqueAccordion({
 }
 
 function CombatPane() {
-  // Six elements from the character sheet's "Your Training" row, in order.
-  // Symbols are cropped from assets/original-character-sheet.jpg.
-  const elements: Array<[string, string, string]> = [
-    ['Water', water, elementWater],
-    ['Earth', earth, elementEarth],
-    ['Fire', fire, elementFire],
-    ['Air', air, elementAir],
-    ['Martial', martial, elementMartial],
-    ['Tech', tech, elementTech],
+  // Element filter row entries: [filter key, label, color, image src or null].
+  // 'All' is the leftmost selector and shows every technique card. 'Basic'
+  // is rendered with the local SquareInSquare SVG (filled square inside a
+  // square outline) since there's no asset image for it.
+  const elementFilters: Array<{
+    key: TechniqueElementFilter;
+    label: string;
+    color: string;
+    src: string | null;
+  }> = [
+    { key: 'all', label: 'All', color: ink, src: null },
+    { key: 'basic', label: 'Basic', color: ink, src: null },
+    { key: 'water', label: 'Water', color: water, src: elementWater },
+    { key: 'earth', label: 'Earth', color: earth, src: elementEarth },
+    { key: 'fire', label: 'Fire', color: fire, src: elementFire },
+    { key: 'air', label: 'Air', color: air, src: elementAir },
+    { key: 'martial', label: 'Martial', color: martial, src: elementMartial },
+    { key: 'tech', label: 'Tech', color: tech, src: elementTech },
   ];
   const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
   const negativeStatuses = ['Doomed', 'Impaired', 'Trapped', 'Stunned'];
@@ -1486,6 +1546,14 @@ function CombatPane() {
   // the Character / Moves / Combat / Backpack main tabs.
   const [subTab, setSubTab] = useAtom(combatSubTabAtom);
   const [techFilter, setTechFilter] = useAtom(techniqueFilterAtom);
+  const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
+  const visibleTechniques = useMemo(
+    () =>
+      elementFilter === 'all'
+        ? techniques
+        : techniques.filter((tech) => tech.element === elementFilter),
+    [elementFilter],
+  );
   const [fatigue, setFatigue] = useAtom(fatigueAtom);
   const toggleFatigue = (index: number) =>
     setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
@@ -1540,48 +1608,121 @@ function CombatPane() {
       {/* Techniques sub-tab: element filter row + expandable technique cards */}
       {subTab === 0 ? (
         <>
-          <Stack direction="row" justifyContent="space-between" sx={{ px: 0.5, pt: 0.4 }}>
-            {elements.map(([label, color, src]) => (
-              <Stack key={label} alignItems="center" spacing={0.4}>
-                <ElementMark
-                  color={color}
-                  label={label.slice(0, 1)}
-                  src={src}
-                  size={34}
-                  height={32}
-                />
-                <Typography
+          {/* Horizontally scrollable element filter row. "All" sits on the
+              left; "Basic" follows with a SquareInSquare icon; the six
+              elemental types follow with their existing image badges. */}
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1.6,
+              overflowX: 'auto',
+              px: 0.5,
+              pt: 0.4,
+              // Hide the scrollbar but keep it scrollable via touch / wheel.
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
+          >
+            {elementFilters.map((entry) => {
+              const isActive = elementFilter === entry.key;
+              return (
+                <Stack
+                  key={entry.key}
+                  component="button"
+                  type="button"
+                  onClick={() => setElementFilter(entry.key)}
+                  aria-pressed={isActive}
+                  alignItems="center"
+                  spacing={0.4}
                   sx={{
-                    color: brown,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.58rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    p: 0,
+                    flex: '0 0 auto',
+                    opacity: isActive ? 1 : 0.55,
+                    transition: 'opacity 0.15s ease',
                   }}
                 >
-                  {label}
-                </Typography>
-              </Stack>
-            ))}
-          </Stack>
+                  {entry.key === 'all' || entry.key === 'basic' ? (
+                    <Box
+                      sx={{
+                        width: 34,
+                        height: 32,
+                        borderRadius: '3px',
+                        border: `1px solid ${alpha(deepInk, 0.35)}`,
+                        background: alpha(parchmentLight, 0.4),
+                        display: 'grid',
+                        placeItems: 'center',
+                        flex: '0 0 auto',
+                        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
+                      }}
+                    >
+                      {entry.key === 'all' ? (
+                        <Typography
+                          sx={{
+                            color: entry.color,
+                            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                            fontSize: '0.62rem',
+                            fontWeight: 900,
+                            letterSpacing: '0.04em',
+                            lineHeight: 1,
+                          }}
+                        >
+                          ALL
+                        </Typography>
+                      ) : (
+                        <SquareInSquare color={entry.color} size={20} />
+                      )}
+                    </Box>
+                  ) : (
+                    <ElementMark
+                      color={entry.color}
+                      label={entry.label.slice(0, 1)}
+                      src={entry.src ?? undefined}
+                      size={34}
+                      height={32}
+                    />
+                  )}
+                  <Typography
+                    sx={{
+                      color: brown,
+                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: '0.58rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {entry.label}
+                  </Typography>
+                </Stack>
+              );
+            })}
+          </Box>
           {/* Secondary filter row — proficiency level for the techniques list. */}
           <FilterTabs
             labels={['Learned', 'Practiced', 'Mastered']}
             activeIndex={techFilter}
             onChange={setTechFilter}
           />
-          {techniques.map((tech) => (
-            <TechniqueAccordion
-              key={tech.title}
-              category={tech.category}
-              title={tech.title}
-              summary={tech.summary}
-              body={tech.body}
-              src={elementWater}
-              techColor={water}
-            />
-          ))}
+          {visibleTechniques.map((tech) => {
+            const isBasic = tech.element === 'basic';
+            return (
+              <TechniqueAccordion
+                key={tech.title}
+                category={tech.category}
+                title={tech.title}
+                summary={tech.summary}
+                body={tech.body}
+                // Basic techniques don't have an element image, so we pass
+                // the water glyph as a fallback. The element tag color is
+                // overridden separately so the badge still reads as Basic.
+                src={isBasic ? elementWater : elementWater}
+                techColor={isBasic ? ink : water}
+              />
+            );
+          })}
         </>
       ) : null}
 
