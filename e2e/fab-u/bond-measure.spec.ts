@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test('measure bond add/delete button sizes', async ({ page }) => {
+test('measure bond add/delete button sizes', async ({ page, browserName }) => {
+  // The swipe gesture below dispatches synthetic Touch/TouchEvent objects,
+  // which Firefox and WebKit do not expose. This is a Chromium-only
+  // measurement/debugging test.
+  test.skip(browserName !== 'chromium', 'requires Touch/TouchEvent constructors');
+
   await page.goto('/fab-u');
   await page.evaluate(() => localStorage.removeItem('fab-u-character'));
   await page.reload();
