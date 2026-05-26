@@ -56,6 +56,11 @@ type AvPaletteShape = {
   border: string;
   ember: string;
   gold: string;
+  // Red used for the Passion stat label and the Advance & Attack category
+  // eyebrow. In light mode each keeps a distinct warm shade; in dark mode
+  // both flip to the Fatigue-diamond accent (= `gold`) so the reds match.
+  passionRed: string;
+  attackRed: string;
 };
 
 const lightAvPalette: AvPaletteShape = {
@@ -73,6 +78,8 @@ const lightAvPalette: AvPaletteShape = {
   border: '#b1c3d3',
   ember: '#a8413a',
   gold: '#7a2424',
+  passionRed: '#bc5753',
+  attackRed: '#a8413a',
 };
 
 const darkAvPalette: AvPaletteShape = {
@@ -91,6 +98,9 @@ const darkAvPalette: AvPaletteShape = {
   border: '#13202f', // subtle dark blue-grey border that reads on dark
   ember: '#e2685e', // brighter red accent so it pops on dark
   gold: '#d05246', // brighter dark-red accent for visibility on dark
+  // In dark mode both reds unify to the Fatigue-diamond color.
+  passionRed: '#d05246',
+  attackRed: '#d05246',
 };
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its
@@ -107,6 +117,8 @@ let brownSoft = lightAvPalette.brownSoft;
 let border = lightAvPalette.border;
 let ember = lightAvPalette.ember;
 let gold = lightAvPalette.gold;
+let passionRed = lightAvPalette.passionRed;
+let attackRed = lightAvPalette.attackRed;
 
 function applyAvatarPalette(isDarkMode: boolean) {
   const next = isDarkMode ? darkAvPalette : lightAvPalette;
@@ -121,6 +133,8 @@ function applyAvatarPalette(isDarkMode: boolean) {
   border = next.border;
   ember = next.ember;
   gold = next.gold;
+  passionRed = next.passionRed;
+  attackRed = next.attackRed;
 }
 
 // Constant near-white used for chrome surfaces that always sit on a dark
@@ -275,13 +289,14 @@ const techniques: Array<{
   },
 ];
 
-// Eyebrow colors keyed by category: red for attack, green for defend,
-// blue for evade.
-const techniqueCategoryColor: Record<TechniqueCategory, string> = {
-  'Advance & Attack': '#a8413a', // red
-  'Defend & Maneuver': earth, // green
-  'Evade & Observe': water, // blue
-};
+// Eyebrow color per category: red for attack, green for defend, blue for
+// evade. Returned at call time so the `attackRed` reference picks up the
+// active theme (matches the Fatigue diamond color in dark mode).
+function techniqueCategoryColor(category: TechniqueCategory): string {
+  if (category === 'Advance & Attack') return attackRed;
+  if (category === 'Defend & Maneuver') return earth;
+  return water;
+}
 
 const connections = [
   [
@@ -438,7 +453,7 @@ function StatsPanel() {
     ['Creativity', 2, water],
     ['Focus', 2, earth],
     ['Harmony', 1, water],
-    ['Passion', 1, '#bc5753'],
+    ['Passion', 1, passionRed],
   ];
   return (
     <Panel>
@@ -1264,6 +1279,7 @@ function FilterTabs({
   labels,
   activeIndex,
   onChange,
+  chipPy = '10px',
 }: {
   labels: string[];
   activeIndex: number;
@@ -1273,6 +1289,9 @@ function FilterTabs({
    * renders as static visual chips (legacy behavior).
    */
   onChange?: (index: number) => void;
+  /** Vertical padding per chip. Default matches every other usage; the
+   *  Combat tab's main sub-tabs override to a taller value. */
+  chipPy?: string;
 }) {
   return (
     <Stack
@@ -1297,7 +1316,7 @@ function FilterTabs({
             onClick={interactive ? () => onChange?.(index) : undefined}
             sx={{
               flex: 1,
-              py: '10px',
+              py: chipPy,
               borderRadius: '3px',
               // Solid deep-ink fill on the active chip (matches the dark
               // blue of the header/footer brush stroke).
@@ -1382,6 +1401,7 @@ function TechniqueAccordion({
   body,
   src,
   techColor,
+  isBasic = false,
 }: {
   category: TechniqueCategory;
   title: string;
@@ -1389,9 +1409,14 @@ function TechniqueAccordion({
   body: string;
   src: string;
   techColor: string;
+  /**
+   * Basic techniques render the SquareInSquare icon (matching the Basic
+   * filter selector) instead of the element image badge.
+   */
+  isBasic?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const categoryColor = techniqueCategoryColor[category];
+  const categoryColor = techniqueCategoryColor(category);
   return (
     <Panel>
       <Stack spacing={0.5}>
@@ -1414,7 +1439,27 @@ function TechniqueAccordion({
             textAlign: 'left',
           }}
         >
-          <ElementMark color={techColor} src={src} size={36} height={34} />
+          {isBasic ? (
+            // Basic technique badge — same frame as ElementMark but renders
+            // the SquareInSquare icon centered inside.
+            <Box
+              sx={{
+                width: 36,
+                height: 34,
+                borderRadius: '3px',
+                border: `1px solid ${alpha(deepInk, 0.35)}`,
+                background: alpha(parchmentLight, 0.4),
+                display: 'grid',
+                placeItems: 'center',
+                flex: '0 0 auto',
+                boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
+              }}
+            >
+              <SquareInSquare color={techColor} size={22} />
+            </Box>
+          ) : (
+            <ElementMark color={techColor} src={src} size={36} height={34} />
+          )}
           <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
             {/* Category eyebrow — color keyed to the technique's category. */}
             <Typography
@@ -1598,11 +1643,13 @@ function CombatPane() {
         </Stack>
       </Panel>
 
-      {/* Interactive combat sub-tabs */}
+      {/* Interactive combat sub-tabs — taller chips than the rest of the
+          app to give the four primary combat surfaces more tap area. */}
       <FilterTabs
         labels={['Techniques', 'Statuses', 'Conditions', 'Inventory']}
         activeIndex={subTab}
         onChange={setSubTab}
+        chipPy="20px"
       />
 
       {/* Techniques sub-tab: element filter row + expandable technique cards */}
@@ -1715,10 +1762,9 @@ function CombatPane() {
                 title={tech.title}
                 summary={tech.summary}
                 body={tech.body}
-                // Basic techniques don't have an element image, so we pass
-                // the water glyph as a fallback. The element tag color is
-                // overridden separately so the badge still reads as Basic.
-                src={isBasic ? elementWater : elementWater}
+                isBasic={isBasic}
+                // src is only used when isBasic=false (image badge path).
+                src={elementWater}
                 techColor={isBasic ? ink : water}
               />
             );
