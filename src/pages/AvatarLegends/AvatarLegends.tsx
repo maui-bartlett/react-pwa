@@ -360,11 +360,22 @@ const journal = [
  * far edge is built from a solid rectangle plus a few thin streaks that
  * fade out to mimic dry brush bristles.
  */
-function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; height?: number }) {
-  // Solid navy block only — no bristle streaks or transition bleed past the
-  // edge. solidEdge defines the depth of the painted band; outside that,
-  // the parchment shows through cleanly.
+function WatercolorBand({
+  bottom = false,
+  height = 96,
+  fill,
+}: {
+  bottom?: boolean;
+  height?: number;
+  /** CSS background string. Defaults to the solid deep-navy `deepInk`
+   *  fill used for the bottom nav and the dark-mode top band; the
+   *  light-mode top header passes a whiter gradient. */
+  fill?: string;
+}) {
+  // Solid painted block only — no bristle streaks. `solidEdge` defines the
+  // depth of the painted band; outside that, the parchment shows through.
   const solidEdge = height - 18;
+  const bandFill = fill ?? deepInk;
 
   return (
     <Box
@@ -378,31 +389,30 @@ function WatercolorBand({ bottom = false, height = 96 }: { bottom?: boolean; hei
         zIndex: 0,
       }}
     >
+      {/* Painted block — supports either a solid color or a CSS gradient
+          via the `fill` prop. */}
       <Box
-        component="svg"
-        viewBox={`0 0 430 ${height}`}
-        preserveAspectRatio="none"
-        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
-      >
-        {/* Solid painted rectangle — clean straight edges, dark navy fill. */}
-        <rect
-          x={0}
-          y={bottom ? height - solidEdge : 0}
-          width={430}
-          height={solidEdge}
-          fill={deepInk}
-        />
-        {/* Top sheen — soft highlight running along the inner edge of the
-            band where the brush starts. */}
-        <rect
-          x={20}
-          y={bottom ? height - 8 : 4}
-          width={380}
-          height={3}
-          rx={2}
-          fill={alpha('#ffffff', 0.18)}
-        />
-      </Box>
+        sx={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          [bottom ? 'bottom' : 'top']: 0,
+          height: solidEdge,
+          background: bandFill,
+        }}
+      />
+      {/* Soft inner-edge sheen — runs along the inner edge of the band. */}
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 20,
+          right: 20,
+          [bottom ? 'bottom' : 'top']: 4,
+          height: 3,
+          borderRadius: '2px',
+          background: alpha('#ffffff', 0.18),
+        }}
+      />
     </Box>
   );
 }
@@ -792,6 +802,12 @@ function StatusButton({
   activeColor: string;
   onToggle: () => void;
 }) {
+  // In dark mode the inactive text would otherwise sit at the activeColor
+  // (e.g., the dark-red `gold`), which is hard to read against the slate
+  // body. Force the label to white at all times in dark mode; light mode
+  // keeps the original active=white / inactive=activeColor behaviour.
+  const { isDarkMode } = useThemeMode();
+  const textColor = isDarkMode ? '#ffffff' : active ? '#ffffff' : activeColor;
   return (
     <Box
       component="button"
@@ -805,7 +821,7 @@ function StatusButton({
         borderRadius: '4px',
         border: `1.5px solid ${activeColor}`,
         background: active ? activeColor : 'transparent',
-        color: active ? '#ffffff' : activeColor,
+        color: textColor,
         cursor: 'pointer',
         textAlign: 'center',
         fontFamily: 'Georgia, serif',
@@ -2468,6 +2484,11 @@ function AvatarLegends() {
   const { isDarkMode } = useThemeMode();
   applyAvatarPalette(isDarkMode);
   const pageBg = isDarkMode ? darkPageBg : lightPageBg;
+  // Text color used on the top brush-stroke header band. The light-mode
+  // band is now a whiter cornflower gradient, so the heading flips to
+  // black to stay legible; dark mode keeps the near-white chromeText
+  // against the deep-navy band.
+  const headerText = isDarkMode ? chromeText : '#000000';
 
   return (
     <Box
@@ -2530,15 +2551,27 @@ function AvatarLegends() {
           }}
         />
 
-        {/* Top watercolor brush stroke header band */}
-        <WatercolorBand height={92} />
-        {/* Bottom watercolor brush stroke (sits behind the nav) */}
+        {/* Top header band. In light mode it carries a whiter cornflower
+            gradient so the header reads bright against the parchment; in
+            dark mode it stays the cover-art deep navy. */}
+        <WatercolorBand
+          height={92}
+          fill={
+            isDarkMode
+              ? undefined
+              : `linear-gradient(180deg, #ffffff 0%, ${alpha('#dbe5f0', 0.9)} 100%)`
+          }
+        />
+        {/* Bottom watercolor brush stroke (sits behind the nav) — stays
+            dark in both modes so the nav icons keep their contrast. */}
         <WatercolorBand bottom height={86} />
 
-        {/* Page corner ornaments */}
+        {/* Page corner ornaments — flip to dark in light mode so they
+            stay visible against the whiter header band; stay near-white
+            in dark mode against the navy band. */}
         <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
-          <CornerOrnament position="tl" color={chromeText} size={18} />
-          <CornerOrnament position="tr" color={chromeText} size={18} />
+          <CornerOrnament position="tl" color={headerText} size={18} />
+          <CornerOrnament position="tr" color={headerText} size={18} />
         </Box>
 
         <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
@@ -2568,7 +2601,7 @@ function AvatarLegends() {
             {activeTab === 'character' ? (
               <Typography
                 sx={{
-                  color: chromeText,
+                  color: headerText,
                   fontFamily: '"IM Fell English", Georgia, serif',
                   fontWeight: 700,
                   fontSize: '1.15rem',
@@ -2584,7 +2617,7 @@ function AvatarLegends() {
               <Stack spacing={0.6}>
                 <Typography
                   sx={{
-                    color: alpha(chromeText, 0.7),
+                    color: alpha(headerText, 0.7),
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '0.55rem',
                     fontWeight: 800,
@@ -2597,7 +2630,7 @@ function AvatarLegends() {
                 </Typography>
                 <Typography
                   sx={{
-                    color: chromeText,
+                    color: headerText,
                     fontFamily: '"IM Fell English", Georgia, serif',
                     fontWeight: 700,
                     fontSize: '1.25rem',
