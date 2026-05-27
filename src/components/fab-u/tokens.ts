@@ -180,30 +180,31 @@ const avatarLightTokens: FabUTokens = {
   },
 };
 
-/** Avatar Legends dark tokens — aligned with the deep-navy chrome band
- *  (#0e1a28) of the AL page header. The auth dialog and the AL UI share
- *  this palette so the two surfaces read as the same deep-navy theme. */
+/** Avatar Legends dark tokens — deep slate-gray chrome shifted toward
+ *  gray from the previous navy palette. Each color was pulled toward
+ *  neutral (R nudged up, B dropped) so the auth dialog and the AL UI
+ *  read as the same cool-gray theme rather than saturated navy. */
 const avatarDarkTokens: FabUTokens = {
   isDark: true,
   color: {
-    page: '#050b14', // deepest body, sits a step below surface
-    canvas: '#0a131e', // AL parchment (cards)
-    surface: '#0a131e',
-    surfaceCard: '#0a131e',
-    pillSurface: '#0e1a28', // AL deepInk — header / footer chrome band
-    surfaceMuted: '#0a131e',
-    border: '#2a3a4e', // subtle slate-navy
-    textPrimary: '#f0f5fc', // AL ink (near-white)
-    textSecondary: '#c2cee0', // AL brownSoft
-    brand: '#0e1a28', // matches AL header chrome
-    brandStrong: '#0e1a28',
-    brandSoft: '#13202f',
-    brandText: '#e6efff', // AL brown (dark)
+    page: '#07090f', // deepest body, sits a step below surface
+    canvas: '#0d1319', // AL parchment (cards)
+    surface: '#0d1319',
+    surfaceCard: '#0d1319',
+    pillSurface: '#141a20', // AL deepInk — header / footer chrome band
+    surfaceMuted: '#0d1319',
+    border: '#313840', // subtle slate-gray
+    textPrimary: '#eef0f4', // AL ink (near-white, grayer)
+    textSecondary: '#c5cad2', // AL brownSoft
+    brand: '#141a20', // matches AL header chrome
+    brandStrong: '#141a20',
+    brandSoft: '#181e26',
+    brandText: '#e3e6ec', // AL brown (dark)
     brandFg: '#ffffff',
-    labelBg: '#0e1a28',
+    labelBg: '#141a20',
     labelFg: '#ffffff',
-    // Dark-red highlight now matches the AL `gold` accent (#7a2424)
-    // pinned to the same dark red across light + dark modes.
+    // Dark-red highlight matches the AL `gold` accent (#7a2424) pinned
+    // to the same dark red across light + dark modes.
     highlight: '#7a2424',
     highlightFg: '#ffffff',
     fp: '#3a6390',
@@ -213,7 +214,7 @@ const avatarDarkTokens: FabUTokens = {
     warning: '#a47b29',
     success: '#5a7a55',
     danger: '#7a2424',
-    neutral: '#c2cee0',
+    neutral: '#c5cad2',
   },
   radius: { pill: 999, sm: 9, md: 13, lg: 16 },
   shadow: {

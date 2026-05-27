@@ -23,10 +23,10 @@ import elementWater from './assets/element-water.png';
 
 // Outer-mat gradients used behind the parchment card. Theme-aware.
 const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
-// Dark mode mat: deep-navy gradient aligned with the AccountSettings auth
-// flow's dark palette so the AL UI and the auth dialog share the same
-// surface treatment.
-const darkPageBg = 'linear-gradient(140deg, #050b14 0%, #0a131e 50%, #050b14 100%)';
+// Dark mode mat: deep slate-gray gradient (was deep-navy). Same family
+// as the auth flow's dark palette but shifted toward gray so the surface
+// reads cooler / more neutral.
+const darkPageBg = 'linear-gradient(140deg, #07090f 0%, #0d1319 50%, #07090f 100%)';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -93,33 +93,35 @@ const lightAvPalette: AvPaletteShape = {
 };
 
 const darkAvPalette: AvPaletteShape = {
-  // Dark mode: deep-navy palette aligned with the AccountSettings auth
-  // flow's avatarDarkTokens so the AL UI and the auth dialog read as the
-  // same surface treatment. The chrome band sits at the AL cover's
-  // darkest navy; everything else descends from that.
-  parchment: '#0a131e', // card / panel bg — matches auth surface
-  parchmentLight: '#131e2c', // slightly lifted slate-navy for elevated cards
-  parchmentDeep: '#050b14', // recessed pocket
-  washDeep: '#7a8ea2', // atmospheric mountain-haze blue
-  ink: '#f0f5fc', // near-white body / heading text (matches auth textPrimary)
-  // Chrome band — pinned to the darkest navy from the AL cover art so
-  // light and dark modes share the same header / footer color.
-  deepInk: '#0e1a28',
-  brown: '#e6efff', // body text (matches auth brandText)
-  brownSoft: '#c2cee0', // secondary text (matches auth textSecondary)
-  border: '#2a3a4e', // subtle slate-navy border
+  // Dark mode: deep slate-gray palette aligned with the AccountSettings
+  // auth flow's avatarDarkTokens. Each previously-navy value was shifted
+  // toward gray (R bumped up, B dropped back) so the surfaces keep a
+  // faint blue undertone but read as a cool gray rather than saturated
+  // navy. The chrome band sits at the AL cover's darkest gray-navy.
+  parchment: '#0d1319', // card / panel bg
+  parchmentLight: '#181e26', // slightly lifted slate-gray for elevated cards
+  parchmentDeep: '#07090f', // recessed pocket
+  washDeep: '#898e96', // atmospheric mountain-haze gray
+  ink: '#eef0f4', // near-white body / heading text (slightly grayer)
+  // Chrome band — pinned to the AL cover's darkest navy, nudged toward
+  // gray. Light and dark modes still share the chrome family but dark
+  // mode's tone is now cooler/more neutral.
+  deepInk: '#141a20',
+  brown: '#e3e6ec', // body text (matches auth brandText, grayer)
+  brownSoft: '#c5cad2', // secondary text (matches auth textSecondary)
+  border: '#313840', // subtle slate-gray border
   ember: '#d56b5f', // muted brick-red accent (cover scrollwork warm tone)
   // `gold` is the dark-red accent used by Fatigue diamonds, Conditions,
   // and Negative Statuses. Pinned to the same value as light mode so the
   // dark-red reads identically in both modes.
   gold: '#7a2424',
   // Passion stat label + Advance & Attack eyebrow keep the brighter
-  // cover-art red so they stay legible against the deep navy body.
+  // cover-art red so they stay legible against the gray body.
   passionRed: '#c84a3e',
   attackRed: '#c84a3e',
-  // Slightly more saturated variant of the light-blue accent so it
-  // still reads on the deeper navy surfaces.
-  accent: '#7fa2bd',
+  // Pale-gray-blue accent — desaturated variant of the light-mode
+  // divider color so it still reads on the deeper gray surfaces.
+  accent: '#8c9ca8',
 };
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its
