@@ -70,10 +70,10 @@ const lightAvPalette: AvPaletteShape = {
   parchmentDeep: '#cdd9e5',
   washDeep: '#6f9bba',
   ink: '#23456b',
-  // Header / footer brush-stroke band — a darker version of the
-  // cornflower-blue watercolor wash so the chrome reads as deepened
-  // cornflower rather than neutral slate.
-  deepInk: '#2e4366',
+  // Header / footer brush-stroke band — the darkest navy sampled from
+  // the Avatar Legends cover art (the silhouetted foreground rock
+  // beneath the misty mountains).
+  deepInk: '#0e1a28',
   brown: '#3a4e63',
   brownSoft: '#5a6f86',
   border: '#b1c3d3',
@@ -93,10 +93,9 @@ const darkAvPalette: AvPaletteShape = {
   parchmentDeep: '#1e2a39', // deeper slate for recessed grooves
   washDeep: '#7a8ea2', // atmospheric-haze blue from the mountains
   ink: '#f0f4f8', // near-white body / heading text
-  // Chrome band — a darker version of the cornflower-blue watercolor
-  // wash. Sits a touch deeper than the body in dark mode so the band
-  // still reads as distinct.
-  deepInk: '#1a2940',
+  // Chrome band — pinned to the darkest navy from the AL cover art so
+  // light and dark modes share the same header / footer color.
+  deepInk: '#0e1a28',
   brown: '#e3e9f0', // body text — light cool grey
   brownSoft: '#a8b6c5', // secondary text — softer slate
   border: '#4a5b6e', // subtle slate border, sampled from the mid-tones
