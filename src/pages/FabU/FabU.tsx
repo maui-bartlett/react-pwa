@@ -32,7 +32,6 @@ import {
 } from 'lucide-react';
 
 import {
-  AccountMenu,
   AttributesStatsCard,
   BondType,
   BondsCard,
@@ -61,6 +60,7 @@ import {
 } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
+import AccountSettings from '@/sections/AccountSettings';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
@@ -555,8 +555,8 @@ function FabU() {
   const [, setThemeMode] = useAtom(themeModeState);
   useProfileThemeSync(themeMode, setThemeMode);
   const fabUTokens = themeMode === ThemeMode.DARK ? darkFabUTokens : lightFabUTokens;
-  const toggleTheme = () =>
-    setThemeMode((m) => (m === ThemeMode.DARK ? ThemeMode.LIGHT : ThemeMode.DARK));
+  // Theme toggling now lives inside AccountSettings (via useThemeMode),
+  // so FabU no longer needs its own toggle helper.
   const [activeTab, setActiveTab] = useAtom(activeTabState);
   const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
 
@@ -2354,10 +2354,11 @@ function FabU() {
 
   const header = (() => {
     const settingsAction = (
-      <AccountMenu
+      // App-level settings menu — passing the FabU game system so downstream
+      // account-menu queries scope to Fabula Ultima.
+      <AccountSettings
+        gameSystem="fabula-ultima"
         localCharacterName={`${character.firstName} "${character.nickName}" ${character.lastName}`}
-        themeMode={themeMode === ThemeMode.DARK ? 'dark' : 'light'}
-        onToggleTheme={toggleTheme}
       />
     );
 
