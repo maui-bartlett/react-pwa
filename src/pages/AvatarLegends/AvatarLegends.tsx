@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
@@ -20,10 +20,6 @@ import elementFire from './assets/element-fire.png';
 import elementMartial from './assets/element-martial.png';
 import elementTech from './assets/element-tech.png';
 import elementWater from './assets/element-water.png';
-import airGlyph from './assets/glyph-air.png';
-import earthGlyph from './assets/glyph-earth.png';
-import fireGlyph from './assets/glyph-fire.png';
-import waterGlyph from './assets/glyph-water.png';
 
 // Outer-mat gradients used behind the parchment card. Theme-aware.
 const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
@@ -74,8 +70,10 @@ const lightAvPalette: AvPaletteShape = {
   parchmentDeep: '#cdd9e5',
   washDeep: '#6f9bba',
   ink: '#23456b',
-  // Less-saturated dark blue for the header / footer brush-stroke band.
-  deepInk: '#1d2733',
+  // Header / footer brush-stroke band — a darker version of the
+  // cornflower-blue watercolor wash so the chrome reads as deepened
+  // cornflower rather than neutral slate.
+  deepInk: '#2e4366',
   brown: '#3a4e63',
   brownSoft: '#5a6f86',
   border: '#b1c3d3',
@@ -95,12 +93,20 @@ const darkAvPalette: AvPaletteShape = {
   parchmentDeep: '#1e2a39', // deeper slate for recessed grooves
   washDeep: '#7a8ea2', // atmospheric-haze blue from the mountains
   ink: '#f0f4f8', // near-white body / heading text
-  deepInk: '#1a2530', // chrome band — deepest slate-navy
+  // Chrome band — a darker version of the cornflower-blue watercolor
+  // wash. Sits a touch deeper than the body in dark mode so the band
+  // still reads as distinct.
+  deepInk: '#1a2940',
   brown: '#e3e9f0', // body text — light cool grey
   brownSoft: '#a8b6c5', // secondary text — softer slate
   border: '#4a5b6e', // subtle slate border, sampled from the mid-tones
   ember: '#d56b5f', // muted brick-red accent (cover scrollwork warm tone)
-  gold: '#c84a3e', // primary dark-red accent for visibility on slate
+  // `gold` is the dark-red accent used by Fatigue diamonds, Conditions,
+  // and Negative Statuses. Pinned to the same value as light mode so the
+  // dark-red reads identically in both modes.
+  gold: '#7a2424',
+  // Passion stat label + Advance & Attack eyebrow keep the brighter
+  // cover-art red so they stay legible against the deep slate body.
   passionRed: '#c84a3e',
   attackRed: '#c84a3e',
 };
@@ -213,6 +219,11 @@ const statsAtom = atom<Record<string, number>>({
   Harmony: 1,
   Passion: 1,
 });
+// Balance track position — integer index in [-4, 4]. 0 sits at the
+// center point; -4..-1 are the four notches on the Tradition side,
+// 1..4 are the four notches on the Progress side. Persisted via jotai
+// so the yin-yang position survives tab navigation.
+const balancePositionAtom = atom(0);
 
 // Moves grouped by sub-tab. Each entry is just a button label; tap behavior
 // (rolling, GM prompt, etc.) is wired separately.
@@ -459,6 +470,165 @@ function Checkbox({
 }
 
 /**
+ * Balance section content. Renders the TRADITION / PROGRESS labels on
+ * either side of a horizontal line; the line carries 8 evenly spaced
+ * tick notches (4 left, 4 right of the center point) plus the draggable
+ * yin-yang marker which snaps to whichever of the 9 stop positions
+ * (index -4..4) the user releases nearest to.
+ */
+function BalanceTrack() {
+  const [position, setPosition] = useAtom(balancePositionAtom);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const draggingRef = useRef(false);
+
+  // Map an index in [-4, 4] to a percentage left offset along the track.
+  // -4 -> 0%, 0 -> 50%, 4 -> 100%.
+  const toPercent = (idx: number) => ((idx + 4) / 8) * 100;
+
+  // Convert a clientX during a drag into the nearest snap index.
+  function pointerToIndex(clientX: number): number {
+    const el = trackRef.current;
+    if (!el) return position;
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0) return position;
+    const ratio = (clientX - rect.left) / rect.width;
+    const clamped = Math.max(0, Math.min(1, ratio));
+    return Math.round(clamped * 8) - 4;
+  }
+
+  const notchIndexes: number[] = [-4, -3, -2, -1, 1, 2, 3, 4];
+
+  return (
+    <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.2, mb: 0.4 }}>
+      <Typography
+        sx={{
+          color: ink,
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.62rem',
+          fontWeight: 900,
+          letterSpacing: '0.1em',
+        }}
+      >
+        TRADITION
+      </Typography>
+      <Box
+        ref={trackRef}
+        sx={{
+          flex: 1,
+          height: 2,
+          background: `linear-gradient(90deg, ${alpha(washDeep, 0.5)} 0%, ${alpha(deepInk, 0.7)} 50%, ${alpha(washDeep, 0.5)} 100%)`,
+          position: 'relative',
+          borderRadius: '1px',
+        }}
+      >
+        {/* Tick notches — 4 each side of center, equally spaced. The
+            center point intentionally has no notch since the yin-yang's
+            default position sits there. */}
+        {notchIndexes.map((idx) => (
+          <Box
+            key={idx}
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: -5,
+              left: `${toPercent(idx)}%`,
+              width: 2,
+              height: 12,
+              background: deepInk,
+              transform: 'translateX(-50%)',
+              borderRadius: '1px',
+              pointerEvents: 'none',
+            }}
+          />
+        ))}
+        {/* Draggable yin-yang marker. Pointer events live on the marker
+            itself so the rest of the track stays scrollable on touch
+            devices; setPointerCapture keeps the drag alive even if the
+            finger slides off the small hit area. */}
+        <Box
+          role="slider"
+          aria-label="Balance position"
+          aria-valuemin={-4}
+          aria-valuemax={4}
+          aria-valuenow={position}
+          tabIndex={0}
+          onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+            draggingRef.current = true;
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+          }}
+          onPointerMove={(e: React.PointerEvent<HTMLDivElement>) => {
+            if (!draggingRef.current) return;
+            const next = pointerToIndex(e.clientX);
+            if (next !== position) setPosition(next);
+          }}
+          onPointerUp={(e: React.PointerEvent<HTMLDivElement>) => {
+            draggingRef.current = false;
+            e.currentTarget.releasePointerCapture?.(e.pointerId);
+          }}
+          onPointerCancel={() => {
+            draggingRef.current = false;
+          }}
+          onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+            if (e.key === 'ArrowLeft') {
+              e.preventDefault();
+              setPosition(Math.max(-4, position - 1));
+            } else if (e.key === 'ArrowRight') {
+              e.preventDefault();
+              setPosition(Math.min(4, position + 1));
+            }
+          }}
+          sx={{
+            position: 'absolute',
+            left: `${toPercent(position)}%`,
+            top: -13,
+            transform: 'translateX(-50%)',
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            // Solid white fill in both modes — matches the new Stats circles.
+            background: '#ffffff',
+            border: `2px solid ${deepInk}`,
+            display: 'grid',
+            placeItems: 'center',
+            color: ink,
+            boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
+            cursor: 'grab',
+            touchAction: 'none',
+            userSelect: 'none',
+            transition: 'left 0.08s ease',
+            '&:active': { cursor: 'grabbing' },
+            '&:focus-visible': {
+              outline: `2px solid ${alpha(deepInk, 0.6)}`,
+              outlineOffset: 2,
+            },
+          }}
+        >
+          {/* Balance yin-yang uses fixed light-mode colors so the symbol
+              looks identical in light and dark mode. */}
+          <YinYangIcon
+            darkColor={lightAvPalette.deepInk}
+            lightColor={lightAvPalette.parchmentLight}
+            size={20}
+            strokeWidth={1.5}
+          />
+        </Box>
+      </Box>
+      <Typography
+        sx={{
+          color: ink,
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.62rem',
+          fontWeight: 900,
+          letterSpacing: '0.1em',
+        }}
+      >
+        PROGRESS
+      </Typography>
+    </Stack>
+  );
+}
+
+/**
  * Reusable Stats panel. Used on both the Character tab and the Combat tab
  * so the same data shows in both contexts. Colors per the user spec:
  *   - Creativity: blue (water)
@@ -475,24 +645,22 @@ function StatsPanel() {
   ];
   const [stats, setStats] = useAtom(statsAtom);
   function setValue(label: string, raw: string) {
-    // Allow the user to clear the field (treated as 0) and to type a
-    // leading minus sign. Final value clamps to [-5, 3].
-    const trimmed = raw.trim();
-    if (trimmed === '' || trimmed === '-') {
-      setStats((prev) => ({ ...prev, [label]: 0 }));
-      return;
-    }
-    const parsed = parseInt(trimmed, 10);
+    // The pick list only emits values in [-3, 3] so we trust the choice
+    // and just persist it. Clamp defensively in case the source changes.
+    const parsed = parseInt(raw, 10);
     if (Number.isNaN(parsed)) return;
-    const clamped = Math.max(-5, Math.min(3, parsed));
+    const clamped = Math.max(-3, Math.min(3, parsed));
     setStats((prev) => ({ ...prev, [label]: clamped }));
   }
+  const statOptions = [-3, -2, -1, 0, 1, 2, 3];
   return (
     <Panel>
       <SectionTitle>Stats</SectionTitle>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
         {rows.map(([label, color]) => {
-          const value = stats[label] ?? 0;
+          // Clamp to the pick-list range in case persisted state holds a
+          // legacy value outside [-3, 3].
+          const value = Math.max(-3, Math.min(3, stats[label] ?? 0));
           return (
             <Stack key={label} spacing={0.45} alignItems="center">
               <Typography
@@ -508,41 +676,50 @@ function StatsPanel() {
                 {label}
               </Typography>
               <Box
-                component="input"
-                type="number"
-                inputMode="numeric"
+                component="select"
                 value={value}
-                min={-5}
-                max={3}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                   setValue(label, e.target.value)
                 }
+                aria-label={`${label} stat`}
                 sx={{
                   width: 44,
                   height: 44,
                   textAlign: 'center',
-                  background: 'transparent',
-                  border: `1px solid ${alpha(border, 0.6)}`,
+                  textAlignLast: 'center',
+                  // Solid white fill in both light and dark mode.
+                  background: '#ffffff',
+                  // Border matches the stat's text color (e.g., Creativity
+                  // gets water-blue, Passion gets the warm red).
+                  border: `1.5px solid ${color}`,
                   borderRadius: '50%',
-                  color: ink,
+                  // Deep blue ink reads on white in both themes.
+                  color: lightAvPalette.ink,
                   fontFamily: '"IM Fell English", Georgia, serif',
-                  fontSize: '1.4rem',
+                  fontSize: '1.3rem',
                   fontWeight: 700,
                   lineHeight: 1,
                   p: 0,
                   outline: 'none',
-                  // Hide the native spinners; the +/- is implied by the
-                  // -5..3 range and the user types directly.
-                  '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
-                    WebkitAppearance: 'none',
-                    margin: 0,
-                  },
-                  MozAppearance: 'textfield',
+                  cursor: 'pointer',
+                  // Hide the native chevron — keep the field looking like
+                  // the previous numeric circle.
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  appearance: 'none',
+                  backgroundImage: 'none',
                   '&:focus': {
                     borderColor: color,
+                    boxShadow: `0 0 0 2px ${alpha(color, 0.3)}`,
                   },
                 }}
-              />
+              >
+                {statOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Box>
             </Stack>
           );
         })}
@@ -1287,65 +1464,7 @@ function CharacterPane() {
 
       <Panel>
         <SectionTitle>Balance</SectionTitle>
-        <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.2, mb: 0.4 }}>
-          <Typography
-            sx={{
-              color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.62rem',
-              fontWeight: 900,
-              letterSpacing: '0.1em',
-            }}
-          >
-            TRADITION
-          </Typography>
-          <Box
-            sx={{
-              flex: 1,
-              height: 2,
-              background: `linear-gradient(90deg, ${alpha(washDeep, 0.5)} 0%, ${alpha(deepInk, 0.7)} 50%, ${alpha(washDeep, 0.5)} 100%)`,
-              position: 'relative',
-              borderRadius: '1px',
-            }}
-          >
-            <Box
-              sx={{
-                position: 'absolute',
-                left: '48%',
-                top: -13,
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: `radial-gradient(circle at 30% 30%, ${parchmentLight}, ${parchment})`,
-                border: `2px solid ${deepInk}`,
-                display: 'grid',
-                placeItems: 'center',
-                color: ink,
-                boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
-              }}
-            >
-              {/* Balance yin-yang uses fixed light-mode colors so the
-                  symbol looks identical in light and dark mode. */}
-              <YinYangIcon
-                darkColor={lightAvPalette.deepInk}
-                lightColor={lightAvPalette.parchmentLight}
-                size={20}
-                strokeWidth={1.5}
-              />
-            </Box>
-          </Box>
-          <Typography
-            sx={{
-              color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.62rem',
-              fontWeight: 900,
-              letterSpacing: '0.1em',
-            }}
-          >
-            PROGRESS
-          </Typography>
-        </Stack>
+        <BalanceTrack />
       </Panel>
 
       <Panel>
@@ -2337,19 +2456,6 @@ function AvatarLegends() {
   applyAvatarPalette(isDarkMode);
   const pageBg = isDarkMode ? darkPageBg : lightPageBg;
 
-  // Repeating background watermark — faint elemental glyphs scattered across the
-  // parchment, mimicking the character sheet's watermarked element motifs.
-  const watermarkBg = `
-    url(${waterGlyph}),
-    url(${earthGlyph}),
-    url(${fireGlyph}),
-    url(${airGlyph}),
-    url(${waterGlyph}),
-    url(${earthGlyph})
-  `;
-  const watermarkPosition = '8% 14%, 78% 22%, 22% 48%, 88% 56%, 14% 76%, 76% 88%';
-  const watermarkSize = '64px, 58px, 52px, 60px, 56px, 50px';
-
   return (
     <Box
       sx={{
@@ -2378,22 +2484,6 @@ function AvatarLegends() {
           },
         }}
       >
-        {/* Watermark layer — repeating elemental glyphs at very low opacity */}
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: watermarkBg,
-            backgroundPosition: watermarkPosition,
-            backgroundSize: watermarkSize,
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.06,
-            filter: 'sepia(40%) brightness(0.6)',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        />
         {/* Paper grain via repeating radial noise */}
         <Box
           aria-hidden
@@ -2406,9 +2496,9 @@ function AvatarLegends() {
           }}
         />
         {/* Faded, muted cornflower-blue watercolor wash. Sits over the
-            parchment + watermark + paper-grain texture using multiply blend
-            so the texture still shows through; the radial pools feather
-            outward to give the parchment a soft hand-painted depth. */}
+            parchment + paper-grain texture using multiply blend so the
+            texture still shows through; the radial pools feather outward
+            to give the parchment a soft hand-painted depth. */}
         <Box
           aria-hidden
           sx={{
