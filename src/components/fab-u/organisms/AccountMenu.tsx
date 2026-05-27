@@ -141,27 +141,18 @@ function assertAuthSuccess(result: unknown) {
   }
 }
 
-function getCharacterDisplayName(character: { name?: string; characterState?: unknown }) {
+function getCharacterDisplayName(character: { characterState?: unknown }) {
   try {
     const state = deserializeCharacterFromBackend(character.characterState);
     const nameParts = [
-      state.firstName,
-      state.nickName ? `"${state.nickName}"` : '',
-      state.lastName,
+      state.name.firstName,
+      state.name.nickName ? `"${state.name.nickName}"` : '',
+      state.name.lastName,
     ].filter(Boolean);
-    return nameParts.join(' ').trim() || character.name || 'Unnamed character';
+    return nameParts.join(' ').trim() || 'Unnamed character';
   } catch {
-    return character.name || 'Unnamed character';
+    return 'Unnamed character';
   }
-}
-
-function getCharacterName(character: ReturnType<typeof createDefaultCharacter>) {
-  const parts = [
-    character.firstName,
-    character.nickName ? `"${character.nickName}"` : '',
-    character.lastName,
-  ].filter(Boolean);
-  return parts.join(' ').trim() || 'Fab U Character';
 }
 
 function AuthField({
@@ -323,7 +314,6 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     if (!canLoadCharacters) return;
     const nextCharacter = createDefaultCharacter();
     const characterId = await createCharacter({
-      name: getCharacterName(nextCharacter),
       schemaVersion: CHARACTER_SCHEMA_VERSION,
       characterState: serializeCharacterForBackend(nextCharacter),
     });

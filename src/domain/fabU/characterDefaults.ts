@@ -69,9 +69,11 @@ const EQUIPMENT_DEFAULTS: EquipmentItem[] = [
 
 function createDefaultCharacter(): Character {
   return {
-    firstName: 'Radovan',
-    lastName: 'Milincic',
-    nickName: 'Rad',
+    name: {
+      firstName: 'Radovan',
+      lastName: 'Milincic',
+      nickName: 'Rad',
+    },
     initiative: 0,
     defense: 8,
     defenseTemp: 12,

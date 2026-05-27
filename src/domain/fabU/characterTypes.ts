@@ -21,10 +21,14 @@ type BackpackItem = {
 
 type StatusEffects = Record<string, boolean>;
 
-type Character = {
+type CharacterName = {
   firstName: string;
   lastName: string;
   nickName: string;
+};
+
+type Character = {
+  name: CharacterName;
   initiative: number;
   defense: number;
   defenseTemp: number | null;
@@ -69,6 +73,7 @@ export type {
   BackpackItem,
   BackstoryPrompt,
   Character,
+  CharacterName,
   ClassEntry,
   PersistedCharacterState,
   StatusEffects,

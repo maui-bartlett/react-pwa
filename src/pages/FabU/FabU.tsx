@@ -2349,7 +2349,7 @@ function FabU() {
         Fabula <Sparkles size={10} color={fabUTokens.color.highlight} /> Ultima
       </>
     ) : (
-      `${character.nickName} • LVL ${character.level}`
+      `${character.name.nickName} • LVL ${character.level}`
     );
 
   const header = (() => {
@@ -2358,7 +2358,7 @@ function FabU() {
       // account-menu queries scope to Fabula Ultima.
       <AccountSettings
         gameSystem="fabula-ultima"
-        localCharacterName={`${character.firstName} "${character.nickName}" ${character.lastName}`}
+        localCharacterName={`${character.name.firstName} "${character.name.nickName}" ${character.name.lastName}`}
       />
     );
 
@@ -2377,7 +2377,7 @@ function FabU() {
     const meta = screenMeta[activeTab];
     const headerTitle =
       activeTab === 'overview'
-        ? `${character.firstName} "${character.nickName}" ${character.lastName}`
+        ? `${character.name.firstName} "${character.name.nickName}" ${character.name.lastName}`
         : meta.title;
     const headerSubtitle =
       activeTab === 'overview' ? safeTraits.identity.join(' · ') : meta.subtitle;

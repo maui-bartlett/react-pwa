@@ -14,6 +14,7 @@ import type {
   BackpackItem,
   BackstoryPrompt,
   Character,
+  CharacterName,
   PersistedCharacterState,
   StatusEffects,
 } from './characterTypes';
@@ -82,6 +83,28 @@ function normalizeEquipment(storedEquipment: unknown): EquipmentItem[] {
       typeof (item as Partial<EquipmentItem>).slot === 'string' &&
       typeof (item as Partial<EquipmentItem>).description === 'string',
   );
+}
+
+/**
+ * Accept both the new nested `name: { firstName, lastName, nickName }`
+ * shape and the legacy flat `firstName / lastName / nickName` shape so
+ * older persisted characters round-trip cleanly into the new form.
+ */
+function normalizeName(parsed: Record<string, unknown>, defaults: CharacterName): CharacterName {
+  const nested = parsed.name;
+  if (nested && typeof nested === 'object') {
+    const n = nested as Partial<CharacterName>;
+    return {
+      firstName: typeof n.firstName === 'string' ? n.firstName : defaults.firstName,
+      lastName: typeof n.lastName === 'string' ? n.lastName : defaults.lastName,
+      nickName: typeof n.nickName === 'string' ? n.nickName : defaults.nickName,
+    };
+  }
+  return {
+    firstName: typeof parsed.firstName === 'string' ? parsed.firstName : defaults.firstName,
+    lastName: typeof parsed.lastName === 'string' ? parsed.lastName : defaults.lastName,
+    nickName: typeof parsed.nickName === 'string' ? parsed.nickName : defaults.nickName,
+  };
 }
 
 function normalizeStatusEffects(storedStatusEffects: unknown): StatusEffects {
@@ -180,9 +203,17 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
 
   const parsed = raw as Record<string, unknown>;
   const legacyZenit = parsed[`ze${'nn'}it`];
+  // Drop the legacy flat firstName / lastName / nickName before
+  // spreading so they don't survive on the new Character shape; the
+  // nested `name` object is rebuilt by normalizeName below.
+  const withoutFlatName = { ...parsed };
+  delete withoutFlatName.firstName;
+  delete withoutFlatName.lastName;
+  delete withoutFlatName.nickName;
   return {
     ...initialValue,
-    ...parsed,
+    ...withoutFlatName,
+    name: normalizeName(parsed, initialValue.name),
     zenit:
       typeof parsed.zenit === 'number'
         ? parsed.zenit

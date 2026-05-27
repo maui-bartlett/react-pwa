@@ -23,8 +23,11 @@ type PendingCharacterSync = {
 };
 
 function getCharacterName(character: Character) {
-  const name = [character.firstName, character.lastName].filter(Boolean).join(' ').trim();
-  return name || character.nickName || 'Fab U Character';
+  const fullName = [character.name.firstName, character.name.lastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  return fullName || character.name.nickName || 'Fab U Character';
 }
 
 function getPendingSyncKey(userId: string, characterId: Id<'characters'>) {
@@ -168,7 +171,6 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
     if (characters.length === 0) {
       creatingRef.current = true;
       void createFromLocalImport({
-        name: getCharacterName(character),
         schemaVersion: CHARACTER_SCHEMA_VERSION,
         characterState: serializeCharacterForBackend(character),
       })
