@@ -203,6 +203,14 @@ const backgroundsAtom = atom<Record<string, boolean>>({
   Urban: true,
   Privileged: true,
 });
+// Stats values — editable per stat, range -3..3. Defaults preserve the
+// previously-static numbers on first load.
+const statsAtom = atom<Record<string, number>>({
+  Creativity: 2,
+  Focus: 2,
+  Harmony: 1,
+  Passion: 1,
+});
 
 // Moves grouped by sub-tab. Each entry is just a button label; tap behavior
 // (rolling, GM prompt, etc.) is wired separately.
@@ -238,9 +246,11 @@ const movesByCategory: Record<'basic' | 'balance' | 'class', string[]> = {
 // a short summary line, and the full body shown when expanded.
 type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
+type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
 const techniques: Array<{
   element: TechniqueElement;
   category: TechniqueCategory;
+  level: TechniqueLevel;
   title: string;
   summary: string;
   body: string;
@@ -248,6 +258,7 @@ const techniques: Array<{
   {
     element: 'water',
     category: 'Advance & Attack',
+    level: 'mastered',
     title: 'Stream the Water',
     summary: 'Push a jet stream from a significant source to inflict fatigue.',
     body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
@@ -255,6 +266,7 @@ const techniques: Array<{
   {
     element: 'water',
     category: 'Defend & Maneuver',
+    level: 'learned',
     title: 'Flow as Water',
     summary: 'Use a jet of water to move quickly and shift position.',
     body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
@@ -262,6 +274,7 @@ const techniques: Array<{
   {
     element: 'water',
     category: 'Evade & Observe',
+    level: 'mastered',
     title: 'Refresh',
     summary: 'Clear conditions and keep an ally steady under pressure.',
     body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
@@ -269,6 +282,7 @@ const techniques: Array<{
   {
     element: 'water',
     category: 'Advance & Attack',
+    level: 'learned',
     title: 'Water Jab',
     summary: 'Surround your fist in water and strike from unexpected angles.',
     body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
@@ -276,6 +290,7 @@ const techniques: Array<{
   {
     element: 'basic',
     category: 'Advance & Attack',
+    level: 'learned',
     title: 'Smash',
     summary: 'Drive a heavy blow through your target to bypass their guard.',
     body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
@@ -283,6 +298,7 @@ const techniques: Array<{
   {
     element: 'basic',
     category: 'Defend & Maneuver',
+    level: 'learned',
     title: 'Pounce',
     summary: 'Close the gap on a target with sudden speed.',
     body: "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
@@ -449,44 +465,84 @@ function Checkbox({
  *   - Passion:    a warm red (its own hue)
  */
 function StatsPanel() {
-  const rows: Array<[string, number, string]> = [
-    ['Creativity', 2, water],
-    ['Focus', 2, earth],
-    ['Harmony', 1, water],
-    ['Passion', 1, passionRed],
+  const rows: Array<[string, string]> = [
+    ['Creativity', water],
+    ['Focus', earth],
+    ['Harmony', water],
+    ['Passion', passionRed],
   ];
+  const [stats, setStats] = useAtom(statsAtom);
+  function setValue(label: string, raw: string) {
+    // Allow the user to clear the field (treated as 0) and to type a
+    // leading minus sign. Final value clamps to [-3, 3].
+    const trimmed = raw.trim();
+    if (trimmed === '' || trimmed === '-') {
+      setStats((prev) => ({ ...prev, [label]: 0 }));
+      return;
+    }
+    const parsed = parseInt(trimmed, 10);
+    if (Number.isNaN(parsed)) return;
+    const clamped = Math.max(-3, Math.min(3, parsed));
+    setStats((prev) => ({ ...prev, [label]: clamped }));
+  }
   return (
     <Panel>
       <SectionTitle>Stats</SectionTitle>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
-        {rows.map(([label, value, color]) => (
-          <Stack key={label} spacing={0.45} alignItems="center">
-            <Typography
-              sx={{
-                color,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.6rem',
-                fontWeight: 900,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {label}
-            </Typography>
-            <Typography
-              sx={{
-                color: ink,
-                fontFamily: '"IM Fell English", Georgia, serif',
-                fontSize: '1.4rem',
-                fontWeight: 700,
-                lineHeight: 1,
-              }}
-            >
-              {value}
-            </Typography>
-            <StatDots value={value} color={color} />
-          </Stack>
-        ))}
+        {rows.map(([label, color]) => {
+          const value = stats[label] ?? 0;
+          return (
+            <Stack key={label} spacing={0.45} alignItems="center">
+              <Typography
+                sx={{
+                  color,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.6rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {label}
+              </Typography>
+              <Box
+                component="input"
+                type="number"
+                inputMode="numeric"
+                value={value}
+                min={-3}
+                max={3}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setValue(label, e.target.value)
+                }
+                sx={{
+                  width: 44,
+                  textAlign: 'center',
+                  background: 'transparent',
+                  border: `1px solid ${alpha(border, 0.6)}`,
+                  borderRadius: '4px',
+                  color: ink,
+                  fontFamily: '"IM Fell English", Georgia, serif',
+                  fontSize: '1.4rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  py: '2px',
+                  outline: 'none',
+                  // Hide the native spinners; the +/- is implied by the
+                  // -3..3 range and the user types directly.
+                  '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
+                    WebkitAppearance: 'none',
+                    margin: 0,
+                  },
+                  MozAppearance: 'textfield',
+                  '&:focus': {
+                    borderColor: color,
+                  },
+                }}
+              />
+            </Stack>
+          );
+        })}
       </Box>
     </Panel>
   );
@@ -1005,9 +1061,9 @@ function ElementMark({
 }
 
 // Octagonal "card with notched corners" shape — the body of every Panel
-// has corners cut at this depth. Kept small so the notches stay tasteful
-// and content has room near the edges.
-const PANEL_CORNER = 10;
+// has corners cut at this depth. Small enough that the notches feel
+// like a subtle accent rather than a heavy frame.
+const PANEL_CORNER = 5;
 // Border-frame clip-path (after the user's spec): a 2px ring with 18px
 // corner cuts. The ring is the difference between the outer notched
 // rectangle and a 2px-inset inner notched rectangle.
@@ -1047,6 +1103,7 @@ function Panel({
   compact = false,
   variant = 'minor',
   ornament,
+  noNotch = false,
 }: {
   children: React.ReactNode;
   compact?: boolean;
@@ -1054,6 +1111,9 @@ function Panel({
   /** Back-compat: kept for old callers; the underlying variant prop
    *  controls the line style now. */
   ornament?: boolean;
+  /** When true, render a plain rectangular border (no corner notches and
+   *  no border-ring overlay). Used by Moves and Backpack cards. */
+  noNotch?: boolean;
 }) {
   // Honor the legacy `ornament` prop only when it's explicitly set; the
   // new default is 'minor' so most cards render the single-line border.
@@ -1062,7 +1122,26 @@ function Panel({
   // Inner content padding (extra space at the top/bottom/sides so content
   // never falls under the notched corner cuts or the border ring(s)).
   // Major variant has a second inset ring, so its safe-zone is larger.
-  const contentInset = resolvedVariant === 'major' ? 14 : 10;
+  // When noNotch is on, content can sit right against the border.
+  const contentInset = noNotch ? 10 : resolvedVariant === 'major' ? 14 : 10;
+
+  if (noNotch) {
+    // Plain rectangle — straight border, no clip-path, no notches.
+    return (
+      <Box
+        sx={{
+          position: 'relative',
+          border: `1px solid ${border}`,
+          borderRadius: '4px',
+          background: `linear-gradient(180deg, ${alpha(parchmentLight, 0.92)} 0%, ${alpha(parchment, 0.85)} 100%)`,
+          p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
+        }}
+      >
+        {children}
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -1402,7 +1481,8 @@ function MovesPane() {
         onChange={setSubTab}
       />
       {visibleMoves.map((title) => (
-        <Panel key={title}>
+        // Moves cards use the plain rectangular Panel variant — no notches.
+        <Panel key={title} noNotch>
           <Stack direction="row" gap={0.9} alignItems="center">
             {/* Signature diamond-within-diamond bullet for Moves */}
             {/* `ink` resolves to near-white in dark mode so the diamond
@@ -1636,13 +1716,17 @@ function CombatPane() {
   const [subTab, setSubTab] = useAtom(combatSubTabAtom);
   const [techFilter, setTechFilter] = useAtom(techniqueFilterAtom);
   const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
-  const visibleTechniques = useMemo(
-    () =>
-      elementFilter === 'all'
-        ? techniques
-        : techniques.filter((tech) => tech.element === elementFilter),
-    [elementFilter],
-  );
+  // Filter by both element and proficiency level. The Learned/Practiced/
+  // Mastered FilterTabs writes 0/1/2 to techniqueFilterAtom; map that to
+  // the level string stored on each technique.
+  const visibleTechniques = useMemo(() => {
+    const targetLevel: TechniqueLevel = (['learned', 'practiced', 'mastered'] as const)[techFilter];
+    return techniques.filter((tech) => {
+      const elementOk = elementFilter === 'all' || tech.element === elementFilter;
+      const levelOk = tech.level === targetLevel;
+      return elementOk && levelOk;
+    });
+  }, [elementFilter, techFilter]);
   const [fatigue, setFatigue] = useAtom(fatigueAtom);
   const toggleFatigue = (index: number) =>
     setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
@@ -2021,7 +2105,8 @@ function ConnectionsSection() {
 function NoteAccordion({ type, title, body }: { type: string; title: string; body: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <Panel>
+    // Backpack > Notes cards use the plain rectangular Panel — no notches.
+    <Panel noNotch>
       <Stack spacing={0.5}>
         <Box
           component="button"
@@ -2127,7 +2212,7 @@ function BackpackPane() {
           {notes.map(([type, title, body]) => (
             <NoteAccordion key={title} type={type} title={title} body={body} />
           ))}
-          <Panel ornament={false}>
+          <Panel noNotch>
             <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
               <Typography
                 sx={{
@@ -2160,7 +2245,7 @@ function BackpackPane() {
       {subTab === 1 ? (
         <>
           {inventory.map(([type, title, body]) => (
-            <Panel key={title}>
+            <Panel key={title} noNotch>
               <Stack spacing={0.5}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography
@@ -2214,7 +2299,7 @@ function BackpackPane() {
 
       {/* Lore + Sessions sub-tabs — placeholders until content is wired. */}
       {subTab === 2 || subTab === 3 ? (
-        <Panel>
+        <Panel noNotch>
           <Typography
             sx={{
               color: brownSoft,
