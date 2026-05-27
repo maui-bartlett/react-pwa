@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { atom, useAtom } from 'jotai';
-import { Backpack, HandFist, Heart } from 'lucide-react';
+import { Backpack, HandFist } from 'lucide-react';
 
 import AccountSettings from '@/sections/AccountSettings';
 import { useThemeMode } from '@/theme/hooks';
@@ -66,6 +66,12 @@ type AvPaletteShape = {
    *  decorative dark-red usage in light mode (dividers, ornaments,
    *  bullets, active-state pills). */
   accent: string;
+  /** Warm "book" highlight used for the class-name eyebrow, the
+   *  Influence label / dots, and the Conditions buttons. Light mode
+   *  keeps the rulebook's warm red; dark mode flips to a muted gold
+   *  sampled from the rulebook chapter headings ("The Trainings",
+   *  "Waterbending", etc.). */
+  bookAccent: string;
 };
 
 const lightAvPalette: AvPaletteShape = {
@@ -89,6 +95,8 @@ const lightAvPalette: AvPaletteShape = {
   attackRed: '#a8413a',
   // Pale dusty-blue from the rulebook heading-divider line.
   accent: '#a8c5d4',
+  // Warm book-red highlight — matches the rulebook's class-name color.
+  bookAccent: '#a8413a',
 };
 
 const darkAvPalette: AvPaletteShape = {
@@ -119,6 +127,11 @@ const darkAvPalette: AvPaletteShape = {
   // Pale slate-blue accent — divider / decorative tone that reads
   // against the deeper slate-blue surfaces.
   accent: '#859fb2',
+  // Muted gold sampled from the rulebook chapter headings — used for
+  // the class-name eyebrow, Influence label / dots, and the Conditions
+  // buttons in dark mode (replaces the dark-red those surfaces show
+  // in light mode).
+  bookAccent: '#c8a460',
 };
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its
@@ -138,6 +151,7 @@ let gold = lightAvPalette.gold;
 let passionRed = lightAvPalette.passionRed;
 let attackRed = lightAvPalette.attackRed;
 let accent = lightAvPalette.accent;
+let bookAccent = lightAvPalette.bookAccent;
 
 function applyAvatarPalette(isDarkMode: boolean) {
   const next = isDarkMode ? darkAvPalette : lightAvPalette;
@@ -155,6 +169,7 @@ function applyAvatarPalette(isDarkMode: boolean) {
   passionRed = next.passionRed;
   attackRed = next.attackRed;
   accent = next.accent;
+  bookAccent = next.bookAccent;
 }
 
 // Constant near-white used for chrome surfaces that always sit on a dark
@@ -553,7 +568,18 @@ function Checkbox({
     <Box
       component={interactive ? 'button' : 'div'}
       type={interactive ? 'button' : undefined}
-      onClick={interactive ? onToggle : undefined}
+      // Stop propagation so a parent row click handler (e.g., the
+      // Background row's wrapping Stack) doesn't fire a second toggle
+      // when the user taps the checkbox directly. Clicking the
+      // checkbox now reliably toggles its state exactly once.
+      onClick={
+        interactive
+          ? (e: React.MouseEvent<HTMLElement>) => {
+              e.stopPropagation();
+              onToggle?.();
+            }
+          : undefined
+      }
       aria-pressed={interactive ? checked : undefined}
       sx={{
         width: size,
@@ -932,11 +958,16 @@ function BackgroundCheckRow({ label }: { label: string }) {
  */
 function ConditionButtonShared({ label }: { label: string }) {
   const [active, setActive] = useAtom(activeConditionsAtom);
+  const { isDarkMode } = useThemeMode();
+  // Dark mode swaps the dark-red `gold` for the muted-gold bookAccent
+  // so Conditions match the rulebook chapter-heading color; light mode
+  // keeps the existing warning-red treatment.
+  const conditionColor = isDarkMode ? bookAccent : gold;
   return (
     <StatusButton
       label={label}
       active={Boolean(active[label])}
-      activeColor={gold}
+      activeColor={conditionColor}
       onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
     />
   );
@@ -1596,7 +1627,10 @@ function CharacterPane() {
             <MoveDiamond color={accent} size={9} />
             <Typography
               sx={{
-                color: ember,
+                // bookAccent flips to a muted gold in dark mode (matches
+                // rulebook chapter headings) and keeps the warm red in
+                // light mode.
+                color: bookAccent,
                 fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                 fontSize: '0.72rem',
                 fontWeight: 900,
@@ -2156,6 +2190,10 @@ function CombatPane() {
   const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
   const toggleCondition = (label: string) =>
     setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
+  const { isDarkMode } = useThemeMode();
+  // Dark mode swaps the dark-red Conditions accent for the muted-gold
+  // bookAccent (matches rulebook chapter headings).
+  const conditionColor = isDarkMode ? bookAccent : gold;
 
   return (
     <Stack spacing={1}>
@@ -2397,7 +2435,7 @@ function CombatPane() {
                   <StatusButton
                     label={label}
                     active={Boolean(activeConditions[label])}
-                    activeColor={gold}
+                    activeColor={conditionColor}
                     onToggle={() => toggleCondition(label)}
                   />
                 </Box>
@@ -2432,6 +2470,12 @@ function CombatPane() {
  * header followed by one panel per connection + an "Add Connection" action.
  */
 function ConnectionsSection() {
+  const { isDarkMode } = useThemeMode();
+  // In dark mode the Influence label + dots flip to the muted-gold
+  // bookAccent so they match the rulebook chapter-heading color; in
+  // light mode they keep their original neutral tones.
+  const influenceLabelColor = isDarkMode ? bookAccent : alpha(brown, 0.7);
+  const influenceDotsColor = isDarkMode ? bookAccent : washDeep;
   return (
     <Stack spacing={1}>
       <SectionTitle>Connections</SectionTitle>
@@ -2465,22 +2509,21 @@ function ConnectionsSection() {
                   {role}
                 </Typography>
               </Stack>
-              <Stack direction="row" alignItems="center" gap={0.55}>
-                <Stack alignItems="flex-end" spacing={0.2}>
-                  <Typography
-                    sx={{
-                      color: alpha(brown, 0.7),
-                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                      fontSize: '0.54rem',
-                      fontWeight: 900,
-                      letterSpacing: '0.12em',
-                    }}
-                  >
-                    INFLUENCE
-                  </Typography>
-                  <StatDots value={4 - index} color={washDeep} />
-                </Stack>
-                <Heart size={18} fill={index < 2 ? ember : 'transparent'} color={ember} />
+              {/* No more heart icon — Influence label + dots stand on
+                  their own. */}
+              <Stack alignItems="flex-end" spacing={0.2}>
+                <Typography
+                  sx={{
+                    color: influenceLabelColor,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.54rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  INFLUENCE
+                </Typography>
+                <StatDots value={4 - index} color={influenceDotsColor} />
               </Stack>
             </Stack>
             <Box
