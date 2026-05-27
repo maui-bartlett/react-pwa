@@ -23,10 +23,9 @@ import elementWater from './assets/element-water.png';
 
 // Outer-mat gradients used behind the parchment card. Theme-aware.
 const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
-// Dark mode mat: deep slate-gray gradient (was deep-navy). Same family
-// as the auth flow's dark palette but shifted toward gray so the surface
-// reads cooler / more neutral.
-const darkPageBg = 'linear-gradient(140deg, #07090f 0%, #0d1319 50%, #07090f 100%)';
+// Dark mode mat: slate-blue gradient — guided by the AL cover art's
+// deep twilight, halfway between the prior gray mat and full navy.
+const darkPageBg = 'linear-gradient(140deg, #060a11 0%, #0c131c 50%, #060a11 100%)';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -77,9 +76,10 @@ const lightAvPalette: AvPaletteShape = {
   parchmentDeep: '#cdd9e5',
   washDeep: '#6f9bba',
   ink: '#23456b',
-  // Header / footer brush-stroke band — pinned to the dark-mode slate-
-  // gray chrome so the header reads identically across both themes.
-  deepInk: '#141a20',
+  // Header / footer brush-stroke band — pinned to the dark-mode
+  // slate-blue chrome so the header reads identically across both
+  // themes.
+  deepInk: '#111a24',
   brown: '#3a4e63',
   brownSoft: '#5a6f86',
   border: '#b1c3d3',
@@ -92,23 +92,21 @@ const lightAvPalette: AvPaletteShape = {
 };
 
 const darkAvPalette: AvPaletteShape = {
-  // Dark mode: deep slate-gray palette aligned with the AccountSettings
-  // auth flow's avatarDarkTokens. Each previously-navy value was shifted
-  // toward gray (R bumped up, B dropped back) so the surfaces keep a
-  // faint blue undertone but read as a cool gray rather than saturated
-  // navy. The chrome band sits at the AL cover's darkest gray-navy.
-  parchment: '#0d1319', // card / panel bg
-  parchmentLight: '#181e26', // slightly lifted slate-gray for elevated cards
-  parchmentDeep: '#07090f', // recessed pocket
-  washDeep: '#898e96', // atmospheric mountain-haze gray
-  ink: '#eef0f4', // near-white body / heading text (slightly grayer)
-  // Chrome band — pinned to the AL cover's darkest navy, nudged toward
-  // gray. Light and dark modes still share the chrome family but dark
-  // mode's tone is now cooler/more neutral.
-  deepInk: '#141a20',
-  brown: '#e3e6ec', // body text (matches auth brandText, grayer)
-  brownSoft: '#c5cad2', // secondary text (matches auth textSecondary)
-  border: '#313840', // subtle slate-gray border
+  // Dark mode: slate-blue palette guided by the Avatar Legends cover
+  // art's deep twilight sky. Sits roughly halfway between the prior
+  // gray palette and the original cover-art navy — enough blue to read
+  // as slate-blue, not enough to feel fully saturated navy.
+  parchment: '#0c131c', // card / panel bg
+  parchmentLight: '#161e29', // slightly lifted slate for elevated cards
+  parchmentDeep: '#060a11', // recessed pocket
+  washDeep: '#818e9c', // atmospheric mountain-haze slate
+  ink: '#eff2f8', // near-white body / heading text
+  // Chrome band — slate-blue chrome that still ties to the AL cover
+  // navy but stays softer than full saturation.
+  deepInk: '#111a24',
+  brown: '#e4ebf5', // body text (slight blue lift)
+  brownSoft: '#c3ccd9', // secondary text
+  border: '#2d3947', // subtle slate-blue border
   ember: '#d56b5f', // muted brick-red accent (cover scrollwork warm tone)
   // `gold` is the dark-red accent used by Fatigue diamonds, Conditions,
   // and Negative Statuses. Pinned to the same value as light mode so the
@@ -118,9 +116,9 @@ const darkAvPalette: AvPaletteShape = {
   // cover-art red so they stay legible against the gray body.
   passionRed: '#c84a3e',
   attackRed: '#c84a3e',
-  // Pale-gray-blue accent — desaturated variant of the light-mode
-  // divider color so it still reads on the deeper gray surfaces.
-  accent: '#8c9ca8',
+  // Pale slate-blue accent — divider / decorative tone that reads
+  // against the deeper slate-blue surfaces.
+  accent: '#859fb2',
 };
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its

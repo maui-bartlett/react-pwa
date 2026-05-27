@@ -153,14 +153,14 @@ const avatarLightTokens: FabUTokens = {
     pillSurface: '#ffffff',
     surfaceMuted: '#dde7ef',
     border: '#b1c3d3',
-    textPrimary: '#141a20', // AL deepInk — slate-gray chrome (matches dark mode)
+    textPrimary: '#111a24', // AL deepInk — slate-blue chrome (matches dark mode)
     textSecondary: '#3a4e63', // AL brown (slate blue body)
-    brand: '#141a20',
-    brandStrong: '#141a20',
+    brand: '#111a24',
+    brandStrong: '#111a24',
     brandSoft: '#dde7ef',
     brandText: '#23456b', // AL ink (heading blue)
     brandFg: '#ffffff',
-    labelBg: '#141a20',
+    labelBg: '#111a24',
     labelFg: '#ffffff',
     highlight: '#7a2424', // AL gold (dark-red accent)
     highlightFg: '#ffffff',
@@ -180,28 +180,28 @@ const avatarLightTokens: FabUTokens = {
   },
 };
 
-/** Avatar Legends dark tokens — deep slate-gray chrome shifted toward
- *  gray from the previous navy palette. Each color was pulled toward
- *  neutral (R nudged up, B dropped) so the auth dialog and the AL UI
- *  read as the same cool-gray theme rather than saturated navy. */
+/** Avatar Legends dark tokens — slate-blue chrome guided by the AL
+ *  cover art. Sits roughly halfway between the prior gray palette and
+ *  the original cover-art navy so the auth dialog reads as cool slate-
+ *  blue, not fully saturated navy or fully neutral gray. */
 const avatarDarkTokens: FabUTokens = {
   isDark: true,
   color: {
-    page: '#07090f', // deepest body, sits a step below surface
-    canvas: '#0d1319', // AL parchment (cards)
-    surface: '#0d1319',
-    surfaceCard: '#0d1319',
-    pillSurface: '#141a20', // AL deepInk — header / footer chrome band
-    surfaceMuted: '#0d1319',
-    border: '#313840', // subtle slate-gray
-    textPrimary: '#eef0f4', // AL ink (near-white, grayer)
-    textSecondary: '#c5cad2', // AL brownSoft
-    brand: '#141a20', // matches AL header chrome
-    brandStrong: '#141a20',
-    brandSoft: '#181e26',
-    brandText: '#e3e6ec', // AL brown (dark)
+    page: '#060a11', // deepest body, sits a step below surface
+    canvas: '#0c131c', // AL parchment (cards)
+    surface: '#0c131c',
+    surfaceCard: '#0c131c',
+    pillSurface: '#111a24', // AL deepInk — header / footer chrome band
+    surfaceMuted: '#0c131c',
+    border: '#2d3947', // subtle slate-blue
+    textPrimary: '#eff2f8', // AL ink (near-white)
+    textSecondary: '#c3ccd9', // AL brownSoft
+    brand: '#111a24', // matches AL header chrome
+    brandStrong: '#111a24',
+    brandSoft: '#161e29',
+    brandText: '#e4ebf5', // AL brown (dark)
     brandFg: '#ffffff',
-    labelBg: '#141a20',
+    labelBg: '#111a24',
     labelFg: '#ffffff',
     // Dark-red highlight matches the AL `gold` accent (#7a2424) pinned
     // to the same dark red across light + dark modes.
@@ -214,7 +214,7 @@ const avatarDarkTokens: FabUTokens = {
     warning: '#a47b29',
     success: '#5a7a55',
     danger: '#7a2424',
-    neutral: '#c5cad2',
+    neutral: '#c3ccd9',
   },
   radius: { pill: 999, sm: 9, md: 13, lg: 16 },
   shadow: {
