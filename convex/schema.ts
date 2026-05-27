@@ -27,7 +27,6 @@ export default defineSchema({
         activeForUserProfileId: v.optional(v.id('userProfiles')),
       }),
     ),
-    name: v.string(),
     portraitUrl: v.optional(v.string()),
     schemaVersion: v.number(),
     characterState: v.any(),
@@ -36,11 +35,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index('by_ownerUserId', ['ownerUserId'])
-    .index('by_ownerUserId_metaGameSystem', ['ownerUserId', 'meta.gameSystem'])
-    .searchIndex('search_name', {
-      searchField: 'name',
-      filterFields: ['ownerUserId'],
-    }),
+    .index('by_ownerUserId_metaGameSystem', ['ownerUserId', 'meta.gameSystem']),
 
   campaigns: defineTable({
     ownerUserId: v.id('userProfiles'),

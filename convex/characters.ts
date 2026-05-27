@@ -60,7 +60,6 @@ export const get = query({
 
 export const create = mutation({
   args: {
-    name: v.string(),
     portraitUrl: v.optional(v.string()),
     schemaVersion: v.number(),
     characterState: v.any(),
@@ -71,7 +70,6 @@ export const create = mutation({
     return await ctx.db.insert('characters', {
       ownerUserId: profile._id,
       meta: withFabulaMeta({ activeForUserProfileId: profile._id }),
-      name: args.name,
       portraitUrl: args.portraitUrl,
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
@@ -83,7 +81,6 @@ export const create = mutation({
 
 export const createFromLocalImport = mutation({
   args: {
-    name: v.string(),
     schemaVersion: v.number(),
     characterState: v.any(),
   },
@@ -93,7 +90,6 @@ export const createFromLocalImport = mutation({
     return await ctx.db.insert('characters', {
       ownerUserId: profile._id,
       meta: withFabulaMeta({ activeForUserProfileId: profile._id }),
-      name: args.name,
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
       createdAt: now,
@@ -153,13 +149,11 @@ export const updateState = mutation({
 export const updateMetadata = mutation({
   args: {
     characterId: v.id('characters'),
-    name: v.optional(v.string()),
     portraitUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireCharacterOwner(ctx, args.characterId);
     await ctx.db.patch(args.characterId, {
-      name: args.name,
       portraitUrl: args.portraitUrl,
       updatedAt: Date.now(),
     });
@@ -190,6 +184,93 @@ export const listCampaignsForCharacter = query({
       .query('campaignCharacters')
       .withIndex('by_characterId', (q) => q.eq('characterId', args.characterId))
       .collect();
+  },
+});
+
+/**
+ * One-shot migration: drop the root `name` column from every character
+ * and reshape `characterState.character` so the three flat name fields
+ * (`firstName`, `lastName`, `nickName`) live nested under a single
+ * `name` object. Safe to re-run — no-ops on rows that are already in
+ * the new shape. Invoke once after deploy:
+ *   npx convex run characters:migrateCharacterName
+ */
+export const migrateCharacterName = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      const legacyRow = row as typeof row & { name?: unknown };
+      const hasRootName = legacyRow.name !== undefined;
+
+      const state = legacyRow.characterState as
+        | Record<string, unknown>
+        | null
+        | undefined;
+      const character = state && typeof state === 'object' ? state.character : undefined;
+      const hasCharacter = character && typeof character === 'object';
+
+      // Detect flat legacy shape inside characterState.character.
+      const flatChar = hasCharacter ? (character as Record<string, unknown>) : null;
+      const hasNested = flatChar && flatChar.name && typeof flatChar.name === 'object';
+      const hasFlat =
+        flatChar &&
+        (typeof flatChar.firstName === 'string' ||
+          typeof flatChar.lastName === 'string' ||
+          typeof flatChar.nickName === 'string');
+
+      if (!hasRootName && !hasFlat && hasNested) continue;
+      if (!hasRootName && !hasFlat && !hasNested && !hasCharacter) continue;
+
+      const patch: Record<string, unknown> = {};
+
+      if (hasRootName) patch.name = undefined;
+
+      if (flatChar && (hasFlat || !hasNested)) {
+        const {
+          firstName,
+          lastName,
+          nickName,
+          name: existingName,
+          ...rest
+        } = flatChar;
+        // Prefer an already-nested `name` if present; otherwise build
+        // it from the flat fields. Missing pieces fall back to empty
+        // strings so the shape stays well-formed.
+        const existingNested =
+          existingName && typeof existingName === 'object'
+            ? (existingName as Record<string, unknown>)
+            : {};
+        const nestedName = {
+          firstName:
+            typeof existingNested.firstName === 'string'
+              ? existingNested.firstName
+              : typeof firstName === 'string'
+                ? firstName
+                : '',
+          lastName:
+            typeof existingNested.lastName === 'string'
+              ? existingNested.lastName
+              : typeof lastName === 'string'
+                ? lastName
+                : '',
+          nickName:
+            typeof existingNested.nickName === 'string'
+              ? existingNested.nickName
+              : typeof nickName === 'string'
+                ? nickName
+                : '',
+        };
+        const nextCharacter = { ...rest, name: nestedName };
+        patch.characterState = { ...(state as Record<string, unknown>), character: nextCharacter };
+      }
+
+      if (Object.keys(patch).length === 0) continue;
+      await ctx.db.patch(row._id, patch);
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
   },
 });
 
