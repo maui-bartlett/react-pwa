@@ -6,7 +6,7 @@
   "background_color": "#111a24",
   "display": "standalone",
   "orientation": "portrait",
-  "pwa_version": "2026.05.23.4",
+  "pwa_version": "2026.05.27.1",
   "icons": [
     {
       "src": "pwa-192x192.png",

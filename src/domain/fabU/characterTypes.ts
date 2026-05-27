@@ -65,14 +65,9 @@ type PersistedCharacterState = {
   character: Character;
 };
 
-type BackendCharacterState = PersistedCharacterState & {
-  statusEffects: StatusEffects;
-};
-
 export type {
   BackpackItem,
   BackstoryPrompt,
-  BackendCharacterState,
   Character,
   ClassEntry,
   PersistedCharacterState,

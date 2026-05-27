@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 
-import { mutation, query } from './_generated/server';
+import { internalMutation, mutation, query } from './_generated/server';
 import {
   canReadCharacter,
   canWriteCanonicalCharacter,
@@ -9,8 +9,6 @@ import {
   requireCharacterOwner,
 } from './lib/auth';
 import { FABULA_ULTIMA_TYPE, isActiveForProfile, withFabulaMeta } from './lib/fabulaMeta';
-
-const statusEffectsValidator = v.record(v.string(), v.boolean());
 
 export const listMine = query({
   args: { includeArchived: v.optional(v.boolean()) },
@@ -63,11 +61,9 @@ export const get = query({
 export const create = mutation({
   args: {
     name: v.string(),
-    summary: v.optional(v.string()),
     portraitUrl: v.optional(v.string()),
     schemaVersion: v.number(),
     characterState: v.any(),
-    statusEffects: v.optional(statusEffectsValidator),
   },
   handler: async (ctx, args) => {
     const profile = await getOrCreateUserProfile(ctx);
@@ -76,11 +72,9 @@ export const create = mutation({
       ownerUserId: profile._id,
       meta: withFabulaMeta({ activeForUserProfileId: profile._id }),
       name: args.name,
-      summary: args.summary,
       portraitUrl: args.portraitUrl,
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
-      statusEffects: args.statusEffects,
       createdAt: now,
       updatedAt: now,
     });
@@ -92,7 +86,6 @@ export const createFromLocalImport = mutation({
     name: v.string(),
     schemaVersion: v.number(),
     characterState: v.any(),
-    statusEffects: v.optional(statusEffectsValidator),
   },
   handler: async (ctx, args) => {
     const profile = await getOrCreateUserProfile(ctx);
@@ -103,7 +96,6 @@ export const createFromLocalImport = mutation({
       name: args.name,
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
-      statusEffects: args.statusEffects,
       createdAt: now,
       updatedAt: now,
     });
@@ -146,7 +138,6 @@ export const updateState = mutation({
     characterId: v.id('characters'),
     schemaVersion: v.number(),
     characterState: v.any(),
-    statusEffects: v.optional(statusEffectsValidator),
   },
   handler: async (ctx, args) => {
     if (!(await canWriteCanonicalCharacter(ctx, args.characterId)))
@@ -154,22 +145,6 @@ export const updateState = mutation({
     await ctx.db.patch(args.characterId, {
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
-      statusEffects: args.statusEffects,
-      updatedAt: Date.now(),
-    });
-  },
-});
-
-export const updateStatusEffects = mutation({
-  args: {
-    characterId: v.id('characters'),
-    statusEffects: statusEffectsValidator,
-  },
-  handler: async (ctx, args) => {
-    if (!(await canWriteCanonicalCharacter(ctx, args.characterId)))
-      throw new ConvexError('FORBIDDEN');
-    await ctx.db.patch(args.characterId, {
-      statusEffects: args.statusEffects,
       updatedAt: Date.now(),
     });
   },
@@ -179,14 +154,12 @@ export const updateMetadata = mutation({
   args: {
     characterId: v.id('characters'),
     name: v.optional(v.string()),
-    summary: v.optional(v.string()),
     portraitUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireCharacterOwner(ctx, args.characterId);
     await ctx.db.patch(args.characterId, {
       name: args.name,
-      summary: args.summary,
       portraitUrl: args.portraitUrl,
       updatedAt: Date.now(),
     });
@@ -217,5 +190,91 @@ export const listCampaignsForCharacter = query({
       .query('campaignCharacters')
       .withIndex('by_characterId', (q) => q.eq('characterId', args.characterId))
       .collect();
+  },
+});
+
+/**
+ * One-shot migration: rename the legacy `meta.type` field to
+ * `meta.gameSystem` on every character document. The schema (and all
+ * code) was renamed previously, but rows saved before that change
+ * still carry the old key; this scan rewrites them in place. Run via:
+ *   npx convex run characters:migrateLegacyMetaType
+ * Safe to re-run — no-ops on rows that are already on `meta.gameSystem`.
+ */
+export const migrateLegacyMetaType = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      const legacyMeta = row.meta as
+        | { type?: unknown; gameSystem?: string; activeForUserProfileId?: unknown }
+        | undefined;
+      if (!legacyMeta || legacyMeta.type === undefined) continue;
+      // Promote the legacy `type` value to `gameSystem` only when
+      // `gameSystem` isn't already set (prefer the newer value if both
+      // are present), then drop `type` from the stored object.
+      const { type, ...rest } = legacyMeta as { type?: unknown } & Record<string, unknown>;
+      const nextMeta = {
+        ...rest,
+        gameSystem:
+          typeof legacyMeta.gameSystem === 'string' && legacyMeta.gameSystem.length > 0
+            ? legacyMeta.gameSystem
+            : typeof type === 'string'
+              ? type
+              : undefined,
+      };
+      await ctx.db.patch(row._id, { meta: nextMeta });
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
+  },
+});
+
+/**
+ * One-shot migration: strip the legacy `summary` and root-level
+ * `statusEffects` fields from every character document, plus the
+ * duplicated `statusEffects` that used to sit alongside `character`
+ * inside `characterState`. Run from the Convex dashboard / CLI once
+ * after this PR deploys so existing rows match the new schema:
+ *   npx convex run characters:cleanupLegacyFields
+ * Safe to re-run — no-ops on rows that are already clean.
+ */
+export const cleanupLegacyFields = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let cleaned = 0;
+    for (const row of rows) {
+      const legacy = row as typeof row & {
+        summary?: unknown;
+        statusEffects?: unknown;
+      };
+      const hasSummary = legacy.summary !== undefined;
+      const hasRootStatusEffects = legacy.statusEffects !== undefined;
+      const state = legacy.characterState as
+        | { statusEffects?: unknown; [key: string]: unknown }
+        | null
+        | undefined;
+      const hasNestedStatusEffects =
+        state && typeof state === 'object' && 'statusEffects' in state;
+
+      if (!hasSummary && !hasRootStatusEffects && !hasNestedStatusEffects) continue;
+
+      const patch: Record<string, unknown> = {};
+      if (hasSummary) patch.summary = undefined;
+      if (hasRootStatusEffects) patch.statusEffects = undefined;
+      if (hasNestedStatusEffects) {
+        // Re-write characterState without the redundant top-level
+        // statusEffects (the canonical copy lives under
+        // characterState.character.statusEffects).
+        const { statusEffects: _stripped, ...rest } = state as Record<string, unknown>;
+        patch.characterState = rest;
+      }
+
+      await ctx.db.patch(row._id, patch);
+      cleaned += 1;
+    }
+    return { scanned: rows.length, cleaned };
   },
 });

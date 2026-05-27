@@ -11,7 +11,6 @@ import {
   createDefaultCharacter,
 } from './characterDefaults';
 import type {
-  BackendCharacterState,
   BackpackItem,
   BackstoryPrompt,
   Character,
@@ -227,19 +226,28 @@ function migrateCharacter(
   };
 }
 
-function serializeCharacterForBackend(character: Character): BackendCharacterState {
+function serializeCharacterForBackend(character: Character): PersistedCharacterState {
+  // The full Character (including `statusEffects`) lives under
+  // `character`. We no longer mirror `statusEffects` at the top of the
+  // persisted state — that field was redundant with
+  // `character.statusEffects` and is removed from the backend payload.
   return {
     schemaVersion: CHARACTER_SCHEMA_VERSION,
     character,
-    statusEffects: character.statusEffects,
   };
 }
 
 function deserializeCharacterFromBackend(raw: unknown): Character {
   if (!raw || typeof raw !== 'object') return createDefaultCharacter();
-  const backendState = raw as Partial<BackendCharacterState>;
-  return normalizeCharacter(backendState.character ?? raw, {
-    oldStatusEffects: backendState.statusEffects,
+  const persisted = raw as Partial<PersistedCharacterState> & {
+    // Legacy payloads stored a top-level `statusEffects` alongside
+    // `character`. We accept it here as a fallback so existing rows
+    // round-trip correctly until the cleanup migration runs, but new
+    // writes (see serializeCharacterForBackend) no longer emit it.
+    statusEffects?: unknown;
+  };
+  return normalizeCharacter(persisted.character ?? raw, {
+    oldStatusEffects: persisted.statusEffects,
   });
 }
 
