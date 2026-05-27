@@ -180,37 +180,39 @@ const avatarLightTokens: FabUTokens = {
   },
 };
 
-/** Avatar Legends dark tokens — mirrors the extra-dark-blue body, less-
- *  saturated chrome, and brighter dark-red accent used on the AL page in
- *  dark mode, with near-white text on every surface. */
+/** Avatar Legends dark tokens — aligned with the deep-navy chrome band
+ *  (#0e1a28) of the AL page header. The auth dialog and the AL UI share
+ *  this palette so the two surfaces read as the same deep-navy theme. */
 const avatarDarkTokens: FabUTokens = {
   isDark: true,
   color: {
-    page: '#030710', // AL parchment (dark) — extra-dark blue body
-    canvas: '#0a131e', // AL parchmentLight (dark)
+    page: '#050b14', // deepest body, sits a step below surface
+    canvas: '#0a131e', // AL parchment (cards)
     surface: '#0a131e',
     surfaceCard: '#0a131e',
-    pillSurface: '#10202e', // AL deepInk (chrome band)
+    pillSurface: '#0e1a28', // AL deepInk — header / footer chrome band
     surfaceMuted: '#0a131e',
-    border: '#13202f', // AL border (dark)
-    textPrimary: '#f0f5fc', // AL brown (dark) — near-white body
-    textSecondary: '#c2cee0', // AL brownSoft (dark)
-    brand: '#10202e',
-    brandStrong: '#10202e',
+    border: '#2a3a4e', // subtle slate-navy
+    textPrimary: '#f0f5fc', // AL ink (near-white)
+    textSecondary: '#c2cee0', // AL brownSoft
+    brand: '#0e1a28', // matches AL header chrome
+    brandStrong: '#0e1a28',
     brandSoft: '#13202f',
-    brandText: '#e6efff', // AL ink (dark)
+    brandText: '#e6efff', // AL brown (dark)
     brandFg: '#ffffff',
-    labelBg: '#10202e',
+    labelBg: '#0e1a28',
     labelFg: '#ffffff',
-    highlight: '#d05246', // AL gold (dark) — brighter dark red
+    // Dark-red highlight now matches the AL `gold` accent (#7a2424)
+    // pinned to the same dark red across light + dark modes.
+    highlight: '#7a2424',
     highlightFg: '#ffffff',
     fp: '#3a6390',
     fpFg: '#ffffff',
-    hp: '#d05246',
+    hp: '#7a2424',
     mp: '#4a7fa8',
     warning: '#a47b29',
     success: '#5a7a55',
-    danger: '#d05246',
+    danger: '#7a2424',
     neutral: '#c2cee0',
   },
   radius: { pill: 999, sm: 9, md: 13, lg: 16 },

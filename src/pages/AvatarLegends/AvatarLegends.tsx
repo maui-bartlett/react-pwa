@@ -23,10 +23,10 @@ import elementWater from './assets/element-water.png';
 
 // Outer-mat gradients used behind the parchment card. Theme-aware.
 const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
-// Dark mode mat: slate-blue gradient sampled from the cover art's mountain
-// horizon — deeper at the edges, slightly lighter atmospheric blue at the
-// midpoint.
-const darkPageBg = 'linear-gradient(140deg, #1a2530 0%, #2a3b50 50%, #1a2530 100%)';
+// Dark mode mat: deep-navy gradient aligned with the AccountSettings auth
+// flow's dark palette so the AL UI and the auth dialog share the same
+// surface treatment.
+const darkPageBg = 'linear-gradient(140deg, #050b14 0%, #0a131e 50%, #050b14 100%)';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -54,12 +54,19 @@ type AvPaletteShape = {
   brownSoft: string;
   border: string;
   ember: string;
+  /** Dark-red accent. Reserved for semantic-warning surfaces — Fatigue
+   *  diamonds, Conditions, Negative Statuses. Used sparingly. */
   gold: string;
   // Red used for the Passion stat label and the Advance & Attack category
   // eyebrow. In light mode each keeps a distinct warm shade; in dark mode
   // both flip to the Fatigue-diamond accent (= `gold`) so the reds match.
   passionRed: string;
   attackRed: string;
+  /** Main decorative accent. Light dusty-blue sampled from the heading
+   *  divider line in the official rulebook layout. Replaces most of the
+   *  decorative dark-red usage in light mode (dividers, ornaments,
+   *  bullets, active-state pills). */
+  accent: string;
 };
 
 const lightAvPalette: AvPaletteShape = {
@@ -81,33 +88,38 @@ const lightAvPalette: AvPaletteShape = {
   gold: '#7a2424',
   passionRed: '#bc5753',
   attackRed: '#a8413a',
+  // Pale dusty-blue from the rulebook heading-divider line.
+  accent: '#a8c5d4',
 };
 
 const darkAvPalette: AvPaletteShape = {
-  // Dark mode: slate-blue palette sampled from the Avatar Legends cover
-  // art (deep slate sky behind misty mountains, with pale-cyan decorative
-  // scrollwork in the corners). Header / footer pick a darker slate so the
-  // chrome reads as a distinct band against the body.
-  parchment: '#2a3b50', // card / panel bg — main slate-sky blue
-  parchmentLight: '#374a60', // slightly lighter slate for elevated surfaces
-  parchmentDeep: '#1e2a39', // deeper slate for recessed grooves
-  washDeep: '#7a8ea2', // atmospheric-haze blue from the mountains
-  ink: '#f0f4f8', // near-white body / heading text
+  // Dark mode: deep-navy palette aligned with the AccountSettings auth
+  // flow's avatarDarkTokens so the AL UI and the auth dialog read as the
+  // same surface treatment. The chrome band sits at the AL cover's
+  // darkest navy; everything else descends from that.
+  parchment: '#0a131e', // card / panel bg — matches auth surface
+  parchmentLight: '#131e2c', // slightly lifted slate-navy for elevated cards
+  parchmentDeep: '#050b14', // recessed pocket
+  washDeep: '#7a8ea2', // atmospheric mountain-haze blue
+  ink: '#f0f5fc', // near-white body / heading text (matches auth textPrimary)
   // Chrome band — pinned to the darkest navy from the AL cover art so
   // light and dark modes share the same header / footer color.
   deepInk: '#0e1a28',
-  brown: '#e3e9f0', // body text — light cool grey
-  brownSoft: '#a8b6c5', // secondary text — softer slate
-  border: '#4a5b6e', // subtle slate border, sampled from the mid-tones
+  brown: '#e6efff', // body text (matches auth brandText)
+  brownSoft: '#c2cee0', // secondary text (matches auth textSecondary)
+  border: '#2a3a4e', // subtle slate-navy border
   ember: '#d56b5f', // muted brick-red accent (cover scrollwork warm tone)
   // `gold` is the dark-red accent used by Fatigue diamonds, Conditions,
   // and Negative Statuses. Pinned to the same value as light mode so the
   // dark-red reads identically in both modes.
   gold: '#7a2424',
   // Passion stat label + Advance & Attack eyebrow keep the brighter
-  // cover-art red so they stay legible against the deep slate body.
+  // cover-art red so they stay legible against the deep navy body.
   passionRed: '#c84a3e',
   attackRed: '#c84a3e',
+  // Slightly more saturated variant of the light-blue accent so it
+  // still reads on the deeper navy surfaces.
+  accent: '#7fa2bd',
 };
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its
@@ -126,6 +138,7 @@ let ember = lightAvPalette.ember;
 let gold = lightAvPalette.gold;
 let passionRed = lightAvPalette.passionRed;
 let attackRed = lightAvPalette.attackRed;
+let accent = lightAvPalette.accent;
 
 function applyAvatarPalette(isDarkMode: boolean) {
   const next = isDarkMode ? darkAvPalette : lightAvPalette;
@@ -142,6 +155,7 @@ function applyAvatarPalette(isDarkMode: boolean) {
   gold = next.gold;
   passionRed = next.passionRed;
   attackRed = next.attackRed;
+  accent = next.accent;
 }
 
 // Constant near-white used for chrome surfaces that always sit on a dark
@@ -1142,7 +1156,7 @@ function MoveDiamond({ color = ink, size = 18 }: { color?: string; size?: number
  */
 function CornerOrnament({
   position,
-  color = gold,
+  color = accent,
   size = 14,
 }: {
   position: 'tl' | 'tr' | 'bl' | 'br';
@@ -1390,11 +1404,13 @@ function StatDots({ value, color }: { value: number; color: string }) {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  // Mimics the character-sheet section labels (e.g. STATS, CONDITIONS) — a small
-  // caps serif with a hairline gold underline drawn via box-shadow.
+  // Mimics the character-sheet section labels (e.g. STATS, CONDITIONS) — a
+  // small caps serif with a hairline accent underline drawn via box-shadow.
+  // Bullet + underline use the pale-blue `accent` so dark red is reserved
+  // for semantic warnings.
   return (
     <Stack direction="row" alignItems="center" gap={0.6}>
-      <MoveDiamond color={gold} size={9} />
+      <MoveDiamond color={accent} size={9} />
       <Typography
         sx={{
           color: ink,
@@ -1407,7 +1423,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       >
         {children}
       </Typography>
-      <Box sx={{ flex: 1, height: '1px', bgcolor: alpha(gold, 0.4) }} />
+      <Box sx={{ flex: 1, height: '1px', bgcolor: alpha(accent, 0.55) }} />
     </Stack>
   );
 }
@@ -1434,8 +1450,8 @@ function CharacterPane() {
             Qi Gong
           </Typography>
           <Stack direction="row" alignItems="center" gap={0.7}>
-            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(gold, 0.55) }} />
-            <MoveDiamond color={gold} size={9} />
+            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
+            <MoveDiamond color={accent} size={9} />
             <Typography
               sx={{
                 color: ember,
@@ -1447,8 +1463,8 @@ function CharacterPane() {
             >
               THE SUCCESSOR
             </Typography>
-            <MoveDiamond color={gold} size={9} />
-            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(gold, 0.55) }} />
+            <MoveDiamond color={accent} size={9} />
+            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
           </Stack>
           <Stack direction="row" gap={0.6} flexWrap="wrap" justifyContent="center">
             {['He / Him', 'Age 32', 'Jasmine Island'].map((item, i) => (
@@ -1604,7 +1620,7 @@ function FilterTabs({
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               boxShadow: active
-                ? `0 1px 2px ${alpha(deepInk, 0.28)}, inset 0 0 0 1px ${alpha(gold, 0.4)}`
+                ? `0 1px 2px ${alpha(deepInk, 0.28)}, inset 0 0 0 1px ${alpha(accent, 0.5)}`
                 : 'none',
               transition: 'all 0.18s ease',
               border: 'none',
@@ -1821,7 +1837,7 @@ function TechniqueAccordion({
             <Box
               sx={{
                 height: '1px',
-                background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.4)} 12%, ${alpha(gold, 0.4)} 88%, transparent 100%)`,
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.6)} 12%, ${alpha(accent, 0.6)} 88%, transparent 100%)`,
               }}
             />
             <Typography
@@ -2205,7 +2221,7 @@ function ConnectionsSection() {
             <Box
               sx={{
                 height: '1px',
-                background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.45)} 12%, ${alpha(gold, 0.45)} 88%, transparent 100%)`,
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
               }}
             />
             <Typography
@@ -2323,7 +2339,7 @@ function NoteAccordion({ type, title, body }: { type: string; title: string; bod
             <Box
               sx={{
                 height: '1px',
-                background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.45)} 12%, ${alpha(gold, 0.45)} 88%, transparent 100%)`,
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
               }}
             />
             <Typography
@@ -2413,7 +2429,7 @@ function BackpackPane() {
                   >
                     {type}
                   </Typography>
-                  <MoveDiamond color={alpha(gold, 0.8)} size={8} />
+                  <MoveDiamond color={alpha(accent, 0.85)} size={8} />
                 </Stack>
                 <Typography
                   sx={{
@@ -2431,7 +2447,7 @@ function BackpackPane() {
                 <Box
                   sx={{
                     height: '1px',
-                    background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.45)} 12%, ${alpha(gold, 0.45)} 88%, transparent 100%)`,
+                    background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
                   }}
                 />
                 <Typography
@@ -2484,11 +2500,13 @@ function AvatarLegends() {
   const { isDarkMode } = useThemeMode();
   applyAvatarPalette(isDarkMode);
   const pageBg = isDarkMode ? darkPageBg : lightPageBg;
-  // Text color used on the top brush-stroke header band. The light-mode
-  // band is now a whiter cornflower gradient, so the heading flips to
-  // black to stay legible; dark mode keeps the near-white chromeText
-  // against the deep-navy band.
-  const headerText = isDarkMode ? chromeText : '#000000';
+  // White cornflower gradient applied to the active-tab title bar in
+  // light mode (transferred from the app header per the user spec).
+  // Black title text reads against that gradient. In dark mode the
+  // title bar stays on the parchment with `ink` text.
+  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha('#dbe5f0', 0.9)} 100%)`;
+  const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
+  const tabTitleColor = isDarkMode ? ink : '#000000';
 
   return (
     <Box
@@ -2551,27 +2569,17 @@ function AvatarLegends() {
           }}
         />
 
-        {/* Top header band. In light mode it carries a whiter cornflower
-            gradient so the header reads bright against the parchment; in
-            dark mode it stays the cover-art deep navy. */}
-        <WatercolorBand
-          height={92}
-          fill={
-            isDarkMode
-              ? undefined
-              : `linear-gradient(180deg, #ffffff 0%, ${alpha('#dbe5f0', 0.9)} 100%)`
-          }
-        />
-        {/* Bottom watercolor brush stroke (sits behind the nav) — stays
-            dark in both modes so the nav icons keep their contrast. */}
+        {/* Top header band — deep cover-art navy in both modes. */}
+        <WatercolorBand height={92} />
+        {/* Bottom watercolor brush stroke (sits behind the nav) — also
+            stays dark in both modes so the nav icons keep their contrast. */}
         <WatercolorBand bottom height={86} />
 
-        {/* Page corner ornaments — flip to dark in light mode so they
-            stay visible against the whiter header band; stay near-white
-            in dark mode against the navy band. */}
+        {/* Page corner ornaments — near-white in both modes, sitting on
+            the deep-navy header. */}
         <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
-          <CornerOrnament position="tl" color={headerText} size={18} />
-          <CornerOrnament position="tr" color={headerText} size={18} />
+          <CornerOrnament position="tl" color={chromeText} size={18} />
+          <CornerOrnament position="tr" color={chromeText} size={18} />
         </Box>
 
         <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
@@ -2601,7 +2609,7 @@ function AvatarLegends() {
             {activeTab === 'character' ? (
               <Typography
                 sx={{
-                  color: headerText,
+                  color: chromeText,
                   fontFamily: '"IM Fell English", Georgia, serif',
                   fontWeight: 700,
                   fontSize: '1.15rem',
@@ -2617,7 +2625,7 @@ function AvatarLegends() {
               <Stack spacing={0.6}>
                 <Typography
                   sx={{
-                    color: alpha(headerText, 0.7),
+                    color: alpha(chromeText, 0.7),
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '0.55rem',
                     fontWeight: 800,
@@ -2630,7 +2638,7 @@ function AvatarLegends() {
                 </Typography>
                 <Typography
                   sx={{
-                    color: headerText,
+                    color: chromeText,
                     fontFamily: '"IM Fell English", Georgia, serif',
                     fontWeight: 700,
                     fontSize: '1.25rem',
@@ -2645,14 +2653,26 @@ function AvatarLegends() {
             <AccountSettings gameSystem="avatar-legends" />
           </Box>
 
-          {/* Active-tab title bar — sits below the brush stroke on parchment */}
-          <Box sx={{ px: 1.4, pt: 1.1, pb: 0.5 }}>
+          {/* Active-tab title bar. In light mode this band carries the
+              whiter cornflower gradient + black title text (transferred
+              from the app header per the user spec). In dark mode it
+              stays on the parchment surface. */}
+          <Box
+            sx={{
+              px: 1.4,
+              pt: 1.1,
+              pb: 0.5,
+              background: tabTitleBg,
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
             <Stack direction="row" alignItems="center" justifyContent="space-between">
               <Stack direction="row" alignItems="center" gap={0.8}>
-                <MoveDiamond color={gold} size={11} />
+                <MoveDiamond color={accent} size={11} />
                 <Typography
                   sx={{
-                    color: ink,
+                    color: tabTitleColor,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '1.05rem',
                     fontWeight: 900,
@@ -2668,7 +2688,11 @@ function AvatarLegends() {
               sx={{
                 mt: 0.7,
                 height: '1px',
-                background: `linear-gradient(90deg, transparent 0%, ${alpha(gold, 0.55)} 20%, ${alpha(gold, 0.55)} 80%, transparent 100%)`,
+                // Divider line now uses the pale-blue accent (sampled
+                // from the rulebook heading-divider line) instead of the
+                // dark red — keeps dark red reserved for semantic
+                // warnings (Fatigue / Conditions / Negative Statuses).
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.75)} 20%, ${alpha(accent, 0.75)} 80%, transparent 100%)`,
               }}
             />
           </Box>
@@ -2741,8 +2765,10 @@ function AvatarLegends() {
                         width: 28,
                         height: 3,
                         borderRadius: '0 0 4px 4px',
-                        background: selected ? gold : 'transparent',
-                        boxShadow: selected ? `0 0 6px ${alpha(gold, 0.6)}` : 'none',
+                        // Active-tab pill now uses the pale-blue accent
+                        // so dark red is reserved for semantic warnings.
+                        background: selected ? accent : 'transparent',
+                        boxShadow: selected ? `0 0 6px ${alpha(accent, 0.7)}` : 'none',
                         transition: 'all 0.2s ease',
                       }}
                     />
