@@ -153,14 +153,14 @@ const avatarLightTokens: FabUTokens = {
     pillSurface: '#ffffff',
     surfaceMuted: '#dde7ef',
     border: '#b1c3d3',
-    textPrimary: '#1d2733', // AL deepInk (less-saturated dark blue)
+    textPrimary: '#141a20', // AL deepInk — slate-gray chrome (matches dark mode)
     textSecondary: '#3a4e63', // AL brown (slate blue body)
-    brand: '#1d2733',
-    brandStrong: '#10202e',
+    brand: '#141a20',
+    brandStrong: '#141a20',
     brandSoft: '#dde7ef',
     brandText: '#23456b', // AL ink (heading blue)
     brandFg: '#ffffff',
-    labelBg: '#1d2733',
+    labelBg: '#141a20',
     labelFg: '#ffffff',
     highlight: '#7a2424', // AL gold (dark-red accent)
     highlightFg: '#ffffff',

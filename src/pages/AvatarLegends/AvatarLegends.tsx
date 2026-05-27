@@ -77,10 +77,9 @@ const lightAvPalette: AvPaletteShape = {
   parchmentDeep: '#cdd9e5',
   washDeep: '#6f9bba',
   ink: '#23456b',
-  // Header / footer brush-stroke band — the darkest navy sampled from
-  // the Avatar Legends cover art (the silhouetted foreground rock
-  // beneath the misty mountains).
-  deepInk: '#0e1a28',
+  // Header / footer brush-stroke band — pinned to the dark-mode slate-
+  // gray chrome so the header reads identically across both themes.
+  deepInk: '#141a20',
   brown: '#3a4e63',
   brownSoft: '#5a6f86',
   border: '#b1c3d3',
@@ -211,7 +210,9 @@ const tabs: TabConfig[] = [
 const movesSubTabAtom = atom(0);
 const combatSubTabAtom = atom(0);
 const backpackSubTabAtom = atom(0);
-const techniqueFilterAtom = atom(0); // 0 = Learned, 1 = Practiced, 2 = Mastered
+// 0 = All, 1 = Learned, 2 = Practiced, 3 = Mastered. "All" shows every
+// technique regardless of proficiency level.
+const techniqueFilterAtom = atom(0);
 // Element filter for the Techniques sub-tab. 'all' shows every card;
 // otherwise only techniques whose `element` matches are visible.
 type TechniqueElementFilter = TechniqueElement | 'all';
@@ -240,32 +241,112 @@ const statsAtom = atom<Record<string, number>>({
 // so the yin-yang position survives tab navigation.
 const balancePositionAtom = atom(0);
 
-// Moves grouped by sub-tab. Each entry is just a button label; tap behavior
-// (rolling, GM prompt, etc.) is wired separately.
-const movesByCategory: Record<'basic' | 'balance' | 'class', string[]> = {
+// Each move card carries its title and the full body text shown when
+// the accordion expands. Some moves also have a bulleted list of
+// options. Basic + Balance bodies are drawn from the rulebook layout.
+type MoveEntry = {
+  title: string;
+  body: string;
+  bullets?: string[];
+  /** Optional trailing paragraph that follows the bullet list. */
+  trailing?: string;
+};
+
+const movesByCategory: Record<'basic' | 'balance' | 'class', MoveEntry[]> = {
   basic: [
-    'Assess a Situation',
-    'Guide and Comfort',
-    'Intimidate',
-    'Plead',
-    'Push Your Luck',
-    'Rely on Skills & Training',
-    'Trick',
-    'Help',
+    {
+      title: 'Plead',
+      body: 'When you plead with an NPC who cares what you think for help, support, or action, roll with Harmony. On a 7-9, they need something more — evidence that this is the right course, guidance in making the right choices, or resources to aid them — before they act; the GM tells you what they need. On a 10+, they act now and do their best until the situation changes.',
+    },
+    {
+      title: 'Push Your Luck',
+      body: 'When you push your luck in a risky situation, say what you want to do and roll with Passion. On a hit, you do it, but it costs you to scrape by; the GM tells you what it costs you. On a 10+, your boldness pays off despite the cost; the GM tells you what other lucky opportunity falls in your lap.',
+    },
+    {
+      title: 'Rely on Your Skills & Training',
+      body: 'When you rely on your skills and training to overcome an obstacle, gain new insight, or perform a familiar custom, roll with Focus. On a hit, you do it. On a 7-9, you do it imperfectly — the GM tells you how your approach might lead to unexpected consequences; accept those consequences or mark 1-fatigue.',
+    },
+    {
+      title: 'Assess a Situation',
+      body: 'When you assess a situation, roll with Creativity. On a 7-9, ask 1 question. On a 10+, ask 2. Take +1 ongoing when acting on the answers.',
+      bullets: [
+        'What here can I use to ___?',
+        'Who or what is the biggest threat?',
+        'What should I be on the lookout for?',
+        "What's my best way out / in / through?",
+        'Who or what is in the greatest danger?',
+      ],
+    },
+    {
+      title: 'Intimidate',
+      body: 'When you intimidate an NPC into backing off or giving in, roll with Passion. On a hit, they choose one. On a 10+, first, you pick one they cannot choose.',
+      bullets: [
+        'They run to escape or get backup',
+        'They back down but keep watch',
+        'They give in with a few stipulations',
+        'They attack you, but off-balance; the GM marks a condition on them',
+      ],
+    },
+    {
+      title: 'Trick',
+      body: 'When you trick an NPC, roll with Creativity. On a hit, they fall for it and do what you want for the moment. On a 7-9, pick 1. On a 10+, pick 2.',
+      bullets: [
+        'They stumble; take +1 forward to acting against them',
+        'They act foolishly; the GM tells you what additional opportunity they give you',
+        'They overcommit; they are deceived for some time',
+      ],
+    },
+    {
+      title: 'Comfort or Support',
+      body: "When you comfort or support another person, roll with Harmony. On a hit, they must decide if they open up to you. If they don't, mark a condition and take +1 forward against them; if they do, ask them any question. On a 10+, they can ask a question of you as well. Anyone who answers a question honestly may choose to clear a condition or 2-fatigue.",
+    },
+    {
+      title: 'Helping',
+      body: 'When you take appropriate action to help a companion, mark 1-fatigue to give them a +1 to their roll (after the roll). You cannot help in a combat exchange in this way.',
+    },
   ],
   balance: [
-    'Live Up To Your Principle',
-    'Call Someone Out',
-    'Deny a Callout',
-    'Resist Shifting Your Balance',
-    'Lose Your Balance',
+    {
+      title: 'Live Up to Your Principle',
+      body: 'When you take action in accordance with the values of a principle, mark fatigue to roll with that principle instead of whatever stat you would normally roll.',
+    },
+    {
+      title: 'Call Someone Out',
+      body: 'When you openly call on someone to live up to their principle, shift your balance away from center, then name and roll with their principle. On a hit, they are called to act as you say; they must either do it or mark a condition. On a 7-9, they challenge your view of the world in turn; mark a fatigue or they shift your balance as they choose. On a miss, they can demand you act in accordance with one of your principles instead; mark a condition or act as they request.',
+    },
+    {
+      title: 'Deny a Callout',
+      body: 'When you deny an NPC calling on you to live up to your principle, roll with that principle. On a hit, act as they say or mark 1-fatigue. On a 10+, their words hit hard; you must also shift your balance towards the called-on principle. On a miss, you stand strong; clear a condition, clear 1-fatigue, or shift your balance, your choice.',
+    },
+    {
+      title: 'Resist Shifting Your Balance',
+      body: 'When you resist an NPC shifting your balance, roll. On a hit, you maintain your current balance in spite of their words or deeds. On a 10+, choose two. On a 7-9, choose one.',
+      bullets: [
+        'Clear a condition or mark growth by immediately acting to prove them wrong',
+        'Shift your balance towards the opposite principle',
+        'Learn what their principle is (if they have one); if you already know, take +1 forward against them',
+      ],
+      trailing:
+        'On a miss, they know just what to say to throw you off balance. Mark a condition, and the GM shifts your balance twice.',
+    },
+    {
+      title: 'Lose Your Balance',
+      body: "If your balance shifts past the end of the track, you lose your balance. You obsess over that principle to a degree that's not healthy for you or anyone around you. Choose one of the following:",
+      bullets: [
+        'Give in or submit to your opposition',
+        'Lose control of yourself in a destructive and harmful way',
+        'Take an extreme action in line with the principle, then flee',
+      ],
+      trailing:
+        "Afterward, when you've had some time to recover and recenter yourself, shift your center one step towards the principle you exceeded and clear all your conditions and fatigue. Reset your balance to your new center.",
+    },
   ],
   class: [
-    'Way of the Future',
-    'Black Koala-Sheep',
-    'A Life of Regret',
-    'Walk This Way',
-    'Worldly Knowledge',
+    { title: 'Way of the Future', body: 'Class move details TBD.' },
+    { title: 'Black Koala-Sheep', body: 'Class move details TBD.' },
+    { title: 'A Life of Regret', body: 'Class move details TBD.' },
+    { title: 'Walk This Way', body: 'Class move details TBD.' },
+    { title: 'Worldly Knowledge', body: 'Class move details TBD.' },
   ],
 };
 
@@ -799,7 +880,10 @@ function StatsPanel() {
               >
                 {statOptions.map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {/* Positive stats display with an explicit plus
+                        sign so the modifier reads correctly inside
+                        the circle and in the picker. */}
+                    {option > 0 ? `+${option}` : `${option}`}
                   </option>
                 ))}
               </Box>
@@ -1716,6 +1800,121 @@ function FilterTabs({
   );
 }
 
+/**
+ * Expandable Move card. Collapsed: signature MoveDiamond + uppercased
+ * title + disclosure carat. Expanded: appends the full move body text,
+ * optional bullets list, and optional trailing paragraph.
+ */
+function MoveAccordion({ entry }: { entry: MoveEntry }) {
+  const [open, setOpen] = useState(false);
+  return (
+    // Moves cards use the plain rectangular Panel variant — no notches.
+    <Panel noNotch>
+      <Stack spacing={0.6}>
+        <Box
+          component="button"
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            gap: 0.9,
+            p: 0,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          {/* `ink` resolves to near-white in dark mode so the diamond
+              pops on the dark Moves card; in light mode it stays a
+              deep dark-blue, visually identical to the prior shade. */}
+          <MoveDiamond color={ink} size={18} />
+          <Typography
+            sx={{
+              flex: 1,
+              color: ink,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.92rem',
+              fontWeight: 900,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              lineHeight: 1.1,
+            }}
+          >
+            {entry.title}
+          </Typography>
+          <Box
+            sx={{
+              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease',
+              color: alpha(ink, 0.8),
+              fontSize: '1rem',
+              fontWeight: 900,
+              lineHeight: 1,
+            }}
+          >
+            ›
+          </Box>
+        </Box>
+        {open ? (
+          <>
+            <Box
+              sx={{
+                height: '1px',
+                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.6)} 12%, ${alpha(accent, 0.6)} 88%, transparent 100%)`,
+              }}
+            />
+            <Typography
+              sx={{
+                color: brown,
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontSize: '0.82rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {entry.body}
+            </Typography>
+            {entry.bullets ? (
+              <Box component="ul" sx={{ m: 0, pl: 2.2 }}>
+                {entry.bullets.map((bullet) => (
+                  <Typography
+                    key={bullet}
+                    component="li"
+                    sx={{
+                      color: brown,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: '0.82rem',
+                      lineHeight: 1.45,
+                      mb: 0.3,
+                    }}
+                  >
+                    {bullet}
+                  </Typography>
+                ))}
+              </Box>
+            ) : null}
+            {entry.trailing ? (
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.82rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                {entry.trailing}
+              </Typography>
+            ) : null}
+          </>
+        ) : null}
+      </Stack>
+    </Panel>
+  );
+}
+
 function MovesPane() {
   const [subTab, setSubTab] = useAtom(movesSubTabAtom);
   const categoryKey: 'basic' | 'balance' | 'class' = (['basic', 'balance', 'class'] as const)[
@@ -1729,34 +1928,8 @@ function MovesPane() {
         activeIndex={subTab}
         onChange={setSubTab}
       />
-      {visibleMoves.map((title) => (
-        // Moves cards use the plain rectangular Panel variant — no notches.
-        <Panel key={title} noNotch>
-          <Stack direction="row" gap={0.9} alignItems="center">
-            {/* Signature diamond-within-diamond bullet for Moves */}
-            {/* `ink` resolves to near-white in dark mode so the diamond
-                pops on the dark Moves card; in light mode it stays a
-                deep dark-blue, visually identical to the prior shade. */}
-            <MoveDiamond color={ink} size={18} />
-            <Typography
-              sx={{
-                flex: 1,
-                color: ink,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.92rem',
-                fontWeight: 900,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                lineHeight: 1.1,
-              }}
-            >
-              {title}
-            </Typography>
-            <Typography sx={{ color: alpha(ink, 0.8), fontWeight: 900, fontSize: '1rem' }}>
-              ›
-            </Typography>
-          </Stack>
-        </Panel>
+      {visibleMoves.map((entry) => (
+        <MoveAccordion key={entry.title} entry={entry} />
       ))}
     </Stack>
   );
@@ -1965,14 +2138,14 @@ function CombatPane() {
   const [subTab, setSubTab] = useAtom(combatSubTabAtom);
   const [techFilter, setTechFilter] = useAtom(techniqueFilterAtom);
   const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
-  // Filter by both element and proficiency level. The Learned/Practiced/
-  // Mastered FilterTabs writes 0/1/2 to techniqueFilterAtom; map that to
-  // the level string stored on each technique.
+  // Filter by both element and proficiency level. techFilter 0 = All
+  // (no level filter); 1..3 map to learned / practiced / mastered.
   const visibleTechniques = useMemo(() => {
-    const targetLevel: TechniqueLevel = (['learned', 'practiced', 'mastered'] as const)[techFilter];
+    const targetLevel: TechniqueLevel | null =
+      techFilter === 0 ? null : (['learned', 'practiced', 'mastered'] as const)[techFilter - 1];
     return techniques.filter((tech) => {
       const elementOk = elementFilter === 'all' || tech.element === elementFilter;
-      const levelOk = tech.level === targetLevel;
+      const levelOk = targetLevel === null || tech.level === targetLevel;
       return elementOk && levelOk;
     });
   }, [elementFilter, techFilter]);
@@ -2032,101 +2205,100 @@ function CombatPane() {
       {/* Techniques sub-tab: element filter row + expandable technique cards */}
       {subTab === 0 ? (
         <>
-          {/* Horizontally scrollable element filter row. "All" sits on the
-              left; "Basic" follows with a SquareInSquare icon; the six
-              elemental types follow with their existing image badges. */}
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 1.6,
-              overflowX: 'auto',
-              px: 0.5,
-              pt: 0.4,
-              // Hide the scrollbar but keep it scrollable via touch / wheel.
-              scrollbarWidth: 'none',
-              '&::-webkit-scrollbar': { display: 'none' },
-            }}
-          >
-            {elementFilters.map((entry) => {
-              const isActive = elementFilter === entry.key;
-              return (
-                <Stack
-                  key={entry.key}
-                  component="button"
-                  type="button"
-                  onClick={() => setElementFilter(entry.key)}
-                  aria-pressed={isActive}
-                  alignItems="center"
-                  spacing={0.4}
-                  sx={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    p: 0,
-                    flex: '0 0 auto',
-                    opacity: isActive ? 1 : 0.55,
-                    transition: 'opacity 0.15s ease',
-                  }}
-                >
-                  {entry.key === 'all' || entry.key === 'basic' ? (
-                    <Box
-                      sx={{
-                        width: 34,
-                        height: 32,
-                        borderRadius: '3px',
-                        border: `1px solid ${alpha(deepInk, 0.35)}`,
-                        background: alpha(parchmentLight, 0.4),
-                        display: 'grid',
-                        placeItems: 'center',
-                        flex: '0 0 auto',
-                        boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
-                      }}
-                    >
-                      {entry.key === 'all' ? (
-                        <Typography
-                          sx={{
-                            color: entry.color,
-                            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                            fontSize: '0.62rem',
-                            fontWeight: 900,
-                            letterSpacing: '0.04em',
-                            lineHeight: 1,
-                          }}
-                        >
-                          ALL
-                        </Typography>
-                      ) : (
-                        <SquareInSquare color={entry.color} size={20} />
-                      )}
-                    </Box>
-                  ) : (
-                    <ElementMark
-                      color={entry.color}
-                      label={entry.label.slice(0, 1)}
-                      src={entry.src ?? undefined}
-                      size={34}
-                      height={32}
-                    />
-                  )}
-                  <Typography
+          {/* Element filter row wrapped in its own card so the chips read
+              as a discrete control band rather than floating on the page. */}
+          <Panel compact>
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 1.6,
+                overflowX: 'auto',
+                // Hide the scrollbar but keep it scrollable via touch / wheel.
+                scrollbarWidth: 'none',
+                '&::-webkit-scrollbar': { display: 'none' },
+              }}
+            >
+              {elementFilters.map((entry) => {
+                const isActive = elementFilter === entry.key;
+                return (
+                  <Stack
+                    key={entry.key}
+                    component="button"
+                    type="button"
+                    onClick={() => setElementFilter(entry.key)}
+                    aria-pressed={isActive}
+                    alignItems="center"
+                    spacing={0.4}
                     sx={{
-                      color: brown,
-                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                      fontSize: '0.58rem',
-                      fontWeight: 900,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      p: 0,
+                      flex: '0 0 auto',
+                      opacity: isActive ? 1 : 0.55,
+                      transition: 'opacity 0.15s ease',
                     }}
                   >
-                    {entry.label}
-                  </Typography>
-                </Stack>
-              );
-            })}
-          </Box>
+                    {entry.key === 'all' || entry.key === 'basic' ? (
+                      <Box
+                        sx={{
+                          width: 34,
+                          height: 32,
+                          borderRadius: '3px',
+                          border: `1px solid ${alpha(deepInk, 0.35)}`,
+                          background: alpha(parchmentLight, 0.4),
+                          display: 'grid',
+                          placeItems: 'center',
+                          flex: '0 0 auto',
+                          boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
+                        }}
+                      >
+                        {entry.key === 'all' ? (
+                          <Typography
+                            sx={{
+                              color: entry.color,
+                              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                              fontSize: '0.62rem',
+                              fontWeight: 900,
+                              letterSpacing: '0.04em',
+                              lineHeight: 1,
+                            }}
+                          >
+                            ALL
+                          </Typography>
+                        ) : (
+                          <SquareInSquare color={entry.color} size={20} />
+                        )}
+                      </Box>
+                    ) : (
+                      <ElementMark
+                        color={entry.color}
+                        label={entry.label.slice(0, 1)}
+                        src={entry.src ?? undefined}
+                        size={34}
+                        height={32}
+                      />
+                    )}
+                    <Typography
+                      sx={{
+                        color: brown,
+                        fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                        fontSize: '0.58rem',
+                        fontWeight: 900,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {entry.label}
+                    </Typography>
+                  </Stack>
+                );
+              })}
+            </Box>
+          </Panel>
           {/* Secondary filter row — proficiency level for the techniques list. */}
           <FilterTabs
-            labels={['Learned', 'Practiced', 'Mastered']}
+            labels={['All', 'Learned', 'Practiced', 'Mastered']}
             activeIndex={techFilter}
             onChange={setTechFilter}
           />
