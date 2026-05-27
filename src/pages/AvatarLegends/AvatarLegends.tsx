@@ -501,6 +501,7 @@ function Checkbox({
  */
 function BalanceTrack() {
   const [position, setPosition] = useAtom(balancePositionAtom);
+  const { isDarkMode } = useThemeMode();
   const trackRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
 
@@ -519,10 +520,29 @@ function BalanceTrack() {
     return Math.round(clamped * 8) - 4;
   }
 
-  const notchIndexes: number[] = [-4, -3, -2, -1, 1, 2, 3, 4];
+  // 9 notches total — the leftmost (-4) and rightmost (4) stay unlabeled
+  // per the spec; the inner 7 carry numbers above and below.
+  const notchIndexes: number[] = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+  const numberedIndexes: number[] = [-3, -2, -1, 0, 1, 2, 3];
+  // Top labels: at index -3 -> "+3", center 0 -> "0", index 3 -> "-3".
+  // Bottom labels mirror that — left side is negative, right side is
+  // positive, with 0 at center.
+  const topLabel = (i: number) => (i === 0 ? '0' : i < 0 ? `+${-i}` : `${-i}`);
+  const bottomLabel = (i: number) => (i === 0 ? '0' : i > 0 ? `+${i}` : `${i}`);
+  // Notches are white in dark mode so they read against the deep-navy
+  // surface; otherwise they fall back to the cover-art dark navy.
+  const notchColor = isDarkMode ? '#ffffff' : deepInk;
+  const numberStyle = {
+    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+    fontSize: '0.55rem',
+    fontWeight: 900,
+    color: ink,
+    letterSpacing: '0.02em',
+    lineHeight: 1,
+  } as const;
 
   return (
-    <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.2, mb: 0.4 }}>
+    <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 3.2, mb: 2.6 }}>
       <Typography
         sx={{
           color: ink,
@@ -544,9 +564,25 @@ function BalanceTrack() {
           borderRadius: '1px',
         }}
       >
-        {/* Tick notches — 4 each side of center, equally spaced. The
-            center point intentionally has no notch since the yin-yang's
-            default position sits there. */}
+        {/* Top label row — sits above the notches, excludes the
+            leftmost / rightmost tick. */}
+        {numberedIndexes.map((idx) => (
+          <Box
+            key={`top-${idx}`}
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: -22,
+              left: `${toPercent(idx)}%`,
+              transform: 'translateX(-50%)',
+              pointerEvents: 'none',
+              ...numberStyle,
+            }}
+          >
+            {topLabel(idx)}
+          </Box>
+        ))}
+        {/* Tick notches — 9 equally spaced marks along the track. */}
         {notchIndexes.map((idx) => (
           <Box
             key={idx}
@@ -557,12 +593,30 @@ function BalanceTrack() {
               left: `${toPercent(idx)}%`,
               width: 2,
               height: 12,
-              background: deepInk,
+              background: notchColor,
               transform: 'translateX(-50%)',
               borderRadius: '1px',
               pointerEvents: 'none',
             }}
           />
+        ))}
+        {/* Bottom label row — mirrors the top, with the sign flipped so
+            +i on the right side corresponds to the Progress direction. */}
+        {numberedIndexes.map((idx) => (
+          <Box
+            key={`bottom-${idx}`}
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: 14,
+              left: `${toPercent(idx)}%`,
+              transform: 'translateX(-50%)',
+              pointerEvents: 'none',
+              ...numberStyle,
+            }}
+          >
+            {bottomLabel(idx)}
+          </Box>
         ))}
         {/* Draggable yin-yang marker. Pointer events live on the marker
             itself so the rest of the track stays scrollable on touch
@@ -718,8 +772,12 @@ function StatsPanel() {
                   borderRadius: '50%',
                   // Deep blue ink reads on white in both themes.
                   color: lightAvPalette.ink,
-                  fontFamily: '"IM Fell English", Georgia, serif',
-                  fontSize: '1.3rem',
+                  // Handwritten font where the "1" is clearly distinct
+                  // from "I" — the IM Fell serif previously used had a
+                  // capital-I-shaped 1. Larger size to read clearly in
+                  // the 44x44 circle.
+                  fontFamily: '"Caveat", "Patrick Hand", "Bradley Hand", "Marker Felt", cursive',
+                  fontSize: '1.95rem',
                   fontWeight: 700,
                   lineHeight: 1,
                   p: 0,
@@ -945,7 +1003,7 @@ function HistorySection({ questions }: { questions: string[] }) {
           sx={{
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s ease',
-            color: alpha(deepInk, 0.55),
+            color: alpha(ink, 0.8),
             fontSize: '0.95rem',
             lineHeight: 1,
           }}
@@ -1049,7 +1107,7 @@ function ClassTraitAccordion({
           sx={{
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s ease',
-            color: alpha(deepInk, 0.55),
+            color: alpha(ink, 0.8),
             fontSize: '0.95rem',
             lineHeight: 1,
           }}
@@ -1525,9 +1583,29 @@ function CharacterPane() {
             mt: 0.9,
           }}
         >
-          {['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'].map((label) => (
-            <ConditionButtonShared key={label} label={label} />
-          ))}
+          {['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'].map((label, index, all) => {
+            // Last button on an odd-length list spans both columns and
+            // centers itself so "Troubled" doesn't sit alone in the
+            // left column. Width matches a single column so the button
+            // size stays consistent with its siblings.
+            const lastSolo = index === all.length - 1 && all.length % 2 === 1;
+            return (
+              <Box
+                key={label}
+                sx={
+                  lastSolo
+                    ? {
+                        gridColumn: '1 / -1',
+                        justifySelf: 'center',
+                        width: 'calc(50% - 4px)',
+                      }
+                    : undefined
+                }
+              >
+                <ConditionButtonShared label={label} />
+              </Box>
+            );
+          })}
         </Box>
       </Panel>
 
@@ -1672,7 +1750,7 @@ function MovesPane() {
             >
               {title}
             </Typography>
-            <Typography sx={{ color: alpha(deepInk, 0.55), fontWeight: 900, fontSize: '1rem' }}>
+            <Typography sx={{ color: alpha(ink, 0.8), fontWeight: 900, fontSize: '1rem' }}>
               ›
             </Typography>
           </Stack>
@@ -1822,7 +1900,7 @@ function TechniqueAccordion({
               sx={{
                 transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
                 transition: 'transform 0.2s ease',
-                color: alpha(deepInk, 0.55),
+                color: alpha(ink, 0.8),
                 fontSize: '0.95rem',
                 lineHeight: 1,
                 mt: 0.3,
@@ -2129,15 +2207,30 @@ function CombatPane() {
       {subTab === 2 ? (
         <Panel>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, rowGap: 1.2 }}>
-            {conditions.map((label) => (
-              <StatusButton
-                key={label}
-                label={label}
-                active={Boolean(activeConditions[label])}
-                activeColor={gold}
-                onToggle={() => toggleCondition(label)}
-              />
-            ))}
+            {conditions.map((label, index, all) => {
+              const lastSolo = index === all.length - 1 && all.length % 2 === 1;
+              return (
+                <Box
+                  key={label}
+                  sx={
+                    lastSolo
+                      ? {
+                          gridColumn: '1 / -1',
+                          justifySelf: 'center',
+                          width: 'calc(50% - 4px)',
+                        }
+                      : undefined
+                  }
+                >
+                  <StatusButton
+                    label={label}
+                    active={Boolean(activeConditions[label])}
+                    activeColor={gold}
+                    onToggle={() => toggleCondition(label)}
+                  />
+                </Box>
+              );
+            })}
           </Box>
         </Panel>
       ) : null}
@@ -2312,7 +2405,7 @@ function NoteAccordion({ type, title, body }: { type: string; title: string; bod
               sx={{
                 transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
                 transition: 'transform 0.2s ease',
-                color: alpha(deepInk, 0.55),
+                color: alpha(ink, 0.8),
                 fontSize: '0.95rem',
                 lineHeight: 1,
               }}
@@ -2571,9 +2664,10 @@ function AvatarLegends() {
 
         {/* Top header band — deep cover-art navy in both modes. */}
         <WatercolorBand height={92} />
-        {/* Bottom watercolor brush stroke (sits behind the nav) — also
-            stays dark in both modes so the nav icons keep their contrast. */}
-        <WatercolorBand bottom height={86} />
+        {/* No bottom band: the absolute-positioned nav below has its own
+            deep-navy backgroundColor, and any band rendered behind it
+            would just produce an extra dark strip above the nav that
+            scrolling content would visibly pass through. */}
 
         {/* Page corner ornaments — near-white in both modes, sitting on
             the deep-navy header. */}
@@ -2702,10 +2796,12 @@ function AvatarLegends() {
               flex: 1,
               overflowY: 'auto',
               px: 1.25,
-              // Reserve room at the bottom so the last bit of content scrolls
-              // up clear of the now-absolutely-positioned nav. The nav is
-              // ~58px tall + brush-stroke bristles below it.
-              pb: '88px',
+              // Reserve room at the bottom so the last bit of content
+              // scrolls up clear of the absolutely-positioned nav. Now
+              // tight to the actual nav height (no bristle band sits
+              // behind it) so there's no dark strip for content to
+              // scroll over.
+              pb: '64px',
             }}
           >
             {activeTab === 'character' ? <CharacterPane /> : null}
