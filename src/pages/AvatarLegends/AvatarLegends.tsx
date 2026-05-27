@@ -27,7 +27,10 @@ import waterGlyph from './assets/glyph-water.png';
 
 // Outer-mat gradients used behind the parchment card. Theme-aware.
 const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
-const darkPageBg = 'linear-gradient(140deg, #020812 0%, #050f1f 50%, #020812 100%)';
+// Dark mode mat: slate-blue gradient sampled from the cover art's mountain
+// horizon — deeper at the edges, slightly lighter atmospheric blue at the
+// midpoint.
+const darkPageBg = 'linear-gradient(140deg, #1a2530 0%, #2a3b50 50%, #1a2530 100%)';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -83,24 +86,23 @@ const lightAvPalette: AvPaletteShape = {
 };
 
 const darkAvPalette: AvPaletteShape = {
-  // Dark mode: extra-dark blue body / card / panel surfaces with near-white
-  // text. Header / footer use a less-saturated, slightly lighter dark blue
-  // so the chrome reads as a distinct band against the very dark body.
-  parchment: '#030710', // card / panel bg — extra-dark blue
-  parchmentLight: '#0a131e', // slightly lighter for elevated panel surfaces
-  parchmentDeep: '#01040a', // deepest dark-blue for recessed grooves
-  washDeep: '#8db4d6', // brighter watercolor blue accent
-  ink: '#e6efff', // light heading text
-  // Less-saturated dark blue for the chrome band.
-  deepInk: '#10202e',
-  brown: '#f0f5fc', // body text — near-white
-  brownSoft: '#c2cee0', // secondary text — soft light grey-blue
-  border: '#13202f', // subtle dark blue-grey border that reads on dark
-  ember: '#e2685e', // brighter red accent so it pops on dark
-  gold: '#d05246', // brighter dark-red accent for visibility on dark
-  // In dark mode both reds unify to the Fatigue-diamond color.
-  passionRed: '#d05246',
-  attackRed: '#d05246',
+  // Dark mode: slate-blue palette sampled from the Avatar Legends cover
+  // art (deep slate sky behind misty mountains, with pale-cyan decorative
+  // scrollwork in the corners). Header / footer pick a darker slate so the
+  // chrome reads as a distinct band against the body.
+  parchment: '#2a3b50', // card / panel bg — main slate-sky blue
+  parchmentLight: '#374a60', // slightly lighter slate for elevated surfaces
+  parchmentDeep: '#1e2a39', // deeper slate for recessed grooves
+  washDeep: '#7a8ea2', // atmospheric-haze blue from the mountains
+  ink: '#f0f4f8', // near-white body / heading text
+  deepInk: '#1a2530', // chrome band — deepest slate-navy
+  brown: '#e3e9f0', // body text — light cool grey
+  brownSoft: '#a8b6c5', // secondary text — softer slate
+  border: '#4a5b6e', // subtle slate border, sampled from the mid-tones
+  ember: '#d56b5f', // muted brick-red accent (cover scrollwork warm tone)
+  gold: '#c84a3e', // primary dark-red accent for visibility on slate
+  passionRed: '#c84a3e',
+  attackRed: '#c84a3e',
 };
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its
@@ -474,7 +476,7 @@ function StatsPanel() {
   const [stats, setStats] = useAtom(statsAtom);
   function setValue(label: string, raw: string) {
     // Allow the user to clear the field (treated as 0) and to type a
-    // leading minus sign. Final value clamps to [-3, 3].
+    // leading minus sign. Final value clamps to [-5, 3].
     const trimmed = raw.trim();
     if (trimmed === '' || trimmed === '-') {
       setStats((prev) => ({ ...prev, [label]: 0 }));
@@ -482,7 +484,7 @@ function StatsPanel() {
     }
     const parsed = parseInt(trimmed, 10);
     if (Number.isNaN(parsed)) return;
-    const clamped = Math.max(-3, Math.min(3, parsed));
+    const clamped = Math.max(-5, Math.min(3, parsed));
     setStats((prev) => ({ ...prev, [label]: clamped }));
   }
   return (
@@ -510,26 +512,27 @@ function StatsPanel() {
                 type="number"
                 inputMode="numeric"
                 value={value}
-                min={-3}
+                min={-5}
                 max={3}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setValue(label, e.target.value)
                 }
                 sx={{
                   width: 44,
+                  height: 44,
                   textAlign: 'center',
                   background: 'transparent',
                   border: `1px solid ${alpha(border, 0.6)}`,
-                  borderRadius: '4px',
+                  borderRadius: '50%',
                   color: ink,
                   fontFamily: '"IM Fell English", Georgia, serif',
                   fontSize: '1.4rem',
                   fontWeight: 700,
                   lineHeight: 1,
-                  py: '2px',
+                  p: 0,
                   outline: 'none',
                   // Hide the native spinners; the +/- is implied by the
-                  // -3..3 range and the user types directly.
+                  // -5..3 range and the user types directly.
                   '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
                     WebkitAppearance: 'none',
                     margin: 0,
