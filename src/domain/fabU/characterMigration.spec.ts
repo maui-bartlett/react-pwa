@@ -78,7 +78,10 @@ test('backend serialization keeps status effects inside the character shape', ()
   const serialized = serializeCharacterForBackend(character);
   const deserialized = deserializeCharacterFromBackend(serialized);
 
+  // Canonical statusEffects live inside `character`; there should no
+  // longer be a redundant top-level `statusEffects` on the persisted
+  // payload (that field was removed from the backend shape).
   expect(serialized.character.statusEffects.shaken).toBe(true);
-  expect(serialized.statusEffects.shaken).toBe(true);
+  expect((serialized as { statusEffects?: unknown }).statusEffects).toBeUndefined();
   expect(deserialized.statusEffects.shaken).toBe(true);
 });

@@ -123,7 +123,6 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
         characterId,
         schemaVersion: CHARACTER_SCHEMA_VERSION,
         characterState: serializeCharacterForBackend(targetCharacter),
-        statusEffects: targetCharacter.statusEffects,
       });
     },
     [canSync, characterId, updateState],
@@ -172,7 +171,6 @@ function useConvexCharacterSync(character: Character, history: CharacterHistoryC
         name: getCharacterName(character),
         schemaVersion: CHARACTER_SCHEMA_VERSION,
         characterState: serializeCharacterForBackend(character),
-        statusEffects: character.statusEffects,
       })
         .then((createdId) => {
           setCharacterId(createdId);

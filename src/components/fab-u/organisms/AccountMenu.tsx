@@ -326,7 +326,6 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
       name: getCharacterName(nextCharacter),
       schemaVersion: CHARACTER_SCHEMA_VERSION,
       characterState: serializeCharacterForBackend(nextCharacter),
-      statusEffects: nextCharacter.statusEffects,
     });
     await selectCharacter(characterId);
   }
