@@ -6,7 +6,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { atom, useAtom } from 'jotai';
+import { atom, useAtom, useAtomValue } from 'jotai';
 import { Backpack, HandFist } from 'lucide-react';
 
 import AccountSettings from '@/sections/AccountSettings';
@@ -95,8 +95,11 @@ const lightAvPalette: AvPaletteShape = {
   attackRed: '#a8413a',
   // Pale dusty-blue from the rulebook heading-divider line.
   accent: '#a8c5d4',
-  // Warm book-red highlight — matches the rulebook's class-name color.
-  bookAccent: '#a8413a',
+  // Muted gold from the rulebook chapter headings — used for the
+  // class-name eyebrow, Influence label / dots, and Conditions buttons.
+  // Light mode now uses the same gold as dark mode for a unified
+  // book-style highlight across themes.
+  bookAccent: '#c8a460',
 };
 
 const darkAvPalette: AvPaletteShape = {
@@ -215,11 +218,14 @@ const tabs: TabConfig[] = [
   },
 ];
 
-// Atoms that persist UI state across main-tab switches. Each pane's
-// sub-tab selection lives in jotai so switching away and back keeps the
-// same view active. Toggle state (statuses / conditions / fatigue) is
-// stored centrally so the same data is shared between the Character and
-// Combat surfaces.
+// Technique vocabulary (rulebook-wide). Used by the technique list on
+// characterStateAtom + by the element/level filter atoms below.
+type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
+type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
+type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
+
+// UI-only atoms (no character data; just remember which sub-tab is
+// active when the user navigates away and comes back).
 const movesSubTabAtom = atom(0);
 const combatSubTabAtom = atom(0);
 const backpackSubTabAtom = atom(0);
@@ -230,29 +236,195 @@ const techniqueFilterAtom = atom(0);
 // otherwise only techniques whose `element` matches are visible.
 type TechniqueElementFilter = TechniqueElement | 'all';
 const techniqueElementAtom = atom<TechniqueElementFilter>('all');
-const activeStatusesAtom = atom<Record<string, boolean>>({});
-const activeConditionsAtom = atom<Record<string, boolean>>({});
-const fatigueAtom = atom<boolean[]>([true, true, false, false, false]);
-// Background checkbox state — defaults to the two original "checked" entries
-// (Urban + Privileged) so the page matches its previous static display on
-// first load.
-const backgroundsAtom = atom<Record<string, boolean>>({
-  Urban: true,
-  Privileged: true,
-});
-// Stats values — editable per stat, range -3..3. Defaults preserve the
-// previously-static numbers on first load.
-const statsAtom = atom<Record<string, number>>({
-  Creativity: 2,
-  Focus: 2,
-  Harmony: 1,
-  Passion: 1,
-});
-// Balance track position — integer index in [-4, 4]. 0 sits at the
-// center point; -4..-1 are the four notches on the Tradition side,
-// 1..4 are the four notches on the Progress side. Persisted via jotai
-// so the yin-yang position survives tab navigation.
-const balancePositionAtom = atom(0);
+
+// ---------- Character data shapes ----------
+type Connection = { name: string; role: string; note: string };
+type JournalEntry = { type: string; title: string; body: string };
+type Technique = {
+  element: TechniqueElement;
+  category: TechniqueCategory;
+  level: TechniqueLevel;
+  title: string;
+  summary: string;
+  body: string;
+};
+
+/**
+ * Every piece of editable character data the sheet UI reads from. Lives
+ * inside a single jotai atom (`characterStateAtom`) so the entire
+ * character record is one cohesive source of truth, and each render
+ * surface reads from it (often via a slice / derived atom).
+ */
+type CharacterState = {
+  name: string;
+  className: string; // e.g. "THE SUCCESSOR"
+  pronouns: string;
+  age: string; // free-form so values like "Age 32" / "Unknown" both work
+  origin: string;
+  stats: Record<string, number>;
+  /** -4..4 along the Tradition/Progress balance track. */
+  balance: number;
+  conditions: Record<string, boolean>;
+  statuses: Record<string, boolean>;
+  fatigue: boolean[];
+  backgrounds: Record<string, boolean>;
+  classTraitTitle: string;
+  classTraitBody: string;
+  historyAnswers: Record<number, string>;
+  connections: Connection[];
+  classMoves: MoveEntry[];
+  techniques: Technique[];
+  inventory: JournalEntry[];
+  notes: JournalEntry[];
+};
+
+/** Starter values — match what the sheet previously rendered as static
+ *  content so the UI shows the same data on first load while now reading
+ *  from a single mutable source. */
+const defaultCharacter: CharacterState = {
+  name: 'Qi Gong',
+  className: 'THE SUCCESSOR',
+  pronouns: 'He / Him',
+  age: 'Age 32',
+  origin: 'Jasmine Island',
+  stats: { Creativity: 2, Focus: 2, Harmony: 1, Passion: 1 },
+  balance: 0,
+  conditions: {},
+  statuses: {},
+  // Fatigue marks fill from the right toward the left by default — two
+  // marks pre-filled on the right side of the tracker on first load.
+  fatigue: [false, false, false, true, true],
+  backgrounds: { Urban: true, Privileged: true },
+  classTraitTitle: 'A Tainted Past',
+  classTraitBody:
+    'You carry a heavy legacy — a name, a debt, or a deed that shadows your every step. Once per session, when your past complicates the situation, the GM may offer you an opportunity to mark fatigue and either reveal a useful connection from your old life or learn a fragment of hidden lore that bears on the current scene.',
+  historyAnswers: {},
+  connections: [
+    {
+      name: 'Boink',
+      role: 'Black wooly pig',
+      note: 'My loyal companion and constant source of joy. He roots around for snacks and keeps me grounded.',
+    },
+    {
+      name: 'Qi Wei',
+      role: 'Female ancestor',
+      note: 'A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.',
+    },
+  ],
+  classMoves: [
+    { title: 'Way of the Future', body: 'Class move details TBD.' },
+    { title: 'Black Koala-Sheep', body: 'Class move details TBD.' },
+    { title: 'A Life of Regret', body: 'Class move details TBD.' },
+    { title: 'Walk This Way', body: 'Class move details TBD.' },
+    { title: 'Worldly Knowledge', body: 'Class move details TBD.' },
+  ],
+  techniques: [
+    {
+      element: 'water',
+      category: 'Advance & Attack',
+      level: 'mastered',
+      title: 'Stream the Water',
+      summary: 'Push a jet stream from a significant source to inflict fatigue.',
+      body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
+    },
+    {
+      element: 'water',
+      category: 'Defend & Maneuver',
+      level: 'learned',
+      title: 'Flow as Water',
+      summary: 'Use a jet of water to move quickly and shift position.',
+      body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
+    },
+    {
+      element: 'water',
+      category: 'Evade & Observe',
+      level: 'mastered',
+      title: 'Refresh',
+      summary: 'Clear conditions and keep an ally steady under pressure.',
+      body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
+    },
+    {
+      element: 'water',
+      category: 'Advance & Attack',
+      level: 'learned',
+      title: 'Water Jab',
+      summary: 'Surround your fist in water and strike from unexpected angles.',
+      body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
+    },
+    {
+      element: 'basic',
+      category: 'Advance & Attack',
+      level: 'learned',
+      title: 'Smash',
+      summary: 'Drive a heavy blow through your target to bypass their guard.',
+      body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
+    },
+    {
+      element: 'basic',
+      category: 'Defend & Maneuver',
+      level: 'learned',
+      title: 'Pounce',
+      summary: 'Close the gap on a target with sudden speed.',
+      body: "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
+    },
+  ],
+  inventory: [
+    {
+      type: 'Item',
+      title: 'Messenger Bag',
+      body: 'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
+    },
+  ],
+  notes: [
+    {
+      type: 'Note',
+      title: "Rad's Notebook",
+      body: 'A worn notebook filled with themes about bending and identity.',
+    },
+    {
+      type: 'Important NPC',
+      title: 'Professor Zei',
+      body: "Head of Bending Theory at UoE. Believes in Rad's potential.",
+    },
+    {
+      type: 'Location',
+      title: 'The University of Elements',
+      body: 'A neutral sanctuary where benders from all nations study in peace.',
+    },
+  ],
+};
+
+/** Single source of truth for the active character. Every editable
+ *  surface reads from / writes to this atom (often via a derived slice). */
+const characterStateAtom = atom<CharacterState>(defaultCharacter);
+
+// Helper: derive a get/set slice atom from a single field on
+// characterStateAtom. The returned atom behaves exactly like a regular
+// jotai atom (useAtom returns [value, setValue] including functional
+// updates) but the state actually lives inside characterStateAtom.
+function sliceAtom<K extends keyof CharacterState>(key: K) {
+  return atom(
+    (get) => get(characterStateAtom)[key],
+    (get, set, update: CharacterState[K] | ((prev: CharacterState[K]) => CharacterState[K])) => {
+      const current = get(characterStateAtom);
+      const next =
+        typeof update === 'function'
+          ? (update as (prev: CharacterState[K]) => CharacterState[K])(current[key])
+          : update;
+      set(characterStateAtom, { ...current, [key]: next });
+    },
+  );
+}
+
+// Slice atoms — preserve the prior atom-level API so existing useAtom
+// call sites keep working unchanged. State lives in characterStateAtom.
+const statsAtom = sliceAtom('stats');
+const balancePositionAtom = sliceAtom('balance');
+const activeStatusesAtom = sliceAtom('statuses');
+const activeConditionsAtom = sliceAtom('conditions');
+const fatigueAtom = sliceAtom('fatigue');
+const backgroundsAtom = sliceAtom('backgrounds');
+const historyAnswersAtom = sliceAtom('historyAnswers');
 
 // Each move card carries its title and the full body text shown when
 // the accordion expands. Some moves also have a bulleted list of
@@ -265,7 +437,10 @@ type MoveEntry = {
   trailing?: string;
 };
 
-const movesByCategory: Record<'basic' | 'balance' | 'class', MoveEntry[]> = {
+// Rulebook moves shared across every character — Basic + Balance are
+// game-wide moves. Class-specific moves live on the character record
+// (characterStateAtom.classMoves) so each character can carry their own.
+const movesByCategory: Record<'basic' | 'balance', MoveEntry[]> = {
   basic: [
     {
       title: 'Plead',
@@ -354,78 +529,7 @@ const movesByCategory: Record<'basic' | 'balance' | 'class', MoveEntry[]> = {
         "Afterward, when you've had some time to recover and recenter yourself, shift your center one step towards the principle you exceeded and clear all your conditions and fatigue. Reset your balance to your new center.",
     },
   ],
-  class: [
-    { title: 'Way of the Future', body: 'Class move details TBD.' },
-    { title: 'Black Koala-Sheep', body: 'Class move details TBD.' },
-    { title: 'A Life of Regret', body: 'Class move details TBD.' },
-    { title: 'Walk This Way', body: 'Class move details TBD.' },
-    { title: 'Worldly Knowledge', body: 'Class move details TBD.' },
-  ],
 };
-
-// Each technique entry carries the element it belongs to (used by the
-// element filter row), the category eyebrow shown on its card, the title,
-// a short summary line, and the full body shown when expanded.
-type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
-type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
-type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
-const techniques: Array<{
-  element: TechniqueElement;
-  category: TechniqueCategory;
-  level: TechniqueLevel;
-  title: string;
-  summary: string;
-  body: string;
-}> = [
-  {
-    element: 'water',
-    category: 'Advance & Attack',
-    level: 'mastered',
-    title: 'Stream the Water',
-    summary: 'Push a jet stream from a significant source to inflict fatigue.',
-    body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
-  },
-  {
-    element: 'water',
-    category: 'Defend & Maneuver',
-    level: 'learned',
-    title: 'Flow as Water',
-    summary: 'Use a jet of water to move quickly and shift position.',
-    body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
-  },
-  {
-    element: 'water',
-    category: 'Evade & Observe',
-    level: 'mastered',
-    title: 'Refresh',
-    summary: 'Clear conditions and keep an ally steady under pressure.',
-    body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
-  },
-  {
-    element: 'water',
-    category: 'Advance & Attack',
-    level: 'learned',
-    title: 'Water Jab',
-    summary: 'Surround your fist in water and strike from unexpected angles.',
-    body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
-  },
-  {
-    element: 'basic',
-    category: 'Advance & Attack',
-    level: 'learned',
-    title: 'Smash',
-    summary: 'Drive a heavy blow through your target to bypass their guard.',
-    body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
-  },
-  {
-    element: 'basic',
-    category: 'Defend & Maneuver',
-    level: 'learned',
-    title: 'Pounce',
-    summary: 'Close the gap on a target with sudden speed.',
-    body: "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
-  },
-];
 
 // Eyebrow color per category: red for attack, green for defend, blue for
 // evade. Returned at call time so the `attackRed` reference picks up the
@@ -435,34 +539,6 @@ function techniqueCategoryColor(category: TechniqueCategory): string {
   if (category === 'Defend & Maneuver') return earth;
   return water;
 }
-
-const connections = [
-  [
-    'Boink',
-    'Black wooly pig',
-    'My loyal companion and constant source of joy. He roots around for snacks and keeps me grounded.',
-  ],
-  [
-    'Qi Wei',
-    'Female ancestor',
-    'A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.',
-  ],
-];
-
-const journal = [
-  ['Note', "Rad's Notebook", 'A worn notebook filled with themes about bending and identity.'],
-  ['Important NPC', 'Professor Zei', "Head of Bending Theory at UoE. Believes in Rad's potential."],
-  [
-    'Location',
-    'The University of Elements',
-    'A neutral sanctuary where benders from all nations study in peace.',
-  ],
-  [
-    'Item',
-    'Messenger Bag',
-    'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
-  ],
-];
 
 /**
  * Painted brush-stroke band — a straight dark navy band with a painted
@@ -958,16 +1034,13 @@ function BackgroundCheckRow({ label }: { label: string }) {
  */
 function ConditionButtonShared({ label }: { label: string }) {
   const [active, setActive] = useAtom(activeConditionsAtom);
-  const { isDarkMode } = useThemeMode();
-  // Dark mode swaps the dark-red `gold` for the muted-gold bookAccent
-  // so Conditions match the rulebook chapter-heading color; light mode
-  // keeps the existing warning-red treatment.
-  const conditionColor = isDarkMode ? bookAccent : gold;
   return (
     <StatusButton
       label={label}
       active={Boolean(active[label])}
-      activeColor={conditionColor}
+      // Conditions use the muted-gold bookAccent across both themes
+      // so they match the rulebook chapter-heading color everywhere.
+      activeColor={bookAccent}
       onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
     />
   );
@@ -1083,7 +1156,9 @@ function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number 
  */
 function HistorySection({ questions }: { questions: string[] }) {
   const [open, setOpen] = useState(false);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  // History answers live on the character record so they persist across
+  // tab navigation and (later) full character saves.
+  const [answers, setAnswers] = useAtom(historyAnswersAtom);
   return (
     <Stack spacing={0.6}>
       <SectionTitle>History</SectionTitle>
@@ -1602,6 +1677,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function CharacterPane() {
+  const character = useAtomValue(characterStateAtom);
+  const facts = [character.pronouns, character.age, character.origin].filter(Boolean);
   return (
     <Stack spacing={1.1}>
       {/* The main Character card is the only `major` (double-line) panel
@@ -1620,16 +1697,15 @@ function CharacterPane() {
               textAlign: 'center',
             }}
           >
-            Qi Gong
+            {character.name}
           </Typography>
           <Stack direction="row" alignItems="center" gap={0.7}>
             <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
             <MoveDiamond color={accent} size={9} />
             <Typography
               sx={{
-                // bookAccent flips to a muted gold in dark mode (matches
-                // rulebook chapter headings) and keeps the warm red in
-                // light mode.
+                // bookAccent is the muted-gold rulebook chapter color in
+                // both themes.
                 color: bookAccent,
                 fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                 fontSize: '0.72rem',
@@ -1637,13 +1713,13 @@ function CharacterPane() {
                 letterSpacing: '0.16em',
               }}
             >
-              THE SUCCESSOR
+              {character.className}
             </Typography>
             <MoveDiamond color={accent} size={9} />
             <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
           </Stack>
           <Stack direction="row" gap={0.6} flexWrap="wrap" justifyContent="center">
-            {['He / Him', 'Age 32', 'Jasmine Island'].map((item, i) => (
+            {facts.map((item, i) => (
               <Stack key={item} direction="row" alignItems="center" gap={0.6}>
                 {i > 0 ? (
                   <Box
@@ -1728,11 +1804,8 @@ function CharacterPane() {
       </Panel>
 
       <Panel>
-        <ClassTraitAccordion title="A Tainted Past">
-          You carry a heavy legacy — a name, a debt, or a deed that shadows your every step. Once
-          per session, when your past complicates the situation, the GM may offer you an opportunity
-          to mark fatigue and either reveal a useful connection from your old life or learn a
-          fragment of hidden lore that bears on the current scene.
+        <ClassTraitAccordion title={character.classTraitTitle}>
+          {character.classTraitBody}
         </ClassTraitAccordion>
       </Panel>
 
@@ -1949,10 +2022,16 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
 
 function MovesPane() {
   const [subTab, setSubTab] = useAtom(movesSubTabAtom);
-  const categoryKey: 'basic' | 'balance' | 'class' = (['basic', 'balance', 'class'] as const)[
-    subTab
-  ];
-  const visibleMoves = movesByCategory[categoryKey];
+  // Basic + Balance lists come from the rulebook constants; class
+  // moves come from the active character record so each character
+  // can carry their own class-specific moves.
+  const character = useAtomValue(characterStateAtom);
+  const visibleMoves: MoveEntry[] =
+    subTab === 0
+      ? movesByCategory.basic
+      : subTab === 1
+        ? movesByCategory.balance
+        : character.classMoves;
   return (
     <Stack spacing={1}>
       <FilterTabs
@@ -2170,6 +2249,9 @@ function CombatPane() {
   const [subTab, setSubTab] = useAtom(combatSubTabAtom);
   const [techFilter, setTechFilter] = useAtom(techniqueFilterAtom);
   const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
+  // Techniques live on the character record (characterStateAtom) so
+  // each character carries their own set of known techniques.
+  const techniques = useAtomValue(characterStateAtom).techniques;
   // Filter by both element and proficiency level. techFilter 0 = All
   // (no level filter); 1..3 map to learned / practiced / mastered.
   const visibleTechniques = useMemo(() => {
@@ -2180,7 +2262,7 @@ function CombatPane() {
       const levelOk = targetLevel === null || tech.level === targetLevel;
       return elementOk && levelOk;
     });
-  }, [elementFilter, techFilter]);
+  }, [techniques, elementFilter, techFilter]);
   const [fatigue, setFatigue] = useAtom(fatigueAtom);
   const toggleFatigue = (index: number) =>
     setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
@@ -2190,10 +2272,9 @@ function CombatPane() {
   const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
   const toggleCondition = (label: string) =>
     setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
-  const { isDarkMode } = useThemeMode();
-  // Dark mode swaps the dark-red Conditions accent for the muted-gold
-  // bookAccent (matches rulebook chapter headings).
-  const conditionColor = isDarkMode ? bookAccent : gold;
+  // Conditions sub-tab uses the same muted-gold bookAccent as the
+  // Character tab's Conditions panel across both themes.
+  const conditionColor = bookAccent;
 
   return (
     <Stack spacing={1}>
@@ -2470,17 +2551,17 @@ function CombatPane() {
  * header followed by one panel per connection + an "Add Connection" action.
  */
 function ConnectionsSection() {
-  const { isDarkMode } = useThemeMode();
-  // In dark mode the Influence label + dots flip to the muted-gold
-  // bookAccent so they match the rulebook chapter-heading color; in
-  // light mode they keep their original neutral tones.
-  const influenceLabelColor = isDarkMode ? bookAccent : alpha(brown, 0.7);
-  const influenceDotsColor = isDarkMode ? bookAccent : washDeep;
+  // Influence label + dots use the muted-gold bookAccent in both
+  // themes — matches the rulebook chapter-heading color.
+  const influenceLabelColor = bookAccent;
+  const influenceDotsColor = bookAccent;
+  // Connections come from the active character record.
+  const connections = useAtomValue(characterStateAtom).connections;
   return (
     <Stack spacing={1}>
       <SectionTitle>Connections</SectionTitle>
-      {connections.map(([name, role, note], index) => (
-        <Panel key={name as string}>
+      {connections.map(({ name, role, note }, index) => (
+        <Panel key={name}>
           <Stack spacing={0.45}>
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
               <Stack spacing={0.2} sx={{ flex: 1, minWidth: 0 }}>
@@ -2669,11 +2750,10 @@ function NoteAccordion({ type, title, body }: { type: string; title: string; bod
 
 function BackpackPane() {
   const [subTab, setSubTab] = useAtom(backpackSubTabAtom);
-  // Split the journal entries: the first three (Note / Important NPC /
-  // Location) live in the Notes sub-tab; the Item (Messenger Bag) goes
-  // under Inventory.
-  const notes = journal.filter(([type]) => type !== 'Item');
-  const inventory = journal.filter(([type]) => type === 'Item');
+  // Both lists come from the character record.
+  const character = useAtomValue(characterStateAtom);
+  const notes = character.notes;
+  const inventory = character.inventory;
 
   return (
     <Stack spacing={1}>
@@ -2686,7 +2766,7 @@ function BackpackPane() {
       {/* Notes sub-tab: expandable accordion cards */}
       {subTab === 0 ? (
         <>
-          {notes.map(([type, title, body]) => (
+          {notes.map(({ type, title, body }) => (
             <NoteAccordion key={title} type={type} title={title} body={body} />
           ))}
           <Panel noNotch>
@@ -2721,7 +2801,7 @@ function BackpackPane() {
       {/* Inventory sub-tab: items live here. Currently just Messenger Bag. */}
       {subTab === 1 ? (
         <>
-          {inventory.map(([type, title, body]) => (
+          {inventory.map(({ type, title, body }) => (
             <Panel key={title} noNotch>
               <Stack spacing={0.5}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -2815,6 +2895,9 @@ function AvatarLegends() {
   const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha('#dbe5f0', 0.9)} 100%)`;
   const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
   const tabTitleColor = isDarkMode ? ink : '#000000';
+  // Read the active character so the brush-stroke header heading shows
+  // their name on every non-Character tab.
+  const character = useAtomValue(characterStateAtom);
 
   return (
     <Box
@@ -2955,7 +3038,7 @@ function AvatarLegends() {
                     lineHeight: 1,
                   }}
                 >
-                  Qi Gong
+                  {character.name}
                 </Typography>
               </Stack>
             )}
@@ -3083,7 +3166,9 @@ function AvatarLegends() {
                         transition: 'all 0.2s ease',
                       }}
                     />
-                    <Stack alignItems="center" spacing={0.3} sx={{ pt: '10px' }}>
+                    {/* spacing=1.05 (~8.4px) — was 0.3 (~2.4px); +6px
+                        gap between the icon and the label per spec. */}
+                    <Stack alignItems="center" spacing={1.05} sx={{ pt: '10px' }}>
                       {tab.renderIcon ? (
                         // Inline SVG icon (e.g. Moves diamond) — color comes from
                         // current selection so we don't need the brightness/invert
