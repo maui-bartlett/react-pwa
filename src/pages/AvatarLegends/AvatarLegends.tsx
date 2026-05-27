@@ -1304,6 +1304,14 @@ function Panel({
   // When noNotch is on, content can sit right against the border.
   const contentInset = noNotch ? 10 : resolvedVariant === 'major' ? 14 : 10;
 
+  // Soft drop shadow applied to every card. The notched variant uses a
+  // filter: drop-shadow() wrapper because box-shadow would be clipped by
+  // the octagonal clip-path; the plain rectangle variant uses box-shadow
+  // directly for a sharper-edged shadow that follows its straight border.
+  const shadowColor = alpha(deepInk, 0.22);
+  const cardBoxShadow = `0 3px 8px ${shadowColor}, 0 1px 2px ${alpha(deepInk, 0.12)}`;
+  const cardDropShadowFilter = `drop-shadow(0 3px 6px ${shadowColor}) drop-shadow(0 1px 1px ${alpha(deepInk, 0.12)})`;
+
   if (noNotch) {
     // Plain rectangle — straight border, no clip-path, no notches.
     return (
@@ -1314,6 +1322,7 @@ function Panel({
           borderRadius: '4px',
           // Flat solid card bg — no gradient.
           background: parchmentLight,
+          boxShadow: cardBoxShadow,
           p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
         }}
       >
@@ -1323,19 +1332,24 @@ function Panel({
   }
 
   return (
-    <Box
-      sx={{
-        position: 'relative',
-        // Outer notched silhouette so the parchment bg ends at the notches.
-        clipPath: panelOctagonClipPath,
-        // Flat solid card bg — no gradient.
-        background: parchmentLight,
-        p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
-      }}
-    >
-      <PanelBorderRing />
-      {resolvedVariant === 'major' ? <PanelBorderRing inset={5} /> : null}
-      <Box sx={{ position: 'relative', zIndex: 1 }}>{children}</Box>
+    // Outer wrapper carries the drop-shadow filter so the cast shadow
+    // follows the octagonal silhouette — a box-shadow would be cut off
+    // by the inner element's clip-path.
+    <Box sx={{ filter: cardDropShadowFilter }}>
+      <Box
+        sx={{
+          position: 'relative',
+          // Outer notched silhouette so the parchment bg ends at the notches.
+          clipPath: panelOctagonClipPath,
+          // Flat solid card bg — no gradient.
+          background: parchmentLight,
+          p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
+        }}
+      >
+        <PanelBorderRing />
+        {resolvedVariant === 'major' ? <PanelBorderRing inset={5} /> : null}
+        <Box sx={{ position: 'relative', zIndex: 1 }}>{children}</Box>
+      </Box>
     </Box>
   );
 }
