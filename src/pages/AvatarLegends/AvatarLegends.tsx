@@ -1136,7 +1136,8 @@ function Panel({
           position: 'relative',
           border: `1px solid ${border}`,
           borderRadius: '4px',
-          background: `linear-gradient(180deg, ${alpha(parchmentLight, 0.92)} 0%, ${alpha(parchment, 0.85)} 100%)`,
+          // Flat solid card bg — no gradient.
+          background: parchmentLight,
           p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
         }}
       >
@@ -1151,7 +1152,8 @@ function Panel({
         position: 'relative',
         // Outer notched silhouette so the parchment bg ends at the notches.
         clipPath: panelOctagonClipPath,
-        background: `linear-gradient(180deg, ${alpha(parchmentLight, 0.92)} 0%, ${alpha(parchment, 0.85)} 100%)`,
+        // Flat solid card bg — no gradient.
+        background: parchmentLight,
         p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
       }}
     >
@@ -2364,9 +2366,10 @@ function AvatarLegends() {
           width: 'min(100vw, 430px)',
           height: { xs: '100svh', sm: 'min(860px, calc(100svh - 32px))' },
           borderRadius: { xs: 0, sm: '12px' },
-          // Card background uses the dynamic `parchment` value, which is
-          // already swapped to deep-navy in dark mode by applyAvatarPalette.
-          background: `radial-gradient(circle at 50% 0%, ${alpha(parchmentLight, 0.95)} 0%, ${parchment} 60%, ${alpha(parchmentDeep, 0.55)} 100%), ${parchment}`,
+          // Flat solid card background. The cornflower watercolor wash
+          // applied on top (see overlay layer below) handles the colour
+          // depth; the underlying parchment stays uniformly tinted.
+          background: parchment,
           position: 'relative',
           overflow: 'hidden',
           boxShadow: {
@@ -2400,6 +2403,27 @@ function AvatarLegends() {
             background: `repeating-radial-gradient(circle at 25% 25%, transparent 0, transparent 2px, ${alpha(brown, 0.025)} 3px, transparent 4px)`,
             pointerEvents: 'none',
             zIndex: 0,
+          }}
+        />
+        {/* Faded, muted cornflower-blue watercolor wash. Sits over the
+            parchment + watermark + paper-grain texture using multiply blend
+            so the texture still shows through; the radial pools feather
+            outward to give the parchment a soft hand-painted depth. */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            zIndex: 0,
+            background: `
+              radial-gradient(circle at 30% 25%, rgba(112, 139, 176, 0.42) 0%, transparent 70%),
+              radial-gradient(circle at 75% 70%, rgba(143, 164, 195, 0.38) 0%, transparent 65%),
+              radial-gradient(circle at 50% 50%, rgba(155, 172, 194, 0.25) 0%, transparent 50%),
+              linear-gradient(135deg, rgba(230, 236, 245, 0.45), rgba(220, 227, 238, 0.4))
+            `,
+            mixBlendMode: 'multiply',
+            filter: 'contrast(0.9) brightness(1.02)',
           }}
         />
 
