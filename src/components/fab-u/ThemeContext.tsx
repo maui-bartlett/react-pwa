@@ -72,5 +72,5 @@ function useFabUTokens(): FabUTokens {
   return useContext(FabUTokensContext);
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- context file intentionally co-exports provider and hook
-export { FabUThemeProvider, useFabUTokens };
+// eslint-disable-next-line react-refresh/only-export-components -- context file intentionally co-exports provider, context, and hook
+export { FabUThemeProvider, FabUTokensContext, useFabUTokens };

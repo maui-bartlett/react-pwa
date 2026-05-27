@@ -53,7 +53,10 @@ type AuthSession = {
 } | null;
 
 type AccountMenuProps = {
-  localCharacterName: string;
+  // Optional: the locally-active character's display name (e.g. when rendered
+  // inside the FabU page). UIs without a character (e.g. avatar-legends) can
+  // omit this and the menu will render without the local-character row.
+  localCharacterName?: string;
   onToggleTheme: () => void;
   themeMode: 'dark' | 'light';
 };
