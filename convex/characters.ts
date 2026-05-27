@@ -194,6 +194,44 @@ export const listCampaignsForCharacter = query({
 });
 
 /**
+ * One-shot migration: rename the legacy `meta.type` field to
+ * `meta.gameSystem` on every character document. The schema (and all
+ * code) was renamed previously, but rows saved before that change
+ * still carry the old key; this scan rewrites them in place. Run via:
+ *   npx convex run characters:migrateLegacyMetaType
+ * Safe to re-run — no-ops on rows that are already on `meta.gameSystem`.
+ */
+export const migrateLegacyMetaType = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      const legacyMeta = row.meta as
+        | { type?: unknown; gameSystem?: string; activeForUserProfileId?: unknown }
+        | undefined;
+      if (!legacyMeta || legacyMeta.type === undefined) continue;
+      // Promote the legacy `type` value to `gameSystem` only when
+      // `gameSystem` isn't already set (prefer the newer value if both
+      // are present), then drop `type` from the stored object.
+      const { type, ...rest } = legacyMeta as { type?: unknown } & Record<string, unknown>;
+      const nextMeta = {
+        ...rest,
+        gameSystem:
+          typeof legacyMeta.gameSystem === 'string' && legacyMeta.gameSystem.length > 0
+            ? legacyMeta.gameSystem
+            : typeof type === 'string'
+              ? type
+              : undefined,
+      };
+      await ctx.db.patch(row._id, { meta: nextMeta });
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
+  },
+});
+
+/**
  * One-shot migration: strip the legacy `summary` and root-level
  * `statusEffects` fields from every character document, plus the
  * duplicated `statusEffects` that used to sit alongside `character`
