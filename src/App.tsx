@@ -6,6 +6,7 @@ import { withErrorHandler } from '@/error-handling';
 import AppErrorBoundaryFallback from '@/error-handling/fallbacks/App';
 
 import Pages from './routes/Pages';
+import DynamicManifest from './sections/DynamicManifest';
 import HotKeys from './sections/HotKeys';
 import Sidebar from './sections/Sidebar';
 
@@ -15,6 +16,7 @@ function App() {
       <CssBaseline />
       <HotKeys />
       <BrowserRouter>
+        <DynamicManifest />
         <Sidebar />
         <Pages />
       </BrowserRouter>
