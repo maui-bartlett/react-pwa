@@ -179,7 +179,6 @@ function applyAvatarPalette(isDarkMode: boolean) {
   brownSoft = next.brownSoft;
   border = next.border;
   _ember = next.ember;
-  gold = next.gold;
   passionRed = next.passionRed;
   attackRed = next.attackRed;
   accent = next.accent;
