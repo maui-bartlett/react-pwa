@@ -21,14 +21,14 @@ import { createCharacterHistory } from '@/state/createCharacterHistory';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 import { useThemeMode } from '@/theme/hooks';
 
-// The six elemental symbols cropped directly from the official Avatar Legends
-// character sheet "Your Training" row (assets/original-character-sheet.jpg).
-import elementAir from './assets/element-air.png';
-import elementEarth from './assets/element-earth.png';
-import elementFire from './assets/element-fire.png';
-import elementMartial from './assets/element-martial.png';
-import elementTech from './assets/element-tech.png';
-import elementWater from './assets/element-water.png';
+// White training symbols extracted from the Avatar Legends training reference pages.
+// They are transparent PNGs and rely on the deep-ink filter band for contrast.
+import elementAir from './assets/airbending-symbol.png';
+import elementEarth from './assets/earthbending-symbol.png';
+import elementFire from './assets/firebending-symbol.png';
+import elementTech from './assets/technology-symbol.png';
+import elementWater from './assets/waterbending-symbol.png';
+import elementMartial from './assets/weapons-symbol.png';
 
 // Outer-mat gradients used behind the parchment card. Theme-aware.
 const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
@@ -1698,14 +1698,10 @@ function ElementMark({
           src={src}
           alt=""
           sx={{
-            width: '100%',
-            // Render the source at its natural square aspect; mt:'2px' nudges
-            // the symbol down 2px within the frame (the bottom overflow
-            // grows by 2px, which is still hidden by overflow:hidden).
-            height: size,
-            mt: '2px',
-            objectFit: 'cover',
-            objectPosition: 'center top',
+            width: '82%',
+            height: '82%',
+            objectFit: 'contain',
+            objectPosition: 'center',
             display: 'block',
           }}
         />
@@ -2509,15 +2505,22 @@ function CombatPane() {
       {/* Techniques sub-tab: element filter row + expandable technique cards */}
       {subTab === 0 ? (
         <>
-          {/* Element filter row wrapped in its own card so the chips read
-              as a discrete control band rather than floating on the page. */}
-          <Panel compact>
+          {/* Element filter row: deep-ink backing matches selected filter chips,
+              keeping the extracted white symbols readable in light mode. */}
+          <Box
+            sx={{
+              background: deepInk,
+              border: `1px solid ${alpha(accent, 0.42)}`,
+              borderRadius: '4px',
+              p: '8px 10px',
+              boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
+            }}
+          >
             <Box
               sx={{
                 display: 'flex',
                 gap: 1.6,
                 overflowX: 'auto',
-                // Hide the scrollbar but keep it scrollable via touch / wheel.
                 scrollbarWidth: 'none',
                 '&::-webkit-scrollbar': { display: 'none' },
               }}
@@ -2549,8 +2552,8 @@ function CombatPane() {
                           width: 34,
                           height: 32,
                           borderRadius: '3px',
-                          border: `1px solid ${alpha(deepInk, 0.35)}`,
-                          background: alpha(parchmentLight, 0.4),
+                          border: `1px solid ${alpha(chromeText, 0.34)}`,
+                          background: alpha(chromeText, 0.08),
                           display: 'grid',
                           placeItems: 'center',
                           flex: '0 0 auto',
@@ -2560,7 +2563,7 @@ function CombatPane() {
                         {entry.key === 'all' ? (
                           <Typography
                             sx={{
-                              color: entry.color,
+                              color: chromeText,
                               fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                               fontSize: '0.62rem',
                               fontWeight: 900,
@@ -2571,12 +2574,12 @@ function CombatPane() {
                             ALL
                           </Typography>
                         ) : (
-                          <SquareInSquare color={entry.color} size={20} />
+                          <SquareInSquare color={chromeText} size={20} />
                         )}
                       </Box>
                     ) : (
                       <ElementMark
-                        color={entry.color}
+                        color={chromeText}
                         label={entry.label.slice(0, 1)}
                         src={entry.src ?? undefined}
                         size={34}
@@ -2585,7 +2588,7 @@ function CombatPane() {
                     )}
                     <Typography
                       sx={{
-                        color: brown,
+                        color: chromeText,
                         fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                         fontSize: '0.58rem',
                         fontWeight: 900,
@@ -2599,7 +2602,7 @@ function CombatPane() {
                 );
               })}
             </Box>
-          </Panel>
+          </Box>
           {/* Secondary filter row — proficiency level for the techniques list. */}
           <FilterTabs
             labels={['All', 'Learned', 'Practiced', 'Mastered']}
