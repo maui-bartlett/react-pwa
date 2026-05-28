@@ -21,6 +21,7 @@ import {
   KeyRound,
   LogOut,
   Moon,
+  Pencil,
   Plus,
   Settings,
   ShieldCheck,
@@ -29,6 +30,7 @@ import {
   X,
 } from 'lucide-react';
 
+import { SwipeableCard } from '@/components/SwipeableCard';
 import { CHARACTER_SCHEMA_VERSION, createDefaultCharacter } from '@/domain/fabU/characterDefaults';
 import {
   deserializeCharacterFromBackend,
@@ -238,8 +240,50 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
   );
   const campaigns = useQuery(
     api.campaigns.listMine,
-    open && screen === 'campaigns' && canLoadCharacters ? { includeArchived: false } : 'skip',
+    open && screen === 'campaigns' && canLoadCharacters
+      ? { gameSystem, includeArchived: false }
+      : 'skip',
   );
+  const renameCharacter = useMutation(api.characters.renameCharacter);
+  const updateCampaign = useMutation(api.campaigns.update);
+  // Inline-rename state for the swipe-to-edit cards. `editingTarget`
+  // disambiguates which list we're editing inside the same dialog.
+  const [editingTarget, setEditingTarget] = useState<{
+    kind: 'character' | 'campaign';
+    id: string;
+  } | null>(null);
+  const [editingName, setEditingName] = useState('');
+
+  function beginEdit(kind: 'character' | 'campaign', id: string, currentName: string) {
+    setEditingTarget({ kind, id });
+    setEditingName(currentName);
+  }
+
+  function cancelEdit() {
+    setEditingTarget(null);
+    setEditingName('');
+  }
+
+  async function commitEdit() {
+    if (!editingTarget) return;
+    const trimmed = editingName.trim();
+    if (!trimmed) {
+      cancelEdit();
+      return;
+    }
+    if (editingTarget.kind === 'character') {
+      await renameCharacter({
+        characterId: editingTarget.id as Id<'characters'>,
+        name: trimmed,
+      });
+    } else {
+      await updateCampaign({
+        campaignId: editingTarget.id as Id<'campaigns'>,
+        name: trimmed,
+      });
+    }
+    cancelEdit();
+  }
   const visibleCampaigns = useMemo(
     () => campaigns?.filter((item) => item !== null) ?? [],
     [campaigns],
@@ -337,7 +381,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
 
   async function addCampaign() {
     if (!canLoadCharacters) return;
-    await createCampaign({ name: 'New Campaign' });
+    await createCampaign({ gameSystem, name: 'New Campaign' });
   }
 
   function closeDialog() {
@@ -517,29 +561,112 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                     Loading characters...
                   </Typography>
                 ) : user && characters && characters.length > 0 ? (
-                  characters.map((character) => (
-                    <Button
-                      key={character._id}
-                      onClick={() => void selectCharacter(character._id)}
-                      sx={{
-                        justifyContent: 'flex-start',
-                        textAlign: 'left',
-                        textTransform: 'none',
-                        minHeight: 54,
-                        border: `1px solid ${fabUTokens.color.border}`,
-                        borderRadius: '9px',
-                        bgcolor: fabUTokens.color.surfaceMuted,
-                        px: 1.2,
-                        py: 0.95,
-                        color: fabUTokens.color.textPrimary,
-                        '&:hover': { bgcolor: fabUTokens.color.pillSurface },
-                      }}
-                    >
-                      <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
-                        {getCharacterDisplayName(character)}
-                      </Typography>
-                    </Button>
-                  ))
+                  characters.map((character) => {
+                    const displayName = getCharacterDisplayName(character);
+                    const isEditing =
+                      editingTarget?.kind === 'character' && editingTarget.id === character._id;
+                    return (
+                      <SwipeableCard
+                        key={character._id}
+                        action={
+                          <Button
+                            onClick={() => beginEdit('character', character._id, displayName)}
+                            sx={{
+                              minWidth: 84,
+                              height: '100%',
+                              borderRadius: 0,
+                              bgcolor: fabUTokens.color.highlight,
+                              color: fabUTokens.color.highlightFg,
+                              textTransform: 'none',
+                              fontWeight: 800,
+                              gap: 0.5,
+                              '&:hover': { bgcolor: fabUTokens.color.highlight },
+                            }}
+                          >
+                            <Pencil size={14} />
+                            Edit
+                          </Button>
+                        }
+                      >
+                        {isEditing ? (
+                          <Stack
+                            direction="row"
+                            spacing={0.6}
+                            sx={{
+                              minHeight: 54,
+                              border: `1px solid ${fabUTokens.color.border}`,
+                              borderRadius: '9px',
+                              bgcolor: fabUTokens.color.surface,
+                              px: 1,
+                              py: 0.8,
+                              alignItems: 'center',
+                            }}
+                          >
+                            <InputBase
+                              value={editingName}
+                              autoFocus
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') void commitEdit();
+                                if (e.key === 'Escape') cancelEdit();
+                              }}
+                              sx={{
+                                flex: 1,
+                                fontSize: '0.86rem',
+                                fontWeight: 800,
+                                color: fabUTokens.color.textPrimary,
+                              }}
+                            />
+                            <Button
+                              onClick={cancelEdit}
+                              size="small"
+                              sx={{
+                                textTransform: 'none',
+                                color: fabUTokens.color.textSecondary,
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={() => void commitEdit()}
+                              size="small"
+                              variant="contained"
+                              sx={{
+                                textTransform: 'none',
+                                bgcolor: fabUTokens.color.highlight,
+                                color: fabUTokens.color.highlightFg,
+                                '&:hover': { bgcolor: fabUTokens.color.highlight },
+                              }}
+                            >
+                              Save
+                            </Button>
+                          </Stack>
+                        ) : (
+                          <Button
+                            onClick={() => void selectCharacter(character._id)}
+                            sx={{
+                              width: '100%',
+                              justifyContent: 'flex-start',
+                              textAlign: 'left',
+                              textTransform: 'none',
+                              minHeight: 54,
+                              border: `1px solid ${fabUTokens.color.border}`,
+                              borderRadius: '9px',
+                              bgcolor: fabUTokens.color.surfaceMuted,
+                              px: 1.2,
+                              py: 0.95,
+                              color: fabUTokens.color.textPrimary,
+                              '&:hover': { bgcolor: fabUTokens.color.pillSurface },
+                            }}
+                          >
+                            <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                              {displayName}
+                            </Typography>
+                          </Button>
+                        )}
+                      </SwipeableCard>
+                    );
+                  })
                 ) : user ? (
                   <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
                     No characters saved to this account yet.
@@ -572,23 +699,106 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                     Loading campaigns...
                   </Typography>
                 ) : visibleCampaigns.length > 0 ? (
-                  visibleCampaigns.map((item) => (
-                    <Box
-                      key={item.campaign._id}
-                      sx={{
-                        minHeight: 54,
-                        border: `1px solid ${fabUTokens.color.border}`,
-                        borderRadius: '9px',
-                        bgcolor: fabUTokens.color.surfaceMuted,
-                        px: 1.2,
-                        py: 0.95,
-                      }}
-                    >
-                      <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
-                        {item.campaign.name}
-                      </Typography>
-                    </Box>
-                  ))
+                  visibleCampaigns.map((item) => {
+                    const isEditing =
+                      editingTarget?.kind === 'campaign' && editingTarget.id === item.campaign._id;
+                    return (
+                      <SwipeableCard
+                        key={item.campaign._id}
+                        action={
+                          <Button
+                            onClick={() =>
+                              beginEdit('campaign', item.campaign._id, item.campaign.name)
+                            }
+                            sx={{
+                              minWidth: 84,
+                              height: '100%',
+                              borderRadius: 0,
+                              bgcolor: fabUTokens.color.highlight,
+                              color: fabUTokens.color.highlightFg,
+                              textTransform: 'none',
+                              fontWeight: 800,
+                              gap: 0.5,
+                              '&:hover': { bgcolor: fabUTokens.color.highlight },
+                            }}
+                          >
+                            <Pencil size={14} />
+                            Edit
+                          </Button>
+                        }
+                      >
+                        {isEditing ? (
+                          <Stack
+                            direction="row"
+                            spacing={0.6}
+                            sx={{
+                              minHeight: 54,
+                              border: `1px solid ${fabUTokens.color.border}`,
+                              borderRadius: '9px',
+                              bgcolor: fabUTokens.color.surface,
+                              px: 1,
+                              py: 0.8,
+                              alignItems: 'center',
+                            }}
+                          >
+                            <InputBase
+                              value={editingName}
+                              autoFocus
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') void commitEdit();
+                                if (e.key === 'Escape') cancelEdit();
+                              }}
+                              sx={{
+                                flex: 1,
+                                fontSize: '0.86rem',
+                                fontWeight: 800,
+                                color: fabUTokens.color.textPrimary,
+                              }}
+                            />
+                            <Button
+                              onClick={cancelEdit}
+                              size="small"
+                              sx={{
+                                textTransform: 'none',
+                                color: fabUTokens.color.textSecondary,
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={() => void commitEdit()}
+                              size="small"
+                              variant="contained"
+                              sx={{
+                                textTransform: 'none',
+                                bgcolor: fabUTokens.color.highlight,
+                                color: fabUTokens.color.highlightFg,
+                                '&:hover': { bgcolor: fabUTokens.color.highlight },
+                              }}
+                            >
+                              Save
+                            </Button>
+                          </Stack>
+                        ) : (
+                          <Box
+                            sx={{
+                              minHeight: 54,
+                              border: `1px solid ${fabUTokens.color.border}`,
+                              borderRadius: '9px',
+                              bgcolor: fabUTokens.color.surfaceMuted,
+                              px: 1.2,
+                              py: 0.95,
+                            }}
+                          >
+                            <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                              {item.campaign.name}
+                            </Typography>
+                          </Box>
+                        )}
+                      </SwipeableCard>
+                    );
+                  })
                 ) : (
                   <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
                     No campaigns saved to this account yet.

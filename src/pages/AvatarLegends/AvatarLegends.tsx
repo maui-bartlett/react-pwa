@@ -242,7 +242,10 @@ const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 type Connection = { name: string; role: string; note: string };
 type JournalEntry = { type: string; title: string; body: string };
 type Technique = {
-  element: TechniqueElement;
+  /** Elemental category (water / earth / fire / air / martial / tech /
+   *  basic). Renamed from `element` -> `type` to keep the AL technique
+   *  vocabulary aligned with the rulebook layout. */
+  type: TechniqueElement;
   category: TechniqueCategory;
   level: TechniqueLevel;
   title: string;
@@ -260,7 +263,9 @@ type CharacterState = {
   name: string;
   className: string; // e.g. "THE SUCCESSOR"
   pronouns: string;
-  age: string; // free-form so values like "Age 32" / "Unknown" both work
+  /** Plain numeric age stored on the character record. Rendered as
+   *  "Age <number>" in the UI for readability. */
+  age: number;
   origin: string;
   stats: Record<string, number>;
   /** -4..4 along the Tradition/Progress balance track. */
@@ -286,7 +291,7 @@ const defaultCharacter: CharacterState = {
   name: 'Qi Gong',
   className: 'THE SUCCESSOR',
   pronouns: 'He / Him',
-  age: 'Age 32',
+  age: 32,
   origin: 'Jasmine Island',
   stats: { Creativity: 2, Focus: 2, Harmony: 1, Passion: 1 },
   balance: 0,
@@ -321,7 +326,7 @@ const defaultCharacter: CharacterState = {
   ],
   techniques: [
     {
-      element: 'water',
+      type: 'water',
       category: 'Advance & Attack',
       level: 'mastered',
       title: 'Stream the Water',
@@ -329,7 +334,7 @@ const defaultCharacter: CharacterState = {
       body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
     },
     {
-      element: 'water',
+      type: 'water',
       category: 'Defend & Maneuver',
       level: 'learned',
       title: 'Flow as Water',
@@ -337,7 +342,7 @@ const defaultCharacter: CharacterState = {
       body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
     },
     {
-      element: 'water',
+      type: 'water',
       category: 'Evade & Observe',
       level: 'mastered',
       title: 'Refresh',
@@ -345,7 +350,7 @@ const defaultCharacter: CharacterState = {
       body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
     },
     {
-      element: 'water',
+      type: 'water',
       category: 'Advance & Attack',
       level: 'learned',
       title: 'Water Jab',
@@ -353,7 +358,7 @@ const defaultCharacter: CharacterState = {
       body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
     },
     {
-      element: 'basic',
+      type: 'basic',
       category: 'Advance & Attack',
       level: 'learned',
       title: 'Smash',
@@ -361,7 +366,7 @@ const defaultCharacter: CharacterState = {
       body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
     },
     {
-      element: 'basic',
+      type: 'basic',
       category: 'Defend & Maneuver',
       level: 'learned',
       title: 'Pounce',
@@ -400,8 +405,9 @@ const defaultCharacter: CharacterState = {
 const characterStateAtom = atom<CharacterState>(defaultCharacter);
 
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
- *  shape of the AL `CharacterState` changes in a breaking way. */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 1;
+ *  shape of the AL `CharacterState` changes in a breaking way.
+ *  v2 (current): `age` is `number`, technique key is `type` (was `element`). */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 2;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -415,15 +421,55 @@ function serializeAvatarLegendsCharacter(state: CharacterState) {
 }
 
 /** Apply incoming backend payload back to the AL shape, with a defensive
- *  fall-through to the default so missing/legacy fields don't crash. */
+ *  fall-through to the default so missing/legacy fields don't crash.
+ *  Also handles the v1 -> v2 shape migration in-flight: `age` strings
+ *  like "Age 32" parse to a number, and each technique's legacy
+ *  `element` key is read into the new `type` key. */
 function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
   if (!raw || typeof raw !== 'object') return defaultCharacter;
   const wrapped = raw as { character?: unknown };
-  const candidate =
+  const innerCandidate: Record<string, unknown> =
     wrapped.character && typeof wrapped.character === 'object'
-      ? (wrapped.character as Partial<CharacterState>)
-      : (raw as Partial<CharacterState>);
-  return { ...defaultCharacter, ...candidate };
+      ? (wrapped.character as Record<string, unknown>)
+      : (raw as Record<string, unknown>);
+
+  const rawAge: unknown = innerCandidate.age;
+  const age = (() => {
+    if (typeof rawAge === 'number' && Number.isFinite(rawAge)) return rawAge;
+    if (typeof rawAge === 'string') {
+      const match = rawAge.match(/-?\d+/);
+      if (match) {
+        const parsed = parseInt(match[0], 10);
+        if (Number.isFinite(parsed)) return parsed;
+      }
+    }
+    return defaultCharacter.age;
+  })();
+
+  const rawTechniques: unknown = innerCandidate.techniques;
+  const techniques = Array.isArray(rawTechniques)
+    ? (rawTechniques as Array<Record<string, unknown>>).map((tech) => {
+        const legacyElement = (tech as { element?: unknown }).element;
+        const nextType =
+          typeof tech.type === 'string'
+            ? (tech.type as TechniqueElement)
+            : typeof legacyElement === 'string'
+              ? (legacyElement as TechniqueElement)
+              : 'basic';
+        // Strip the legacy `element` key so it doesn't survive on
+        // the new Technique shape.
+        const rest: Record<string, unknown> = { ...tech };
+        delete rest.element;
+        return { ...rest, type: nextType } as Technique;
+      })
+    : defaultCharacter.techniques;
+
+  return {
+    ...defaultCharacter,
+    ...(innerCandidate as Partial<CharacterState>),
+    age,
+    techniques,
+  };
 }
 
 function describeAvatarLegendsCharacter(state: CharacterState) {
@@ -1093,6 +1139,9 @@ function ConditionButtonShared({ label }: { label: string }) {
       // Conditions use the muted-gold bookAccent across both themes
       // so they match the rulebook chapter-heading color everywhere.
       activeColor={bookAccent}
+      // Unselected label reads in black in light mode (per spec); dark
+      // mode keeps the StatusButton default of white text at all times.
+      inactiveTextColor="#000000"
       onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
     />
   );
@@ -1107,19 +1156,30 @@ function StatusButton({
   label,
   active,
   activeColor,
+  inactiveTextColor,
   onToggle,
 }: {
   label: string;
   active: boolean;
   activeColor: string;
+  /** Optional override for the unselected label color in light mode.
+   *  Defaults to `activeColor` (the legacy color-coded look the
+   *  positive / negative Statuses buttons use). Conditions pass black
+   *  here so unselected condition labels stay readable on parchment. */
+  inactiveTextColor?: string;
   onToggle: () => void;
 }) {
   // In dark mode the inactive text would otherwise sit at the activeColor
   // (e.g., the dark-red `gold`), which is hard to read against the slate
   // body. Force the label to white at all times in dark mode; light mode
-  // keeps the original active=white / inactive=activeColor behaviour.
+  // uses `inactiveTextColor` (or falls back to the active border color
+  // for the existing color-coded behaviour).
   const { isDarkMode } = useThemeMode();
-  const textColor = isDarkMode ? '#ffffff' : active ? '#ffffff' : activeColor;
+  const textColor = isDarkMode
+    ? '#ffffff'
+    : active
+      ? '#ffffff'
+      : (inactiveTextColor ?? activeColor);
   return (
     <Box
       component="button"
@@ -1730,7 +1790,13 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function CharacterPane() {
   const character = useAtomValue(characterStateAtom);
-  const facts = [character.pronouns, character.age, character.origin].filter(Boolean);
+  // Age is now a plain number on the character record; render as
+  // "Age <n>" inline. Falsy guards keep blank/0 values out of the row.
+  const ageLabel =
+    typeof character.age === 'number' && Number.isFinite(character.age)
+      ? `Age ${character.age}`
+      : '';
+  const facts = [character.pronouns, ageLabel, character.origin].filter(Boolean);
   return (
     <Stack spacing={1.1}>
       {/* The main Character card is the only `major` (double-line) panel
@@ -2310,7 +2376,7 @@ function CombatPane() {
     const targetLevel: TechniqueLevel | null =
       techFilter === 0 ? null : (['learned', 'practiced', 'mastered'] as const)[techFilter - 1];
     return techniques.filter((tech) => {
-      const elementOk = elementFilter === 'all' || tech.element === elementFilter;
+      const elementOk = elementFilter === 'all' || tech.type === elementFilter;
       const levelOk = targetLevel === null || tech.level === targetLevel;
       return elementOk && levelOk;
     });
@@ -2472,7 +2538,7 @@ function CombatPane() {
             onChange={setTechFilter}
           />
           {visibleTechniques.map((tech) => {
-            const isBasic = tech.element === 'basic';
+            const isBasic = tech.type === 'basic';
             return (
               <TechniqueAccordion
                 key={tech.title}
@@ -3161,7 +3227,9 @@ function AvatarLegends() {
                 // tight to the actual nav height (no bristle band sits
                 // behind it) so there's no dark strip for content to
                 // scroll over.
-                pb: '64px',
+                // Reserve room at the bottom now that the nav grew by
+                // ~20px of additional bottom padding (see below).
+                pb: '84px',
               }}
             >
               {activeTab === 'character' ? <CharacterPane /> : null}
@@ -3178,7 +3246,10 @@ function AvatarLegends() {
             <Box
               sx={{
                 px: 0.5,
-                pb: 1,
+                // +20px of bottom padding so the nav clears the iOS home
+                // indicator safe-area, and the overall footer grows by
+                // the same +20px (its height is content-driven).
+                pb: '28px',
                 pt: 0.3,
                 position: 'absolute',
                 bottom: 0,

@@ -167,6 +167,49 @@ export const updateMetadata = mutation({
   },
 });
 
+/**
+ * Cross-app character rename. Convex doesn't carry a top-level `name`
+ * column anymore — every character keeps its name inside
+ * `characterState.character`. The exact field is per-app:
+ *   - avatar-legends: a flat `name: string`
+ *   - fabula-ultima:  a nested `name: { firstName, lastName, nickName }`
+ *     where the dialog rename targets the `nickName` (the most
+ *     "identity" slot users tend to edit).
+ * Anything else just no-ops gracefully.
+ */
+export const renameCharacter = mutation({
+  args: { characterId: v.id('characters'), name: v.string() },
+  handler: async (ctx, args) => {
+    const character = await requireCharacterOwner(ctx, args.characterId);
+    const state =
+      character.characterState && typeof character.characterState === 'object'
+        ? (character.characterState as Record<string, unknown>)
+        : {};
+    const inner =
+      state.character && typeof state.character === 'object'
+        ? (state.character as Record<string, unknown>)
+        : null;
+    if (!inner) return;
+    const gameSystem = character.meta?.gameSystem;
+    const trimmed = args.name.trim();
+    let nextInner: Record<string, unknown> = inner;
+    if (gameSystem === 'fabula-ultima') {
+      const existingName =
+        inner.name && typeof inner.name === 'object'
+          ? (inner.name as Record<string, unknown>)
+          : {};
+      nextInner = { ...inner, name: { ...existingName, nickName: trimmed } };
+    } else {
+      // Default (covers avatar-legends + any future flat-name schemas).
+      nextInner = { ...inner, name: trimmed };
+    }
+    await ctx.db.patch(args.characterId, {
+      characterState: { ...state, character: nextInner },
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const archive = mutation({
   args: { characterId: v.id('characters') },
   handler: async (ctx, args) => {
@@ -191,6 +234,94 @@ export const listCampaignsForCharacter = query({
       .query('campaignCharacters')
       .withIndex('by_characterId', (q) => q.eq('characterId', args.characterId))
       .collect();
+  },
+});
+
+/**
+ * One-shot migration for Avatar Legends character data:
+ *   - `characterState.character.age` becomes a plain number (parsing
+ *     legacy strings like "Age 32" / "32 years"). Falls back to the
+ *     leading integer; rows with no digits in the string are left as
+ *     they were.
+ *   - Each `characterState.character.techniques[i].element` is renamed
+ *     to `type` (legacy `element` key is dropped).
+ *   - `characterState.schemaVersion` is bumped to 2 once the row is
+ *     in the new shape.
+ * Safe to re-run on already-migrated rows. FabU rows skip both
+ * transforms (their characterState shape doesn't include these
+ * fields). Invoke after deploy:
+ *   npx convex run characters:migrateAvatarLegendsShape
+ */
+export const migrateAvatarLegendsShape = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      if (row.meta?.gameSystem !== 'avatar-legends') continue;
+      const state =
+        row.characterState && typeof row.characterState === 'object'
+          ? (row.characterState as Record<string, unknown>)
+          : null;
+      if (!state) continue;
+      const inner =
+        state.character && typeof state.character === 'object'
+          ? (state.character as Record<string, unknown>)
+          : null;
+      if (!inner) continue;
+
+      let touched = false;
+
+      // age: string -> number
+      let nextAge: unknown = inner.age;
+      if (typeof inner.age === 'string') {
+        const match = inner.age.match(/-?\d+/);
+        if (match) {
+          const parsed = parseInt(match[0], 10);
+          if (Number.isFinite(parsed)) {
+            nextAge = parsed;
+            touched = true;
+          }
+        }
+      }
+
+      // techniques[i].element -> techniques[i].type
+      let nextTechniques: unknown = inner.techniques;
+      if (Array.isArray(inner.techniques)) {
+        const next = (inner.techniques as Array<Record<string, unknown>>).map((tech) => {
+          const hasElement = Object.prototype.hasOwnProperty.call(tech, 'element');
+          const hasType = typeof tech.type === 'string';
+          if (!hasElement && hasType) return tech;
+          const { element: legacyElement, ...rest } = tech as { element?: unknown } & Record<
+            string,
+            unknown
+          >;
+          const resolvedType =
+            typeof tech.type === 'string'
+              ? tech.type
+              : typeof legacyElement === 'string'
+                ? legacyElement
+                : 'basic';
+          touched = true;
+          return { ...rest, type: resolvedType };
+        });
+        if (touched) nextTechniques = next;
+      }
+
+      if (!touched && state.schemaVersion === 2) continue;
+
+      const nextInner: Record<string, unknown> = {
+        ...inner,
+        age: nextAge,
+        techniques: nextTechniques,
+      };
+      await ctx.db.patch(row._id, {
+        characterState: { ...state, schemaVersion: 2, character: nextInner },
+        updatedAt: Date.now(),
+      });
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
   },
 });
 
