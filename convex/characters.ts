@@ -8,10 +8,10 @@ import {
   getOrCreateUserProfile,
   requireCharacterOwner,
 } from './lib/auth';
-import { FABULA_ULTIMA_TYPE, isActiveForProfile, withFabulaMeta } from './lib/fabulaMeta';
+import { isActiveForProfile, withGameSystemMeta } from './lib/fabulaMeta';
 
 export const listMine = query({
-  args: { includeArchived: v.optional(v.boolean()) },
+  args: { gameSystem: v.string(), includeArchived: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
     const profile = await getActiveUserProfile(ctx);
     if (!profile) return [];
@@ -19,7 +19,7 @@ export const listMine = query({
     const characters = await ctx.db
       .query('characters')
       .withIndex('by_ownerUserId_metaGameSystem', (q) =>
-        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', FABULA_ULTIMA_TYPE),
+        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', args.gameSystem),
       )
       .collect();
     return args.includeArchived ? characters : characters.filter((c) => !c.archivedAt);
@@ -27,15 +27,15 @@ export const listMine = query({
 });
 
 export const getActiveMine = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { gameSystem: v.string() },
+  handler: async (ctx, args) => {
     const profile = await getActiveUserProfile(ctx);
     if (!profile) return null;
 
     const characters = await ctx.db
       .query('characters')
       .withIndex('by_ownerUserId_metaGameSystem', (q) =>
-        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', FABULA_ULTIMA_TYPE),
+        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', args.gameSystem),
       )
       .collect();
 
@@ -60,6 +60,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
+    gameSystem: v.string(),
     portraitUrl: v.optional(v.string()),
     schemaVersion: v.number(),
     characterState: v.any(),
@@ -69,7 +70,7 @@ export const create = mutation({
     const now = Date.now();
     return await ctx.db.insert('characters', {
       ownerUserId: profile._id,
-      meta: withFabulaMeta({ activeForUserProfileId: profile._id }),
+      meta: withGameSystemMeta(args.gameSystem, { activeForUserProfileId: profile._id }),
       portraitUrl: args.portraitUrl,
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
@@ -81,6 +82,7 @@ export const create = mutation({
 
 export const createFromLocalImport = mutation({
   args: {
+    gameSystem: v.string(),
     schemaVersion: v.number(),
     characterState: v.any(),
   },
@@ -89,7 +91,7 @@ export const createFromLocalImport = mutation({
     const now = Date.now();
     return await ctx.db.insert('characters', {
       ownerUserId: profile._id,
-      meta: withFabulaMeta({ activeForUserProfileId: profile._id }),
+      meta: withGameSystemMeta(args.gameSystem, { activeForUserProfileId: profile._id }),
       schemaVersion: args.schemaVersion,
       characterState: args.characterState,
       createdAt: now,
@@ -103,12 +105,17 @@ export const setActiveMine = mutation({
   handler: async (ctx, args) => {
     const profile = await getOrCreateUserProfile(ctx);
     const target = await requireCharacterOwner(ctx, args.characterId);
+    const targetGameSystem = target.meta?.gameSystem;
+    if (!targetGameSystem) throw new ConvexError('CHARACTER_MISSING_GAME_SYSTEM');
     const now = Date.now();
 
+    // Only clear the active flag on the *same* game system's characters
+    // — switching the active AL character shouldn't bump a FabU one and
+    // vice versa.
     const characters = await ctx.db
       .query('characters')
       .withIndex('by_ownerUserId_metaGameSystem', (q) =>
-        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', FABULA_ULTIMA_TYPE),
+        q.eq('ownerUserId', profile._id).eq('meta.gameSystem', targetGameSystem),
       )
       .collect();
 
@@ -116,7 +123,7 @@ export const setActiveMine = mutation({
       characters.map((character) => {
         const activeForUserProfileId = character._id === target._id ? profile._id : undefined;
         return ctx.db.patch(character._id, {
-          meta: withFabulaMeta({
+          meta: withGameSystemMeta(targetGameSystem, {
             ...character.meta,
             activeForUserProfileId,
           }),
