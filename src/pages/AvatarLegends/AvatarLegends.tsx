@@ -1,40 +1,42 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import ButtonBase from '@mui/material/ButtonBase';
-import Dialog from '@mui/material/Dialog';
-import InputBase from '@mui/material/InputBase';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
+import Dialog from "@mui/material/Dialog";
+import InputBase from "@mui/material/InputBase";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { alpha } from "@mui/material/styles";
 
-import { atom, useAtom, useAtomValue } from 'jotai';
-import { Backpack, HandFist, Pencil, Trash2 } from 'lucide-react';
+import { atom, useAtom, useAtomValue } from "jotai";
+import { Backpack, HandFist, Pencil, Trash2 } from "lucide-react";
 
-import { SwipeableCard } from '@/components/SwipeableCard';
-import AccountSettings from '@/sections/AccountSettings';
-import { createCharacterHistory } from '@/state/createCharacterHistory';
-import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
-import { useThemeMode } from '@/theme/hooks';
+import { SwipeableCard } from "@/components/SwipeableCard";
+import AccountSettings from "@/sections/AccountSettings";
+import { createCharacterHistory } from "@/state/createCharacterHistory";
+import { useConvexCharacterSync } from "@/sync/useConvexCharacterSync";
+import { useThemeMode } from "@/theme/hooks";
 
-// The six elemental symbols cropped directly from the official Avatar Legends
-// character sheet "Your Training" row (assets/original-character-sheet.jpg).
-import elementAir from './assets/element-air.png';
-import elementEarth from './assets/element-earth.png';
-import elementFire from './assets/element-fire.png';
-import elementMartial from './assets/element-martial.png';
-import elementTech from './assets/element-tech.png';
-import elementWater from './assets/element-water.png';
+// White training symbols extracted from the Avatar Legends training reference pages.
+// They are transparent PNGs and rely on the deep-ink filter band for contrast.
+import elementAir from "./assets/airbending-symbol.png";
+import elementEarth from "./assets/earthbending-symbol.png";
+import elementFire from "./assets/firebending-symbol.png";
+import elementMartial from "./assets/weapons-symbol.png";
+import elementTech from "./assets/technology-symbol.png";
+import elementWater from "./assets/waterbending-symbol.png";
 
 // Outer-mat gradients used behind the parchment card. Theme-aware.
-const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
+const lightPageBg =
+  "linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)";
 // Dark mode mat: slate-blue gradient — guided by the AL cover art's
 // deep twilight, halfway between the prior gray mat and full navy.
-const darkPageBg = 'linear-gradient(140deg, #060a11 0%, #0c131c 50%, #060a11 100%)';
+const darkPageBg =
+  "linear-gradient(140deg, #060a11 0%, #0c131c 50%, #060a11 100%)";
 
-type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
+type AvatarTab = "character" | "moves" | "combat" | "backpack";
 
 type TabConfig = {
   label: string;
@@ -84,29 +86,29 @@ type AvPaletteShape = {
 const lightAvPalette: AvPaletteShape = {
   // Watercolor-blue palette sampled from the brush-stroke wash on the
   // character sheet.
-  parchment: '#e3ecf4',
-  parchmentLight: '#f3f7fb',
-  parchmentDeep: '#cdd9e5',
-  washDeep: '#6f9bba',
-  ink: '#23456b',
+  parchment: "#e3ecf4",
+  parchmentLight: "#f3f7fb",
+  parchmentDeep: "#cdd9e5",
+  washDeep: "#6f9bba",
+  ink: "#23456b",
   // Header / footer brush-stroke band — pinned to the dark-mode
   // slate-blue chrome so the header reads identically across both
   // themes.
-  deepInk: '#111a24',
-  brown: '#3a4e63',
-  brownSoft: '#5a6f86',
-  border: '#b1c3d3',
-  ember: '#a8413a',
-  gold: '#7a2424',
-  passionRed: '#bc5753',
-  attackRed: '#a8413a',
+  deepInk: "#111a24",
+  brown: "#3a4e63",
+  brownSoft: "#5a6f86",
+  border: "#b1c3d3",
+  ember: "#a8413a",
+  gold: "#7a2424",
+  passionRed: "#bc5753",
+  attackRed: "#a8413a",
   // Pale dusty-blue from the rulebook heading-divider line.
-  accent: '#a8c5d4',
+  accent: "#a8c5d4",
   // Muted gold from the rulebook chapter headings — used for the
   // class-name eyebrow, Influence label / dots, and Conditions buttons.
   // Light mode now uses the same gold as dark mode for a unified
   // book-style highlight across themes.
-  bookAccent: '#c8a460',
+  bookAccent: "#c8a460",
 };
 
 const darkAvPalette: AvPaletteShape = {
@@ -114,34 +116,34 @@ const darkAvPalette: AvPaletteShape = {
   // art's deep twilight sky. Sits roughly halfway between the prior
   // gray palette and the original cover-art navy — enough blue to read
   // as slate-blue, not enough to feel fully saturated navy.
-  parchment: '#0c131c', // card / panel bg
-  parchmentLight: '#161e29', // slightly lifted slate for elevated cards
-  parchmentDeep: '#060a11', // recessed pocket
-  washDeep: '#818e9c', // atmospheric mountain-haze slate
-  ink: '#eff2f8', // near-white body / heading text
+  parchment: "#0c131c", // card / panel bg
+  parchmentLight: "#161e29", // slightly lifted slate for elevated cards
+  parchmentDeep: "#060a11", // recessed pocket
+  washDeep: "#818e9c", // atmospheric mountain-haze slate
+  ink: "#eff2f8", // near-white body / heading text
   // Chrome band — slate-blue chrome that still ties to the AL cover
   // navy but stays softer than full saturation.
-  deepInk: '#111a24',
-  brown: '#e4ebf5', // body text (slight blue lift)
-  brownSoft: '#c3ccd9', // secondary text
-  border: '#2d3947', // subtle slate-blue border
-  ember: '#d56b5f', // muted brick-red accent (cover scrollwork warm tone)
+  deepInk: "#111a24",
+  brown: "#e4ebf5", // body text (slight blue lift)
+  brownSoft: "#c3ccd9", // secondary text
+  border: "#2d3947", // subtle slate-blue border
+  ember: "#d56b5f", // muted brick-red accent (cover scrollwork warm tone)
   // `gold` is the dark-red accent used by Fatigue diamonds, Conditions,
   // and Negative Statuses. Pinned to the same value as light mode so the
   // dark-red reads identically in both modes.
-  gold: '#7a2424',
+  gold: "#7a2424",
   // Passion stat label + Advance & Attack eyebrow keep the brighter
   // cover-art red so they stay legible against the gray body.
-  passionRed: '#c84a3e',
-  attackRed: '#c84a3e',
+  passionRed: "#c84a3e",
+  attackRed: "#c84a3e",
   // Pale slate-blue accent — divider / decorative tone that reads
   // against the deeper slate-blue surfaces.
-  accent: '#859fb2',
+  accent: "#859fb2",
   // Muted gold sampled from the rulebook chapter headings — used for
   // the class-name eyebrow, Influence label / dots, and the Conditions
   // buttons in dark mode (replaces the dark-red those surfaces show
   // in light mode).
-  bookAccent: '#c8a460',
+  bookAccent: "#c8a460",
 };
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its
@@ -191,21 +193,21 @@ function applyAvatarPalette(isDarkMode: boolean) {
 // brush-stroke background — header text, footer nav text, FilterTabs active
 // chip text, corner ornaments. These never flip with theme so they stay
 // readable in both light and dark mode.
-const chromeText = '#f3f7fb';
+const chromeText = "#f3f7fb";
 
 // Element-specific colors stay constant — they identify the element, not
 // the theme.
-const water = '#4a7fa8';
-const earth = '#7d8c5a';
-const fire = '#a8413a';
-const air = '#a3bbc4';
-const martial = '#3d3d4a';
-const tech = '#7a5d8a';
+const water = "#4a7fa8";
+const earth = "#7d8c5a";
+const fire = "#a8413a";
+const air = "#a3bbc4";
+const martial = "#3d3d4a";
+const tech = "#7a5d8a";
 
 const tabs: TabConfig[] = [
   {
-    label: 'Character',
-    value: 'character',
+    label: "Character",
+    value: "character",
     // Lucide has no yin-yang glyph, so we use a local SVG. We pass explicit
     // dark/light colors so the symbol stays legible on the dark navy nav
     // (dark dot visible inside the white section, light dot in the dark).
@@ -214,27 +216,41 @@ const tabs: TabConfig[] = [
     ),
   },
   {
-    label: 'Moves',
-    value: 'moves',
+    label: "Moves",
+    value: "moves",
     renderIcon: ({ color, size }) => <MoveDiamond color={color} size={size} />,
   },
   {
-    label: 'Combat',
-    value: 'combat',
-    renderIcon: ({ color, size }) => <HandFist color={color} size={size} strokeWidth={1.75} />,
+    label: "Combat",
+    value: "combat",
+    renderIcon: ({ color, size }) => (
+      <HandFist color={color} size={size} strokeWidth={1.75} />
+    ),
   },
   {
-    label: 'Backpack',
-    value: 'backpack',
-    renderIcon: ({ color, size }) => <Backpack color={color} size={size} strokeWidth={1.75} />,
+    label: "Backpack",
+    value: "backpack",
+    renderIcon: ({ color, size }) => (
+      <Backpack color={color} size={size} strokeWidth={1.75} />
+    ),
   },
 ];
 
 // Technique vocabulary (rulebook-wide). Used by the technique list on
 // characterStateAtom + by the element/level filter atoms below.
-type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
-type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
-type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
+type TechniqueElement =
+  | "water"
+  | "earth"
+  | "fire"
+  | "air"
+  | "martial"
+  | "tech"
+  | "basic";
+type TechniqueCategory =
+  | "Advance & Attack"
+  | "Defend & Maneuver"
+  | "Evade & Observe";
+type TechniqueLevel = "learned" | "practiced" | "mastered";
 
 // UI-only atoms (no character data; just remember which sub-tab is
 // active when the user navigates away and comes back).
@@ -246,8 +262,8 @@ const backpackSubTabAtom = atom(0);
 const techniqueFilterAtom = atom(0);
 // Element filter for the Techniques sub-tab. 'all' shows every card;
 // otherwise only techniques whose `element` matches are visible.
-type TechniqueElementFilter = TechniqueElement | 'all';
-const techniqueElementAtom = atom<TechniqueElementFilter>('all');
+type TechniqueElementFilter = TechniqueElement | "all";
+const techniqueElementAtom = atom<TechniqueElementFilter>("all");
 
 // ---------- Character data shapes ----------
 type Connection = { name: string; role: string; note: string };
@@ -299,11 +315,11 @@ type CharacterState = {
  *  content so the UI shows the same data on first load while now reading
  *  from a single mutable source. */
 const defaultCharacter: CharacterState = {
-  name: 'Qi Gong',
-  className: 'THE SUCCESSOR',
-  pronouns: 'He / Him',
+  name: "Qi Gong",
+  className: "THE SUCCESSOR",
+  pronouns: "He / Him",
   age: 32,
-  origin: 'Jasmine Island',
+  origin: "Jasmine Island",
   stats: { Creativity: 2, Focus: 2, Harmony: 1, Passion: 1 },
   balance: 0,
   conditions: {},
@@ -312,101 +328,102 @@ const defaultCharacter: CharacterState = {
   // marks pre-filled on the right side of the tracker on first load.
   fatigue: [false, false, false, true, true],
   backgrounds: { Urban: true, Privileged: true },
-  classTraitTitle: 'A Tainted Past',
+  classTraitTitle: "A Tainted Past",
   classTraitBody:
-    'You carry a heavy legacy — a name, a debt, or a deed that shadows your every step. Once per session, when your past complicates the situation, the GM may offer you an opportunity to mark fatigue and either reveal a useful connection from your old life or learn a fragment of hidden lore that bears on the current scene.',
+    "You carry a heavy legacy — a name, a debt, or a deed that shadows your every step. Once per session, when your past complicates the situation, the GM may offer you an opportunity to mark fatigue and either reveal a useful connection from your old life or learn a fragment of hidden lore that bears on the current scene.",
   historyAnswers: {},
   connections: [
     {
-      name: 'Boink',
-      role: 'Black wooly pig',
-      note: 'My loyal companion and constant source of joy. He roots around for snacks and keeps me grounded.',
+      name: "Boink",
+      role: "Black wooly pig",
+      note: "My loyal companion and constant source of joy. He roots around for snacks and keeps me grounded.",
     },
     {
-      name: 'Qi Wei',
-      role: 'Female ancestor',
-      note: 'A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.',
+      name: "Qi Wei",
+      role: "Female ancestor",
+      note: "A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.",
     },
   ],
   classMoves: [
-    { title: 'Way of the Future', body: 'Class move details TBD.' },
-    { title: 'Black Koala-Sheep', body: 'Class move details TBD.' },
-    { title: 'A Life of Regret', body: 'Class move details TBD.' },
-    { title: 'Walk This Way', body: 'Class move details TBD.' },
-    { title: 'Worldly Knowledge', body: 'Class move details TBD.' },
+    { title: "Way of the Future", body: "Class move details TBD." },
+    { title: "Black Koala-Sheep", body: "Class move details TBD." },
+    { title: "A Life of Regret", body: "Class move details TBD." },
+    { title: "Walk This Way", body: "Class move details TBD." },
+    { title: "Worldly Knowledge", body: "Class move details TBD." },
   ],
   techniques: [
     {
-      type: 'water',
-      category: 'Advance & Attack',
-      level: 'mastered',
-      title: 'Stream the Water',
-      summary: 'Push a jet stream from a significant source to inflict fatigue.',
-      body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
+      type: "water",
+      category: "Advance & Attack",
+      level: "mastered",
+      title: "Stream the Water",
+      summary:
+        "Push a jet stream from a significant source to inflict fatigue.",
+      body: "Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.",
     },
     {
-      type: 'water',
-      category: 'Defend & Maneuver',
-      level: 'learned',
-      title: 'Flow as Water',
-      summary: 'Use a jet of water to move quickly and shift position.',
-      body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
+      type: "water",
+      category: "Defend & Maneuver",
+      level: "learned",
+      title: "Flow as Water",
+      summary: "Use a jet of water to move quickly and shift position.",
+      body: "Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.",
     },
     {
-      type: 'water',
-      category: 'Evade & Observe',
-      level: 'mastered',
-      title: 'Refresh',
-      summary: 'Clear conditions and keep an ally steady under pressure.',
-      body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
+      type: "water",
+      category: "Evade & Observe",
+      level: "mastered",
+      title: "Refresh",
+      summary: "Clear conditions and keep an ally steady under pressure.",
+      body: "Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.",
     },
     {
-      type: 'water',
-      category: 'Advance & Attack',
-      level: 'learned',
-      title: 'Water Jab',
-      summary: 'Surround your fist in water and strike from unexpected angles.',
-      body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
+      type: "water",
+      category: "Advance & Attack",
+      level: "learned",
+      title: "Water Jab",
+      summary: "Surround your fist in water and strike from unexpected angles.",
+      body: "Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.",
     },
     {
-      type: 'basic',
-      category: 'Advance & Attack',
-      level: 'learned',
-      title: 'Smash',
-      summary: 'Drive a heavy blow through your target to bypass their guard.',
-      body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
+      type: "basic",
+      category: "Advance & Attack",
+      level: "learned",
+      title: "Smash",
+      summary: "Drive a heavy blow through your target to bypass their guard.",
+      body: "Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.",
     },
     {
-      type: 'basic',
-      category: 'Defend & Maneuver',
-      level: 'learned',
-      title: 'Pounce',
-      summary: 'Close the gap on a target with sudden speed.',
+      type: "basic",
+      category: "Defend & Maneuver",
+      level: "learned",
+      title: "Pounce",
+      summary: "Close the gap on a target with sudden speed.",
       body: "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
     },
   ],
   inventory: [
     {
-      type: 'Item',
-      title: 'Messenger Bag',
-      body: 'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
+      type: "Item",
+      title: "Messenger Bag",
+      body: "Carried since leaving home. Inside are notes, tools, and a few keepsakes.",
     },
   ],
   notes: [
     {
-      type: 'Note',
+      type: "Note",
       title: "Rad's Notebook",
-      body: 'A worn notebook filled with themes about bending and identity.',
+      body: "A worn notebook filled with themes about bending and identity.",
     },
     {
-      type: 'Important NPC',
-      title: 'Professor Zei',
+      type: "Important NPC",
+      title: "Professor Zei",
       body: "Head of Bending Theory at UoE. Believes in Rad's potential.",
     },
     {
-      type: 'Location',
-      title: 'The University of Elements',
-      body: 'A neutral sanctuary where benders from all nations study in peace.',
+      type: "Location",
+      title: "The University of Elements",
+      body: "A neutral sanctuary where benders from all nations study in peace.",
     },
   ],
 };
@@ -419,9 +436,10 @@ const characterStateAtom = atom<CharacterState>(defaultCharacter);
  *  shape of the AL `CharacterState` changes in a breaking way.
  *  v2 (current): `age` is `number`, technique key is `type` (was `element`). */
 const AVATAR_LEGENDS_SCHEMA_VERSION = 2;
-const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
-const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
-const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
+const AVATAR_LEGENDS_GAME_SYSTEM = "avatar-legends";
+const AVATAR_LEGENDS_PENDING_SYNC_KEY =
+  "avatar-legends-convex-pending-character";
+const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = "avatar-legends-select-character";
 
 /** Convert the AL `CharacterState` to the backend payload. Mirrors the
  *  FabU convention of wrapping the character under a `character` field
@@ -437,17 +455,17 @@ function serializeAvatarLegendsCharacter(state: CharacterState) {
  *  like "Age 32" parse to a number, and each technique's legacy
  *  `element` key is read into the new `type` key. */
 function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
-  if (!raw || typeof raw !== 'object') return defaultCharacter;
+  if (!raw || typeof raw !== "object") return defaultCharacter;
   const wrapped = raw as { character?: unknown };
   const innerCandidate: Record<string, unknown> =
-    wrapped.character && typeof wrapped.character === 'object'
+    wrapped.character && typeof wrapped.character === "object"
       ? (wrapped.character as Record<string, unknown>)
       : (raw as Record<string, unknown>);
 
   const rawAge: unknown = innerCandidate.age;
   const age = (() => {
-    if (typeof rawAge === 'number' && Number.isFinite(rawAge)) return rawAge;
-    if (typeof rawAge === 'string') {
+    if (typeof rawAge === "number" && Number.isFinite(rawAge)) return rawAge;
+    if (typeof rawAge === "string") {
       const match = rawAge.match(/-?\d+/);
       if (match) {
         const parsed = parseInt(match[0], 10);
@@ -462,11 +480,11 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     ? (rawTechniques as Array<Record<string, unknown>>).map((tech) => {
         const legacyElement = (tech as { element?: unknown }).element;
         const nextType =
-          typeof tech.type === 'string'
+          typeof tech.type === "string"
             ? (tech.type as TechniqueElement)
-            : typeof legacyElement === 'string'
+            : typeof legacyElement === "string"
               ? (legacyElement as TechniqueElement)
-              : 'basic';
+              : "basic";
         // Strip the legacy `element` key so it doesn't survive on
         // the new Technique shape.
         const rest: Record<string, unknown> = { ...tech };
@@ -484,14 +502,15 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
 }
 
 function describeAvatarLegendsCharacter(state: CharacterState) {
-  return state.name || 'Avatar Legends Character';
+  return state.name || "Avatar Legends Character";
 }
 
 /** Shared undo/redo history hook for the AL character. Built on the
  *  reusable factory in `src/state/createCharacterHistory.ts` — same
  *  machinery FabU uses. Every change to `characterStateAtom` (whether
  *  via a slice atom or a direct write) is captured automatically. */
-const useAvatarLegendsCharacterHistory = createCharacterHistory(characterStateAtom);
+const useAvatarLegendsCharacterHistory =
+  createCharacterHistory(characterStateAtom);
 
 /** Mounts the generic Convex character sync hook against the AL
  *  `characterStateAtom`. Renders nothing — just keeps the local atom
@@ -527,18 +546,20 @@ function ConvexCharacterSyncMount() {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
-      if (e.key.toLowerCase() !== 'z') return;
+      if (e.key.toLowerCase() !== "z") return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       const isEditable =
-        tag === 'INPUT' || tag === 'TEXTAREA' || (target?.isContentEditable ?? false);
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        (target?.isContentEditable ?? false);
       if (isEditable) return;
       e.preventDefault();
       if (e.shiftKey) historyControls.redo();
       else historyControls.undo();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [historyControls]);
 
   return null;
@@ -551,11 +572,19 @@ function ConvexCharacterSyncMount() {
 function sliceAtom<K extends keyof CharacterState>(key: K) {
   return atom(
     (get) => get(characterStateAtom)[key],
-    (get, set, update: CharacterState[K] | ((prev: CharacterState[K]) => CharacterState[K])) => {
+    (
+      get,
+      set,
+      update:
+        | CharacterState[K]
+        | ((prev: CharacterState[K]) => CharacterState[K]),
+    ) => {
       const current = get(characterStateAtom);
       const next =
-        typeof update === 'function'
-          ? (update as (prev: CharacterState[K]) => CharacterState[K])(current[key])
+        typeof update === "function"
+          ? (update as (prev: CharacterState[K]) => CharacterState[K])(
+              current[key],
+            )
           : update;
       set(characterStateAtom, { ...current, [key]: next });
     },
@@ -564,15 +593,15 @@ function sliceAtom<K extends keyof CharacterState>(key: K) {
 
 // Slice atoms — preserve the prior atom-level API so existing useAtom
 // call sites keep working unchanged. State lives in characterStateAtom.
-const statsAtom = sliceAtom('stats');
-const balancePositionAtom = sliceAtom('balance');
-const activeStatusesAtom = sliceAtom('statuses');
-const activeConditionsAtom = sliceAtom('conditions');
-const fatigueAtom = sliceAtom('fatigue');
-const backgroundsAtom = sliceAtom('backgrounds');
-const historyAnswersAtom = sliceAtom('historyAnswers');
-const notesAtom = sliceAtom('notes');
-const inventoryAtom = sliceAtom('inventory');
+const statsAtom = sliceAtom("stats");
+const balancePositionAtom = sliceAtom("balance");
+const activeStatusesAtom = sliceAtom("statuses");
+const activeConditionsAtom = sliceAtom("conditions");
+const fatigueAtom = sliceAtom("fatigue");
+const backgroundsAtom = sliceAtom("backgrounds");
+const historyAnswersAtom = sliceAtom("historyAnswers");
+const notesAtom = sliceAtom("notes");
+const inventoryAtom = sliceAtom("inventory");
 
 // Each move card carries its title and the full body text shown when
 // the accordion expands. Some moves also have a bulleted list of
@@ -588,90 +617,90 @@ type MoveEntry = {
 // Rulebook moves shared across every character — Basic + Balance are
 // game-wide moves. Class-specific moves live on the character record
 // (characterStateAtom.classMoves) so each character can carry their own.
-const movesByCategory: Record<'basic' | 'balance', MoveEntry[]> = {
+const movesByCategory: Record<"basic" | "balance", MoveEntry[]> = {
   basic: [
     {
-      title: 'Plead',
-      body: 'When you plead with an NPC who cares what you think for help, support, or action, roll with Harmony. On a 7-9, they need something more — evidence that this is the right course, guidance in making the right choices, or resources to aid them — before they act; the GM tells you what they need. On a 10+, they act now and do their best until the situation changes.',
+      title: "Plead",
+      body: "When you plead with an NPC who cares what you think for help, support, or action, roll with Harmony. On a 7-9, they need something more — evidence that this is the right course, guidance in making the right choices, or resources to aid them — before they act; the GM tells you what they need. On a 10+, they act now and do their best until the situation changes.",
     },
     {
-      title: 'Push Your Luck',
-      body: 'When you push your luck in a risky situation, say what you want to do and roll with Passion. On a hit, you do it, but it costs you to scrape by; the GM tells you what it costs you. On a 10+, your boldness pays off despite the cost; the GM tells you what other lucky opportunity falls in your lap.',
+      title: "Push Your Luck",
+      body: "When you push your luck in a risky situation, say what you want to do and roll with Passion. On a hit, you do it, but it costs you to scrape by; the GM tells you what it costs you. On a 10+, your boldness pays off despite the cost; the GM tells you what other lucky opportunity falls in your lap.",
     },
     {
-      title: 'Rely on Your Skills & Training',
-      body: 'When you rely on your skills and training to overcome an obstacle, gain new insight, or perform a familiar custom, roll with Focus. On a hit, you do it. On a 7-9, you do it imperfectly — the GM tells you how your approach might lead to unexpected consequences; accept those consequences or mark 1-fatigue.',
+      title: "Rely on Your Skills & Training",
+      body: "When you rely on your skills and training to overcome an obstacle, gain new insight, or perform a familiar custom, roll with Focus. On a hit, you do it. On a 7-9, you do it imperfectly — the GM tells you how your approach might lead to unexpected consequences; accept those consequences or mark 1-fatigue.",
     },
     {
-      title: 'Assess a Situation',
-      body: 'When you assess a situation, roll with Creativity. On a 7-9, ask 1 question. On a 10+, ask 2. Take +1 ongoing when acting on the answers.',
+      title: "Assess a Situation",
+      body: "When you assess a situation, roll with Creativity. On a 7-9, ask 1 question. On a 10+, ask 2. Take +1 ongoing when acting on the answers.",
       bullets: [
-        'What here can I use to ___?',
-        'Who or what is the biggest threat?',
-        'What should I be on the lookout for?',
+        "What here can I use to ___?",
+        "Who or what is the biggest threat?",
+        "What should I be on the lookout for?",
         "What's my best way out / in / through?",
-        'Who or what is in the greatest danger?',
+        "Who or what is in the greatest danger?",
       ],
     },
     {
-      title: 'Intimidate',
-      body: 'When you intimidate an NPC into backing off or giving in, roll with Passion. On a hit, they choose one. On a 10+, first, you pick one they cannot choose.',
+      title: "Intimidate",
+      body: "When you intimidate an NPC into backing off or giving in, roll with Passion. On a hit, they choose one. On a 10+, first, you pick one they cannot choose.",
       bullets: [
-        'They run to escape or get backup',
-        'They back down but keep watch',
-        'They give in with a few stipulations',
-        'They attack you, but off-balance; the GM marks a condition on them',
+        "They run to escape or get backup",
+        "They back down but keep watch",
+        "They give in with a few stipulations",
+        "They attack you, but off-balance; the GM marks a condition on them",
       ],
     },
     {
-      title: 'Trick',
-      body: 'When you trick an NPC, roll with Creativity. On a hit, they fall for it and do what you want for the moment. On a 7-9, pick 1. On a 10+, pick 2.',
+      title: "Trick",
+      body: "When you trick an NPC, roll with Creativity. On a hit, they fall for it and do what you want for the moment. On a 7-9, pick 1. On a 10+, pick 2.",
       bullets: [
-        'They stumble; take +1 forward to acting against them',
-        'They act foolishly; the GM tells you what additional opportunity they give you',
-        'They overcommit; they are deceived for some time',
+        "They stumble; take +1 forward to acting against them",
+        "They act foolishly; the GM tells you what additional opportunity they give you",
+        "They overcommit; they are deceived for some time",
       ],
     },
     {
-      title: 'Comfort or Support',
+      title: "Comfort or Support",
       body: "When you comfort or support another person, roll with Harmony. On a hit, they must decide if they open up to you. If they don't, mark a condition and take +1 forward against them; if they do, ask them any question. On a 10+, they can ask a question of you as well. Anyone who answers a question honestly may choose to clear a condition or 2-fatigue.",
     },
     {
-      title: 'Helping',
-      body: 'When you take appropriate action to help a companion, mark 1-fatigue to give them a +1 to their roll (after the roll). You cannot help in a combat exchange in this way.',
+      title: "Helping",
+      body: "When you take appropriate action to help a companion, mark 1-fatigue to give them a +1 to their roll (after the roll). You cannot help in a combat exchange in this way.",
     },
   ],
   balance: [
     {
-      title: 'Live Up to Your Principle',
-      body: 'When you take action in accordance with the values of a principle, mark fatigue to roll with that principle instead of whatever stat you would normally roll.',
+      title: "Live Up to Your Principle",
+      body: "When you take action in accordance with the values of a principle, mark fatigue to roll with that principle instead of whatever stat you would normally roll.",
     },
     {
-      title: 'Call Someone Out',
-      body: 'When you openly call on someone to live up to their principle, shift your balance away from center, then name and roll with their principle. On a hit, they are called to act as you say; they must either do it or mark a condition. On a 7-9, they challenge your view of the world in turn; mark a fatigue or they shift your balance as they choose. On a miss, they can demand you act in accordance with one of your principles instead; mark a condition or act as they request.',
+      title: "Call Someone Out",
+      body: "When you openly call on someone to live up to their principle, shift your balance away from center, then name and roll with their principle. On a hit, they are called to act as you say; they must either do it or mark a condition. On a 7-9, they challenge your view of the world in turn; mark a fatigue or they shift your balance as they choose. On a miss, they can demand you act in accordance with one of your principles instead; mark a condition or act as they request.",
     },
     {
-      title: 'Deny a Callout',
-      body: 'When you deny an NPC calling on you to live up to your principle, roll with that principle. On a hit, act as they say or mark 1-fatigue. On a 10+, their words hit hard; you must also shift your balance towards the called-on principle. On a miss, you stand strong; clear a condition, clear 1-fatigue, or shift your balance, your choice.',
+      title: "Deny a Callout",
+      body: "When you deny an NPC calling on you to live up to your principle, roll with that principle. On a hit, act as they say or mark 1-fatigue. On a 10+, their words hit hard; you must also shift your balance towards the called-on principle. On a miss, you stand strong; clear a condition, clear 1-fatigue, or shift your balance, your choice.",
     },
     {
-      title: 'Resist Shifting Your Balance',
-      body: 'When you resist an NPC shifting your balance, roll. On a hit, you maintain your current balance in spite of their words or deeds. On a 10+, choose two. On a 7-9, choose one.',
+      title: "Resist Shifting Your Balance",
+      body: "When you resist an NPC shifting your balance, roll. On a hit, you maintain your current balance in spite of their words or deeds. On a 10+, choose two. On a 7-9, choose one.",
       bullets: [
-        'Clear a condition or mark growth by immediately acting to prove them wrong',
-        'Shift your balance towards the opposite principle',
-        'Learn what their principle is (if they have one); if you already know, take +1 forward against them',
+        "Clear a condition or mark growth by immediately acting to prove them wrong",
+        "Shift your balance towards the opposite principle",
+        "Learn what their principle is (if they have one); if you already know, take +1 forward against them",
       ],
       trailing:
-        'On a miss, they know just what to say to throw you off balance. Mark a condition, and the GM shifts your balance twice.',
+        "On a miss, they know just what to say to throw you off balance. Mark a condition, and the GM shifts your balance twice.",
     },
     {
-      title: 'Lose Your Balance',
+      title: "Lose Your Balance",
       body: "If your balance shifts past the end of the track, you lose your balance. You obsess over that principle to a degree that's not healthy for you or anyone around you. Choose one of the following:",
       bullets: [
-        'Give in or submit to your opposition',
-        'Lose control of yourself in a destructive and harmful way',
-        'Take an extreme action in line with the principle, then flee',
+        "Give in or submit to your opposition",
+        "Lose control of yourself in a destructive and harmful way",
+        "Take an extreme action in line with the principle, then flee",
       ],
       trailing:
         "Afterward, when you've had some time to recover and recenter yourself, shift your center one step towards the principle you exceeded and clear all your conditions and fatigue. Reset your balance to your new center.",
@@ -683,8 +712,8 @@ const movesByCategory: Record<'basic' | 'balance', MoveEntry[]> = {
 // evade. Returned at call time so the `attackRed` reference picks up the
 // active theme (matches the Fatigue diamond color in dark mode).
 function techniqueCategoryColor(category: TechniqueCategory): string {
-  if (category === 'Advance & Attack') return attackRed;
-  if (category === 'Defend & Maneuver') return earth;
+  if (category === "Advance & Attack") return attackRed;
+  if (category === "Defend & Maneuver") return earth;
   return water;
 }
 
@@ -714,12 +743,12 @@ function WatercolorBand({
   return (
     <Box
       sx={{
-        position: 'absolute',
+        position: "absolute",
         left: 0,
         right: 0,
-        [bottom ? 'bottom' : 'top']: 0,
+        [bottom ? "bottom" : "top"]: 0,
         height,
-        pointerEvents: 'none',
+        pointerEvents: "none",
         zIndex: 0,
       }}
     >
@@ -727,10 +756,10 @@ function WatercolorBand({
           via the `fill` prop. */}
       <Box
         sx={{
-          position: 'absolute',
+          position: "absolute",
           left: 0,
           right: 0,
-          [bottom ? 'bottom' : 'top']: 0,
+          [bottom ? "bottom" : "top"]: 0,
           height: solidEdge,
           background: bandFill,
         }}
@@ -764,7 +793,7 @@ function Checkbox({
     <Box
       component="svg"
       viewBox="0 0 12 12"
-      sx={{ width: size * 0.85, height: size * 0.85, display: 'block' }}
+      sx={{ width: size * 0.85, height: size * 0.85, display: "block" }}
     >
       <path
         d="M2.5 6.3 L 5 8.6 L 9.5 3.4"
@@ -780,8 +809,8 @@ function Checkbox({
   ) : null;
   return (
     <Box
-      component={interactive ? 'button' : 'div'}
-      type={interactive ? 'button' : undefined}
+      component={interactive ? "button" : "div"}
+      type={interactive ? "button" : undefined}
       // Stop propagation so a parent row click handler (e.g., the
       // Background row's wrapping Stack) doesn't fire a second toggle
       // when the user taps the checkbox directly. Clicking the
@@ -799,13 +828,13 @@ function Checkbox({
         width: size,
         height: size,
         border: `1.2px solid ${ink}`,
-        bgcolor: checked ? deepInk : 'transparent',
-        borderRadius: '1px',
-        display: 'grid',
-        placeItems: 'center',
-        flex: '0 0 auto',
+        bgcolor: checked ? deepInk : "transparent",
+        borderRadius: "1px",
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
         p: 0,
-        cursor: interactive ? 'pointer' : 'default',
+        cursor: interactive ? "pointer" : "default",
       }}
     >
       {checkmark}
@@ -848,29 +877,34 @@ function BalanceTrack() {
   // Top labels: at index -3 -> "+3", center 0 -> "0", index 3 -> "-3".
   // Bottom labels mirror that — left side is negative, right side is
   // positive, with 0 at center.
-  const topLabel = (i: number) => (i === 0 ? '0' : i < 0 ? `+${-i}` : `${-i}`);
-  const bottomLabel = (i: number) => (i === 0 ? '0' : i > 0 ? `+${i}` : `${i}`);
+  const topLabel = (i: number) => (i === 0 ? "0" : i < 0 ? `+${-i}` : `${-i}`);
+  const bottomLabel = (i: number) => (i === 0 ? "0" : i > 0 ? `+${i}` : `${i}`);
   // Notches are white in dark mode so they read against the deep-navy
   // surface; otherwise they fall back to the cover-art dark navy.
-  const notchColor = isDarkMode ? '#ffffff' : deepInk;
+  const notchColor = isDarkMode ? "#ffffff" : deepInk;
   const numberStyle = {
     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-    fontSize: '0.55rem',
+    fontSize: "0.55rem",
     fontWeight: 900,
     color: ink,
-    letterSpacing: '0.02em',
+    letterSpacing: "0.02em",
     lineHeight: 1,
   } as const;
 
   return (
-    <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 3.2, mb: 2.6 }}>
+    <Stack
+      direction="row"
+      alignItems="center"
+      gap={1}
+      sx={{ mt: 3.2, mb: 2.6 }}
+    >
       <Typography
         sx={{
           color: ink,
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.62rem',
+          fontSize: "0.62rem",
           fontWeight: 900,
-          letterSpacing: '0.1em',
+          letterSpacing: "0.1em",
         }}
       >
         TRADITION
@@ -881,8 +915,8 @@ function BalanceTrack() {
           flex: 1,
           height: 2,
           background: `linear-gradient(90deg, ${alpha(washDeep, 0.5)} 0%, ${alpha(deepInk, 0.7)} 50%, ${alpha(washDeep, 0.5)} 100%)`,
-          position: 'relative',
-          borderRadius: '1px',
+          position: "relative",
+          borderRadius: "1px",
         }}
       >
         {/* Top label row — sits above the notches, excludes the
@@ -892,11 +926,11 @@ function BalanceTrack() {
             key={`top-${idx}`}
             aria-hidden
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: -22,
               left: `${toPercent(idx)}%`,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
+              transform: "translateX(-50%)",
+              pointerEvents: "none",
               ...numberStyle,
             }}
           >
@@ -909,15 +943,15 @@ function BalanceTrack() {
             key={idx}
             aria-hidden
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: -5,
               left: `${toPercent(idx)}%`,
               width: 2,
               height: 12,
               background: notchColor,
-              transform: 'translateX(-50%)',
-              borderRadius: '1px',
-              pointerEvents: 'none',
+              transform: "translateX(-50%)",
+              borderRadius: "1px",
+              pointerEvents: "none",
             }}
           />
         ))}
@@ -928,11 +962,11 @@ function BalanceTrack() {
             key={`bottom-${idx}`}
             aria-hidden
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: 14,
               left: `${toPercent(idx)}%`,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
+              transform: "translateX(-50%)",
+              pointerEvents: "none",
               ...numberStyle,
             }}
           >
@@ -967,35 +1001,35 @@ function BalanceTrack() {
             draggingRef.current = false;
           }}
           onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-            if (e.key === 'ArrowLeft') {
+            if (e.key === "ArrowLeft") {
               e.preventDefault();
               setPosition(Math.max(-4, position - 1));
-            } else if (e.key === 'ArrowRight') {
+            } else if (e.key === "ArrowRight") {
               e.preventDefault();
               setPosition(Math.min(4, position + 1));
             }
           }}
           sx={{
-            position: 'absolute',
+            position: "absolute",
             left: `${toPercent(position)}%`,
             top: -13,
-            transform: 'translateX(-50%)',
+            transform: "translateX(-50%)",
             width: 28,
             height: 28,
-            borderRadius: '50%',
+            borderRadius: "50%",
             // Solid white fill in both modes — matches the new Stats circles.
-            background: '#ffffff',
+            background: "#ffffff",
             border: `2px solid ${deepInk}`,
-            display: 'grid',
-            placeItems: 'center',
+            display: "grid",
+            placeItems: "center",
             color: ink,
             boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
-            cursor: 'grab',
-            touchAction: 'none',
-            userSelect: 'none',
-            transition: 'left 0.08s ease',
-            '&:active': { cursor: 'grabbing' },
-            '&:focus-visible': {
+            cursor: "grab",
+            touchAction: "none",
+            userSelect: "none",
+            transition: "left 0.08s ease",
+            "&:active": { cursor: "grabbing" },
+            "&:focus-visible": {
               outline: `2px solid ${alpha(deepInk, 0.6)}`,
               outlineOffset: 2,
             },
@@ -1015,9 +1049,9 @@ function BalanceTrack() {
         sx={{
           color: ink,
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.62rem',
+          fontSize: "0.62rem",
           fontWeight: 900,
-          letterSpacing: '0.1em',
+          letterSpacing: "0.1em",
         }}
       >
         PROGRESS
@@ -1036,10 +1070,10 @@ function BalanceTrack() {
  */
 function StatsPanel() {
   const rows: Array<[string, string]> = [
-    ['Creativity', water],
-    ['Focus', earth],
-    ['Harmony', water],
-    ['Passion', passionRed],
+    ["Creativity", water],
+    ["Focus", earth],
+    ["Harmony", water],
+    ["Passion", passionRed],
   ];
   const [stats, setStats] = useAtom(statsAtom);
   function setValue(label: string, raw: string) {
@@ -1054,7 +1088,14 @@ function StatsPanel() {
   return (
     <Panel>
       <SectionTitle>Stats</SectionTitle>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 0.8,
+          mt: 0.9,
+        }}
+      >
         {rows.map(([label, color]) => {
           // Clamp to the pick-list range in case persisted state holds a
           // legacy value outside [-3, 3].
@@ -1064,11 +1105,12 @@ function StatsPanel() {
               <Typography
                 sx={{
                   color,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.6rem',
+                  fontFamily:
+                    '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: "0.6rem",
                   fontWeight: 900,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
                 }}
               >
                 {label}
@@ -1083,34 +1125,35 @@ function StatsPanel() {
                 sx={{
                   width: 44,
                   height: 44,
-                  textAlign: 'center',
-                  textAlignLast: 'center',
+                  textAlign: "center",
+                  textAlignLast: "center",
                   // Solid white fill in both light and dark mode.
-                  background: '#ffffff',
+                  background: "#ffffff",
                   // Border matches the stat's text color (e.g., Creativity
                   // gets water-blue, Passion gets the warm red).
                   border: `1.5px solid ${color}`,
-                  borderRadius: '50%',
+                  borderRadius: "50%",
                   // Deep blue ink reads on white in both themes.
                   color: lightAvPalette.ink,
                   // Handwritten font where the "1" is clearly distinct
                   // from "I" — the IM Fell serif previously used had a
                   // capital-I-shaped 1. Larger size to read clearly in
                   // the 44x44 circle.
-                  fontFamily: '"Caveat", "Patrick Hand", "Bradley Hand", "Marker Felt", cursive',
-                  fontSize: '1.95rem',
+                  fontFamily:
+                    '"Caveat", "Patrick Hand", "Bradley Hand", "Marker Felt", cursive',
+                  fontSize: "1.95rem",
                   fontWeight: 700,
                   lineHeight: 1,
                   p: 0,
-                  outline: 'none',
-                  cursor: 'pointer',
+                  outline: "none",
+                  cursor: "pointer",
                   // Hide the native chevron — keep the field looking like
                   // the previous numeric circle.
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none',
-                  appearance: 'none',
-                  backgroundImage: 'none',
-                  '&:focus': {
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
+                  appearance: "none",
+                  backgroundImage: "none",
+                  "&:focus": {
                     borderColor: color,
                     boxShadow: `0 0 0 2px ${alpha(color, 0.3)}`,
                   },
@@ -1141,21 +1184,22 @@ function StatsPanel() {
 function BackgroundCheckRow({ label }: { label: string }) {
   const [backgrounds, setBackgrounds] = useAtom(backgroundsAtom);
   const checked = Boolean(backgrounds[label]);
-  const toggle = () => setBackgrounds((prev) => ({ ...prev, [label]: !prev[label] }));
+  const toggle = () =>
+    setBackgrounds((prev) => ({ ...prev, [label]: !prev[label] }));
   return (
     <Stack
       key={label}
       direction="row"
       alignItems="center"
       gap={0.5}
-      sx={{ cursor: 'pointer' }}
+      sx={{ cursor: "pointer" }}
       onClick={toggle}
     >
       <Checkbox checked={checked} onToggle={toggle} />
       <Typography
         sx={{
-          fontFamily: 'Georgia, serif',
-          fontSize: '0.74rem',
+          fontFamily: "Georgia, serif",
+          fontSize: "0.74rem",
           color: brown,
         }}
       >
@@ -1216,9 +1260,9 @@ function StatusButton({
   // for the existing color-coded behaviour).
   const { isDarkMode } = useThemeMode();
   const textColor = isDarkMode
-    ? '#ffffff'
+    ? "#ffffff"
     : active
-      ? '#ffffff'
+      ? "#ffffff"
       : (inactiveTextColor ?? activeColor);
   return (
     <Box
@@ -1228,20 +1272,20 @@ function StatusButton({
       aria-pressed={active}
       sx={{
         // Doubled vertical padding so the button is twice as tall.
-        py: '14px',
+        py: "14px",
         px: 1,
-        borderRadius: '4px',
+        borderRadius: "4px",
         border: `1.5px solid ${activeColor}`,
-        background: active ? activeColor : 'transparent',
+        background: active ? activeColor : "transparent",
         color: textColor,
-        cursor: 'pointer',
-        textAlign: 'center',
-        fontFamily: 'Georgia, serif',
-        fontSize: '0.78rem',
+        cursor: "pointer",
+        textAlign: "center",
+        fontFamily: "Georgia, serif",
+        fontSize: "0.78rem",
         fontWeight: 700,
-        letterSpacing: '0.02em',
-        transition: 'background-color 0.15s ease, color 0.15s ease',
-        width: '100%',
+        letterSpacing: "0.02em",
+        transition: "background-color 0.15s ease, color 0.15s ease",
+        width: "100%",
       }}
     >
       {label}
@@ -1258,12 +1302,18 @@ function StatusButton({
  * Filled square inside an outline square — the icon for the "Basic"
  * technique type. Drawn at 24x24 viewBox to match the element badges.
  */
-function SquareInSquare({ color = ink, size = 36 }: { color?: string; size?: number }) {
+function SquareInSquare({
+  color = ink,
+  size = 36,
+}: {
+  color?: string;
+  size?: number;
+}) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+      sx={{ width: size, height: size, flex: "0 0 auto", display: "block" }}
     >
       <rect
         x={2.5}
@@ -1280,19 +1330,25 @@ function SquareInSquare({ color = ink, size = 36 }: { color?: string; size?: num
   );
 }
 
-function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number }) {
+function FatigueDiamond({
+  filled,
+  size = 14,
+}: {
+  filled: boolean;
+  size?: number;
+}) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+      sx={{ width: size, height: size, flex: "0 0 auto", display: "block" }}
     >
       <polygon
         points="12,2 22,12 12,22 2,12"
         // Fatigue pips paint in the dark-red accent (`gold` — the diamond
         // bullet / hairline divider color) instead of deep-ink so they pop
         // on both light parchment and dark surfaces.
-        fill={filled ? gold : 'none'}
+        fill={filled ? gold : "none"}
         stroke={gold}
         strokeWidth={1.5}
         strokeLinejoin="round"
@@ -1321,32 +1377,32 @@ function HistorySection({ questions }: { questions: string[] }) {
         aria-expanded={open}
         sx={{
           mt: 0.4,
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
           gap: 0.7,
           p: 0,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
+          background: "none",
+          border: "none",
+          cursor: "pointer",
           color: ink,
-          textAlign: 'left',
+          textAlign: "left",
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.82rem',
+          fontSize: "0.82rem",
           fontWeight: 900,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
         }}
       >
         <Box sx={{ flex: 1 }}>
-          {questions.length} question{questions.length === 1 ? '' : 's'}
+          {questions.length} question{questions.length === 1 ? "" : "s"}
         </Box>
         <Box
           sx={{
-            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease',
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
             color: alpha(ink, 0.8),
-            fontSize: '0.95rem',
+            fontSize: "0.95rem",
             lineHeight: 1,
           }}
         >
@@ -1361,8 +1417,8 @@ function HistorySection({ questions }: { questions: string[] }) {
                 sx={{
                   color: ink,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.76rem',
-                  fontStyle: 'italic',
+                  fontSize: "0.76rem",
+                  fontStyle: "italic",
                   lineHeight: 1.4,
                 }}
               >
@@ -1371,25 +1427,25 @@ function HistorySection({ questions }: { questions: string[] }) {
               <Box
                 component="textarea"
                 rows={2}
-                value={answers[index] ?? ''}
+                value={answers[index] ?? ""}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                   setAnswers((prev) => ({ ...prev, [index]: e.target.value }))
                 }
                 sx={{
-                  width: '100%',
-                  resize: 'vertical',
+                  width: "100%",
+                  resize: "vertical",
                   minHeight: 44,
-                  borderRadius: '4px',
+                  borderRadius: "4px",
                   border: `1px solid ${border}`,
                   background: alpha(parchmentLight, 0.85),
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.78rem',
+                  fontSize: "0.78rem",
                   lineHeight: 1.45,
                   p: 1,
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  '&:focus': {
+                  boxSizing: "border-box",
+                  outline: "none",
+                  "&:focus": {
                     borderColor: deepInk,
                   },
                 }}
@@ -1427,30 +1483,30 @@ function ClassTraitAccordion({
         aria-expanded={open}
         sx={{
           mt: 0.4,
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
           gap: 0.7,
           p: 0,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
+          background: "none",
+          border: "none",
+          cursor: "pointer",
           color: ink,
-          textAlign: 'left',
+          textAlign: "left",
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.92rem',
+          fontSize: "0.92rem",
           fontWeight: 900,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
         }}
       >
         <Box sx={{ flex: 1 }}>{title}</Box>
         <Box
           sx={{
-            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease',
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
             color: alpha(ink, 0.8),
-            fontSize: '0.95rem',
+            fontSize: "0.95rem",
             lineHeight: 1,
           }}
         >
@@ -1462,7 +1518,7 @@ function ClassTraitAccordion({
           sx={{
             color: brown,
             fontFamily: 'Georgia, "Times New Roman", serif',
-            fontSize: '0.78rem',
+            fontSize: "0.78rem",
             lineHeight: 1.5,
             mt: 0.4,
           }}
@@ -1490,8 +1546,8 @@ function ClassTraitAccordion({
 function YinYangIcon({
   size = 20,
   strokeWidth = 1.75,
-  darkColor = 'currentColor',
-  lightColor = '#ffffff',
+  darkColor = "currentColor",
+  lightColor = "#ffffff",
 }: {
   size?: number;
   strokeWidth?: number;
@@ -1506,7 +1562,7 @@ function YinYangIcon({
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+      sx={{ width: size, height: size, flex: "0 0 auto", display: "block" }}
     >
       {/* Outer circle — filled with the light color so the "white section"
           reads as solid white against any backdrop. */}
@@ -1531,12 +1587,18 @@ function YinYangIcon({
  * Diamond-within-diamond bullet — the signature glyph for Moves in the
  * Avatar Legends character sheet. Outer outline + inner filled diamond.
  */
-function MoveDiamond({ color = ink, size = 18 }: { color?: string; size?: number }) {
+function MoveDiamond({
+  color = ink,
+  size = 18,
+}: {
+  color?: string;
+  size?: number;
+}) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+      sx={{ width: size, height: size, flex: "0 0 auto", display: "block" }}
     >
       <polygon
         points="12,2 22,12 12,22 2,12"
@@ -1559,7 +1621,7 @@ function CornerOrnament({
   color = accent,
   size = 14,
 }: {
-  position: 'tl' | 'tr' | 'bl' | 'br';
+  position: "tl" | "tr" | "bl" | "br";
   color?: string;
   size?: number;
 }) {
@@ -1575,12 +1637,12 @@ function CornerOrnament({
       component="svg"
       viewBox="0 0 20 20"
       sx={{
-        position: 'absolute',
+        position: "absolute",
         ...placement,
         width: size,
         height: size,
         transform: `rotate(${rotation}deg)`,
-        pointerEvents: 'none',
+        pointerEvents: "none",
         opacity: 0.65,
       }}
     >
@@ -1627,22 +1689,22 @@ function ElementMark({
       sx={{
         width: size,
         height: frameHeight,
-        borderRadius: '3px',
+        borderRadius: "3px",
         border: `1px solid ${alpha(deepInk, 0.35)}`,
         background: src
-          ? 'transparent'
+          ? "transparent"
           : `linear-gradient(180deg, ${alpha(color, 0.45)} 0%, ${alpha(color, 0.7)} 100%)`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         color: ink,
         fontFamily: '"IM Fell English", Georgia, serif',
         fontWeight: 900,
         fontSize: size * 0.42,
         boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
-        overflow: 'hidden',
-        position: 'relative',
-        flex: '0 0 auto',
+        overflow: "hidden",
+        position: "relative",
+        flex: "0 0 auto",
       }}
     >
       {src ? (
@@ -1651,15 +1713,11 @@ function ElementMark({
           src={src}
           alt=""
           sx={{
-            width: '100%',
-            // Render the source at its natural square aspect; mt:'2px' nudges
-            // the symbol down 2px within the frame (the bottom overflow
-            // grows by 2px, which is still hidden by overflow:hidden).
-            height: size,
-            mt: '2px',
-            objectFit: 'cover',
-            objectPosition: 'center top',
-            display: 'block',
+            width: "82%",
+            height: "82%",
+            objectFit: "contain",
+            objectPosition: "center",
+            display: "block",
           }}
         />
       ) : (
@@ -1689,11 +1747,11 @@ function PanelBorderRing({ inset = 0 }: { inset?: number }) {
     <Box
       aria-hidden
       sx={{
-        position: 'absolute',
+        position: "absolute",
         inset,
         background: border,
         clipPath: panelBorderFrameClipPath,
-        pointerEvents: 'none',
+        pointerEvents: "none",
       }}
     />
   );
@@ -1710,13 +1768,13 @@ function PanelBorderRing({ inset = 0 }: { inset?: number }) {
 function Panel({
   children,
   compact = false,
-  variant = 'minor',
+  variant = "minor",
   ornament,
   noNotch = false,
 }: {
   children: React.ReactNode;
   compact?: boolean;
-  variant?: 'major' | 'minor';
+  variant?: "major" | "minor";
   /** Back-compat: kept for old callers; the underlying variant prop
    *  controls the line style now. */
   ornament?: boolean;
@@ -1726,13 +1784,13 @@ function Panel({
 }) {
   // Honor the legacy `ornament` prop only when it's explicitly set; the
   // new default is 'minor' so most cards render the single-line border.
-  const resolvedVariant: 'major' | 'minor' =
-    ornament === false ? 'minor' : ornament === true ? 'major' : variant;
+  const resolvedVariant: "major" | "minor" =
+    ornament === false ? "minor" : ornament === true ? "major" : variant;
   // Inner content padding (extra space at the top/bottom/sides so content
   // never falls under the notched corner cuts or the border ring(s)).
   // Major variant has a second inset ring, so its safe-zone is larger.
   // When noNotch is on, content can sit right against the border.
-  const contentInset = noNotch ? 10 : resolvedVariant === 'major' ? 14 : 10;
+  const contentInset = noNotch ? 10 : resolvedVariant === "major" ? 14 : 10;
 
   // Soft drop shadow applied to every card. The notched variant uses a
   // filter: drop-shadow() wrapper because box-shadow would be clipped by
@@ -1747,9 +1805,9 @@ function Panel({
     return (
       <Box
         sx={{
-          position: 'relative',
+          position: "relative",
           border: `1px solid ${border}`,
-          borderRadius: '4px',
+          borderRadius: "4px",
           // Flat solid card bg — no gradient.
           background: parchmentLight,
           boxShadow: cardBoxShadow,
@@ -1768,7 +1826,7 @@ function Panel({
     <Box sx={{ filter: cardDropShadowFilter }}>
       <Box
         sx={{
-          position: 'relative',
+          position: "relative",
           // Outer notched silhouette so the parchment bg ends at the notches.
           clipPath: panelOctagonClipPath,
           // Flat solid card bg — no gradient.
@@ -1777,8 +1835,8 @@ function Panel({
         }}
       >
         <PanelBorderRing />
-        {resolvedVariant === 'major' ? <PanelBorderRing inset={5} /> : null}
-        <Box sx={{ position: 'relative', zIndex: 1 }}>{children}</Box>
+        {resolvedVariant === "major" ? <PanelBorderRing inset={5} /> : null}
+        <Box sx={{ position: "relative", zIndex: 1 }}>{children}</Box>
       </Box>
     </Box>
   );
@@ -1793,9 +1851,9 @@ function StatDots({ value, color }: { value: number; color: string }) {
           sx={{
             width: 6,
             height: 6,
-            borderRadius: '50%',
+            borderRadius: "50%",
             border: `1px solid ${color}`,
-            bgcolor: index < value ? color : 'transparent',
+            bgcolor: index < value ? color : "transparent",
           }}
         />
       ))}
@@ -1815,15 +1873,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
         sx={{
           color: ink,
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.82rem',
+          fontSize: "0.82rem",
           fontWeight: 900,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
         }}
       >
         {children}
       </Typography>
-      <Box sx={{ flex: 1, height: '1px', bgcolor: alpha(accent, 0.55) }} />
+      <Box sx={{ flex: 1, height: "1px", bgcolor: alpha(accent, 0.55) }} />
     </Stack>
   );
 }
@@ -1833,10 +1891,12 @@ function CharacterPane() {
   // Age is now a plain number on the character record; render as
   // "Age <n>" inline. Falsy guards keep blank/0 values out of the row.
   const ageLabel =
-    typeof character.age === 'number' && Number.isFinite(character.age)
+    typeof character.age === "number" && Number.isFinite(character.age)
       ? `Age ${character.age}`
-      : '';
-  const facts = [character.pronouns, ageLabel, character.origin].filter(Boolean);
+      : "";
+  const facts = [character.pronouns, ageLabel, character.origin].filter(
+    Boolean,
+  );
   return (
     <Stack spacing={1.1}>
       {/* The main Character card is the only `major` (double-line) panel
@@ -1849,34 +1909,44 @@ function CharacterPane() {
             sx={{
               color: ink,
               fontFamily: '"IM Fell English", Georgia, serif',
-              fontSize: '1.85rem',
+              fontSize: "1.85rem",
               fontWeight: 700,
               lineHeight: 1,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
             {character.name}
           </Typography>
           <Stack direction="row" alignItems="center" gap={0.7}>
-            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
+            <Box
+              sx={{ width: 28, height: "1px", bgcolor: alpha(accent, 0.7) }}
+            />
             <MoveDiamond color={accent} size={9} />
             <Typography
               sx={{
                 // bookAccent is the muted-gold rulebook chapter color in
                 // both themes.
                 color: bookAccent,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.72rem',
+                fontFamily:
+                  '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: "0.72rem",
                 fontWeight: 900,
-                letterSpacing: '0.16em',
+                letterSpacing: "0.16em",
               }}
             >
               {character.className}
             </Typography>
             <MoveDiamond color={accent} size={9} />
-            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
+            <Box
+              sx={{ width: 28, height: "1px", bgcolor: alpha(accent, 0.7) }}
+            />
           </Stack>
-          <Stack direction="row" gap={0.6} flexWrap="wrap" justifyContent="center">
+          <Stack
+            direction="row"
+            gap={0.6}
+            flexWrap="wrap"
+            justifyContent="center"
+          >
             {facts.map((item, i) => (
               <Stack key={item} direction="row" alignItems="center" gap={0.6}>
                 {i > 0 ? (
@@ -1884,7 +1954,7 @@ function CharacterPane() {
                     sx={{
                       width: 3,
                       height: 3,
-                      borderRadius: '50%',
+                      borderRadius: "50%",
                       bgcolor: alpha(brown, 0.5),
                     }}
                   />
@@ -1892,10 +1962,10 @@ function CharacterPane() {
                 <Typography
                   sx={{
                     color: brown,
-                    fontFamily: 'Georgia, serif',
-                    fontSize: '0.7rem',
+                    fontFamily: "Georgia, serif",
+                    fontSize: "0.7rem",
                     fontWeight: 700,
-                    fontStyle: 'italic',
+                    fontStyle: "italic",
                   }}
                 >
                   {item}
@@ -1908,8 +1978,22 @@ function CharacterPane() {
 
       <Panel>
         <SectionTitle>Background</SectionTitle>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
-          {['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'].map((item) => (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 0.7,
+            mt: 0.9,
+          }}
+        >
+          {[
+            "Urban",
+            "Privileged",
+            "Monastic",
+            "Outlaw",
+            "Military",
+            "Wilderness",
+          ].map((item) => (
             <BackgroundCheckRow key={item} label={item} />
           ))}
         </Box>
@@ -1928,36 +2012,38 @@ function CharacterPane() {
             sub-tab). Two-column grid so each button has room to breathe. */}
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
             gap: 1,
             rowGap: 1.2,
             mt: 0.9,
           }}
         >
-          {['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'].map((label, index, all) => {
-            // Last button on an odd-length list spans both columns and
-            // centers itself so "Troubled" doesn't sit alone in the
-            // left column. Width matches a single column so the button
-            // size stays consistent with its siblings.
-            const lastSolo = index === all.length - 1 && all.length % 2 === 1;
-            return (
-              <Box
-                key={label}
-                sx={
-                  lastSolo
-                    ? {
-                        gridColumn: '1 / -1',
-                        justifySelf: 'center',
-                        width: 'calc(50% - 4px)',
-                      }
-                    : undefined
-                }
-              >
-                <ConditionButtonShared label={label} />
-              </Box>
-            );
-          })}
+          {["Afraid", "Angry", "Guilty", "Insecure", "Troubled"].map(
+            (label, index, all) => {
+              // Last button on an odd-length list spans both columns and
+              // centers itself so "Troubled" doesn't sit alone in the
+              // left column. Width matches a single column so the button
+              // size stays consistent with its siblings.
+              const lastSolo = index === all.length - 1 && all.length % 2 === 1;
+              return (
+                <Box
+                  key={label}
+                  sx={
+                    lastSolo
+                      ? {
+                          gridColumn: "1 / -1",
+                          justifySelf: "center",
+                          width: "calc(50% - 4px)",
+                        }
+                      : undefined
+                  }
+                >
+                  <ConditionButtonShared label={label} />
+                </Box>
+              );
+            },
+          )}
         </Box>
       </Panel>
 
@@ -1970,11 +2056,11 @@ function CharacterPane() {
       <Panel>
         <HistorySection
           questions={[
-            'Where did you grow up, and who raised you?',
-            'What event most shaped who you are today?',
-            'Who do you owe something to — and what is it?',
-            'What did you leave behind when you took up this calling?',
-            'What lesson from your past still guides you?',
+            "Where did you grow up, and who raised you?",
+            "What event most shaped who you are today?",
+            "Who do you owe something to — and what is it?",
+            "What did you leave behind when you took up this calling?",
+            "What lesson from your past still guides you?",
           ]}
         />
       </Panel>
@@ -1995,7 +2081,7 @@ function FilterTabs({
   labels,
   activeIndex,
   onChange,
-  chipPy = '10px',
+  chipPy = "10px",
 }: {
   labels: string[];
   activeIndex: number;
@@ -2015,9 +2101,9 @@ function FilterTabs({
       gap={0.4}
       sx={{
         bgcolor: alpha(parchmentDeep, 0.55),
-        borderRadius: '4px',
+        borderRadius: "4px",
         border: `1px solid ${alpha(border, 0.6)}`,
-        p: '3px',
+        p: "3px",
         boxShadow: `inset 0 1px 2px ${alpha(deepInk, 0.08)}`,
       }}
     >
@@ -2027,32 +2113,33 @@ function FilterTabs({
         return (
           <Box
             key={label}
-            component={interactive ? 'button' : 'div'}
-            type={interactive ? 'button' : undefined}
+            component={interactive ? "button" : "div"}
+            type={interactive ? "button" : undefined}
             onClick={interactive ? () => onChange?.(index) : undefined}
             sx={{
               flex: 1,
               py: chipPy,
-              borderRadius: '3px',
+              borderRadius: "3px",
               // Solid deep-ink fill on the active chip (matches the dark
               // blue of the header/footer brush stroke).
-              background: active ? deepInk : 'transparent',
+              background: active ? deepInk : "transparent",
               // Active chip bg is deep-ink in both modes, so its text stays
               // near-white regardless of theme.
               color: active ? chromeText : alpha(brown, 0.75),
-              textAlign: 'center',
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.62rem',
+              textAlign: "center",
+              fontFamily:
+                '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: "0.62rem",
               fontWeight: active ? 900 : 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
               boxShadow: active
                 ? `0 1px 2px ${alpha(deepInk, 0.28)}, inset 0 0 0 1px ${alpha(accent, 0.5)}`
-                : 'none',
-              transition: 'all 0.18s ease',
-              border: 'none',
-              cursor: interactive ? 'pointer' : 'default',
-              fontFamilyDisplay: 'inherit',
+                : "none",
+              transition: "all 0.18s ease",
+              border: "none",
+              cursor: interactive ? "pointer" : "default",
+              fontFamilyDisplay: "inherit",
             }}
           >
             {label}
@@ -2080,15 +2167,15 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            width: '100%',
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
             gap: 0.9,
             p: 0,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            textAlign: 'left',
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
           }}
         >
           {/* `ink` resolves to near-white in dark mode so the diamond
@@ -2101,11 +2188,12 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
             sx={{
               flex: 1,
               color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.92rem',
+              fontFamily:
+                '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: "0.92rem",
               fontWeight: 900,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
               lineHeight: 1.1,
             }}
           >
@@ -2113,10 +2201,10 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
           </Typography>
           <Box
             sx={{
-              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease',
+              transform: open ? "rotate(90deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease",
               color: alpha(ink, 0.8),
-              fontSize: '1rem',
+              fontSize: "1rem",
               fontWeight: 900,
               lineHeight: 1,
             }}
@@ -2128,7 +2216,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
           <>
             <Box
               sx={{
-                height: '1px',
+                height: "1px",
                 background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.6)} 12%, ${alpha(accent, 0.6)} 88%, transparent 100%)`,
               }}
             />
@@ -2136,7 +2224,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.82rem',
+                fontSize: "0.82rem",
                 lineHeight: 1.5,
               }}
             >
@@ -2151,7 +2239,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                     sx={{
                       color: brown,
                       fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.82rem',
+                      fontSize: "0.82rem",
                       lineHeight: 1.45,
                       mb: 0.3,
                     }}
@@ -2166,7 +2254,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                 sx={{
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.82rem',
+                  fontSize: "0.82rem",
                   lineHeight: 1.5,
                 }}
               >
@@ -2195,7 +2283,7 @@ function MovesPane() {
   return (
     <Stack spacing={1}>
       <FilterTabs
-        labels={['Basic', 'Balance', 'Class']}
+        labels={["Basic", "Balance", "Class"]}
         activeIndex={subTab}
         onChange={setSubTab}
       />
@@ -2243,17 +2331,17 @@ function TechniqueAccordion({
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           sx={{
-            display: 'flex',
+            display: "flex",
             // Center vertically so the element badge aligns with the
             // middle of the title / summary text block.
-            alignItems: 'center',
-            width: '100%',
+            alignItems: "center",
+            width: "100%",
             gap: 0.9,
             p: 0,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            textAlign: 'left',
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
           }}
         >
           {isBasic ? (
@@ -2263,12 +2351,12 @@ function TechniqueAccordion({
               sx={{
                 width: 36,
                 height: 34,
-                borderRadius: '3px',
+                borderRadius: "3px",
                 border: `1px solid ${alpha(deepInk, 0.35)}`,
                 background: alpha(parchmentLight, 0.4),
-                display: 'grid',
-                placeItems: 'center',
-                flex: '0 0 auto',
+                display: "grid",
+                placeItems: "center",
+                flex: "0 0 auto",
                 boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
               }}
             >
@@ -2282,11 +2370,12 @@ function TechniqueAccordion({
             <Typography
               sx={{
                 color: categoryColor,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.58rem',
+                fontFamily:
+                  '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: "0.58rem",
                 fontWeight: 900,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
                 lineHeight: 1,
               }}
             >
@@ -2295,11 +2384,12 @@ function TechniqueAccordion({
             <Typography
               sx={{
                 color: ink,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.92rem',
+                fontFamily:
+                  '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: "0.92rem",
                 fontWeight: 900,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
                 lineHeight: 1.1,
               }}
             >
@@ -2309,21 +2399,22 @@ function TechniqueAccordion({
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.74rem',
+                fontSize: "0.74rem",
                 lineHeight: 1.45,
               }}
             >
               {summary}
             </Typography>
           </Stack>
-          <Stack alignItems="center" spacing={0.25} sx={{ pt: '2px' }}>
+          <Stack alignItems="center" spacing={0.25} sx={{ pt: "2px" }}>
             <Typography
               sx={{
                 color: techColor,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.58rem',
+                fontFamily:
+                  '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: "0.58rem",
                 fontWeight: 900,
-                letterSpacing: '0.08em',
+                letterSpacing: "0.08em",
               }}
             >
               FATIGUE
@@ -2335,19 +2426,19 @@ function TechniqueAccordion({
                   sx={{
                     width: 7,
                     height: 7,
-                    borderRadius: '50%',
+                    borderRadius: "50%",
                     border: `1px solid ${techColor}`,
-                    bgcolor: i === 0 ? techColor : 'transparent',
+                    bgcolor: i === 0 ? techColor : "transparent",
                   }}
                 />
               ))}
             </Stack>
             <Box
               sx={{
-                transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease',
+                transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 0.2s ease",
                 color: alpha(ink, 0.8),
-                fontSize: '0.95rem',
+                fontSize: "0.95rem",
                 lineHeight: 1,
                 mt: 0.3,
               }}
@@ -2360,7 +2451,7 @@ function TechniqueAccordion({
           <>
             <Box
               sx={{
-                height: '1px',
+                height: "1px",
                 background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.6)} 12%, ${alpha(accent, 0.6)} 88%, transparent 100%)`,
               }}
             />
@@ -2368,7 +2459,7 @@ function TechniqueAccordion({
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.78rem',
+                fontSize: "0.78rem",
                 lineHeight: 1.5,
               }}
             >
@@ -2392,18 +2483,18 @@ function CombatPane() {
     color: string;
     src: string | null;
   }> = [
-    { key: 'all', label: 'All', color: ink, src: null },
-    { key: 'basic', label: 'Basic', color: ink, src: null },
-    { key: 'water', label: 'Water', color: water, src: elementWater },
-    { key: 'earth', label: 'Earth', color: earth, src: elementEarth },
-    { key: 'fire', label: 'Fire', color: fire, src: elementFire },
-    { key: 'air', label: 'Air', color: air, src: elementAir },
-    { key: 'martial', label: 'Martial', color: martial, src: elementMartial },
-    { key: 'tech', label: 'Tech', color: tech, src: elementTech },
+    { key: "all", label: "All", color: ink, src: null },
+    { key: "basic", label: "Basic", color: ink, src: null },
+    { key: "water", label: "Water", color: water, src: elementWater },
+    { key: "earth", label: "Earth", color: earth, src: elementEarth },
+    { key: "fire", label: "Fire", color: fire, src: elementFire },
+    { key: "air", label: "Air", color: air, src: elementAir },
+    { key: "martial", label: "Martial", color: martial, src: elementMartial },
+    { key: "tech", label: "Tech", color: tech, src: elementTech },
   ];
-  const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
-  const negativeStatuses = ['Doomed', 'Impaired', 'Trapped', 'Stunned'];
-  const conditions = ['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'];
+  const positiveStatuses = ["Empowered", "Favored", "Inspired", "Prepared"];
+  const negativeStatuses = ["Doomed", "Impaired", "Trapped", "Stunned"];
+  const conditions = ["Afraid", "Angry", "Guilty", "Insecure", "Troubled"];
   // All UI state lives in jotai atoms so it persists when switching between
   // the Character / Moves / Combat / Backpack main tabs.
   const [subTab, setSubTab] = useAtom(combatSubTabAtom);
@@ -2416,16 +2507,20 @@ function CombatPane() {
   // (no level filter); 1..3 map to learned / practiced / mastered.
   const visibleTechniques = useMemo(() => {
     const targetLevel: TechniqueLevel | null =
-      techFilter === 0 ? null : (['learned', 'practiced', 'mastered'] as const)[techFilter - 1];
+      techFilter === 0
+        ? null
+        : (["learned", "practiced", "mastered"] as const)[techFilter - 1];
     return techniques.filter((tech) => {
-      const elementOk = elementFilter === 'all' || tech.type === elementFilter;
+      const elementOk = elementFilter === "all" || tech.type === elementFilter;
       const levelOk = targetLevel === null || tech.level === targetLevel;
       return elementOk && levelOk;
     });
   }, [techniques, elementFilter, techFilter]);
   const [fatigue, setFatigue] = useAtom(fatigueAtom);
   const toggleFatigue = (index: number) =>
-    setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
+    setFatigue((prev) =>
+      prev.map((value, i) => (i === index ? !value : value)),
+    );
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -2442,7 +2537,12 @@ function CombatPane() {
           for at-a-glance reference during combat rolls. */}
       <StatsPanel />
       <Panel>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={1}
+        >
           <SectionTitle>Fatigue</SectionTitle>
           {/* Pips live on the right of the row, larger + tappable. */}
           <Stack direction="row" gap={0.7}>
@@ -2455,12 +2555,12 @@ function CombatPane() {
                 aria-pressed={filled}
                 aria-label={`Fatigue ${index + 1}`}
                 sx={{
-                  background: 'none',
-                  border: 'none',
+                  background: "none",
+                  border: "none",
                   p: 0,
-                  cursor: 'pointer',
-                  display: 'grid',
-                  placeItems: 'center',
+                  cursor: "pointer",
+                  display: "grid",
+                  placeItems: "center",
                 }}
               >
                 <FatigueDiamond filled={filled} size={28} />
@@ -2473,7 +2573,7 @@ function CombatPane() {
       {/* Interactive combat sub-tabs — taller chips than the rest of the
           app to give the four primary combat surfaces more tap area. */}
       <FilterTabs
-        labels={['Techniques', 'Statuses', 'Conditions', 'Inventory']}
+        labels={["Techniques", "Statuses", "Conditions", "Inventory"]}
         activeIndex={subTab}
         onChange={setSubTab}
         chipPy="20px"
@@ -2482,17 +2582,24 @@ function CombatPane() {
       {/* Techniques sub-tab: element filter row + expandable technique cards */}
       {subTab === 0 ? (
         <>
-          {/* Element filter row wrapped in its own card so the chips read
-              as a discrete control band rather than floating on the page. */}
-          <Panel compact>
+          {/* Element filter row: deep-ink backing matches selected filter chips,
+              keeping the extracted white symbols readable in light mode. */}
+          <Box
+            sx={{
+              background: deepInk,
+              border: `1px solid ${alpha(accent, 0.42)}`,
+              borderRadius: "4px",
+              p: "8px 10px",
+              boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
+            }}
+          >
             <Box
               sx={{
-                display: 'flex',
+                display: "flex",
                 gap: 1.6,
-                overflowX: 'auto',
-                // Hide the scrollbar but keep it scrollable via touch / wheel.
-                scrollbarWidth: 'none',
-                '&::-webkit-scrollbar': { display: 'none' },
+                overflowX: "auto",
+                scrollbarWidth: "none",
+                "&::-webkit-scrollbar": { display: "none" },
               }}
             >
               {elementFilters.map((entry) => {
@@ -2507,49 +2614,50 @@ function CombatPane() {
                     alignItems="center"
                     spacing={0.4}
                     sx={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
                       p: 0,
-                      flex: '0 0 auto',
+                      flex: "0 0 auto",
                       opacity: isActive ? 1 : 0.55,
-                      transition: 'opacity 0.15s ease',
+                      transition: "opacity 0.15s ease",
                     }}
                   >
-                    {entry.key === 'all' || entry.key === 'basic' ? (
+                    {entry.key === "all" || entry.key === "basic" ? (
                       <Box
                         sx={{
                           width: 34,
                           height: 32,
-                          borderRadius: '3px',
-                          border: `1px solid ${alpha(deepInk, 0.35)}`,
-                          background: alpha(parchmentLight, 0.4),
-                          display: 'grid',
-                          placeItems: 'center',
-                          flex: '0 0 auto',
+                          borderRadius: "3px",
+                          border: `1px solid ${alpha(chromeText, 0.34)}`,
+                          background: alpha(chromeText, 0.08),
+                          display: "grid",
+                          placeItems: "center",
+                          flex: "0 0 auto",
                           boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
                         }}
                       >
-                        {entry.key === 'all' ? (
+                        {entry.key === "all" ? (
                           <Typography
                             sx={{
-                              color: entry.color,
-                              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                              fontSize: '0.62rem',
+                              color: chromeText,
+                              fontFamily:
+                                '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                              fontSize: "0.62rem",
                               fontWeight: 900,
-                              letterSpacing: '0.04em',
+                              letterSpacing: "0.04em",
                               lineHeight: 1,
                             }}
                           >
                             ALL
                           </Typography>
                         ) : (
-                          <SquareInSquare color={entry.color} size={20} />
+                          <SquareInSquare color={chromeText} size={20} />
                         )}
                       </Box>
                     ) : (
                       <ElementMark
-                        color={entry.color}
+                        color={chromeText}
                         label={entry.label.slice(0, 1)}
                         src={entry.src ?? undefined}
                         size={34}
@@ -2558,12 +2666,13 @@ function CombatPane() {
                     )}
                     <Typography
                       sx={{
-                        color: brown,
-                        fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                        fontSize: '0.58rem',
+                        color: chromeText,
+                        fontFamily:
+                          '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                        fontSize: "0.58rem",
                         fontWeight: 900,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
                       }}
                     >
                       {entry.label}
@@ -2572,15 +2681,15 @@ function CombatPane() {
                 );
               })}
             </Box>
-          </Panel>
+          </Box>
           {/* Secondary filter row — proficiency level for the techniques list. */}
           <FilterTabs
-            labels={['All', 'Learned', 'Practiced', 'Mastered']}
+            labels={["All", "Learned", "Practiced", "Mastered"]}
             activeIndex={techFilter}
             onChange={setTechFilter}
           />
           {visibleTechniques.map((tech) => {
-            const isBasic = tech.type === 'basic';
+            const isBasic = tech.type === "basic";
             return (
               <TechniqueAccordion
                 key={tech.title}
@@ -2603,15 +2712,18 @@ function CombatPane() {
           filled when tapped. */}
       {subTab === 1 ? (
         <Panel>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9 }}>
+          <Box
+            sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.9 }}
+          >
             <Stack spacing={1.2}>
               <Typography
                 sx={{
                   color: alpha(brown, 0.7),
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.56rem',
+                  fontFamily:
+                    '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: "0.56rem",
                   fontWeight: 900,
-                  letterSpacing: '0.12em',
+                  letterSpacing: "0.12em",
                 }}
               >
                 POSITIVE
@@ -2630,10 +2742,11 @@ function CombatPane() {
               <Typography
                 sx={{
                   color: gold,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.56rem',
+                  fontFamily:
+                    '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: "0.56rem",
                   fontWeight: 900,
-                  letterSpacing: '0.12em',
+                  letterSpacing: "0.12em",
                 }}
               >
                 NEGATIVE
@@ -2657,7 +2770,14 @@ function CombatPane() {
           means toggling here also reflects on the Character tab. */}
       {subTab === 2 ? (
         <Panel>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, rowGap: 1.2 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 1,
+              rowGap: 1.2,
+            }}
+          >
             {conditions.map((label, index, all) => {
               const lastSolo = index === all.length - 1 && all.length % 2 === 1;
               return (
@@ -2666,9 +2786,9 @@ function CombatPane() {
                   sx={
                     lastSolo
                       ? {
-                          gridColumn: '1 / -1',
-                          justifySelf: 'center',
-                          width: 'calc(50% - 4px)',
+                          gridColumn: "1 / -1",
+                          justifySelf: "center",
+                          width: "calc(50% - 4px)",
                         }
                       : undefined
                   }
@@ -2693,9 +2813,9 @@ function CombatPane() {
             sx={{
               color: brownSoft,
               fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.78rem',
+              fontSize: "0.78rem",
               lineHeight: 1.5,
-              fontStyle: 'italic',
+              fontStyle: "italic",
             }}
           >
             Carried items appear under the Backpack tab's Inventory section.
@@ -2723,16 +2843,21 @@ function ConnectionsSection() {
       {connections.map(({ name, role, note }, index) => (
         <Panel key={name}>
           <Stack spacing={0.45}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="flex-start"
+            >
               <Stack spacing={0.2} sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
                   sx={{
                     color: ink,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '1rem',
+                    fontFamily:
+                      '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: "1rem",
                     fontWeight: 900,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
                     lineHeight: 1.05,
                   }}
                 >
@@ -2742,9 +2867,9 @@ function ConnectionsSection() {
                   sx={{
                     color: brownSoft,
                     fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.7rem',
+                    fontSize: "0.7rem",
                     fontWeight: 700,
-                    fontStyle: 'italic',
+                    fontStyle: "italic",
                   }}
                 >
                   {role}
@@ -2756,10 +2881,11 @@ function ConnectionsSection() {
                 <Typography
                   sx={{
                     color: influenceLabelColor,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.54rem',
+                    fontFamily:
+                      '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: "0.54rem",
                     fontWeight: 900,
-                    letterSpacing: '0.12em',
+                    letterSpacing: "0.12em",
                   }}
                 >
                   INFLUENCE
@@ -2769,7 +2895,7 @@ function ConnectionsSection() {
             </Stack>
             <Box
               sx={{
-                height: '1px',
+                height: "1px",
                 background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
               }}
             />
@@ -2777,7 +2903,7 @@ function ConnectionsSection() {
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.78rem',
+                fontSize: "0.78rem",
                 lineHeight: 1.5,
               }}
             >
@@ -2787,13 +2913,18 @@ function ConnectionsSection() {
         </Panel>
       ))}
       <Panel ornament={false}>
-        <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
+        <Stack
+          direction="row"
+          justifyContent="center"
+          alignItems="center"
+          gap={0.6}
+        >
           <Typography
             sx={{
               color: ink,
-              fontSize: '0.95rem',
+              fontSize: "0.95rem",
               fontWeight: 900,
-              fontFamily: 'Georgia, serif',
+              fontFamily: "Georgia, serif",
             }}
           >
             +
@@ -2801,11 +2932,12 @@ function ConnectionsSection() {
           <Typography
             sx={{
               color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.78rem',
+              fontFamily:
+                '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: "0.78rem",
               fontWeight: 900,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
             }}
           >
             Add Connection
@@ -2839,7 +2971,8 @@ function BackpackCard({
 
   function commitEdit() {
     const trimmed = draftTitle.trim();
-    if (trimmed && trimmed !== entry.title) onUpdate({ ...entry, title: trimmed });
+    if (trimmed && trimmed !== entry.title)
+      onUpdate({ ...entry, title: trimmed });
     setEditing(false);
   }
 
@@ -2853,8 +2986,8 @@ function BackpackCard({
       actions={[
         {
           icon: <Trash2 size={18} />,
-          color: '#7a2424',
-          ariaLabel: 'Delete card',
+          color: "#7a2424",
+          ariaLabel: "Delete card",
           // Keep the card swiped open while the confirm modal is up.
           closeOnClick: false,
           onClick: onRequestDelete,
@@ -2862,7 +2995,7 @@ function BackpackCard({
         {
           icon: <Pencil size={18} />,
           color: bookAccent,
-          ariaLabel: 'Rename card',
+          ariaLabel: "Rename card",
           onClick: () => {
             setDraftTitle(entry.title);
             setEditing(true);
@@ -2881,39 +3014,44 @@ function BackpackCard({
             }}
             aria-expanded={open}
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'stretch',
-              width: '100%',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              width: "100%",
               gap: 0.4,
               p: 0,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              textAlign: 'left',
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textAlign: "left",
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
               <Typography
                 sx={{
                   // Backpack eyebrows use the muted-gold bookAccent in
                   // both themes to match the rulebook accent treatment.
                   color: bookAccent,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.58rem',
+                  fontFamily:
+                    '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: "0.58rem",
                   fontWeight: 900,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
                 }}
               >
                 {entry.type}
               </Typography>
               <Box
                 sx={{
-                  transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s ease',
+                  transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s ease",
                   color: alpha(ink, 0.8),
-                  fontSize: '0.95rem',
+                  fontSize: "0.95rem",
                   lineHeight: 1,
                 }}
               >
@@ -2926,31 +3064,33 @@ function BackpackCard({
                 autoFocus
                 onChange={(e) => setDraftTitle(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitEdit();
-                  if (e.key === 'Escape') cancelEdit();
+                  if (e.key === "Enter") commitEdit();
+                  if (e.key === "Escape") cancelEdit();
                 }}
                 onBlur={commitEdit}
                 sx={{
-                  width: '100%',
+                  width: "100%",
                   color: ink,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.98rem',
+                  fontFamily:
+                    '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: "0.98rem",
                   fontWeight: 900,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
                   lineHeight: 1.1,
-                  '& input': { p: 0 },
+                  "& input": { p: 0 },
                 }}
               />
             ) : (
               <Typography
                 sx={{
                   color: ink,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.98rem',
+                  fontFamily:
+                    '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: "0.98rem",
                   fontWeight: 900,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
                   lineHeight: 1.1,
                 }}
               >
@@ -2962,7 +3102,7 @@ function BackpackCard({
             <>
               <Box
                 sx={{
-                  height: '1px',
+                  height: "1px",
                   background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
                 }}
               />
@@ -2970,7 +3110,7 @@ function BackpackCard({
                 sx={{
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.78rem',
+                  fontSize: "0.78rem",
                   lineHeight: 1.5,
                 }}
               >
@@ -3008,9 +3148,9 @@ function AvatarLegendsConfirmDialog({
       PaperProps={{
         sx: {
           bgcolor: parchment,
-          backgroundImage: 'none',
+          backgroundImage: "none",
           border: `1px solid ${border}`,
-          borderRadius: '14px',
+          borderRadius: "14px",
           p: 2.25,
           m: 2,
         },
@@ -3028,9 +3168,9 @@ function AvatarLegendsConfirmDialog({
           sx={{
             color: ink,
             fontWeight: 700,
-            fontSize: '1.05rem',
+            fontSize: "1.05rem",
             lineHeight: 1.25,
-            textAlign: 'center',
+            textAlign: "center",
           }}
         >
           Are you sure you want to delete?
@@ -3044,10 +3184,10 @@ function AvatarLegendsConfirmDialog({
               borderColor: border,
               color: ink,
               fontWeight: 700,
-              textTransform: 'none',
-              borderRadius: '10px',
+              textTransform: "none",
+              borderRadius: "10px",
               py: 0.85,
-              '&:hover': { borderColor: brownSoft, bgcolor: 'transparent' },
+              "&:hover": { borderColor: brownSoft, bgcolor: "transparent" },
             }}
           >
             Cancel
@@ -3057,14 +3197,14 @@ function AvatarLegendsConfirmDialog({
             fullWidth
             variant="contained"
             sx={{
-              bgcolor: '#7a2424',
-              color: '#ffffff',
+              bgcolor: "#7a2424",
+              color: "#ffffff",
               fontWeight: 700,
-              textTransform: 'none',
-              borderRadius: '10px',
+              textTransform: "none",
+              borderRadius: "10px",
               py: 0.85,
-              boxShadow: 'none',
-              '&:hover': { bgcolor: '#7a2424', filter: 'brightness(0.92)' },
+              boxShadow: "none",
+              "&:hover": { bgcolor: "#7a2424", filter: "brightness(0.92)" },
             }}
           >
             Delete
@@ -3083,34 +3223,45 @@ function BackpackPane() {
   // identifies a card by sub-tab + index because the underlying
   // entries don't carry stable ids.
   const [pendingDelete, setPendingDelete] = useState<{
-    list: 'notes' | 'inventory';
+    list: "notes" | "inventory";
     index: number;
   } | null>(null);
 
   function addNote() {
-    setNotes((prev) => [...prev, { type: 'Note', title: 'New Note', body: 'Add a note here.' }]);
+    setNotes((prev) => [
+      ...prev,
+      { type: "Note", title: "New Note", body: "Add a note here." },
+    ]);
   }
 
   function addItem() {
     setInventory((prev) => [
       ...prev,
-      { type: 'Item', title: 'New Item', body: 'Add a description here.' },
+      { type: "Item", title: "New Item", body: "Add a description here." },
     ]);
   }
 
-  function updateNote(index: number, next: { type: string; title: string; body: string }) {
+  function updateNote(
+    index: number,
+    next: { type: string; title: string; body: string },
+  ) {
     setNotes((prev) => prev.map((entry, i) => (i === index ? next : entry)));
   }
 
-  function updateItem(index: number, next: { type: string; title: string; body: string }) {
-    setInventory((prev) => prev.map((entry, i) => (i === index ? next : entry)));
+  function updateItem(
+    index: number,
+    next: { type: string; title: string; body: string },
+  ) {
+    setInventory((prev) =>
+      prev.map((entry, i) => (i === index ? next : entry)),
+    );
   }
 
   function confirmDelete() {
     if (!pendingDelete) return;
     const { list, index } = pendingDelete;
     setPendingDelete(null);
-    if (list === 'notes') {
+    if (list === "notes") {
       setNotes((prev) => prev.filter((_, i) => i !== index));
     } else {
       setInventory((prev) => prev.filter((_, i) => i !== index));
@@ -3119,13 +3270,18 @@ function BackpackPane() {
 
   // Shared style for the "+ X" add buttons at the bottom of each list.
   const addButtonContent = (label: string) => (
-    <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
+    <Stack
+      direction="row"
+      justifyContent="center"
+      alignItems="center"
+      gap={0.6}
+    >
       <Typography
         sx={{
           color: ink,
-          fontSize: '0.95rem',
+          fontSize: "0.95rem",
           fontWeight: 900,
-          fontFamily: 'Georgia, serif',
+          fontFamily: "Georgia, serif",
         }}
       >
         +
@@ -3134,10 +3290,10 @@ function BackpackPane() {
         sx={{
           color: ink,
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.78rem',
+          fontSize: "0.78rem",
           fontWeight: 900,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
         }}
       >
         {label}
@@ -3148,7 +3304,7 @@ function BackpackPane() {
   return (
     <Stack spacing={1}>
       <FilterTabs
-        labels={['Notes', 'Inventory', 'Lore', 'Sessions']}
+        labels={["Notes", "Inventory", "Lore", "Sessions"]}
         activeIndex={subTab}
         onChange={setSubTab}
       />
@@ -3161,7 +3317,7 @@ function BackpackPane() {
               key={index}
               entry={entry}
               onUpdate={(next) => updateNote(index, next)}
-              onRequestDelete={() => setPendingDelete({ list: 'notes', index })}
+              onRequestDelete={() => setPendingDelete({ list: "notes", index })}
             />
           ))}
           <Box
@@ -3169,14 +3325,14 @@ function BackpackPane() {
             type="button"
             onClick={addNote}
             sx={{
-              background: 'none',
-              border: 'none',
+              background: "none",
+              border: "none",
               p: 0,
-              cursor: 'pointer',
-              width: '100%',
+              cursor: "pointer",
+              width: "100%",
             }}
           >
-            <Panel noNotch>{addButtonContent('New Note')}</Panel>
+            <Panel noNotch>{addButtonContent("New Note")}</Panel>
           </Box>
         </>
       ) : null}
@@ -3189,7 +3345,9 @@ function BackpackPane() {
               key={index}
               entry={entry}
               onUpdate={(next) => updateItem(index, next)}
-              onRequestDelete={() => setPendingDelete({ list: 'inventory', index })}
+              onRequestDelete={() =>
+                setPendingDelete({ list: "inventory", index })
+              }
             />
           ))}
           <Box
@@ -3197,14 +3355,14 @@ function BackpackPane() {
             type="button"
             onClick={addItem}
             sx={{
-              background: 'none',
-              border: 'none',
+              background: "none",
+              border: "none",
               p: 0,
-              cursor: 'pointer',
-              width: '100%',
+              cursor: "pointer",
+              width: "100%",
             }}
           >
-            <Panel noNotch>{addButtonContent('Item')}</Panel>
+            <Panel noNotch>{addButtonContent("Item")}</Panel>
           </Box>
         </>
       ) : null}
@@ -3216,9 +3374,9 @@ function BackpackPane() {
             sx={{
               color: brownSoft,
               fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.78rem',
+              fontSize: "0.78rem",
               lineHeight: 1.5,
-              fontStyle: 'italic',
+              fontStyle: "italic",
             }}
           >
             Nothing here yet.
@@ -3235,7 +3393,7 @@ function BackpackPane() {
 }
 
 function AvatarLegends() {
-  const [activeTab, setActiveTab] = useState<AvatarTab>('character');
+  const [activeTab, setActiveTab] = useState<AvatarTab>("character");
   const activeConfig = useMemo(
     () => tabs.find((tab) => tab.value === activeTab) ?? tabs[0],
     [activeTab],
@@ -3252,9 +3410,9 @@ function AvatarLegends() {
   // light mode (transferred from the app header per the user spec).
   // Black title text reads against that gradient. In dark mode the
   // title bar stays on the parchment with `ink` text.
-  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha('#dbe5f0', 0.9)} 100%)`;
-  const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
-  const tabTitleColor = isDarkMode ? ink : '#000000';
+  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha("#dbe5f0", 0.9)} 100%)`;
+  const tabTitleBg = isDarkMode ? "transparent" : whiteCornflowerGradient;
+  const tabTitleColor = isDarkMode ? ink : "#000000";
   // Read the active character so the brush-stroke header heading shows
   // their name on every non-Character tab.
   const character = useAtomValue(characterStateAtom);
@@ -3269,7 +3427,10 @@ function AvatarLegends() {
       <ErrorBoundary
         fallbackRender={() => null}
         onError={(error) => {
-          console.warn('Avatar Legends Convex sync is unavailable; continuing locally.', error);
+          console.warn(
+            "Avatar Legends Convex sync is unavailable; continuing locally.",
+            error,
+          );
         }}
       >
         <ConvexCharacterSyncMount />
@@ -3280,29 +3441,29 @@ function AvatarLegends() {
           // iOS safe areas (home indicator strip) instead of stopping at
           // the small-viewport line and exposing the page background
           // colour below the app card.
-          minHeight: '100vh',
+          minHeight: "100vh",
           // Outer mat around the parchment card — gradient switches with mode.
           background: pageBg,
-          display: 'grid',
-          placeItems: 'center',
+          display: "grid",
+          placeItems: "center",
           p: { xs: 0, sm: 2 },
         }}
       >
         <Box
           sx={{
-            width: 'min(100vw, 430px)',
+            width: "min(100vw, 430px)",
             // 100vh on mobile so the card itself fills through the safe
             // area too; desktop keeps its capped card height.
-            height: { xs: '100vh', sm: 'min(860px, calc(100vh - 32px))' },
-            borderRadius: { xs: 0, sm: '12px' },
+            height: { xs: "100vh", sm: "min(860px, calc(100vh - 32px))" },
+            borderRadius: { xs: 0, sm: "12px" },
             // Flat solid card background. The cornflower watercolor wash
             // applied on top (see overlay layer below) handles the colour
             // depth; the underlying parchment stays uniformly tinted.
             background: parchment,
-            position: 'relative',
-            overflow: 'hidden',
+            position: "relative",
+            overflow: "hidden",
             boxShadow: {
-              xs: 'none',
+              xs: "none",
               sm: `0 26px 70px ${alpha(deepInk, 0.55)}, 0 0 0 1px ${alpha(border, 0.45)}`,
             },
           }}
@@ -3311,10 +3472,10 @@ function AvatarLegends() {
           <Box
             aria-hidden
             sx={{
-              position: 'absolute',
+              position: "absolute",
               inset: 0,
               background: `repeating-radial-gradient(circle at 25% 25%, transparent 0, transparent 2px, ${alpha(brown, 0.025)} 3px, transparent 4px)`,
-              pointerEvents: 'none',
+              pointerEvents: "none",
               zIndex: 0,
             }}
           />
@@ -3325,9 +3486,9 @@ function AvatarLegends() {
           <Box
             aria-hidden
             sx={{
-              position: 'absolute',
+              position: "absolute",
               inset: 0,
-              pointerEvents: 'none',
+              pointerEvents: "none",
               zIndex: 0,
               background: `
               radial-gradient(circle at 30% 25%, rgba(112, 139, 176, 0.42) 0%, transparent 70%),
@@ -3335,8 +3496,8 @@ function AvatarLegends() {
               radial-gradient(circle at 50% 50%, rgba(155, 172, 194, 0.25) 0%, transparent 50%),
               linear-gradient(135deg, rgba(230, 236, 245, 0.45), rgba(220, 227, 238, 0.4))
             `,
-              mixBlendMode: 'multiply',
-              filter: 'contrast(0.9) brightness(1.02)',
+              mixBlendMode: "multiply",
+              filter: "contrast(0.9) brightness(1.02)",
             }}
           />
 
@@ -3349,12 +3510,19 @@ function AvatarLegends() {
 
           {/* Page corner ornaments — near-white in both modes, sitting on
             the deep-navy header. */}
-          <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 2,
+              pointerEvents: "none",
+            }}
+          >
             <CornerOrnament position="tl" color={chromeText} size={18} />
             <CornerOrnament position="tr" color={chromeText} size={18} />
           </Box>
 
-          <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
+          <Stack sx={{ position: "relative", height: "100%", zIndex: 1 }}>
             {/* Top header — dark navy brush-stroke band. Heading text on the
               left, app-level settings button on the right, both centered
               vertically within the solid portion of the band. The heading
@@ -3363,29 +3531,29 @@ function AvatarLegends() {
             <Box
               sx={{
                 height: 76,
-                flex: '0 0 auto',
-                position: 'relative',
+                flex: "0 0 auto",
+                position: "relative",
                 zIndex: 2,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
                 gap: 1,
                 px: 1.4,
                 // Reserve room at the bottom for the part of the band that
                 // sits OUTSIDE the painted area (none now that bristle streaks
                 // are gone, but kept slightly inset so the content centers on
                 // the solid block).
-                pb: '14px',
+                pb: "14px",
               }}
             >
-              {activeTab === 'character' ? (
+              {activeTab === "character" ? (
                 <Typography
                   sx={{
                     color: chromeText,
                     fontFamily: '"IM Fell English", Georgia, serif',
                     fontWeight: 700,
-                    fontSize: '1.15rem',
-                    letterSpacing: '0.02em',
+                    fontSize: "1.15rem",
+                    letterSpacing: "0.02em",
                     lineHeight: 1,
                   }}
                 >
@@ -3398,11 +3566,12 @@ function AvatarLegends() {
                   <Typography
                     sx={{
                       color: alpha(chromeText, 0.7),
-                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                      fontSize: '0.55rem',
+                      fontFamily:
+                        '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: "0.55rem",
                       fontWeight: 800,
-                      letterSpacing: '0.16em',
-                      textTransform: 'uppercase',
+                      letterSpacing: "0.16em",
+                      textTransform: "uppercase",
                       lineHeight: 1,
                     }}
                   >
@@ -3413,8 +3582,8 @@ function AvatarLegends() {
                       color: chromeText,
                       fontFamily: '"IM Fell English", Georgia, serif',
                       fontWeight: 700,
-                      fontSize: '1.25rem',
-                      letterSpacing: '0.02em',
+                      fontSize: "1.25rem",
+                      letterSpacing: "0.02em",
                       lineHeight: 1,
                     }}
                   >
@@ -3435,21 +3604,26 @@ function AvatarLegends() {
                 pt: 1.1,
                 pb: 0.5,
                 background: tabTitleBg,
-                position: 'relative',
+                position: "relative",
                 zIndex: 1,
               }}
             >
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+              >
                 <Stack direction="row" alignItems="center" gap={0.8}>
                   <MoveDiamond color={accent} size={11} />
                   <Typography
                     sx={{
                       color: tabTitleColor,
-                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                      fontSize: '1.05rem',
+                      fontFamily:
+                        '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: "1.05rem",
                       fontWeight: 900,
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
                     }}
                   >
                     {activeConfig.label}
@@ -3459,7 +3633,7 @@ function AvatarLegends() {
               <Box
                 sx={{
                   mt: 0.7,
-                  height: '1px',
+                  height: "1px",
                   // Divider line now uses the pale-blue accent (sampled
                   // from the rulebook heading-divider line) instead of the
                   // dark red — keeps dark red reserved for semantic
@@ -3472,7 +3646,7 @@ function AvatarLegends() {
             <Box
               sx={{
                 flex: 1,
-                overflowY: 'auto',
+                overflowY: "auto",
                 px: 1.25,
                 // Reserve room at the bottom so the last bit of content
                 // scrolls up clear of the absolutely-positioned nav. Now
@@ -3482,13 +3656,13 @@ function AvatarLegends() {
                 // Footer pb dropped by 8px (see below) — content reserve
                 // shrinks to match so the last row sits flush against the
                 // nav top.
-                pb: '76px',
+                pb: "76px",
               }}
             >
-              {activeTab === 'character' ? <CharacterPane /> : null}
-              {activeTab === 'moves' ? <MovesPane /> : null}
-              {activeTab === 'combat' ? <CombatPane /> : null}
-              {activeTab === 'backpack' ? <BackpackPane /> : null}
+              {activeTab === "character" ? <CharacterPane /> : null}
+              {activeTab === "moves" ? <MovesPane /> : null}
+              {activeTab === "combat" ? <CombatPane /> : null}
+              {activeTab === "backpack" ? <BackpackPane /> : null}
             </Box>
 
             {/* Bottom nav floats over the bottom watercolor brush stroke and
@@ -3502,9 +3676,9 @@ function AvatarLegends() {
                 // ~12px of bottom padding to clear the iOS home
                 // indicator without making the footer feel oversized.
                 // (Was 28px — shrunk by 8px per spec.)
-                pb: '20px',
+                pb: "20px",
                 pt: 0.3,
-                position: 'absolute',
+                position: "absolute",
                 bottom: 0,
                 left: 0,
                 right: 0,
@@ -3518,7 +3692,7 @@ function AvatarLegends() {
               {/* 15px pull-in on each side (~30px total) trims the visible
                 nav row while the dark backdrop stays full-width. `flex: 1`
                 on each tab keeps everything on one row. */}
-              <Stack direction="row" sx={{ mx: '15px' }}>
+              <Stack direction="row" sx={{ mx: "15px" }}>
                 {tabs.map((tab) => {
                   const selected = tab.value === activeTab;
                   return (
@@ -3537,35 +3711,35 @@ function AvatarLegends() {
                       sx={{
                         flex: 1,
                         minWidth: 0,
-                        borderRadius: '10px',
+                        borderRadius: "10px",
                         pt: 0,
                         pb: 0.5,
                         color: selected ? chromeText : alpha(chromeText, 0.55),
-                        position: 'relative',
-                        overflow: 'visible',
+                        position: "relative",
+                        overflow: "visible",
                         // Suppress any active/focused/hover transform or
                         // background change so the icon doesn't appear
                         // to shift on tap. The opacity transition
                         // (selected vs unselected) is the only visual
                         // feedback we want here.
-                        transition: 'none !important',
-                        transform: 'none !important',
-                        '&:hover': {
-                          background: 'transparent',
-                          transform: 'none',
+                        transition: "none !important",
+                        transform: "none !important",
+                        "&:hover": {
+                          background: "transparent",
+                          transform: "none",
                         },
-                        '&:active': {
-                          background: 'transparent',
-                          transform: 'none',
+                        "&:active": {
+                          background: "transparent",
+                          transform: "none",
                         },
-                        '&:focus, &:focus-visible': {
-                          outline: 'none',
-                          background: 'transparent',
-                          transform: 'none',
+                        "&:focus, &:focus-visible": {
+                          outline: "none",
+                          background: "transparent",
+                          transform: "none",
                         },
-                        WebkitTapHighlightColor: 'transparent',
-                        WebkitUserSelect: 'none',
-                        WebkitTouchCallout: 'none',
+                        WebkitTapHighlightColor: "transparent",
+                        WebkitUserSelect: "none",
+                        WebkitTouchCallout: "none",
                       }}
                     >
                       {/* Active indicator — solid dark-red pill at the top edge.
@@ -3573,27 +3747,33 @@ function AvatarLegends() {
                         the app's now-flat button surfaces. */}
                       <Box
                         sx={{
-                          position: 'absolute',
+                          position: "absolute",
                           top: -2,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
+                          left: "50%",
+                          transform: "translateX(-50%)",
                           width: 28,
                           height: 3,
-                          borderRadius: '0 0 4px 4px',
+                          borderRadius: "0 0 4px 4px",
                           // Active-tab pill now uses the pale-blue accent
                           // so dark red is reserved for semantic warnings.
-                          background: selected ? accent : 'transparent',
-                          boxShadow: selected ? `0 0 6px ${alpha(accent, 0.7)}` : 'none',
+                          background: selected ? accent : "transparent",
+                          boxShadow: selected
+                            ? `0 0 6px ${alpha(accent, 0.7)}`
+                            : "none",
                           // No transition — colour + shadow flip
                           // instantly when selection changes, so the
                           // mobile PWA doesn't render an intermediate
                           // frame the user could read as movement.
-                          transition: 'none',
+                          transition: "none",
                         }}
                       />
                       {/* spacing=1.05 (~8.4px) — was 0.3 (~2.4px); +6px
                         gap between the icon and the label per spec. */}
-                      <Stack alignItems="center" spacing={1.05} sx={{ pt: '10px' }}>
+                      <Stack
+                        alignItems="center"
+                        spacing={1.05}
+                        sx={{ pt: "10px" }}
+                      >
                         {tab.renderIcon ? (
                           // Inline SVG icon (e.g. Moves diamond) — color comes from
                           // current selection so we don't need the brightness/invert
@@ -3602,10 +3782,10 @@ function AvatarLegends() {
                             sx={{
                               width: 22,
                               height: 22,
-                              display: 'grid',
-                              placeItems: 'center',
+                              display: "grid",
+                              placeItems: "center",
                               opacity: selected ? 1 : 0.6,
-                              transition: 'none',
+                              transition: "none",
                             }}
                           >
                             {tab.renderIcon({
@@ -3621,25 +3801,26 @@ function AvatarLegends() {
                             sx={{
                               width: 22,
                               height: 22,
-                              objectFit: 'contain',
-                              objectPosition: 'center',
+                              objectFit: "contain",
+                              objectPosition: "center",
                               opacity: selected ? 1 : 0.5,
-                              filter: 'brightness(0) invert(1)',
-                              transition: 'none',
+                              filter: "brightness(0) invert(1)",
+                              transition: "none",
                             }}
                           />
                         )}
                         <Typography
                           sx={{
-                            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                            fontSize: '0.58rem',
+                            fontFamily:
+                              '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                            fontSize: "0.58rem",
                             // Keep weight constant so the label glyph
                             // bounds don't change between selected /
                             // unselected — the mobile PWA was reading
                             // the weight swap as a tiny icon shift.
                             fontWeight: 700,
-                            letterSpacing: '0.1em',
-                            textTransform: 'uppercase',
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
                             lineHeight: 1,
                           }}
                         >
