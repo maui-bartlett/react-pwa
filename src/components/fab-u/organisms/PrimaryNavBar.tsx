@@ -35,6 +35,10 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
       sx={{
         borderRadius: '9px',
         bgcolor: fabUTokens.color.surface,
+        // 15px horizontal pull-in on each side (~30px total) trims the
+        // nav width while letting `flex: 1` tighten the gaps between
+        // tabs to keep all six on one row.
+        mx: '15px',
         px: 0.18,
         py: 0.22,
       }}

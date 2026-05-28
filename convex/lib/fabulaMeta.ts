@@ -1,18 +1,28 @@
 import type { Doc, Id } from '../_generated/dataModel';
 
 const FABULA_ULTIMA_TYPE = 'fabula-ultima';
+const AVATAR_LEGENDS_TYPE = 'avatar-legends';
 
-type FabulaMeta = {
+type GameSystemMeta = {
   gameSystem?: string;
   activeForUserProfileId?: Id<'userProfiles'>;
 };
 
-function isFabulaUltimaDocument(document: { meta?: FabulaMeta } | null | undefined) {
+function isFabulaUltimaDocument(document: { meta?: GameSystemMeta } | null | undefined) {
   return document?.meta?.gameSystem === FABULA_ULTIMA_TYPE;
 }
 
-function withFabulaMeta(meta?: FabulaMeta): FabulaMeta {
-  return { ...meta, gameSystem: FABULA_ULTIMA_TYPE };
+/**
+ * Stamp a meta object with the given game system, preserving any other
+ * meta fields (e.g. `activeForUserProfileId`) that might already be set.
+ */
+function withGameSystemMeta(gameSystem: string, meta?: GameSystemMeta): GameSystemMeta {
+  return { ...meta, gameSystem };
+}
+
+/** Back-compat shim — equivalent to `withGameSystemMeta(FABULA_ULTIMA_TYPE, meta)`. */
+function withFabulaMeta(meta?: GameSystemMeta): GameSystemMeta {
+  return withGameSystemMeta(FABULA_ULTIMA_TYPE, meta);
 }
 
 function isActiveForProfile(
@@ -22,5 +32,12 @@ function isActiveForProfile(
   return document.meta?.activeForUserProfileId === userProfileId;
 }
 
-export { FABULA_ULTIMA_TYPE, isActiveForProfile, isFabulaUltimaDocument, withFabulaMeta };
-export type { FabulaMeta };
+export {
+  AVATAR_LEGENDS_TYPE,
+  FABULA_ULTIMA_TYPE,
+  isActiveForProfile,
+  isFabulaUltimaDocument,
+  withFabulaMeta,
+  withGameSystemMeta,
+};
+export type { GameSystemMeta };

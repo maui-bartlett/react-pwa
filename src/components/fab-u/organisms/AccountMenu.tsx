@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
+import { useAtomValue } from 'jotai';
 import {
   CheckCircle,
   ChevronLeft,
@@ -35,6 +36,7 @@ import {
 } from '@/domain/fabU/characterMigration';
 import { authClient } from '@/lib/auth-client';
 import { FAB_U_SELECT_CHARACTER_EVENT } from '@/pages/FabU/useConvexCharacterSync';
+import { gameSystemAtom } from '@/sections/AccountSettings/atoms';
 
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -224,12 +226,15 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const canLoadCharacters = Boolean(user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
+  const gameSystem = useAtomValue(gameSystemAtom);
   const createCharacter = useMutation(api.characters.createFromLocalImport);
   const setActiveCharacter = useMutation(api.characters.setActiveMine);
   const createCampaign = useMutation(api.campaigns.create);
   const characters = useQuery(
     api.characters.listMine,
-    open && screen === 'characters' && canLoadCharacters ? { includeArchived: false } : 'skip',
+    open && screen === 'characters' && canLoadCharacters
+      ? { gameSystem, includeArchived: false }
+      : 'skip',
   );
   const campaigns = useQuery(
     api.campaigns.listMine,
@@ -314,6 +319,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     if (!canLoadCharacters) return;
     const nextCharacter = createDefaultCharacter();
     const characterId = await createCharacter({
+      gameSystem,
       schemaVersion: CHARACTER_SCHEMA_VERSION,
       characterState: serializeCharacterForBackend(nextCharacter),
     });

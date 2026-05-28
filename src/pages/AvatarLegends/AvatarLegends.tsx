@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
@@ -10,6 +10,7 @@ import { atom, useAtom, useAtomValue } from 'jotai';
 import { Backpack, HandFist } from 'lucide-react';
 
 import AccountSettings from '@/sections/AccountSettings';
+import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 import { useThemeMode } from '@/theme/hooks';
 
 // The six elemental symbols cropped directly from the official Avatar Legends
@@ -398,6 +399,67 @@ const defaultCharacter: CharacterState = {
  *  surface reads from / writes to this atom (often via a derived slice). */
 const characterStateAtom = atom<CharacterState>(defaultCharacter);
 
+/** Per-app persisted-state schema version. Bump whenever the on-the-wire
+ *  shape of the AL `CharacterState` changes in a breaking way. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 1;
+const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
+const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
+const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
+
+/** Convert the AL `CharacterState` to the backend payload. Mirrors the
+ *  FabU convention of wrapping the character under a `character` field
+ *  so the persisted blob has room to grow with shape-level metadata
+ *  (schema version, etc) without colliding with the character fields. */
+function serializeAvatarLegendsCharacter(state: CharacterState) {
+  return { schemaVersion: AVATAR_LEGENDS_SCHEMA_VERSION, character: state };
+}
+
+/** Apply incoming backend payload back to the AL shape, with a defensive
+ *  fall-through to the default so missing/legacy fields don't crash. */
+function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
+  if (!raw || typeof raw !== 'object') return defaultCharacter;
+  const wrapped = raw as { character?: unknown };
+  const candidate =
+    wrapped.character && typeof wrapped.character === 'object'
+      ? (wrapped.character as Partial<CharacterState>)
+      : (raw as Partial<CharacterState>);
+  return { ...defaultCharacter, ...candidate };
+}
+
+function describeAvatarLegendsCharacter(state: CharacterState) {
+  return state.name || 'Avatar Legends Character';
+}
+
+/** Mounts the generic Convex character sync hook against the AL
+ *  `characterStateAtom`. Renders nothing — just keeps the local atom
+ *  and the Convex `characters` table in lockstep while the user is
+ *  signed in. The hook is a no-op for signed-out users. */
+function useAvatarLegendsConvexSync() {
+  const [character, setCharacter] = useAtom(characterStateAtom);
+  const applyRemote = useCallback(
+    (remote: CharacterState) => {
+      setCharacter(remote);
+    },
+    [setCharacter],
+  );
+  useConvexCharacterSync<CharacterState>({
+    character,
+    applyRemote,
+    serialize: serializeAvatarLegendsCharacter,
+    deserialize: deserializeAvatarLegendsCharacter,
+    gameSystem: AVATAR_LEGENDS_GAME_SYSTEM,
+    schemaVersion: AVATAR_LEGENDS_SCHEMA_VERSION,
+    pendingSyncKeyPrefix: AVATAR_LEGENDS_PENDING_SYNC_KEY,
+    selectCharacterEventName: AVATAR_LEGENDS_SELECT_CHARACTER_EVENT,
+    describeCharacter: describeAvatarLegendsCharacter,
+  });
+}
+
+function ConvexCharacterSyncMount() {
+  useAvatarLegendsConvexSync();
+  return null;
+}
+
 // Helper: derive a get/set slice atom from a single field on
 // characterStateAtom. The returned atom behaves exactly like a regular
 // jotai atom (useAtom returns [value, setValue] including functional
@@ -587,18 +649,8 @@ function WatercolorBand({
           background: bandFill,
         }}
       />
-      {/* Soft inner-edge sheen — runs along the inner edge of the band. */}
-      <Box
-        sx={{
-          position: 'absolute',
-          left: 20,
-          right: 20,
-          [bottom ? 'bottom' : 'top']: 4,
-          height: 3,
-          borderRadius: '2px',
-          background: alpha('#ffffff', 0.18),
-        }}
-      />
+      {/* No sheen: the faint white pill that used to sit at the inner
+          edge read as a thin gray line above the header on mobile. */}
     </Box>
   );
 }
@@ -2900,337 +2952,345 @@ function AvatarLegends() {
   const character = useAtomValue(characterStateAtom);
 
   return (
-    <Box
-      sx={{
-        // Use the *large* viewport unit so the outer mat extends through
-        // iOS safe areas (home indicator strip) instead of stopping at
-        // the small-viewport line and exposing the page background
-        // colour below the app card.
-        minHeight: '100vh',
-        // Outer mat around the parchment card — gradient switches with mode.
-        background: pageBg,
-        display: 'grid',
-        placeItems: 'center',
-        p: { xs: 0, sm: 2 },
-      }}
-    >
+    <>
+      {/* Render-less mount that keeps the characterStateAtom in lockstep
+          with the user's Convex character record while they're signed in. */}
+      <ConvexCharacterSyncMount />
       <Box
         sx={{
-          width: 'min(100vw, 430px)',
-          // 100vh on mobile so the card itself fills through the safe
-          // area too; desktop keeps its capped card height.
-          height: { xs: '100vh', sm: 'min(860px, calc(100vh - 32px))' },
-          borderRadius: { xs: 0, sm: '12px' },
-          // Flat solid card background. The cornflower watercolor wash
-          // applied on top (see overlay layer below) handles the colour
-          // depth; the underlying parchment stays uniformly tinted.
-          background: parchment,
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: {
-            xs: 'none',
-            sm: `0 26px 70px ${alpha(deepInk, 0.55)}, 0 0 0 1px ${alpha(border, 0.45)}`,
-          },
+          // Use the *large* viewport unit so the outer mat extends through
+          // iOS safe areas (home indicator strip) instead of stopping at
+          // the small-viewport line and exposing the page background
+          // colour below the app card.
+          minHeight: '100vh',
+          // Outer mat around the parchment card — gradient switches with mode.
+          background: pageBg,
+          display: 'grid',
+          placeItems: 'center',
+          p: { xs: 0, sm: 2 },
         }}
       >
-        {/* Paper grain via repeating radial noise */}
         <Box
-          aria-hidden
           sx={{
-            position: 'absolute',
-            inset: 0,
-            background: `repeating-radial-gradient(circle at 25% 25%, transparent 0, transparent 2px, ${alpha(brown, 0.025)} 3px, transparent 4px)`,
-            pointerEvents: 'none',
-            zIndex: 0,
+            width: 'min(100vw, 430px)',
+            // 100vh on mobile so the card itself fills through the safe
+            // area too; desktop keeps its capped card height.
+            height: { xs: '100vh', sm: 'min(860px, calc(100vh - 32px))' },
+            borderRadius: { xs: 0, sm: '12px' },
+            // Flat solid card background. The cornflower watercolor wash
+            // applied on top (see overlay layer below) handles the colour
+            // depth; the underlying parchment stays uniformly tinted.
+            background: parchment,
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: {
+              xs: 'none',
+              sm: `0 26px 70px ${alpha(deepInk, 0.55)}, 0 0 0 1px ${alpha(border, 0.45)}`,
+            },
           }}
-        />
-        {/* Faded, muted cornflower-blue watercolor wash. Sits over the
+        >
+          {/* Paper grain via repeating radial noise */}
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: `repeating-radial-gradient(circle at 25% 25%, transparent 0, transparent 2px, ${alpha(brown, 0.025)} 3px, transparent 4px)`,
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+          {/* Faded, muted cornflower-blue watercolor wash. Sits over the
             parchment + paper-grain texture using multiply blend so the
             texture still shows through; the radial pools feather outward
             to give the parchment a soft hand-painted depth. */}
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            zIndex: 0,
-            background: `
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              zIndex: 0,
+              background: `
               radial-gradient(circle at 30% 25%, rgba(112, 139, 176, 0.42) 0%, transparent 70%),
               radial-gradient(circle at 75% 70%, rgba(143, 164, 195, 0.38) 0%, transparent 65%),
               radial-gradient(circle at 50% 50%, rgba(155, 172, 194, 0.25) 0%, transparent 50%),
               linear-gradient(135deg, rgba(230, 236, 245, 0.45), rgba(220, 227, 238, 0.4))
             `,
-            mixBlendMode: 'multiply',
-            filter: 'contrast(0.9) brightness(1.02)',
-          }}
-        />
+              mixBlendMode: 'multiply',
+              filter: 'contrast(0.9) brightness(1.02)',
+            }}
+          />
 
-        {/* Top header band — deep cover-art navy in both modes. */}
-        <WatercolorBand height={92} />
-        {/* No bottom band: the absolute-positioned nav below has its own
+          {/* Top header band — deep cover-art navy in both modes. */}
+          <WatercolorBand height={92} />
+          {/* No bottom band: the absolute-positioned nav below has its own
             deep-navy backgroundColor, and any band rendered behind it
             would just produce an extra dark strip above the nav that
             scrolling content would visibly pass through. */}
 
-        {/* Page corner ornaments — near-white in both modes, sitting on
+          {/* Page corner ornaments — near-white in both modes, sitting on
             the deep-navy header. */}
-        <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
-          <CornerOrnament position="tl" color={chromeText} size={18} />
-          <CornerOrnament position="tr" color={chromeText} size={18} />
-        </Box>
+          <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
+            <CornerOrnament position="tl" color={chromeText} size={18} />
+            <CornerOrnament position="tr" color={chromeText} size={18} />
+          </Box>
 
-        <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
-          {/* Top header — dark navy brush-stroke band. Heading text on the
+          <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
+            {/* Top header — dark navy brush-stroke band. Heading text on the
               left, app-level settings button on the right, both centered
               vertically within the solid portion of the band. The heading
               shows "Avatar Legends" on the Character tab and the active
               character's name on the others. */}
-          <Box
-            sx={{
-              height: 76,
-              flex: '0 0 auto',
-              position: 'relative',
-              zIndex: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 1,
-              px: 1.4,
-              // Reserve room at the bottom for the part of the band that
-              // sits OUTSIDE the painted area (none now that bristle streaks
-              // are gone, but kept slightly inset so the content centers on
-              // the solid block).
-              pb: '14px',
-            }}
-          >
-            {activeTab === 'character' ? (
-              <Typography
-                sx={{
-                  color: chromeText,
-                  fontFamily: '"IM Fell English", Georgia, serif',
-                  fontWeight: 700,
-                  fontSize: '1.15rem',
-                  letterSpacing: '0.02em',
-                  lineHeight: 1,
-                }}
-              >
-                Avatar Legends
-              </Typography>
-            ) : (
-              // spacing=0.6 (~4.8px) gives ~4px more between the eyebrow and
-              // the character name compared to the original tight 0.1.
-              <Stack spacing={0.6}>
-                <Typography
-                  sx={{
-                    color: alpha(chromeText, 0.7),
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.55rem',
-                    fontWeight: 800,
-                    letterSpacing: '0.16em',
-                    textTransform: 'uppercase',
-                    lineHeight: 1,
-                  }}
-                >
-                  Avatar Legends
-                </Typography>
+            <Box
+              sx={{
+                height: 76,
+                flex: '0 0 auto',
+                position: 'relative',
+                zIndex: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 1,
+                px: 1.4,
+                // Reserve room at the bottom for the part of the band that
+                // sits OUTSIDE the painted area (none now that bristle streaks
+                // are gone, but kept slightly inset so the content centers on
+                // the solid block).
+                pb: '14px',
+              }}
+            >
+              {activeTab === 'character' ? (
                 <Typography
                   sx={{
                     color: chromeText,
                     fontFamily: '"IM Fell English", Georgia, serif',
                     fontWeight: 700,
-                    fontSize: '1.25rem',
+                    fontSize: '1.15rem',
                     letterSpacing: '0.02em',
                     lineHeight: 1,
                   }}
                 >
-                  {character.name}
+                  Avatar Legends
                 </Typography>
-              </Stack>
-            )}
-            <AccountSettings gameSystem="avatar-legends" />
-          </Box>
+              ) : (
+                // spacing=0.6 (~4.8px) gives ~4px more between the eyebrow and
+                // the character name compared to the original tight 0.1.
+                <Stack spacing={0.6}>
+                  <Typography
+                    sx={{
+                      color: alpha(chromeText, 0.7),
+                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: '0.55rem',
+                      fontWeight: 800,
+                      letterSpacing: '0.16em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1,
+                    }}
+                  >
+                    Avatar Legends
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: chromeText,
+                      fontFamily: '"IM Fell English", Georgia, serif',
+                      fontWeight: 700,
+                      fontSize: '1.25rem',
+                      letterSpacing: '0.02em',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {character.name}
+                  </Typography>
+                </Stack>
+              )}
+              <AccountSettings gameSystem="avatar-legends" />
+            </Box>
 
-          {/* Active-tab title bar. In light mode this band carries the
+            {/* Active-tab title bar. In light mode this band carries the
               whiter cornflower gradient + black title text (transferred
               from the app header per the user spec). In dark mode it
               stays on the parchment surface. */}
-          <Box
-            sx={{
-              px: 1.4,
-              pt: 1.1,
-              pb: 0.5,
-              background: tabTitleBg,
-              position: 'relative',
-              zIndex: 1,
-            }}
-          >
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Stack direction="row" alignItems="center" gap={0.8}>
-                <MoveDiamond color={accent} size={11} />
-                <Typography
-                  sx={{
-                    color: tabTitleColor,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '1.05rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {activeConfig.label}
-                </Typography>
-              </Stack>
-            </Stack>
             <Box
               sx={{
-                mt: 0.7,
-                height: '1px',
-                // Divider line now uses the pale-blue accent (sampled
-                // from the rulebook heading-divider line) instead of the
-                // dark red — keeps dark red reserved for semantic
-                // warnings (Fatigue / Conditions / Negative Statuses).
-                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.75)} 20%, ${alpha(accent, 0.75)} 80%, transparent 100%)`,
+                px: 1.4,
+                pt: 1.1,
+                pb: 0.5,
+                background: tabTitleBg,
+                position: 'relative',
+                zIndex: 1,
               }}
-            />
-          </Box>
+            >
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack direction="row" alignItems="center" gap={0.8}>
+                  <MoveDiamond color={accent} size={11} />
+                  <Typography
+                    sx={{
+                      color: tabTitleColor,
+                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: '1.05rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {activeConfig.label}
+                  </Typography>
+                </Stack>
+              </Stack>
+              <Box
+                sx={{
+                  mt: 0.7,
+                  height: '1px',
+                  // Divider line now uses the pale-blue accent (sampled
+                  // from the rulebook heading-divider line) instead of the
+                  // dark red — keeps dark red reserved for semantic
+                  // warnings (Fatigue / Conditions / Negative Statuses).
+                  background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.75)} 20%, ${alpha(accent, 0.75)} 80%, transparent 100%)`,
+                }}
+              />
+            </Box>
 
-          <Box
-            sx={{
-              flex: 1,
-              overflowY: 'auto',
-              px: 1.25,
-              // Reserve room at the bottom so the last bit of content
-              // scrolls up clear of the absolutely-positioned nav. Now
-              // tight to the actual nav height (no bristle band sits
-              // behind it) so there's no dark strip for content to
-              // scroll over.
-              pb: '64px',
-            }}
-          >
-            {activeTab === 'character' ? <CharacterPane /> : null}
-            {activeTab === 'moves' ? <MovesPane /> : null}
-            {activeTab === 'combat' ? <CombatPane /> : null}
-            {activeTab === 'backpack' ? <BackpackPane /> : null}
-          </Box>
+            <Box
+              sx={{
+                flex: 1,
+                overflowY: 'auto',
+                px: 1.25,
+                // Reserve room at the bottom so the last bit of content
+                // scrolls up clear of the absolutely-positioned nav. Now
+                // tight to the actual nav height (no bristle band sits
+                // behind it) so there's no dark strip for content to
+                // scroll over.
+                pb: '64px',
+              }}
+            >
+              {activeTab === 'character' ? <CharacterPane /> : null}
+              {activeTab === 'moves' ? <MovesPane /> : null}
+              {activeTab === 'combat' ? <CombatPane /> : null}
+              {activeTab === 'backpack' ? <BackpackPane /> : null}
+            </Box>
 
-          {/* Bottom nav floats over the bottom watercolor brush stroke and
+            {/* Bottom nav floats over the bottom watercolor brush stroke and
               the page content scrolls UNDER it. Absolute positioning takes
               the nav out of the flex flow so the scrollable area above can
               extend full-height. A high zIndex makes sure the nav stays
               above any in-page content that scrolls past. */}
-          <Box
-            sx={{
-              px: 0.5,
-              pb: 1,
-              pt: 0.3,
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 10,
-              // Solid backdrop matching the brush-stroke navy so body
-              // content scrolling behind the nav is fully occluded; the
-              // brush stroke continues to show below the nav.
-              backgroundColor: deepInk,
-            }}
-          >
-            <Stack direction="row">
-              {tabs.map((tab) => {
-                const selected = tab.value === activeTab;
-                return (
-                  <ButtonBase
-                    key={tab.value}
-                    onClick={() => setActiveTab(tab.value)}
-                    sx={{
-                      flex: 1,
-                      minWidth: 0,
-                      borderRadius: '10px',
-                      pt: 0,
-                      pb: 0.5,
-                      color: selected ? chromeText : alpha(chromeText, 0.55),
-                      position: 'relative',
-                      overflow: 'visible',
-                    }}
-                  >
-                    {/* Active indicator — solid dark-red pill at the top edge.
+            <Box
+              sx={{
+                px: 0.5,
+                pb: 1,
+                pt: 0.3,
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 10,
+                // Solid backdrop matching the brush-stroke navy so body
+                // content scrolling behind the nav is fully occluded; the
+                // brush stroke continues to show below the nav.
+                backgroundColor: deepInk,
+              }}
+            >
+              {/* 15px pull-in on each side (~30px total) trims the visible
+                nav row while the dark backdrop stays full-width. `flex: 1`
+                on each tab keeps everything on one row. */}
+              <Stack direction="row" sx={{ mx: '15px' }}>
+                {tabs.map((tab) => {
+                  const selected = tab.value === activeTab;
+                  return (
+                    <ButtonBase
+                      key={tab.value}
+                      onClick={() => setActiveTab(tab.value)}
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        borderRadius: '10px',
+                        pt: 0,
+                        pb: 0.5,
+                        color: selected ? chromeText : alpha(chromeText, 0.55),
+                        position: 'relative',
+                        overflow: 'visible',
+                      }}
+                    >
+                      {/* Active indicator — solid dark-red pill at the top edge.
                         Solid fill (was a gradient) so it matches the rest of
                         the app's now-flat button surfaces. */}
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: -2,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        width: 28,
-                        height: 3,
-                        borderRadius: '0 0 4px 4px',
-                        // Active-tab pill now uses the pale-blue accent
-                        // so dark red is reserved for semantic warnings.
-                        background: selected ? accent : 'transparent',
-                        boxShadow: selected ? `0 0 6px ${alpha(accent, 0.7)}` : 'none',
-                        transition: 'all 0.2s ease',
-                      }}
-                    />
-                    {/* spacing=1.05 (~8.4px) — was 0.3 (~2.4px); +6px
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: -2,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: 28,
+                          height: 3,
+                          borderRadius: '0 0 4px 4px',
+                          // Active-tab pill now uses the pale-blue accent
+                          // so dark red is reserved for semantic warnings.
+                          background: selected ? accent : 'transparent',
+                          boxShadow: selected ? `0 0 6px ${alpha(accent, 0.7)}` : 'none',
+                          transition: 'all 0.2s ease',
+                        }}
+                      />
+                      {/* spacing=1.05 (~8.4px) — was 0.3 (~2.4px); +6px
                         gap between the icon and the label per spec. */}
-                    <Stack alignItems="center" spacing={1.05} sx={{ pt: '10px' }}>
-                      {tab.renderIcon ? (
-                        // Inline SVG icon (e.g. Moves diamond) — color comes from
-                        // current selection so we don't need the brightness/invert
-                        // filter that the PNG icons use.
-                        <Box
+                      <Stack alignItems="center" spacing={1.05} sx={{ pt: '10px' }}>
+                        {tab.renderIcon ? (
+                          // Inline SVG icon (e.g. Moves diamond) — color comes from
+                          // current selection so we don't need the brightness/invert
+                          // filter that the PNG icons use.
+                          <Box
+                            sx={{
+                              width: 22,
+                              height: 22,
+                              display: 'grid',
+                              placeItems: 'center',
+                              opacity: selected ? 1 : 0.6,
+                              transition: 'opacity 0.2s ease',
+                            }}
+                          >
+                            {tab.renderIcon({
+                              color: chromeText,
+                              size: 20,
+                            })}
+                          </Box>
+                        ) : (
+                          <Box
+                            component="img"
+                            src={tab.iconSrc}
+                            alt=""
+                            sx={{
+                              width: 22,
+                              height: 22,
+                              objectFit: 'contain',
+                              objectPosition: 'center',
+                              opacity: selected ? 1 : 0.5,
+                              filter: 'brightness(0) invert(1)',
+                              transition: 'opacity 0.2s ease',
+                            }}
+                          />
+                        )}
+                        <Typography
                           sx={{
-                            width: 22,
-                            height: 22,
-                            display: 'grid',
-                            placeItems: 'center',
-                            opacity: selected ? 1 : 0.6,
-                            transition: 'opacity 0.2s ease',
+                            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                            fontSize: '0.58rem',
+                            fontWeight: selected ? 900 : 700,
+                            letterSpacing: '0.1em',
+                            textTransform: 'uppercase',
+                            lineHeight: 1,
                           }}
                         >
-                          {tab.renderIcon({
-                            color: chromeText,
-                            size: 20,
-                          })}
-                        </Box>
-                      ) : (
-                        <Box
-                          component="img"
-                          src={tab.iconSrc}
-                          alt=""
-                          sx={{
-                            width: 22,
-                            height: 22,
-                            objectFit: 'contain',
-                            objectPosition: 'center',
-                            opacity: selected ? 1 : 0.5,
-                            filter: 'brightness(0) invert(1)',
-                            transition: 'opacity 0.2s ease',
-                          }}
-                        />
-                      )}
-                      <Typography
-                        sx={{
-                          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                          fontSize: '0.58rem',
-                          fontWeight: selected ? 900 : 700,
-                          letterSpacing: '0.1em',
-                          textTransform: 'uppercase',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {tab.label}
-                      </Typography>
-                    </Stack>
-                  </ButtonBase>
-                );
-              })}
-            </Stack>
-          </Box>
-        </Stack>
+                          {tab.label}
+                        </Typography>
+                      </Stack>
+                    </ButtonBase>
+                  );
+                })}
+              </Stack>
+            </Box>
+          </Stack>
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 }
 
