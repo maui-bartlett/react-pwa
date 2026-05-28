@@ -133,7 +133,7 @@ const darkAvPalette: AvPaletteShape = {
   gold: '#7a2424',
   // Passion stat label + Advance & Attack eyebrow keep the brighter
   // cover-art red so they stay legible against the gray body.
-  passionRed: '#c84a3e',
+  passionRed: '#e35f53',
   attackRed: '#c84a3e',
   // Pale slate-blue accent — divider / decorative tone that reads
   // against the deeper slate-blue surfaces.
@@ -202,6 +202,7 @@ const martial = '#3d3d4a';
 const tech = '#7a5d8a';
 const darkConditionGold = '#8a6a22';
 const darkNegativeRed = '#5f1717';
+const tempFatigueGold = '#8a6a22';
 
 const tabs: TabConfig[] = [
   {
@@ -1383,6 +1384,93 @@ function FatigueDiamond({
   );
 }
 
+function CapacityPicker({
+  label,
+  value,
+  color,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  onChange: (next: number) => void;
+}) {
+  const setClamped = (next: number) => onChange(Math.max(0, Math.min(10, next)));
+  return (
+    <Stack spacing={0.6}>
+      <Typography
+        sx={{
+          fontSize: '0.74rem',
+          fontWeight: 800,
+          color: brownSoft,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}
+      >
+        {label}
+      </Typography>
+      <Stack
+        direction="row"
+        alignItems="center"
+        sx={{
+          minHeight: 40,
+          borderRadius: '8px',
+          border: `1.5px solid ${color}`,
+          bgcolor: parchmentLight,
+          color: ink,
+          overflow: 'hidden',
+        }}
+      >
+        <Button
+          onClick={() => setClamped(value - 1)}
+          disabled={value <= 0}
+          aria-label={`Decrease ${label.toLowerCase()}`}
+          sx={{
+            minWidth: 42,
+            height: 40,
+            borderRadius: 0,
+            color,
+            fontSize: '1.2rem',
+            fontWeight: 900,
+            '&:disabled': { color: alpha(color, 0.35) },
+          }}
+        >
+          -
+        </Button>
+        <Typography
+          aria-live="polite"
+          sx={{
+            flex: 1,
+            textAlign: 'center',
+            fontSize: '1rem',
+            fontWeight: 900,
+            color: ink,
+            fontFamily: 'Georgia, "Times New Roman", serif',
+          }}
+        >
+          {value}
+        </Typography>
+        <Button
+          onClick={() => setClamped(value + 1)}
+          disabled={value >= 10}
+          aria-label={`Increase ${label.toLowerCase()}`}
+          sx={{
+            minWidth: 42,
+            height: 40,
+            borderRadius: 0,
+            color,
+            fontSize: '1.2rem',
+            fontWeight: 900,
+            '&:disabled': { color: alpha(color, 0.35) },
+          }}
+        >
+          +
+        </Button>
+      </Stack>
+    </Stack>
+  );
+}
+
 /**
  * Collapsible History section — a heading row with a chevron + a list of
  * questions below. Each question is paired with a text box for the player's
@@ -2528,284 +2616,322 @@ function CombatPane() {
   const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
   const toggleCondition = (label: string) =>
     setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
+  const [inventory, setInventory] = useAtom(inventoryAtom);
+  const [pendingInventoryDelete, setPendingInventoryDelete] = useState<number | null>(null);
+  function updateInventoryItem(
+    index: number,
+    next: { type: string; name: string; description: string },
+  ) {
+    setInventory((prev) =>
+      prev.map((entry, currentIndex) => (currentIndex === index ? next : entry)),
+    );
+  }
+  function deleteInventoryItem() {
+    if (pendingInventoryDelete === null) return;
+    setInventory((prev) => prev.filter((_, index) => index !== pendingInventoryDelete));
+    setPendingInventoryDelete(null);
+  }
   // Conditions sub-tab mirrors Character tab conditions, with dark mode
   // using a deeper gold fill for a quieter active state.
   const conditionColor = isDarkMode ? darkConditionGold : bookAccent;
   const negativeStatusColor = isDarkMode ? darkNegativeRed : passionRed;
 
   return (
-    <Stack spacing={1}>
-      {/* Combat tab opens with the same Stats panel that lives on Character,
+    <>
+      <Stack spacing={1}>
+        {/* Combat tab opens with the same Stats panel that lives on Character,
           for at-a-glance reference during combat rolls. */}
-      <StatsPanel />
-      <FatigueCard
-        baseFatigue={fatigue}
-        tempFatigue={tempFatigue}
-        onUpdate={updateFatigueCapacity}
-      />
+        <StatsPanel />
+        <FatigueCard
+          baseFatigue={fatigue}
+          tempFatigue={tempFatigue}
+          onUpdate={updateFatigueCapacity}
+        />
 
-      {/* Interactive combat sub-tabs — taller chips than the rest of the
+        {/* Interactive combat sub-tabs — taller chips than the rest of the
           app to give the four primary combat surfaces more tap area. */}
-      <FilterTabs
-        labels={['Techniques', 'Statuses', 'Conditions', 'Inventory']}
-        activeIndex={subTab}
-        onChange={setSubTab}
-        chipPy="20px"
-      />
+        <FilterTabs
+          labels={['Techniques', 'Statuses', 'Conditions', 'Inventory']}
+          activeIndex={subTab}
+          onChange={setSubTab}
+          chipPy="20px"
+        />
 
-      {/* Techniques sub-tab: element filter row + expandable technique cards */}
-      {subTab === 0 ? (
-        <>
-          {/* Element filter row: deep-ink backing matches selected filter chips,
+        {/* Techniques sub-tab: element filter row + expandable technique cards */}
+        {subTab === 0 ? (
+          <>
+            {/* Element filter row: deep-ink backing matches selected filter chips,
               keeping the extracted white symbols readable in light mode. */}
-          <Box
-            sx={{
-              background: deepInk,
-              border: `1px solid ${alpha(accent, 0.42)}`,
-              borderRadius: '4px',
-              p: '8px 10px',
-              boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
-            }}
-          >
             <Box
               sx={{
-                display: 'flex',
-                gap: 1.6,
-                overflowX: 'auto',
-                scrollbarWidth: 'none',
-                '&::-webkit-scrollbar': { display: 'none' },
+                background: deepInk,
+                border: `1px solid ${alpha(accent, 0.42)}`,
+                borderRadius: '4px',
+                p: '8px 10px',
+                boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
               }}
             >
-              {elementFilters.map((entry) => {
-                const isActive = elementFilter === entry.key;
-                return (
-                  <Stack
-                    key={entry.key}
-                    component="button"
-                    type="button"
-                    onClick={() => setElementFilter(entry.key)}
-                    aria-pressed={isActive}
-                    alignItems="center"
-                    spacing={0.4}
-                    sx={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      p: 0,
-                      flex: '0 0 auto',
-                      opacity: isActive ? 1 : 0.55,
-                      transition: 'opacity 0.15s ease',
-                    }}
-                  >
-                    {entry.key === 'all' || entry.key === 'basic' ? (
-                      <Box
-                        sx={{
-                          width: 34,
-                          height: 32,
-                          borderRadius: '3px',
-                          border: `1px solid ${alpha(chromeText, 0.34)}`,
-                          background: alpha(chromeText, 0.08),
-                          display: 'grid',
-                          placeItems: 'center',
-                          flex: '0 0 auto',
-                          boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
-                        }}
-                      >
-                        {entry.key === 'all' ? (
-                          <Typography
-                            sx={{
-                              color: chromeText,
-                              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                              fontSize: '0.62rem',
-                              fontWeight: 900,
-                              letterSpacing: '0.04em',
-                              lineHeight: 1,
-                            }}
-                          >
-                            ALL
-                          </Typography>
-                        ) : (
-                          <SquareInSquare color={chromeText} size={20} />
-                        )}
-                      </Box>
-                    ) : (
-                      <ElementMark
-                        color={chromeText}
-                        label={entry.label.slice(0, 1)}
-                        src={entry.src ?? undefined}
-                        size={34}
-                        height={32}
-                      />
-                    )}
-                    <Typography
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1.6,
+                  overflowX: 'auto',
+                  scrollbarWidth: 'none',
+                  '&::-webkit-scrollbar': { display: 'none' },
+                }}
+              >
+                {elementFilters.map((entry) => {
+                  const isActive = elementFilter === entry.key;
+                  return (
+                    <Stack
+                      key={entry.key}
+                      component="button"
+                      type="button"
+                      onClick={() => setElementFilter(entry.key)}
+                      aria-pressed={isActive}
+                      alignItems="center"
+                      spacing={0.4}
                       sx={{
-                        color: chromeText,
-                        fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                        fontSize: '0.58rem',
-                        fontWeight: 900,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        p: 0,
+                        flex: '0 0 auto',
+                        opacity: isActive ? 1 : 0.55,
+                        transition: 'opacity 0.15s ease',
                       }}
                     >
-                      {entry.label}
-                    </Typography>
-                  </Stack>
+                      {entry.key === 'all' || entry.key === 'basic' ? (
+                        <Box
+                          sx={{
+                            width: 34,
+                            height: 32,
+                            borderRadius: '3px',
+                            border: `1px solid ${alpha(chromeText, 0.34)}`,
+                            background: alpha(chromeText, 0.08),
+                            display: 'grid',
+                            placeItems: 'center',
+                            flex: '0 0 auto',
+                            boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
+                          }}
+                        >
+                          {entry.key === 'all' ? (
+                            <Typography
+                              sx={{
+                                color: chromeText,
+                                fontFamily:
+                                  '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                                fontSize: '0.62rem',
+                                fontWeight: 900,
+                                letterSpacing: '0.04em',
+                                lineHeight: 1,
+                              }}
+                            >
+                              ALL
+                            </Typography>
+                          ) : (
+                            <SquareInSquare color={chromeText} size={20} />
+                          )}
+                        </Box>
+                      ) : (
+                        <ElementMark
+                          color={chromeText}
+                          label={entry.label.slice(0, 1)}
+                          src={entry.src ?? undefined}
+                          size={34}
+                          height={32}
+                        />
+                      )}
+                      <Typography
+                        sx={{
+                          color: chromeText,
+                          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                          fontSize: '0.58rem',
+                          fontWeight: 900,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {entry.label}
+                      </Typography>
+                    </Stack>
+                  );
+                })}
+              </Box>
+            </Box>
+            {/* Secondary filter row — proficiency level for the techniques list. */}
+            <FilterTabs
+              labels={['All', 'Learned', 'Practiced', 'Mastered']}
+              activeIndex={techFilter}
+              onChange={setTechFilter}
+            />
+            {visibleTechniques.map((tech) => {
+              const isBasic = tech.type === 'basic';
+              return (
+                <TechniqueAccordion
+                  key={tech.name}
+                  approach={tech.approach}
+                  name={tech.name}
+                  summary={tech.summary}
+                  description={tech.description}
+                  isBasic={isBasic}
+                  // src is only used when isBasic=false (image badge path).
+                  src={elementWater}
+                  techColor={isBasic ? ink : water}
+                />
+              );
+            })}
+            {visibleTechniques.length === 0 ? (
+              <Panel>
+                <Typography
+                  sx={{
+                    color: brownSoft,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.86rem',
+                    fontStyle: 'italic',
+                    lineHeight: 1.5,
+                    pt: 2,
+                    px: 2,
+                    pb: 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  No techniques of that type.
+                </Typography>
+              </Panel>
+            ) : null}
+          </>
+        ) : null}
+
+        {/* Statuses sub-tab: each status is a toggleable button — blue for
+          Positive, dark red for Negative. Empty / outlined by default,
+          filled when tapped. */}
+        {subTab === 1 ? (
+          <Panel>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9 }}>
+              <Stack spacing={1.2}>
+                <Typography
+                  sx={{
+                    color: alpha(brown, 0.7),
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.56rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  POSITIVE
+                </Typography>
+                {positiveStatuses.map((label) => (
+                  <StatusButton
+                    key={label}
+                    label={label}
+                    active={Boolean(activeStatuses[label])}
+                    activeColor={water}
+                    onToggle={() => toggleStatus(label)}
+                  />
+                ))}
+              </Stack>
+              <Stack spacing={1.2}>
+                <Typography
+                  sx={{
+                    color: passionRed,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.56rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  NEGATIVE
+                </Typography>
+                {negativeStatuses.map((label) => (
+                  <StatusButton
+                    key={label}
+                    label={label}
+                    active={Boolean(activeStatuses[label])}
+                    activeColor={negativeStatusColor}
+                    onToggle={() => toggleStatus(label)}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          </Panel>
+        ) : null}
+
+        {/* Conditions sub-tab — same toggleable button pattern as Statuses
+          and the Character tab's Conditions panel. Shared state via atom
+          means toggling here also reflects on the Character tab. */}
+        {subTab === 2 ? (
+          <Panel>
+            <Box
+              sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, rowGap: 1.2 }}
+            >
+              {conditions.map((label, index, all) => {
+                const lastSolo = index === all.length - 1 && all.length % 2 === 1;
+                return (
+                  <Box
+                    key={label}
+                    sx={
+                      lastSolo
+                        ? {
+                            gridColumn: '1 / -1',
+                            justifySelf: 'center',
+                            width: 'calc(50% - 4px)',
+                          }
+                        : undefined
+                    }
+                  >
+                    <StatusButton
+                      label={label}
+                      active={Boolean(activeConditions[label])}
+                      activeColor={conditionColor}
+                      onToggle={() => toggleCondition(label)}
+                    />
+                  </Box>
                 );
               })}
             </Box>
-          </Box>
-          {/* Secondary filter row — proficiency level for the techniques list. */}
-          <FilterTabs
-            labels={['All', 'Learned', 'Practiced', 'Mastered']}
-            activeIndex={techFilter}
-            onChange={setTechFilter}
-          />
-          {visibleTechniques.map((tech) => {
-            const isBasic = tech.type === 'basic';
-            return (
-              <TechniqueAccordion
-                key={tech.name}
-                approach={tech.approach}
-                name={tech.name}
-                summary={tech.summary}
-                description={tech.description}
-                isBasic={isBasic}
-                // src is only used when isBasic=false (image badge path).
-                src={elementWater}
-                techColor={isBasic ? ink : water}
+          </Panel>
+        ) : null}
+
+        {/* Inventory sub-tab — same live inventory list that appears in Backpack. */}
+        {subTab === 3 ? (
+          <>
+            {inventory.map((entry, index) => (
+              <BackpackCard
+                key={index}
+                entry={entry}
+                onUpdate={(next) => updateInventoryItem(index, next)}
+                onRequestDelete={() => setPendingInventoryDelete(index)}
               />
-            );
-          })}
-          {visibleTechniques.length === 0 ? (
-            <Panel>
-              <Typography
-                sx={{
-                  color: brownSoft,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.86rem',
-                  fontStyle: 'italic',
-                  lineHeight: 1.5,
-                  pt: 2,
-                  px: 2,
-                  pb: 2,
-                  textAlign: 'center',
-                }}
-              >
-                No techniques of that type.
-              </Typography>
-            </Panel>
-          ) : null}
-        </>
-      ) : null}
-
-      {/* Statuses sub-tab: each status is a toggleable button — blue for
-          Positive, dark red for Negative. Empty / outlined by default,
-          filled when tapped. */}
-      {subTab === 1 ? (
-        <Panel>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9 }}>
-            <Stack spacing={1.2}>
-              <Typography
-                sx={{
-                  color: alpha(brown, 0.7),
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.56rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.12em',
-                }}
-              >
-                POSITIVE
-              </Typography>
-              {positiveStatuses.map((label) => (
-                <StatusButton
-                  key={label}
-                  label={label}
-                  active={Boolean(activeStatuses[label])}
-                  activeColor={water}
-                  onToggle={() => toggleStatus(label)}
-                />
-              ))}
-            </Stack>
-            <Stack spacing={1.2}>
-              <Typography
-                sx={{
-                  color: passionRed,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.56rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.12em',
-                }}
-              >
-                NEGATIVE
-              </Typography>
-              {negativeStatuses.map((label) => (
-                <StatusButton
-                  key={label}
-                  label={label}
-                  active={Boolean(activeStatuses[label])}
-                  activeColor={negativeStatusColor}
-                  onToggle={() => toggleStatus(label)}
-                />
-              ))}
-            </Stack>
-          </Box>
-        </Panel>
-      ) : null}
-
-      {/* Conditions sub-tab — same toggleable button pattern as Statuses
-          and the Character tab's Conditions panel. Shared state via atom
-          means toggling here also reflects on the Character tab. */}
-      {subTab === 2 ? (
-        <Panel>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, rowGap: 1.2 }}>
-            {conditions.map((label, index, all) => {
-              const lastSolo = index === all.length - 1 && all.length % 2 === 1;
-              return (
-                <Box
-                  key={label}
-                  sx={
-                    lastSolo
-                      ? {
-                          gridColumn: '1 / -1',
-                          justifySelf: 'center',
-                          width: 'calc(50% - 4px)',
-                        }
-                      : undefined
-                  }
+            ))}
+            {inventory.length === 0 ? (
+              <Panel noNotch>
+                <Typography
+                  sx={{
+                    color: brownSoft,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.86rem',
+                    lineHeight: 1.5,
+                    fontStyle: 'italic',
+                    pt: 2,
+                    px: 2,
+                    pb: 2,
+                    textAlign: 'center',
+                  }}
                 >
-                  <StatusButton
-                    label={label}
-                    active={Boolean(activeConditions[label])}
-                    activeColor={conditionColor}
-                    onToggle={() => toggleCondition(label)}
-                  />
-                </Box>
-              );
-            })}
-          </Box>
-        </Panel>
-      ) : null}
-
-      {/* Inventory sub-tab — placeholder; the full inventory lives on Backpack */}
-      {subTab === 3 ? (
-        <Panel>
-          <Typography
-            sx={{
-              color: brownSoft,
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.86rem',
-              lineHeight: 1.5,
-              fontStyle: 'italic',
-              pt: 2,
-              px: 2,
-              pb: 2,
-            }}
-          >
-            Carried items appear under the Backpack tab's Inventory section.
-          </Typography>
-        </Panel>
-      ) : null}
-    </Stack>
+                  No inventory yet.
+                </Typography>
+              </Panel>
+            ) : null}
+          </>
+        ) : null}
+      </Stack>
+      <AvatarLegendsConfirmDialog
+        open={pendingInventoryDelete !== null}
+        onCancel={() => setPendingInventoryDelete(null)}
+        onConfirm={deleteInventoryItem}
+      />
+    </>
   );
 }
 
@@ -2961,19 +3087,8 @@ function BackpackCard({
     setEditingField(null);
   }
 
-  // When expanded, show edit-only action; when collapsed, show delete + edit
   const swipeActions = open
-    ? [
-        {
-          icon: <Pencil size={18} />,
-          color: bookAccent,
-          ariaLabel: 'Edit description',
-          onClick: () => {
-            setDraftDescription(entry.description);
-            setEditingField('description');
-          },
-        },
-      ]
+    ? []
     : [
         {
           icon: <Trash2 size={18} />,
@@ -2992,6 +3107,17 @@ function BackpackCard({
           },
         },
       ];
+  const descriptionSwipeActions = [
+    {
+      icon: <Pencil size={18} />,
+      color: bookAccent,
+      ariaLabel: 'Edit description',
+      onClick: () => {
+        setDraftDescription(entry.description);
+        setEditingField('description');
+      },
+    },
+  ];
 
   return (
     <SwipeableCard actions={swipeActions}>
@@ -3093,46 +3219,56 @@ function BackpackCard({
                   borderTop: `1px solid ${alpha(border, 0.5)}`,
                 }}
               />
-              {editingField === 'description' ? (
-                <InputBase
-                  value={draftDescription}
-                  autoFocus
-                  multiline
-                  maxRows={6}
-                  onChange={(e) => setDraftDescription(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.ctrlKey) commitEdit();
-                    if (e.key === 'Escape') cancelEdit();
-                  }}
-                  onBlur={commitEdit}
+              <SwipeableCard actions={descriptionSwipeActions} borderRadius="4px">
+                <Box
                   sx={{
-                    width: '100%',
-                    color: brown,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.86rem',
-                    lineHeight: 1.5,
-                    pt: 2,
-                    px: 2,
-                    pb: 2,
-                    boxSizing: 'border-box',
-                    '& textarea': { p: 0 },
-                  }}
-                />
-              ) : (
-                <Typography
-                  sx={{
-                    color: brown,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.86rem',
-                    lineHeight: 1.5,
-                    pt: 2,
-                    px: 2,
-                    pb: 2,
+                    border: `1px solid ${alpha(border, 0.6)}`,
+                    borderRadius: '4px',
+                    bgcolor: alpha(parchmentLight, 0.72),
                   }}
                 >
-                  {entry.description}
-                </Typography>
-              )}
+                  {editingField === 'description' ? (
+                    <InputBase
+                      value={draftDescription}
+                      autoFocus
+                      multiline
+                      maxRows={6}
+                      onChange={(e) => setDraftDescription(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.ctrlKey) commitEdit();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                      onBlur={commitEdit}
+                      sx={{
+                        width: '100%',
+                        color: brown,
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                        pt: 2,
+                        px: 2,
+                        pb: 2,
+                        boxSizing: 'border-box',
+                        '& textarea': { p: 0 },
+                      }}
+                    />
+                  ) : (
+                    <Typography
+                      sx={{
+                        color: brown,
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                        pt: 2,
+                        px: 2,
+                        pb: 2,
+                      }}
+                    >
+                      {entry.description}
+                    </Typography>
+                  )}
+                </Box>
+              </SwipeableCard>
             </>
           ) : null}
         </Stack>
@@ -3169,8 +3305,8 @@ function FatigueCard({
   }
 
   function confirmEdit() {
-    const newBaseCapacity = Math.max(0, Math.floor(draftBaseCapacity));
-    const newTempCapacity = Math.max(0, Math.floor(draftTempCapacity));
+    const newBaseCapacity = Math.max(0, Math.min(10, Math.floor(draftBaseCapacity)));
+    const newTempCapacity = Math.max(0, Math.min(10, Math.floor(draftTempCapacity)));
     const newBase = [
       ...baseFatigue.slice(0, newBaseCapacity),
       ...Array(Math.max(0, newBaseCapacity - baseFatigue.length)).fill(false),
@@ -3231,7 +3367,7 @@ function FatigueCard({
                   <FatigueDiamond
                     key={`temp-${index}`}
                     filled={filled}
-                    color={accent}
+                    color={tempFatigueGold}
                     size={28}
                     ariaLabel={`Toggle temporary fatigue ${index + 1}`}
                     onToggle={() => toggleTempFatigue(index)}
@@ -3277,65 +3413,19 @@ function FatigueCard({
             Edit Fatigue Capacity
           </Typography>
 
-          <Stack spacing={0.6}>
-            <Typography
-              sx={{
-                fontSize: '0.74rem',
-                fontWeight: 800,
-                color: brownSoft,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              Base Capacity
-            </Typography>
-            <InputBase
-              type="number"
-              inputProps={{ min: 0, max: 20 }}
-              value={draftBaseCapacity}
-              onChange={(e) => setDraftBaseCapacity(Math.max(0, parseInt(e.target.value) || 0))}
-              sx={{
-                minHeight: 40,
-                borderRadius: '8px',
-                border: `1px solid ${border}`,
-                bgcolor: parchmentLight,
-                color: ink,
-                px: 1.2,
-                fontSize: '0.86rem',
-                '& input': { p: 0, height: 40, textAlign: 'center' },
-              }}
-            />
-          </Stack>
+          <CapacityPicker
+            label="Base Capacity"
+            value={draftBaseCapacity}
+            color={passionRed}
+            onChange={setDraftBaseCapacity}
+          />
 
-          <Stack spacing={0.6}>
-            <Typography
-              sx={{
-                fontSize: '0.74rem',
-                fontWeight: 800,
-                color: brownSoft,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-              }}
-            >
-              Temporary Capacity
-            </Typography>
-            <InputBase
-              type="number"
-              inputProps={{ min: 0, max: 20 }}
-              value={draftTempCapacity}
-              onChange={(e) => setDraftTempCapacity(Math.max(0, parseInt(e.target.value) || 0))}
-              sx={{
-                minHeight: 40,
-                borderRadius: '8px',
-                border: `1px solid ${border}`,
-                bgcolor: parchmentLight,
-                color: ink,
-                px: 1.2,
-                fontSize: '0.86rem',
-                '& input': { p: 0, height: 40, textAlign: 'center' },
-              }}
-            />
-          </Stack>
+          <CapacityPicker
+            label="Temporary Capacity"
+            value={draftTempCapacity}
+            color={tempFatigueGold}
+            onChange={setDraftTempCapacity}
+          />
 
           <Stack direction="row" gap={1} sx={{ pt: 1.2 }}>
             <Button
