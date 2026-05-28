@@ -12,6 +12,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { atom, useAtom, useAtomValue } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 import { Backpack, HandFist, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
@@ -422,7 +423,10 @@ const defaultCharacter: CharacterState = {
 
 /** Single source of truth for the active character. Every editable
  *  surface reads from / writes to this atom (often via a derived slice). */
-const characterStateAtom = atom<CharacterState>(defaultCharacter);
+const characterStateAtom = atomWithStorage<CharacterState>(
+  'avatar-legends-character',
+  defaultCharacter,
+);
 
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
  *  shape of the AL `CharacterState` changes in a breaking way.
