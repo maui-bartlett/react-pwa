@@ -2880,28 +2880,45 @@ function BackpackCard({
   onRequestDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editingField, setEditingField] = useState<'name' | 'description' | null>(null);
   const [draftName, setDraftName] = useState(entry.name);
+  const [draftDescription, setDraftDescription] = useState(entry.description);
 
   function commitEdit() {
-    const trimmed = draftName.trim();
-    if (trimmed && trimmed !== entry.name) onUpdate({ ...entry, name: trimmed });
-    setEditing(false);
+    if (editingField === 'name') {
+      const trimmed = draftName.trim();
+      if (trimmed && trimmed !== entry.name) onUpdate({ ...entry, name: trimmed });
+    } else if (editingField === 'description') {
+      const trimmed = draftDescription.trim();
+      if (trimmed !== entry.description) onUpdate({ ...entry, description: trimmed });
+    }
+    setEditingField(null);
   }
 
   function cancelEdit() {
-    setDraftName(entry.name);
-    setEditing(false);
+    if (editingField === 'name') setDraftName(entry.name);
+    else if (editingField === 'description') setDraftDescription(entry.description);
+    setEditingField(null);
   }
 
-  return (
-    <SwipeableCard
-      actions={[
+  // When expanded, show edit-only action; when collapsed, show delete + edit
+  const swipeActions = open
+    ? [
+        {
+          icon: <Pencil size={18} />,
+          color: bookAccent,
+          ariaLabel: 'Edit description',
+          onClick: () => {
+            setDraftDescription(entry.description);
+            setEditingField('description');
+          },
+        },
+      ]
+    : [
         {
           icon: <Trash2 size={18} />,
           color: '#7a2424',
           ariaLabel: 'Delete card',
-          // Keep the card swiped open while the confirm modal is up.
           closeOnClick: false,
           onClick: onRequestDelete,
         },
@@ -2911,18 +2928,20 @@ function BackpackCard({
           ariaLabel: 'Rename card',
           onClick: () => {
             setDraftName(entry.name);
-            setEditing(true);
+            setEditingField('name');
           },
         },
-      ]}
-    >
+      ];
+
+  return (
+    <SwipeableCard actions={swipeActions}>
       <Panel noNotch>
         <Stack spacing={0.5}>
           <Box
             component="button"
             type="button"
             onClick={() => {
-              if (editing) return;
+              if (editingField) return;
               setOpen((value) => !value);
             }}
             aria-expanded={open}
@@ -2942,8 +2961,6 @@ function BackpackCard({
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography
                 sx={{
-                  // Backpack eyebrows use the muted-gold bookAccent in
-                  // both themes to match the rulebook accent treatment.
                   color: bookAccent,
                   fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                   fontSize: '0.58rem',
@@ -2959,14 +2976,17 @@ function BackpackCard({
                   transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
                   transition: 'transform 0.2s ease',
                   color: alpha(ink, 0.8),
-                  fontSize: '0.95rem',
+                  fontSize: '1.4rem',
                   lineHeight: 1,
+                  mr: 1,
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
                 ›
               </Box>
             </Stack>
-            {editing ? (
+            {editingField === 'name' ? (
               <InputBase
                 value={draftName}
                 autoFocus
@@ -3010,18 +3030,46 @@ function BackpackCard({
                 sx={{
                   height: '1px',
                   background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
+                  borderTop: `1px solid ${alpha(border, 0.5)}`,
                 }}
               />
-              <Typography
-                sx={{
-                  color: brown,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.78rem',
-                  lineHeight: 1.5,
-                }}
-              >
-                {entry.description}
-              </Typography>
+              {editingField === 'description' ? (
+                <InputBase
+                  value={draftDescription}
+                  autoFocus
+                  multiline
+                  maxRows={6}
+                  onChange={(e) => setDraftDescription(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) commitEdit();
+                    if (e.key === 'Escape') cancelEdit();
+                  }}
+                  onBlur={commitEdit}
+                  sx={{
+                    width: '100%',
+                    color: brown,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.78rem',
+                    lineHeight: 1.5,
+                    pt: 2,
+                    pb: 2,
+                    '& textarea': { p: 0 },
+                  }}
+                />
+              ) : (
+                <Typography
+                  sx={{
+                    color: brown,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.78rem',
+                    lineHeight: 1.5,
+                    pt: 2,
+                    pb: 2,
+                  }}
+                >
+                  {entry.description}
+                </Typography>
+              )}
             </>
           ) : null}
         </Stack>
