@@ -162,7 +162,6 @@ let border = lightAvPalette.border;
 // reading and re-applying it through the swap below.
 let _ember = lightAvPalette.ember;
 void _ember;
-let gold = lightAvPalette.gold;
 let passionRed = lightAvPalette.passionRed;
 let attackRed = lightAvPalette.attackRed;
 let accent = lightAvPalette.accent;
@@ -251,17 +250,17 @@ const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 
 // ---------- Character data shapes ----------
 type Connection = { name: string; role: string; note: string };
-type JournalEntry = { type: string; title: string; body: string };
+type JournalEntry = { type: string; name: string; description: string };
 type Technique = {
   /** Elemental category (water / earth / fire / air / martial / tech /
    *  basic). Renamed from `element` -> `type` to keep the AL technique
    *  vocabulary aligned with the rulebook layout. */
   type: TechniqueElement;
-  category: TechniqueCategory;
+  approach: TechniqueCategory;
   level: TechniqueLevel;
-  title: string;
+  name: string;
   summary: string;
-  body: string;
+  description: string;
 };
 
 /**
@@ -338,75 +337,81 @@ const defaultCharacter: CharacterState = {
   techniques: [
     {
       type: 'water',
-      category: 'Advance & Attack',
+      approach: 'Advance & Attack',
       level: 'mastered',
-      title: 'Stream the Water',
+      name: 'Stream the Water',
       summary: 'Push a jet stream from a significant source to inflict fatigue.',
-      body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
+      description:
+        'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
     },
     {
       type: 'water',
-      category: 'Defend & Maneuver',
+      approach: 'Defend & Maneuver',
       level: 'learned',
-      title: 'Flow as Water',
+      name: 'Flow as Water',
       summary: 'Use a jet of water to move quickly and shift position.',
-      body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
+      description:
+        'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
     },
     {
       type: 'water',
-      category: 'Evade & Observe',
+      approach: 'Evade & Observe',
       level: 'mastered',
-      title: 'Refresh',
+      name: 'Refresh',
       summary: 'Clear conditions and keep an ally steady under pressure.',
-      body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
+      description:
+        'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
     },
     {
       type: 'water',
-      category: 'Advance & Attack',
+      approach: 'Advance & Attack',
       level: 'learned',
-      title: 'Water Jab',
+      name: 'Water Jab',
       summary: 'Surround your fist in water and strike from unexpected angles.',
-      body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
+      description:
+        'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
     },
     {
       type: 'basic',
-      category: 'Advance & Attack',
+      approach: 'Advance & Attack',
       level: 'learned',
-      title: 'Smash',
+      name: 'Smash',
       summary: 'Drive a heavy blow through your target to bypass their guard.',
-      body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
+      description:
+        'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
     },
     {
       type: 'basic',
-      category: 'Defend & Maneuver',
+      approach: 'Defend & Maneuver',
       level: 'learned',
-      title: 'Pounce',
+      name: 'Pounce',
       summary: 'Close the gap on a target with sudden speed.',
-      body: "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
+      description:
+        "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
     },
   ],
   inventory: [
     {
       type: 'Item',
-      title: 'Messenger Bag',
-      body: 'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
+      name: 'Messenger Bag',
+      description: 'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
     },
   ],
   notes: [
     {
       type: 'Note',
-      title: "Rad's Notebook",
-      body: 'A worn notebook filled with themes about bending and identity.',
+      name: "Rad's Notebook",
+      description: 'A worn notebook filled with themes about bending and identity.',
     },
     {
       type: 'Important NPC',
-      title: 'Professor Zei',
-      body: "Head of Bending Theory at UoE. Believes in Rad's potential.",
+      name: 'Professor Zei',
+      description: "Head of Bending Theory at UoE. Believes in Rad's potential.",
     },
     {
       type: 'Location',
-      title: 'The University of Elements',
-      body: 'A neutral sanctuary where benders from all nations study in peace.',
+      name: 'The University of Elements',
+      description: 'A neutral sanctuary where benders from all nations study in peace.',
     },
   ],
 };
@@ -417,8 +422,10 @@ const characterStateAtom = atom<CharacterState>(defaultCharacter);
 
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
  *  shape of the AL `CharacterState` changes in a breaking way.
- *  v2 (current): `age` is `number`, technique key is `type` (was `element`). */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 2;
+ *  v2: `age` is `number`, technique key is `type` (was `element`).
+ *  v3 (current): Technique.category renamed to approach, title→name, body→description.
+ *               JournalEntry title→name, body→description. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 3;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -467,19 +474,60 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
             : typeof legacyElement === 'string'
               ? (legacyElement as TechniqueElement)
               : 'basic';
-        // Strip the legacy `element` key so it doesn't survive on
-        // the new Technique shape.
+        // Migrate v2→v3: rename category→approach, title→name, body→description
+        const nextName =
+          typeof tech.name === 'string' ? tech.name : (tech as { title?: unknown }).title;
+        const nextApproach =
+          typeof tech.approach === 'string'
+            ? tech.approach
+            : (tech as { category?: unknown }).category;
+        const nextDescription =
+          typeof tech.description === 'string'
+            ? tech.description
+            : (tech as { body?: unknown }).body;
+        // Strip legacy keys
         const rest: Record<string, unknown> = { ...tech };
         delete rest.element;
-        return { ...rest, type: nextType } as Technique;
+        delete rest.title;
+        delete rest.body;
+        delete rest.category;
+        return {
+          ...rest,
+          type: nextType,
+          name: nextName,
+          approach: nextApproach,
+          description: nextDescription,
+        } as Technique;
       })
     : defaultCharacter.techniques;
+
+  // Migrate v2→v3: rename inventory and notes items' title→name, body→description
+  const migrateJournalEntries = (entries: unknown) => {
+    if (!Array.isArray(entries)) return undefined;
+    return (entries as Array<Record<string, unknown>>).map((entry) => {
+      const nextName =
+        typeof entry.name === 'string' ? entry.name : (entry as { title?: unknown }).title;
+      const nextDescription =
+        typeof entry.description === 'string'
+          ? entry.description
+          : (entry as { body?: unknown }).body;
+      const rest: Record<string, unknown> = { ...entry };
+      delete rest.title;
+      delete rest.body;
+      return { ...rest, name: nextName, description: nextDescription };
+    });
+  };
+
+  const inventory = migrateJournalEntries(innerCandidate.inventory) ?? defaultCharacter.inventory;
+  const notes = migrateJournalEntries(innerCandidate.notes) ?? defaultCharacter.notes;
 
   return {
     ...defaultCharacter,
     ...(innerCandidate as Partial<CharacterState>),
     age,
     techniques,
+    inventory,
+    notes,
   };
 }
 
@@ -1289,11 +1337,9 @@ function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number 
     >
       <polygon
         points="12,2 22,12 12,22 2,12"
-        // Fatigue pips paint in the dark-red accent (`gold` — the diamond
-        // bullet / hairline divider color) instead of deep-ink so they pop
-        // on both light parchment and dark surfaces.
-        fill={filled ? gold : 'none'}
-        stroke={gold}
+        // Fatigue pips use passionRed to match the Passion stat label color
+        fill={filled ? passionRed : 'none'}
+        stroke={passionRed}
         strokeWidth={1.5}
         strokeLinejoin="round"
       />
@@ -2207,23 +2253,23 @@ function MovesPane() {
 }
 
 /**
- * Expandable Technique card. Collapsed: shows the element badge, title,
+ * Expandable Technique card. Collapsed: shows the element badge, name,
  * and summary line, with the fatigue indicator on the right. Expanded:
  * appends the full description text below the row.
  */
 function TechniqueAccordion({
-  category,
-  title,
+  approach,
+  name,
   summary,
-  body,
+  description,
   src,
   techColor,
   isBasic = false,
 }: {
-  category: TechniqueCategory;
-  title: string;
+  approach: TechniqueCategory;
+  name: string;
   summary: string;
-  body: string;
+  description: string;
   src: string;
   techColor: string;
   /**
@@ -2233,7 +2279,7 @@ function TechniqueAccordion({
   isBasic?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const categoryColor = techniqueCategoryColor(category);
+  const categoryColor = techniqueCategoryColor(approach);
   return (
     <Panel>
       <Stack spacing={0.5}>
@@ -2278,7 +2324,7 @@ function TechniqueAccordion({
             <ElementMark color={techColor} src={src} size={36} height={34} />
           )}
           <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
-            {/* Category eyebrow — color keyed to the technique's category. */}
+            {/* Approach eyebrow — color keyed to the technique's approach. */}
             <Typography
               sx={{
                 color: categoryColor,
@@ -2290,7 +2336,7 @@ function TechniqueAccordion({
                 lineHeight: 1,
               }}
             >
-              {category}
+              {approach}
             </Typography>
             <Typography
               sx={{
@@ -2303,7 +2349,7 @@ function TechniqueAccordion({
                 lineHeight: 1.1,
               }}
             >
-              {title}
+              {name}
             </Typography>
             <Typography
               sx={{
@@ -2372,7 +2418,7 @@ function TechniqueAccordion({
                 lineHeight: 1.5,
               }}
             >
-              {body}
+              {description}
             </Typography>
           </>
         ) : null}
@@ -2398,7 +2444,7 @@ function CombatPane() {
     { key: 'earth', label: 'Earth', color: earth, src: elementEarth },
     { key: 'fire', label: 'Fire', color: fire, src: elementFire },
     { key: 'air', label: 'Air', color: air, src: elementAir },
-    { key: 'martial', label: 'Martial', color: martial, src: elementMartial },
+    { key: 'martial', label: 'Weapons', color: martial, src: elementMartial },
     { key: 'tech', label: 'Tech', color: tech, src: elementTech },
   ];
   const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
@@ -2583,11 +2629,11 @@ function CombatPane() {
             const isBasic = tech.type === 'basic';
             return (
               <TechniqueAccordion
-                key={tech.title}
-                category={tech.category}
-                title={tech.title}
+                key={tech.name}
+                approach={tech.approach}
+                name={tech.name}
                 summary={tech.summary}
-                body={tech.body}
+                description={tech.description}
                 isBasic={isBasic}
                 // src is only used when isBasic=false (image badge path).
                 src={elementWater}
@@ -2629,7 +2675,7 @@ function CombatPane() {
             <Stack spacing={1.2}>
               <Typography
                 sx={{
-                  color: gold,
+                  color: passionRed,
                   fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                   fontSize: '0.56rem',
                   fontWeight: 900,
@@ -2643,7 +2689,7 @@ function CombatPane() {
                   key={label}
                   label={label}
                   active={Boolean(activeStatuses[label])}
-                  activeColor={gold}
+                  activeColor={passionRed}
                   onToggle={() => toggleStatus(label)}
                 />
               ))}
@@ -2820,7 +2866,7 @@ function ConnectionsSection() {
  * Editable swipe-to-delete card for both the Backpack > Notes and the
  * Backpack > Inventory lists. Same FabU-style swipe gesture as the
  * AccountMenu rows: drag left to reveal Delete (red, left) and Edit
- * (muted-gold accent, right). Edit pencils in an inline title input;
+ * (muted-gold accent, right). Edit pencils in an inline name input;
  * Delete stages a confirm dialog. Tapping the card body still
  * expands the description like the original NoteAccordion did.
  */
@@ -2829,22 +2875,22 @@ function BackpackCard({
   onUpdate,
   onRequestDelete,
 }: {
-  entry: { type: string; title: string; body: string };
-  onUpdate: (next: { type: string; title: string; body: string }) => void;
+  entry: { type: string; name: string; description: string };
+  onUpdate: (next: { type: string; name: string; description: string }) => void;
   onRequestDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [draftTitle, setDraftTitle] = useState(entry.title);
+  const [draftName, setDraftName] = useState(entry.name);
 
   function commitEdit() {
-    const trimmed = draftTitle.trim();
-    if (trimmed && trimmed !== entry.title) onUpdate({ ...entry, title: trimmed });
+    const trimmed = draftName.trim();
+    if (trimmed && trimmed !== entry.name) onUpdate({ ...entry, name: trimmed });
     setEditing(false);
   }
 
   function cancelEdit() {
-    setDraftTitle(entry.title);
+    setDraftName(entry.name);
     setEditing(false);
   }
 
@@ -2864,7 +2910,7 @@ function BackpackCard({
           color: bookAccent,
           ariaLabel: 'Rename card',
           onClick: () => {
-            setDraftTitle(entry.title);
+            setDraftName(entry.name);
             setEditing(true);
           },
         },
@@ -2922,9 +2968,9 @@ function BackpackCard({
             </Stack>
             {editing ? (
               <InputBase
-                value={draftTitle}
+                value={draftName}
                 autoFocus
-                onChange={(e) => setDraftTitle(e.target.value)}
+                onChange={(e) => setDraftName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') commitEdit();
                   if (e.key === 'Escape') cancelEdit();
@@ -2954,7 +3000,7 @@ function BackpackCard({
                   lineHeight: 1.1,
                 }}
               >
-                {entry.title}
+                {entry.name}
               </Typography>
             )}
           </Box>
@@ -2974,7 +3020,7 @@ function BackpackCard({
                   lineHeight: 1.5,
                 }}
               >
-                {entry.body}
+                {entry.description}
               </Typography>
             </>
           ) : null}
@@ -3088,21 +3134,24 @@ function BackpackPane() {
   } | null>(null);
 
   function addNote() {
-    setNotes((prev) => [...prev, { type: 'Note', title: 'New Note', body: 'Add a note here.' }]);
+    setNotes((prev) => [
+      ...prev,
+      { type: 'Note', name: 'New Note', description: 'Add a note here.' },
+    ]);
   }
 
   function addItem() {
     setInventory((prev) => [
       ...prev,
-      { type: 'Item', title: 'New Item', body: 'Add a description here.' },
+      { type: 'Item', name: 'New Item', description: 'Add a description here.' },
     ]);
   }
 
-  function updateNote(index: number, next: { type: string; title: string; body: string }) {
+  function updateNote(index: number, next: { type: string; name: string; description: string }) {
     setNotes((prev) => prev.map((entry, i) => (i === index ? next : entry)));
   }
 
-  function updateItem(index: number, next: { type: string; title: string; body: string }) {
+  function updateItem(index: number, next: { type: string; name: string; description: string }) {
     setInventory((prev) => prev.map((entry, i) => (i === index ? next : entry)));
   }
 
@@ -3474,6 +3523,7 @@ function AvatarLegends() {
                 flex: 1,
                 overflowY: 'auto',
                 px: 1.25,
+                pt: 2.5,
                 // Reserve room at the bottom so the last bit of content
                 // scrolls up clear of the absolutely-positioned nav. Now
                 // tight to the actual nav height (no bristle band sits
@@ -3482,7 +3532,7 @@ function AvatarLegends() {
                 // Footer pb dropped by 8px (see below) — content reserve
                 // shrinks to match so the last row sits flush against the
                 // nav top.
-                pb: '76px',
+                pb: 'calc(76px + 20px)',
               }}
             >
               {activeTab === 'character' ? <CharacterPane /> : null}
