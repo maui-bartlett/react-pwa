@@ -515,7 +515,7 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
       const rest: Record<string, unknown> = { ...entry };
       delete rest.title;
       delete rest.body;
-      return { ...rest, name: nextName, description: nextDescription };
+      return { ...rest, name: nextName, description: nextDescription } as JournalEntry;
     });
   };
 
