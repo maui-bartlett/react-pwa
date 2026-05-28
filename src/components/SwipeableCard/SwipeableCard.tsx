@@ -160,6 +160,8 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
           transition: swiping ? 'none' : 'transform 0.22s ease',
           touchAction: 'pan-y',
           userSelect: 'none',
+          // Add drop shadow to right edge when card is swiped open
+          boxShadow: cardOpen ? '4px 0 12px rgba(0,0,0,0.3)' : 'none',
         }}
         onClick={() => {
           // Tapping the card surface while open closes it. Open cards
