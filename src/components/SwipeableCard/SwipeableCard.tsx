@@ -100,6 +100,7 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
       ? `${borderRadius}px 0 0 ${borderRadius}px`
       : `${borderRadius} 0 0 ${borderRadius}`
     : borderRadius;
+  const edgeShadowVisible = visibleActions.length > 0 && visualX < 0;
 
   return (
     <Box
@@ -160,8 +161,10 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
           transition: swiping ? 'none' : 'transform 0.22s ease',
           touchAction: 'pan-y',
           userSelect: 'none',
-          // Add drop shadow to right edge when card is swiped open
-          boxShadow: cardOpen ? '4px 0 12px rgba(0,0,0,0.3)' : 'none',
+          borderTopRightRadius: cardOpen ? 0 : borderRadius,
+          borderBottomRightRadius: cardOpen ? 0 : borderRadius,
+          // Right-edge shadow sits just left of the revealed actions.
+          boxShadow: edgeShadowVisible ? '6px 0 12px rgba(0,0,0,0.28)' : 'none',
         }}
         onClick={() => {
           // Tapping the card surface while open closes it. Open cards
