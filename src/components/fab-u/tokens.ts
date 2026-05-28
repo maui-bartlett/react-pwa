@@ -187,12 +187,15 @@ const avatarLightTokens: FabUTokens = {
 const avatarDarkTokens: FabUTokens = {
   isDark: true,
   color: {
-    page: '#060a11', // deepest body, sits a step below surface
-    canvas: '#0c131c', // AL parchment (cards)
-    surface: '#0c131c',
-    surfaceCard: '#0c131c',
-    pillSurface: '#111a24', // AL deepInk — header / footer chrome band
-    surfaceMuted: '#0c131c',
+    // All chrome surfaces unify on the AL header / footer navy
+    // (#111a24) so the profile modal blends with the rest of the AL
+    // dark chrome instead of reading as a separate slate-blue panel.
+    page: '#111a24',
+    canvas: '#111a24',
+    surface: '#111a24',
+    surfaceCard: '#111a24',
+    pillSurface: '#111a24',
+    surfaceMuted: '#111a24',
     border: '#2d3947', // subtle slate-blue
     textPrimary: '#eff2f8', // AL ink (near-white)
     textSecondary: '#c3ccd9', // AL brownSoft

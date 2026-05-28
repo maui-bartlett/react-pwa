@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
+import Dialog from '@mui/material/Dialog';
+import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { atom, useAtom, useAtomValue } from 'jotai';
-import { Backpack, HandFist } from 'lucide-react';
+import { Backpack, HandFist, Pencil, Trash2 } from 'lucide-react';
 
+import { SwipeableCard } from '@/components/SwipeableCard';
 import AccountSettings from '@/sections/AccountSettings';
 import { createCharacterHistory } from '@/state/createCharacterHistory';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
@@ -151,7 +155,12 @@ let deepInk = lightAvPalette.deepInk;
 let brown = lightAvPalette.brown;
 let brownSoft = lightAvPalette.brownSoft;
 let border = lightAvPalette.border;
-let ember = lightAvPalette.ember;
+// `ember` is currently unreferenced (Backpack + class-name eyebrows
+// were migrated to `bookAccent`), but the palette field stays around
+// for future warm-accent surfaces. Suppress the unused-let warning by
+// reading and re-applying it through the swap below.
+let _ember = lightAvPalette.ember;
+void _ember;
 let gold = lightAvPalette.gold;
 let passionRed = lightAvPalette.passionRed;
 let attackRed = lightAvPalette.attackRed;
@@ -169,7 +178,7 @@ function applyAvatarPalette(isDarkMode: boolean) {
   brown = next.brown;
   brownSoft = next.brownSoft;
   border = next.border;
-  ember = next.ember;
+  _ember = next.ember;
   gold = next.gold;
   passionRed = next.passionRed;
   attackRed = next.attackRed;
@@ -561,6 +570,8 @@ const activeConditionsAtom = sliceAtom('conditions');
 const fatigueAtom = sliceAtom('fatigue');
 const backgroundsAtom = sliceAtom('backgrounds');
 const historyAnswersAtom = sliceAtom('historyAnswers');
+const notesAtom = sliceAtom('notes');
+const inventoryAtom = sliceAtom('inventory');
 
 // Each move card carries its title and the full body text shown when
 // the accordion expands. Some moves also have a bulleted list of
@@ -2082,7 +2093,9 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
           {/* `ink` resolves to near-white in dark mode so the diamond
               pops on the dark Moves card; in light mode it stays a
               deep dark-blue, visually identical to the prior shade. */}
-          <MoveDiamond color={ink} size={18} />
+          {/* Moves diamond uses the muted-gold bookAccent so it reads
+              as the rulebook chapter-heading color in both themes. */}
+          <MoveDiamond color={bookAccent} size={18} />
           <Typography
             sx={{
               flex: 1,
@@ -2803,103 +2816,326 @@ function ConnectionsSection() {
 }
 
 /**
- * Expandable note card for the Backpack > Notes sub-tab. Collapsed: type
- * eyebrow + title + chevron. Expanded: appends the body text below.
+ * Editable swipe-to-delete card for both the Backpack > Notes and the
+ * Backpack > Inventory lists. Same FabU-style swipe gesture as the
+ * AccountMenu rows: drag left to reveal Delete (red, left) and Edit
+ * (muted-gold accent, right). Edit pencils in an inline title input;
+ * Delete stages a confirm dialog. Tapping the card body still
+ * expands the description like the original NoteAccordion did.
  */
-function NoteAccordion({ type, title, body }: { type: string; title: string; body: string }) {
+function BackpackCard({
+  entry,
+  onUpdate,
+  onRequestDelete,
+}: {
+  entry: { type: string; title: string; body: string };
+  onUpdate: (next: { type: string; title: string; body: string }) => void;
+  onRequestDelete: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(entry.title);
+
+  function commitEdit() {
+    const trimmed = draftTitle.trim();
+    if (trimmed && trimmed !== entry.title) onUpdate({ ...entry, title: trimmed });
+    setEditing(false);
+  }
+
+  function cancelEdit() {
+    setDraftTitle(entry.title);
+    setEditing(false);
+  }
+
   return (
-    // Backpack > Notes cards use the plain rectangular Panel — no notches.
-    <Panel noNotch>
-      <Stack spacing={0.5}>
-        <Box
-          component="button"
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-expanded={open}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            width: '100%',
-            gap: 0.4,
-            p: 0,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            textAlign: 'left',
-          }}
-        >
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography
-              sx={{
-                color: ember,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.58rem',
-                fontWeight: 900,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {type}
-            </Typography>
-            <Box
-              sx={{
-                transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease',
-                color: alpha(ink, 0.8),
-                fontSize: '0.95rem',
-                lineHeight: 1,
-              }}
-            >
-              ›
-            </Box>
-          </Stack>
-          <Typography
+    <SwipeableCard
+      actions={[
+        {
+          icon: <Trash2 size={18} />,
+          color: '#7a2424',
+          ariaLabel: 'Delete card',
+          // Keep the card swiped open while the confirm modal is up.
+          closeOnClick: false,
+          onClick: onRequestDelete,
+        },
+        {
+          icon: <Pencil size={18} />,
+          color: bookAccent,
+          ariaLabel: 'Rename card',
+          onClick: () => {
+            setDraftTitle(entry.title);
+            setEditing(true);
+          },
+        },
+      ]}
+    >
+      <Panel noNotch>
+        <Stack spacing={0.5}>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => {
+              if (editing) return;
+              setOpen((value) => !value);
+            }}
+            aria-expanded={open}
             sx={{
-              color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.98rem',
-              fontWeight: 900,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              lineHeight: 1.1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'stretch',
+              width: '100%',
+              gap: 0.4,
+              p: 0,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
             }}
           >
-            {title}
-          </Typography>
-        </Box>
-        {open ? (
-          <>
-            <Box
-              sx={{
-                height: '1px',
-                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
-              }}
-            />
-            <Typography
-              sx={{
-                color: brown,
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.78rem',
-                lineHeight: 1.5,
-              }}
-            >
-              {body}
-            </Typography>
-          </>
-        ) : null}
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography
+                sx={{
+                  // Backpack eyebrows use the muted-gold bookAccent in
+                  // both themes to match the rulebook accent treatment.
+                  color: bookAccent,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.58rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {entry.type}
+              </Typography>
+              <Box
+                sx={{
+                  transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease',
+                  color: alpha(ink, 0.8),
+                  fontSize: '0.95rem',
+                  lineHeight: 1,
+                }}
+              >
+                ›
+              </Box>
+            </Stack>
+            {editing ? (
+              <InputBase
+                value={draftTitle}
+                autoFocus
+                onChange={(e) => setDraftTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitEdit();
+                  if (e.key === 'Escape') cancelEdit();
+                }}
+                onBlur={commitEdit}
+                sx={{
+                  width: '100%',
+                  color: ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.98rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.1,
+                  '& input': { p: 0 },
+                }}
+              />
+            ) : (
+              <Typography
+                sx={{
+                  color: ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.98rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.1,
+                }}
+              >
+                {entry.title}
+              </Typography>
+            )}
+          </Box>
+          {open ? (
+            <>
+              <Box
+                sx={{
+                  height: '1px',
+                  background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
+                }}
+              />
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.78rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                {entry.body}
+              </Typography>
+            </>
+          ) : null}
+        </Stack>
+      </Panel>
+    </SwipeableCard>
+  );
+}
+
+/**
+ * Compact, theme-aware confirmation dialog used by the Backpack
+ * Note / Item delete flow. Avoids importing the fab-u
+ * ConfirmDeleteModal (which lives in a FabU tokens context the AL
+ * page doesn't provide) by inlining a tiny MUI Dialog here.
+ */
+function AvatarLegendsConfirmDialog({
+  open,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          bgcolor: parchment,
+          backgroundImage: 'none',
+          border: `1px solid ${border}`,
+          borderRadius: '14px',
+          p: 2.25,
+          m: 2,
+        },
+      }}
+    >
+      <Stack spacing={2.25}>
+        <Typography
+          sx={{
+            color: ink,
+            fontWeight: 700,
+            fontSize: '1.05rem',
+            lineHeight: 1.25,
+            textAlign: 'center',
+          }}
+        >
+          Are you sure you want to delete?
+        </Typography>
+        <Stack direction="row" spacing={1.25}>
+          <Button
+            onClick={onCancel}
+            fullWidth
+            variant="outlined"
+            sx={{
+              borderColor: border,
+              color: ink,
+              fontWeight: 700,
+              textTransform: 'none',
+              borderRadius: '10px',
+              py: 0.85,
+              '&:hover': { borderColor: brownSoft, bgcolor: 'transparent' },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onConfirm}
+            fullWidth
+            variant="contained"
+            sx={{
+              bgcolor: '#7a2424',
+              color: '#ffffff',
+              fontWeight: 700,
+              textTransform: 'none',
+              borderRadius: '10px',
+              py: 0.85,
+              boxShadow: 'none',
+              '&:hover': { bgcolor: '#7a2424', filter: 'brightness(0.92)' },
+            }}
+          >
+            Delete
+          </Button>
+        </Stack>
       </Stack>
-    </Panel>
+    </Dialog>
   );
 }
 
 function BackpackPane() {
   const [subTab, setSubTab] = useAtom(backpackSubTabAtom);
-  // Both lists come from the character record.
-  const character = useAtomValue(characterStateAtom);
-  const notes = character.notes;
-  const inventory = character.inventory;
+  const [notes, setNotes] = useAtom(notesAtom);
+  const [inventory, setInventory] = useAtom(inventoryAtom);
+  // Pending-delete state for the inline confirm dialog. Uniquely
+  // identifies a card by sub-tab + index because the underlying
+  // entries don't carry stable ids.
+  const [pendingDelete, setPendingDelete] = useState<{
+    list: 'notes' | 'inventory';
+    index: number;
+  } | null>(null);
+
+  function addNote() {
+    setNotes((prev) => [...prev, { type: 'Note', title: 'New Note', body: 'Add a note here.' }]);
+  }
+
+  function addItem() {
+    setInventory((prev) => [
+      ...prev,
+      { type: 'Item', title: 'New Item', body: 'Add a description here.' },
+    ]);
+  }
+
+  function updateNote(index: number, next: { type: string; title: string; body: string }) {
+    setNotes((prev) => prev.map((entry, i) => (i === index ? next : entry)));
+  }
+
+  function updateItem(index: number, next: { type: string; title: string; body: string }) {
+    setInventory((prev) => prev.map((entry, i) => (i === index ? next : entry)));
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    const { list, index } = pendingDelete;
+    setPendingDelete(null);
+    if (list === 'notes') {
+      setNotes((prev) => prev.filter((_, i) => i !== index));
+    } else {
+      setInventory((prev) => prev.filter((_, i) => i !== index));
+    }
+  }
+
+  // Shared style for the "+ X" add buttons at the bottom of each list.
+  const addButtonContent = (label: string) => (
+    <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
+      <Typography
+        sx={{
+          color: ink,
+          fontSize: '0.95rem',
+          fontWeight: 900,
+          fontFamily: 'Georgia, serif',
+        }}
+      >
+        +
+      </Typography>
+      <Typography
+        sx={{
+          color: ink,
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.78rem',
+          fontWeight: 900,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Typography>
+    </Stack>
+  );
 
   return (
     <Stack spacing={1}>
@@ -2909,94 +3145,59 @@ function BackpackPane() {
         onChange={setSubTab}
       />
 
-      {/* Notes sub-tab: expandable accordion cards */}
+      {/* Notes sub-tab: editable + deletable accordion cards. */}
       {subTab === 0 ? (
         <>
-          {notes.map(({ type, title, body }) => (
-            <NoteAccordion key={title} type={type} title={title} body={body} />
+          {notes.map((entry, index) => (
+            <BackpackCard
+              key={index}
+              entry={entry}
+              onUpdate={(next) => updateNote(index, next)}
+              onRequestDelete={() => setPendingDelete({ list: 'notes', index })}
+            />
           ))}
-          <Panel noNotch>
-            <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
-              <Typography
-                sx={{
-                  color: ink,
-                  fontSize: '0.95rem',
-                  fontWeight: 900,
-                  fontFamily: 'Georgia, serif',
-                }}
-              >
-                +
-              </Typography>
-              <Typography
-                sx={{
-                  color: ink,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.78rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                New Note
-              </Typography>
-            </Stack>
-          </Panel>
+          <Box
+            component="button"
+            type="button"
+            onClick={addNote}
+            sx={{
+              background: 'none',
+              border: 'none',
+              p: 0,
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <Panel noNotch>{addButtonContent('New Note')}</Panel>
+          </Box>
         </>
       ) : null}
 
-      {/* Inventory sub-tab: items live here. Currently just Messenger Bag. */}
+      {/* Inventory sub-tab — same swipe/edit/delete pattern + + Item. */}
       {subTab === 1 ? (
         <>
-          {inventory.map(({ type, title, body }) => (
-            <Panel key={title} noNotch>
-              <Stack spacing={0.5}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography
-                    sx={{
-                      color: ember,
-                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                      fontSize: '0.58rem',
-                      fontWeight: 900,
-                      letterSpacing: '0.14em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {type}
-                  </Typography>
-                  <MoveDiamond color={alpha(accent, 0.85)} size={8} />
-                </Stack>
-                <Typography
-                  sx={{
-                    color: ink,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.98rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    lineHeight: 1.1,
-                  }}
-                >
-                  {title}
-                </Typography>
-                <Box
-                  sx={{
-                    height: '1px',
-                    background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
-                  }}
-                />
-                <Typography
-                  sx={{
-                    color: brown,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.78rem',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {body}
-                </Typography>
-              </Stack>
-            </Panel>
+          {inventory.map((entry, index) => (
+            <BackpackCard
+              key={index}
+              entry={entry}
+              onUpdate={(next) => updateItem(index, next)}
+              onRequestDelete={() => setPendingDelete({ list: 'inventory', index })}
+            />
           ))}
+          <Box
+            component="button"
+            type="button"
+            onClick={addItem}
+            sx={{
+              background: 'none',
+              border: 'none',
+              p: 0,
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <Panel noNotch>{addButtonContent('Item')}</Panel>
+          </Box>
         </>
       ) : null}
 
@@ -3016,6 +3217,11 @@ function BackpackPane() {
           </Typography>
         </Panel>
       ) : null}
+      <AvatarLegendsConfirmDialog
+        open={pendingDelete !== null}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </Stack>
   );
 }
@@ -3303,6 +3509,13 @@ function AvatarLegends() {
                       onClick={() => setActiveTab(tab.value)}
                       disableRipple
                       disableTouchRipple
+                      focusRipple={false}
+                      // Use a non-button wrapper to skip the browser's
+                      // default tap behavior entirely (button elements
+                      // get a brief active/pressed state in some
+                      // engines that no amount of CSS overrides).
+                      component="div"
+                      role="button"
                       sx={{
                         flex: 1,
                         minWidth: 0,
@@ -3312,13 +3525,29 @@ function AvatarLegends() {
                         color: selected ? chromeText : alpha(chromeText, 0.55),
                         position: 'relative',
                         overflow: 'visible',
-                        // Suppress any active/focused transform so the icon
-                        // doesn't appear to jump on tap. The opacity
-                        // transition (selected vs unselected) is the only
-                        // visual feedback we want here.
-                        '&:active': { transform: 'none' },
-                        '&:focus': { outline: 'none' },
+                        // Suppress any active/focused/hover transform or
+                        // background change so the icon doesn't appear
+                        // to shift on tap. The opacity transition
+                        // (selected vs unselected) is the only visual
+                        // feedback we want here.
+                        transition: 'none !important',
+                        transform: 'none !important',
+                        '&:hover': {
+                          background: 'transparent',
+                          transform: 'none',
+                        },
+                        '&:active': {
+                          background: 'transparent',
+                          transform: 'none',
+                        },
+                        '&:focus, &:focus-visible': {
+                          outline: 'none',
+                          background: 'transparent',
+                          transform: 'none',
+                        },
                         WebkitTapHighlightColor: 'transparent',
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none',
                       }}
                     >
                       {/* Active indicator — solid dark-red pill at the top edge.
@@ -3337,7 +3566,10 @@ function AvatarLegends() {
                           // so dark red is reserved for semantic warnings.
                           background: selected ? accent : 'transparent',
                           boxShadow: selected ? `0 0 6px ${alpha(accent, 0.7)}` : 'none',
-                          transition: 'all 0.2s ease',
+                          // Animate only colour + shadow — `all`
+                          // could pull in implicit size/position
+                          // changes that read as a jump on tap.
+                          transition: 'background 0.2s ease, box-shadow 0.2s ease',
                         }}
                       />
                       {/* spacing=1.05 (~8.4px) — was 0.3 (~2.4px); +6px
