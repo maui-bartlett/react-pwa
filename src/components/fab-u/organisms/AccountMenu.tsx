@@ -147,13 +147,41 @@ function assertAuthSuccess(result: unknown) {
   }
 }
 
-function getCharacterDisplayName(character: { characterState?: unknown }) {
+/**
+ * Display-name resolver that knows about each app's `characterState`
+ * shape. Convex stores `characterState: v.any()` so AL and FabU rows
+ * coexist on one table; pick the formatter that matches the row's
+ * `meta.gameSystem`.
+ *
+ *   - avatar-legends: `characterState.character.name` is a plain string
+ *   - fabula-ultima:  `characterState.character.name` is
+ *     `{ firstName, lastName, nickName }`
+ */
+function getCharacterDisplayName(character: {
+  characterState?: unknown;
+  meta?: { gameSystem?: string };
+}) {
+  const system = character.meta?.gameSystem;
+  const state =
+    character.characterState && typeof character.characterState === 'object'
+      ? (character.characterState as { character?: unknown })
+      : null;
+  const inner =
+    state?.character && typeof state.character === 'object'
+      ? (state.character as Record<string, unknown>)
+      : null;
+
+  if (system === 'avatar-legends') {
+    const name = typeof inner?.name === 'string' ? inner.name.trim() : '';
+    return name || 'Unnamed character';
+  }
+  // FabU (and the default).
   try {
-    const state = deserializeCharacterFromBackend(character.characterState);
+    const fabUState = deserializeCharacterFromBackend(character.characterState);
     const nameParts = [
-      state.name.firstName,
-      state.name.nickName ? `"${state.name.nickName}"` : '',
-      state.name.lastName,
+      fabUState.name.firstName,
+      fabUState.name.nickName ? `"${fabUState.name.nickName}"` : '',
+      fabUState.name.lastName,
     ].filter(Boolean);
     return nameParts.join(' ').trim() || 'Unnamed character';
   } catch {
@@ -607,13 +635,18 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                             icon: <Trash2 size={18} />,
                             color: fabUTokens.color.danger,
                             ariaLabel: 'Delete character',
+                            // Keep the card swiped open while the
+                            // confirmation modal is showing.
+                            closeOnClick: false,
                             onClick: () => requestDelete('character', character._id),
                           },
                           {
                             icon: <Pencil size={18} />,
-                            // Mirror the FabU edit-channel green so the
-                            // gesture feels familiar across apps.
-                            color: fabUTokens.isDark ? '#3d7060' : '#4d8070',
+                            // Use the active app theme color — dark navy
+                            // for AL, green for FabU — so the edit
+                            // channel feels native to whichever app the
+                            // dialog is rendered against.
+                            color: fabUTokens.color.brand,
                             ariaLabel: 'Rename character',
                             onClick: () => beginEdit('character', character._id, displayName),
                           },
@@ -741,11 +774,12 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                             icon: <Trash2 size={18} />,
                             color: fabUTokens.color.danger,
                             ariaLabel: 'Delete campaign',
+                            closeOnClick: false,
                             onClick: () => requestDelete('campaign', item.campaign._id),
                           },
                           {
                             icon: <Pencil size={18} />,
-                            color: fabUTokens.isDark ? '#3d7060' : '#4d8070',
+                            color: fabUTokens.color.brand,
                             ariaLabel: 'Rename campaign',
                             onClick: () =>
                               beginEdit('campaign', item.campaign._id, item.campaign.name),
