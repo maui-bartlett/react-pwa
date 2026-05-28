@@ -1329,18 +1329,51 @@ function SquareInSquare({ color = ink, size = 36 }: { color?: string; size?: num
   );
 }
 
-function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number }) {
+function FatigueDiamond({
+  filled,
+  size = 14,
+  color = passionRed,
+  onToggle,
+  ariaLabel,
+}: {
+  filled: boolean;
+  size?: number;
+  color?: string;
+  onToggle?: () => void;
+  ariaLabel?: string;
+}) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+      onClick={onToggle}
+      role={onToggle ? 'button' : undefined}
+      tabIndex={onToggle ? 0 : undefined}
+      aria-label={ariaLabel}
+      aria-pressed={onToggle ? filled : undefined}
+      onKeyDown={
+        onToggle
+          ? (event: React.KeyboardEvent<SVGSVGElement>) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onToggle();
+              }
+            }
+          : undefined
+      }
+      sx={{
+        width: size,
+        height: size,
+        flex: '0 0 auto',
+        display: 'block',
+        cursor: onToggle ? 'pointer' : 'default',
+      }}
     >
       <polygon
         points="12,2 22,12 12,22 2,12"
-        // Fatigue pips use passionRed to match the Passion stat label color
-        fill={filled ? passionRed : 'none'}
-        stroke={passionRed}
+        // Base fatigue uses passionRed; temporary fatigue passes the blue accent.
+        fill={filled ? color : 'none'}
+        stroke={color}
         strokeWidth={1.5}
         strokeLinejoin="round"
       />
@@ -1509,7 +1542,7 @@ function ClassTraitAccordion({
           sx={{
             color: brown,
             fontFamily: 'Georgia, "Times New Roman", serif',
-            fontSize: '0.78rem',
+            fontSize: '0.86rem',
             lineHeight: 1.5,
             mt: 0.4,
           }}
@@ -2179,7 +2212,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.82rem',
+                fontSize: '0.86rem',
                 lineHeight: 1.5,
               }}
             >
@@ -2194,7 +2227,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                     sx={{
                       color: brown,
                       fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.82rem',
+                      fontSize: '0.86rem',
                       lineHeight: 1.45,
                       mb: 0.3,
                     }}
@@ -2209,7 +2242,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                 sx={{
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.82rem',
+                  fontSize: '0.86rem',
                   lineHeight: 1.5,
                 }}
               >
@@ -2411,8 +2444,10 @@ function TechniqueAccordion({
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.78rem',
+                fontSize: '0.86rem',
                 lineHeight: 1.5,
+                pt: 2,
+                pb: 2,
               }}
             >
               {description}
@@ -2467,8 +2502,8 @@ function CombatPane() {
     });
   }, [techniques, elementFilter, techFilter]);
   const [fatigue, setFatigue] = useAtom(fatigueAtom);
-  const [tempFatigue, setTempFatigue] = useState(0);
-  const updateFatigueCapacity = (base: boolean[], temp: number) => {
+  const [tempFatigue, setTempFatigue] = useState<boolean[]>([]);
+  const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
     setFatigue(base);
     setTempFatigue(temp);
   };
@@ -2723,7 +2758,7 @@ function CombatPane() {
             sx={{
               color: brownSoft,
               fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.78rem',
+              fontSize: '0.86rem',
               lineHeight: 1.5,
               fontStyle: 'italic',
             }}
@@ -2807,7 +2842,7 @@ function ConnectionsSection() {
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.78rem',
+                fontSize: '0.86rem',
                 lineHeight: 1.5,
               }}
             >
@@ -3033,7 +3068,7 @@ function BackpackCard({
                     width: '100%',
                     color: brown,
                     fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.78rem',
+                    fontSize: '0.86rem',
                     lineHeight: 1.5,
                     pt: 2,
                     pb: 2,
@@ -3045,7 +3080,7 @@ function BackpackCard({
                   sx={{
                     color: brown,
                     fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.78rem',
+                    fontSize: '0.86rem',
                     lineHeight: 1.5,
                     pt: 2,
                     pb: 2,
@@ -3065,8 +3100,8 @@ function BackpackCard({
 /**
  * Swipeable fatigue card with modal editor for base and temp capacities.
  * Base fatigue tracks mandatory damage; temp fatigue tracks additional
- * boxes from conditions or abilities. Temp diamonds render with an accent
- * outline to distinguish them visually.
+ * boxes from conditions or abilities. Temp diamonds use the same diamond
+ * shape as base fatigue and render in the Avatar accent blue.
  */
 function FatigueCard({
   baseFatigue,
@@ -3074,16 +3109,16 @@ function FatigueCard({
   onUpdate,
 }: {
   baseFatigue: boolean[];
-  tempFatigue: number;
-  onUpdate: (base: boolean[], temp: number) => void;
+  tempFatigue: boolean[];
+  onUpdate: (base: boolean[], temp: boolean[]) => void;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [draftBaseCapacity, setDraftBaseCapacity] = useState(baseFatigue.length);
-  const [draftTempCapacity, setDraftTempCapacity] = useState(tempFatigue);
+  const [draftTempCapacity, setDraftTempCapacity] = useState(tempFatigue.length);
 
   function openEditor() {
     setDraftBaseCapacity(baseFatigue.length);
-    setDraftTempCapacity(tempFatigue);
+    setDraftTempCapacity(tempFatigue.length);
     setModalOpen(true);
   }
 
@@ -3094,8 +3129,26 @@ function FatigueCard({
       ...baseFatigue.slice(0, newBaseCapacity),
       ...Array(Math.max(0, newBaseCapacity - baseFatigue.length)).fill(false),
     ];
-    onUpdate(newBase, newTempCapacity);
+    const newTemp = [
+      ...tempFatigue.slice(0, newTempCapacity),
+      ...Array(Math.max(0, newTempCapacity - tempFatigue.length)).fill(false),
+    ];
+    onUpdate(newBase, newTemp);
     setModalOpen(false);
+  }
+
+  function toggleBaseFatigue(index: number) {
+    onUpdate(
+      baseFatigue.map((filled, currentIndex) => (currentIndex === index ? !filled : filled)),
+      tempFatigue,
+    );
+  }
+
+  function toggleTempFatigue(index: number) {
+    onUpdate(
+      baseFatigue,
+      tempFatigue.map((filled, currentIndex) => (currentIndex === index ? !filled : filled)),
+    );
   }
 
   return (
@@ -3114,7 +3167,7 @@ function FatigueCard({
           <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
             <Stack spacing={0.3}>
               <SectionTitle>Fatigue</SectionTitle>
-              {tempFatigue > 0 ? (
+              {tempFatigue.length > 0 ? (
                 <Typography
                   sx={{
                     color: alpha(brown, 0.7),
@@ -3122,35 +3175,29 @@ function FatigueCard({
                     fontWeight: 600,
                   }}
                 >
-                  {baseFatigue.length} base + {tempFatigue} temp
+                  {baseFatigue.length} base + {tempFatigue.length} temp
                 </Typography>
               ) : null}
             </Stack>
             <Stack direction="row" gap={0.7}>
-              {Array.from({ length: baseFatigue.length }).map((_, index) => (
-                <FatigueDiamond key={`base-${index}`} filled={baseFatigue[index]} size={28} />
-              ))}
-              {Array.from({ length: tempFatigue }).map((_, index) => (
-                <Box
+              {tempFatigue.map((filled, index) => (
+                <FatigueDiamond
                   key={`temp-${index}`}
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <svg viewBox="0 0 14 14" width={14} height={14}>
-                    <polygon
-                      points="7,1 13,5 13,9 7,13 1,9 1,5"
-                      fill="none"
-                      stroke={accent}
-                      strokeWidth={1.5}
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </Box>
+                  filled={filled}
+                  color={accent}
+                  size={28}
+                  ariaLabel={`Toggle temporary fatigue ${index + 1}`}
+                  onToggle={() => toggleTempFatigue(index)}
+                />
+              ))}
+              {Array.from({ length: baseFatigue.length }).map((_, index) => (
+                <FatigueDiamond
+                  key={`base-${index}`}
+                  filled={baseFatigue[index]}
+                  size={28}
+                  ariaLabel={`Toggle base fatigue ${index + 1}`}
+                  onToggle={() => toggleBaseFatigue(index)}
+                />
               ))}
             </Stack>
           </Stack>
@@ -3516,7 +3563,7 @@ function BackpackPane() {
             sx={{
               color: brownSoft,
               fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.78rem',
+              fontSize: '0.86rem',
               lineHeight: 1.5,
               fontStyle: 'italic',
             }}
