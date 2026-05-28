@@ -17,7 +17,7 @@ const manifestBase = {
   background_color: '#111a24',
   display: 'standalone',
   orientation: 'portrait',
-  pwa_version: '2026.05.27.2',
+  pwa_version: '2026.05.27.3',
   icons: [
     { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
     { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
@@ -65,10 +65,8 @@ function DynamicManifest() {
   const previousUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const next = {
-      ...manifestBase,
-      background_color: backgroundColorForRoute(pathname),
-    };
+    const background = backgroundColorForRoute(pathname);
+    const next = { ...manifestBase, background_color: background };
     const blob = new Blob([JSON.stringify(next)], {
       type: 'application/manifest+json',
     });
@@ -84,6 +82,21 @@ function DynamicManifest() {
       document.head.appendChild(link);
     }
     link.setAttribute('href', url);
+
+    // Also track the body background and the <meta name="theme-color">
+    // tag in lockstep — the manifest `background_color` is mostly used
+    // by the installed-PWA splash screen (and even there iOS often
+    // caches it at install time). The body bg + theme-color update
+    // immediately and cover the visible chrome surfaces (safe-area
+    // tint, mobile address-bar tint, the strip outside the app card).
+    document.body.style.background = background;
+    let themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!themeMeta) {
+      themeMeta = document.createElement('meta');
+      themeMeta.name = 'theme-color';
+      document.head.appendChild(themeMeta);
+    }
+    themeMeta.setAttribute('content', background);
 
     // Revoke the previous URL after the new one is wired up so the
     // manifest link never points at a freed object.

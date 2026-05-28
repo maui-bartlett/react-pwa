@@ -8,6 +8,11 @@ body,
   overflow: hidden;
 }
 
+/* Body background is driven by the active route (see
+   src/sections/DynamicManifest/DynamicManifest.tsx) so the colour
+   that shows through the safe-area / outside the app card matches the
+   current route's header chrome. The default below is a neutral fallback
+   used until the route effect runs on first paint. */
 body {
-  background: #315c4d !important;
+  background: #111a24;
 }
