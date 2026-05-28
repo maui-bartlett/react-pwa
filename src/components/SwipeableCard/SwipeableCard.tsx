@@ -13,8 +13,13 @@ export type SwipeableAction = {
   iconColor?: string;
   /** Accessibility label for the button. */
   ariaLabel: string;
-  /** Click handler. The card auto-closes after invoking. */
+  /** Click handler. The card auto-closes after invoking unless
+   *  `closeOnClick` is set to false (e.g. the delete action keeps the
+   *  card open while the confirmation modal is showing). */
   onClick: () => void;
+  /** Whether the card should snap closed immediately after this
+   *  action fires. Defaults to true. */
+  closeOnClick?: boolean;
 };
 
 type SwipeableCardProps = {
@@ -83,12 +88,29 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
     touchEventOptions: { passive: true },
   });
 
+  // Flatten the right corners while the card is open so the meeting
+  // edge with the revealed action strip is a clean vertical line. The
+  // forced `&` selector also pushes the right-corner reset down onto
+  // the immediate child so it doesn't peek through with a rounded edge.
+  const openCornerOverride =
+    snapX !== 0 || (swiping && currentDeltaX < -5)
+      ? {
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
+          '& > *': {
+            borderTopRightRadius: '0 !important',
+            borderBottomRightRadius: '0 !important',
+          },
+        }
+      : null;
+
   return (
     <Box
       sx={{
         position: 'relative',
         overflow: 'hidden',
         borderRadius,
+        ...openCornerOverride,
       }}
     >
       {channelVisible && (
@@ -112,7 +134,10 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
                 onClick={(e) => {
                   e.stopPropagation();
                   action.onClick();
-                  close();
+                  // Default behaviour is to snap closed, but actions
+                  // can opt-out (e.g. delete keeps the card open
+                  // while a confirmation modal is showing).
+                  if (action.closeOnClick !== false) close();
                 }}
                 sx={{
                   flex: 1,

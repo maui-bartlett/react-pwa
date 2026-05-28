@@ -3301,6 +3301,8 @@ function AvatarLegends() {
                     <ButtonBase
                       key={tab.value}
                       onClick={() => setActiveTab(tab.value)}
+                      disableRipple
+                      disableTouchRipple
                       sx={{
                         flex: 1,
                         minWidth: 0,
@@ -3310,6 +3312,13 @@ function AvatarLegends() {
                         color: selected ? chromeText : alpha(chromeText, 0.55),
                         position: 'relative',
                         overflow: 'visible',
+                        // Suppress any active/focused transform so the icon
+                        // doesn't appear to jump on tap. The opacity
+                        // transition (selected vs unselected) is the only
+                        // visual feedback we want here.
+                        '&:active': { transform: 'none' },
+                        '&:focus': { outline: 'none' },
+                        WebkitTapHighlightColor: 'transparent',
                       }}
                     >
                       {/* Active indicator — solid dark-red pill at the top edge.
