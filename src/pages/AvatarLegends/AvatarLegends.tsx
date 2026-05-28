@@ -5,9 +5,8 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import InputBase from '@mui/material/InputBase';
+import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -201,6 +200,8 @@ const fire = '#a8413a';
 const air = '#a3bbc4';
 const martial = '#3d3d4a';
 const tech = '#7a5d8a';
+const darkConditionGold = '#8a6a22';
+const darkNegativeRed = '#5f1717';
 
 const tabs: TabConfig[] = [
   {
@@ -1221,13 +1222,14 @@ function BackgroundCheckRow({ label }: { label: string }) {
  */
 function ConditionButtonShared({ label }: { label: string }) {
   const [active, setActive] = useAtom(activeConditionsAtom);
+  const { isDarkMode } = useThemeMode();
   return (
     <StatusButton
       label={label}
       active={Boolean(active[label])}
-      // Conditions use the muted-gold bookAccent across both themes
-      // so they match the rulebook chapter-heading color everywhere.
-      activeColor={bookAccent}
+      // Conditions use a rulebook-gold fill; dark mode deepens it so
+      // active chips feel less bright against the slate surface.
+      activeColor={isDarkMode ? darkConditionGold : bookAccent}
       // Unselected label reads in black in light mode (per spec); dark
       // mode keeps the StatusButton default of white text at all times.
       inactiveTextColor="#000000"
@@ -1441,9 +1443,9 @@ function HistorySection({ questions }: { questions: string[] }) {
                 sx={{
                   color: ink,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.76rem',
+                  fontSize: '0.88rem',
                   fontStyle: 'italic',
-                  lineHeight: 1.4,
+                  lineHeight: 1.45,
                 }}
               >
                 {question}
@@ -1464,7 +1466,7 @@ function HistorySection({ questions }: { questions: string[] }) {
                   background: alpha(parchmentLight, 0.85),
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.78rem',
+                  fontSize: '0.86rem',
                   lineHeight: 1.45,
                   p: 1,
                   boxSizing: 'border-box',
@@ -1544,7 +1546,8 @@ function ClassTraitAccordion({
             fontFamily: 'Georgia, "Times New Roman", serif',
             fontSize: '0.86rem',
             lineHeight: 1.5,
-            mt: 0.4,
+            pt: 2,
+            pb: 2,
           }}
         >
           {children}
@@ -2214,6 +2217,8 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 fontSize: '0.86rem',
                 lineHeight: 1.5,
+                pt: 2,
+                pb: 2,
               }}
             >
               {entry.body}
@@ -2229,6 +2234,8 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                       fontFamily: 'Georgia, "Times New Roman", serif',
                       fontSize: '0.86rem',
                       lineHeight: 1.45,
+                      pt: 0.5,
+                      pb: 0.5,
                       mb: 0.3,
                     }}
                   >
@@ -2244,6 +2251,8 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                   fontFamily: 'Georgia, "Times New Roman", serif',
                   fontSize: '0.86rem',
                   lineHeight: 1.5,
+                  pt: 2,
+                  pb: 2,
                 }}
               >
                 {entry.trailing}
@@ -2460,6 +2469,7 @@ function TechniqueAccordion({
 }
 
 function CombatPane() {
+  const { isDarkMode } = useThemeMode();
   // Element filter row entries: [filter key, label, color, image src or null].
   // 'All' is the leftmost selector and shows every technique card. 'Basic'
   // is rendered with the local SquareInSquare SVG (filled square inside a
@@ -2513,9 +2523,10 @@ function CombatPane() {
   const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
   const toggleCondition = (label: string) =>
     setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
-  // Conditions sub-tab uses the same muted-gold bookAccent as the
-  // Character tab's Conditions panel across both themes.
-  const conditionColor = bookAccent;
+  // Conditions sub-tab mirrors Character tab conditions, with dark mode
+  // using a deeper gold fill for a quieter active state.
+  const conditionColor = isDarkMode ? darkConditionGold : bookAccent;
+  const negativeStatusColor = isDarkMode ? darkNegativeRed : passionRed;
 
   return (
     <Stack spacing={1}>
@@ -2708,7 +2719,7 @@ function CombatPane() {
                   key={label}
                   label={label}
                   active={Boolean(activeStatuses[label])}
-                  activeColor={passionRed}
+                  activeColor={negativeStatusColor}
                   onToggle={() => toggleStatus(label)}
                 />
               ))}
@@ -2761,6 +2772,8 @@ function CombatPane() {
               fontSize: '0.86rem',
               lineHeight: 1.5,
               fontStyle: 'italic',
+              pt: 2,
+              pb: 2,
             }}
           >
             Carried items appear under the Backpack tab's Inventory section.
@@ -2844,6 +2857,8 @@ function ConnectionsSection() {
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 fontSize: '0.86rem',
                 lineHeight: 1.5,
+                pt: 2,
+                pb: 2,
               }}
             >
               {note}
@@ -3112,14 +3127,16 @@ function FatigueCard({
   tempFatigue: boolean[];
   onUpdate: (base: boolean[], temp: boolean[]) => void;
 }) {
-  const [modalOpen, setModalOpen] = useState(false);
+  const { isDarkMode } = useThemeMode();
+  const cardAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const [draftBaseCapacity, setDraftBaseCapacity] = useState(baseFatigue.length);
   const [draftTempCapacity, setDraftTempCapacity] = useState(tempFatigue.length);
 
   function openEditor() {
     setDraftBaseCapacity(baseFatigue.length);
     setDraftTempCapacity(tempFatigue.length);
-    setModalOpen(true);
+    setPopoverOpen(true);
   }
 
   function confirmEdit() {
@@ -3134,7 +3151,7 @@ function FatigueCard({
       ...Array(Math.max(0, newTempCapacity - tempFatigue.length)).fill(false),
     ];
     onUpdate(newBase, newTemp);
-    setModalOpen(false);
+    setPopoverOpen(false);
   }
 
   function toggleBaseFatigue(index: number) {
@@ -3153,83 +3170,84 @@ function FatigueCard({
 
   return (
     <>
-      <SwipeableCard
-        actions={[
-          {
-            icon: <Pencil size={18} />,
-            color: bookAccent,
-            ariaLabel: 'Edit fatigue capacity',
-            onClick: openEditor,
-          },
-        ]}
-      >
-        <Panel noNotch>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-            <Stack spacing={0.3}>
-              <SectionTitle>Fatigue</SectionTitle>
-              {tempFatigue.length > 0 ? (
-                <Typography
-                  sx={{
-                    color: alpha(brown, 0.7),
-                    fontSize: '0.72rem',
-                    fontWeight: 600,
-                  }}
-                >
-                  {baseFatigue.length} base + {tempFatigue.length} temp
-                </Typography>
-              ) : null}
+      <Box ref={cardAnchorRef}>
+        <SwipeableCard
+          actions={[
+            {
+              icon: <Pencil size={18} />,
+              color: bookAccent,
+              ariaLabel: 'Edit fatigue capacity',
+              onClick: openEditor,
+            },
+          ]}
+        >
+          <Panel noNotch>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+              <Stack spacing={0.3}>
+                <SectionTitle>Fatigue</SectionTitle>
+                {tempFatigue.length > 0 ? (
+                  <Typography
+                    sx={{
+                      color: alpha(brown, 0.7),
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {baseFatigue.length} base + {tempFatigue.length} temp
+                  </Typography>
+                ) : null}
+              </Stack>
+              <Stack direction="row" gap={0.7}>
+                {tempFatigue.map((filled, index) => (
+                  <FatigueDiamond
+                    key={`temp-${index}`}
+                    filled={filled}
+                    color={accent}
+                    size={28}
+                    ariaLabel={`Toggle temporary fatigue ${index + 1}`}
+                    onToggle={() => toggleTempFatigue(index)}
+                  />
+                ))}
+                {Array.from({ length: baseFatigue.length }).map((_, index) => (
+                  <FatigueDiamond
+                    key={`base-${index}`}
+                    filled={baseFatigue[index]}
+                    size={28}
+                    ariaLabel={`Toggle base fatigue ${index + 1}`}
+                    onToggle={() => toggleBaseFatigue(index)}
+                  />
+                ))}
+              </Stack>
             </Stack>
-            <Stack direction="row" gap={0.7}>
-              {tempFatigue.map((filled, index) => (
-                <FatigueDiamond
-                  key={`temp-${index}`}
-                  filled={filled}
-                  color={accent}
-                  size={28}
-                  ariaLabel={`Toggle temporary fatigue ${index + 1}`}
-                  onToggle={() => toggleTempFatigue(index)}
-                />
-              ))}
-              {Array.from({ length: baseFatigue.length }).map((_, index) => (
-                <FatigueDiamond
-                  key={`base-${index}`}
-                  filled={baseFatigue[index]}
-                  size={28}
-                  ariaLabel={`Toggle base fatigue ${index + 1}`}
-                  onToggle={() => toggleBaseFatigue(index)}
-                />
-              ))}
-            </Stack>
-          </Stack>
-        </Panel>
-      </SwipeableCard>
+          </Panel>
+        </SwipeableCard>
+      </Box>
 
-      <Dialog
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        maxWidth="xs"
-        fullWidth
+      <Popover
+        open={popoverOpen}
+        anchorEl={cardAnchorRef.current}
+        onClose={() => setPopoverOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         PaperProps={{
           sx: {
             bgcolor: parchment,
             backgroundImage: 'none',
-            border: `1px solid ${border}`,
-            borderRadius: '14px',
+            border: `1px solid ${isDarkMode ? '#ffffff' : border}`,
+            borderRadius: '10px',
             p: 2.25,
-          },
-        }}
-        slotProps={{
-          backdrop: {
-            sx: { backgroundColor: deepInk, opacity: 0.92 },
+            mt: 0.75,
+            width: cardAnchorRef.current?.getBoundingClientRect().width ?? 320,
+            maxWidth: 'calc(100vw - 32px)',
+            boxShadow: `0 8px 22px ${alpha(deepInk, 0.28)}`,
           },
         }}
       >
-        <DialogTitle sx={{ p: 0, pb: 1.5 }}>
+        <Stack spacing={1.8}>
           <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: ink }}>
             Edit Fatigue Capacity
           </Typography>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', gap: 1.8 }}>
+
           <Stack spacing={0.6}>
             <Typography
               sx={{
@@ -3292,7 +3310,7 @@ function FatigueCard({
 
           <Stack direction="row" gap={1} sx={{ pt: 1.2 }}>
             <Button
-              onClick={() => setModalOpen(false)}
+              onClick={() => setPopoverOpen(false)}
               sx={{
                 flex: 1,
                 height: 40,
@@ -3322,8 +3340,8 @@ function FatigueCard({
               Save
             </Button>
           </Stack>
-        </DialogContent>
-      </Dialog>
+        </Stack>
+      </Popover>
     </>
   );
 }
@@ -3566,6 +3584,8 @@ function BackpackPane() {
               fontSize: '0.86rem',
               lineHeight: 1.5,
               fontStyle: 'italic',
+              pt: 2,
+              pb: 2,
             }}
           >
             Nothing here yet.
