@@ -3,7 +3,7 @@ import { ConvexError } from 'convex/values';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 import { authComponent } from '../auth';
-import { isFabulaUltimaDocument } from './fabulaMeta';
+import { isManagedCharacterDocument } from './fabulaMeta';
 
 type AuthUser = {
   _id: string;
@@ -81,7 +81,7 @@ async function requireCharacterOwner(
   const profile = await requireActiveUserProfile(ctx);
   const character = await ctx.db.get(characterId);
   if (!character || character.archivedAt) throw new ConvexError('CHARACTER_NOT_FOUND');
-  if (!isFabulaUltimaDocument(character)) throw new ConvexError('CHARACTER_NOT_FOUND');
+  if (!isManagedCharacterDocument(character)) throw new ConvexError('CHARACTER_NOT_FOUND');
   if (character.ownerUserId !== profile._id) throw new ConvexError('FORBIDDEN');
   return character;
 }
@@ -117,7 +117,7 @@ async function canReadCharacter(
   const profile = await requireActiveUserProfile(ctx);
   const character = await ctx.db.get(characterId);
   if (!character || character.archivedAt) return null;
-  if (!isFabulaUltimaDocument(character)) return null;
+  if (!isManagedCharacterDocument(character)) return null;
   if (character.ownerUserId === profile._id) return character;
 
   const links = await ctx.db
@@ -147,7 +147,7 @@ async function canWriteCanonicalCharacter(
   const profile = await requireActiveUserProfile(ctx);
   const character = await ctx.db.get(characterId);
   if (!character || character.archivedAt) return false;
-  if (!isFabulaUltimaDocument(character)) return false;
+  if (!isManagedCharacterDocument(character)) return false;
   if (character.ownerUserId === profile._id) return true;
 
   const links = await ctx.db

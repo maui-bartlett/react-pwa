@@ -8,8 +8,20 @@ type GameSystemMeta = {
   activeForUserProfileId?: Id<'userProfiles'>;
 };
 
-function isFabulaUltimaDocument(document: { meta?: GameSystemMeta } | null | undefined) {
-  return document?.meta?.gameSystem === FABULA_ULTIMA_TYPE;
+const MANAGED_GAME_SYSTEMS: ReadonlySet<string> = new Set([
+  FABULA_ULTIMA_TYPE,
+  AVATAR_LEGENDS_TYPE,
+]);
+
+/**
+ * True when a document belongs to one of the game systems this backend
+ * manages (currently Fabula Ultima and Avatar Legends). Used by the
+ * read/write/owner guards so they apply uniformly across apps — gating
+ * on a single system would silently reject the other app's characters.
+ */
+function isManagedCharacterDocument(document: { meta?: GameSystemMeta } | null | undefined) {
+  const system = document?.meta?.gameSystem;
+  return typeof system === 'string' && MANAGED_GAME_SYSTEMS.has(system);
 }
 
 /**
@@ -36,7 +48,7 @@ export {
   AVATAR_LEGENDS_TYPE,
   FABULA_ULTIMA_TYPE,
   isActiveForProfile,
-  isFabulaUltimaDocument,
+  isManagedCharacterDocument,
   withFabulaMeta,
   withGameSystemMeta,
 };
