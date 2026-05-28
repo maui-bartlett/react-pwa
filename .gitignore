@@ -29,3 +29,11 @@ dist-ssr
 /blob-report/
 /playwright/.cache/
 .vercel
+
+# Local Claude Code state (settings.json is intentionally tracked)
+.claude/launch.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+
+# Scratch / investigation specs
+e2e/_investigate/
