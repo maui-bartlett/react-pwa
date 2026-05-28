@@ -3,7 +3,6 @@ import { ConvexError } from 'convex/values';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 import { authComponent } from '../auth';
-import { isManagedCharacterDocument } from './fabulaMeta';
 
 type AuthUser = {
   _id: string;
@@ -13,6 +12,10 @@ type AuthUser = {
 };
 
 type ReadCtx = QueryCtx | MutationCtx;
+
+function hasGameSystem(document: { meta?: { gameSystem?: string } } | null | undefined) {
+  return Boolean(document?.meta?.gameSystem);
+}
 
 async function getAuthUser(ctx: ReadCtx): Promise<AuthUser | null> {
   return (await authComponent.getAuthUser(ctx)) as unknown as AuthUser | null;
@@ -81,7 +84,7 @@ async function requireCharacterOwner(
   const profile = await requireActiveUserProfile(ctx);
   const character = await ctx.db.get(characterId);
   if (!character || character.archivedAt) throw new ConvexError('CHARACTER_NOT_FOUND');
-  if (!isManagedCharacterDocument(character)) throw new ConvexError('CHARACTER_NOT_FOUND');
+  if (!hasGameSystem(character)) throw new ConvexError('CHARACTER_NOT_FOUND');
   if (character.ownerUserId !== profile._id) throw new ConvexError('FORBIDDEN');
   return character;
 }
@@ -117,7 +120,7 @@ async function canReadCharacter(
   const profile = await requireActiveUserProfile(ctx);
   const character = await ctx.db.get(characterId);
   if (!character || character.archivedAt) return null;
-  if (!isManagedCharacterDocument(character)) return null;
+  if (!hasGameSystem(character)) return null;
   if (character.ownerUserId === profile._id) return character;
 
   const links = await ctx.db
@@ -147,7 +150,7 @@ async function canWriteCanonicalCharacter(
   const profile = await requireActiveUserProfile(ctx);
   const character = await ctx.db.get(characterId);
   if (!character || character.archivedAt) return false;
-  if (!isManagedCharacterDocument(character)) return false;
+  if (!hasGameSystem(character)) return false;
   if (character.ownerUserId === profile._id) return true;
 
   const links = await ctx.db

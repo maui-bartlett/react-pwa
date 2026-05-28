@@ -195,9 +195,7 @@ export const renameCharacter = mutation({
     let nextInner: Record<string, unknown> = inner;
     if (gameSystem === 'fabula-ultima') {
       const existingName =
-        inner.name && typeof inner.name === 'object'
-          ? (inner.name as Record<string, unknown>)
-          : {};
+        inner.name && typeof inner.name === 'object' ? (inner.name as Record<string, unknown>) : {};
       nextInner = { ...inner, name: { ...existingName, nickName: trimmed } };
     } else {
       // Default (covers avatar-legends + any future flat-name schemas).
@@ -326,6 +324,116 @@ export const migrateAvatarLegendsShape = internalMutation({
 });
 
 /**
+ * One-shot migration for Avatar Legends v3 character data:
+ *   - techniques: legacy `category` -> `approach`, `title` -> `name`,
+ *     `body` -> `description`
+ *   - notes/inventory: legacy `title` -> `name`, `body` -> `description`
+ *   - `characterState.schemaVersion` and the document `schemaVersion`
+ *     are bumped to 3 once the row is in the v3 shape.
+ * Safe to re-run on already-migrated rows.
+ *   npx convex run characters:migrateAvatarLegendsV3
+ */
+export const migrateAvatarLegendsV3 = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      if (row.meta?.gameSystem !== 'avatar-legends') continue;
+      const state =
+        row.characterState && typeof row.characterState === 'object'
+          ? (row.characterState as Record<string, unknown>)
+          : null;
+      if (!state) continue;
+      const inner =
+        state.character && typeof state.character === 'object'
+          ? (state.character as Record<string, unknown>)
+          : null;
+      if (!inner) continue;
+
+      let touched = false;
+
+      const migrateTechnique = (tech: Record<string, unknown>) => {
+        const next: Record<string, unknown> = { ...tech };
+        if (typeof next.approach !== 'string' && typeof tech.category === 'string') {
+          next.approach = tech.category;
+          touched = true;
+        }
+        if (typeof next.name !== 'string' && typeof tech.title === 'string') {
+          next.name = tech.title;
+          touched = true;
+        }
+        if (typeof next.description !== 'string' && typeof tech.body === 'string') {
+          next.description = tech.body;
+          touched = true;
+        }
+        if ('category' in next) {
+          delete next.category;
+          touched = true;
+        }
+        if ('title' in next) {
+          delete next.title;
+          touched = true;
+        }
+        if ('body' in next) {
+          delete next.body;
+          touched = true;
+        }
+        return next;
+      };
+
+      const migrateJournalEntry = (entry: Record<string, unknown>) => {
+        const next: Record<string, unknown> = { ...entry };
+        if (typeof next.name !== 'string' && typeof entry.title === 'string') {
+          next.name = entry.title;
+          touched = true;
+        }
+        if (typeof next.description !== 'string' && typeof entry.body === 'string') {
+          next.description = entry.body;
+          touched = true;
+        }
+        if ('title' in next) {
+          delete next.title;
+          touched = true;
+        }
+        if ('body' in next) {
+          delete next.body;
+          touched = true;
+        }
+        return next;
+      };
+
+      const nextInner: Record<string, unknown> = { ...inner };
+      if (Array.isArray(inner.techniques)) {
+        nextInner.techniques = (inner.techniques as Array<Record<string, unknown>>).map(
+          migrateTechnique,
+        );
+      }
+      if (Array.isArray(inner.notes)) {
+        nextInner.notes = (inner.notes as Array<Record<string, unknown>>).map(migrateJournalEntry);
+      }
+      if (Array.isArray(inner.inventory)) {
+        nextInner.inventory = (inner.inventory as Array<Record<string, unknown>>).map(
+          migrateJournalEntry,
+        );
+      }
+
+      const stateVersion = typeof state.schemaVersion === 'number' ? state.schemaVersion : 0;
+      const rowVersion = typeof row.schemaVersion === 'number' ? row.schemaVersion : 0;
+      if (!touched && stateVersion >= 3 && rowVersion >= 3) continue;
+
+      await ctx.db.patch(row._id, {
+        schemaVersion: 3,
+        characterState: { ...state, schemaVersion: 3, character: nextInner },
+        updatedAt: Date.now(),
+      });
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
+  },
+});
+
+/**
  * One-shot migration: drop the root `name` column from every character
  * and reshape `characterState.character` so the three flat name fields
  * (`firstName`, `lastName`, `nickName`) live nested under a single
@@ -342,10 +450,7 @@ export const migrateCharacterName = internalMutation({
       const legacyRow = row as typeof row & { name?: unknown };
       const hasRootName = legacyRow.name !== undefined;
 
-      const state = legacyRow.characterState as
-        | Record<string, unknown>
-        | null
-        | undefined;
+      const state = legacyRow.characterState as Record<string, unknown> | null | undefined;
       const character = state && typeof state === 'object' ? state.character : undefined;
       const hasCharacter = character && typeof character === 'object';
 
@@ -366,13 +471,7 @@ export const migrateCharacterName = internalMutation({
       if (hasRootName) patch.name = undefined;
 
       if (flatChar && (hasFlat || !hasNested)) {
-        const {
-          firstName,
-          lastName,
-          nickName,
-          name: existingName,
-          ...rest
-        } = flatChar;
+        const { firstName, lastName, nickName, name: existingName, ...rest } = flatChar;
         // Prefer an already-nested `name` if present; otherwise build
         // it from the flat fields. Missing pieces fall back to empty
         // strings so the shape stays well-formed.
@@ -475,8 +574,7 @@ export const cleanupLegacyFields = internalMutation({
         | { statusEffects?: unknown; [key: string]: unknown }
         | null
         | undefined;
-      const hasNestedStatusEffects =
-        state && typeof state === 'object' && 'statusEffects' in state;
+      const hasNestedStatusEffects = state && typeof state === 'object' && 'statusEffects' in state;
 
       if (!hasSummary && !hasRootStatusEffects && !hasNestedStatusEffects) continue;
 

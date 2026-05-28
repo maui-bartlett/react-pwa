@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import Dialog from '@mui/material/Dialog';
 import InputBase from '@mui/material/InputBase';
+import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -133,7 +134,7 @@ const darkAvPalette: AvPaletteShape = {
   gold: '#7a2424',
   // Passion stat label + Advance & Attack eyebrow keep the brighter
   // cover-art red so they stay legible against the gray body.
-  passionRed: '#c84a3e',
+  passionRed: '#e35f53',
   attackRed: '#c84a3e',
   // Pale slate-blue accent — divider / decorative tone that reads
   // against the deeper slate-blue surfaces.
@@ -163,7 +164,6 @@ let border = lightAvPalette.border;
 // reading and re-applying it through the swap below.
 let _ember = lightAvPalette.ember;
 void _ember;
-let gold = lightAvPalette.gold;
 let passionRed = lightAvPalette.passionRed;
 let attackRed = lightAvPalette.attackRed;
 let accent = lightAvPalette.accent;
@@ -181,7 +181,6 @@ function applyAvatarPalette(isDarkMode: boolean) {
   brownSoft = next.brownSoft;
   border = next.border;
   _ember = next.ember;
-  gold = next.gold;
   passionRed = next.passionRed;
   attackRed = next.attackRed;
   accent = next.accent;
@@ -202,6 +201,8 @@ const fire = '#a8413a';
 const air = '#a3bbc4';
 const martial = '#3d3d4a';
 const tech = '#7a5d8a';
+const darkConditionGold = '#b98535';
+const darkNegativeRed = '#5f1717';
 
 const tabs: TabConfig[] = [
   {
@@ -252,17 +253,17 @@ const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 
 // ---------- Character data shapes ----------
 type Connection = { name: string; role: string; note: string };
-type JournalEntry = { type: string; title: string; body: string };
+type JournalEntry = { type: string; name: string; description: string };
 type Technique = {
   /** Elemental category (water / earth / fire / air / martial / tech /
    *  basic). Renamed from `element` -> `type` to keep the AL technique
    *  vocabulary aligned with the rulebook layout. */
   type: TechniqueElement;
-  category: TechniqueCategory;
+  approach: TechniqueCategory;
   level: TechniqueLevel;
-  title: string;
+  name: string;
   summary: string;
-  body: string;
+  description: string;
 };
 
 /**
@@ -285,6 +286,7 @@ type CharacterState = {
   conditions: Record<string, boolean>;
   statuses: Record<string, boolean>;
   fatigue: boolean[];
+  tempFatigue: boolean[];
   backgrounds: Record<string, boolean>;
   classTraitTitle: string;
   classTraitBody: string;
@@ -312,6 +314,7 @@ const defaultCharacter: CharacterState = {
   // Fatigue marks fill from the right toward the left by default — two
   // marks pre-filled on the right side of the tracker on first load.
   fatigue: [false, false, false, true, true],
+  tempFatigue: [],
   backgrounds: { Urban: true, Privileged: true },
   classTraitTitle: 'A Tainted Past',
   classTraitBody:
@@ -339,83 +342,87 @@ const defaultCharacter: CharacterState = {
   techniques: [
     {
       type: 'water',
-      category: 'Advance & Attack',
+      approach: 'Advance & Attack',
       level: 'mastered',
-      title: 'Stream the Water',
+      name: 'Stream the Water',
       summary: 'Push a jet stream from a significant source to inflict fatigue.',
-      body: 'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
+      description:
+        'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
     },
     {
       type: 'water',
-      category: 'Defend & Maneuver',
+      approach: 'Defend & Maneuver',
       level: 'learned',
-      title: 'Flow as Water',
+      name: 'Flow as Water',
       summary: 'Use a jet of water to move quickly and shift position.',
-      body: 'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
+      description:
+        'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
     },
     {
       type: 'water',
-      category: 'Evade & Observe',
+      approach: 'Evade & Observe',
       level: 'mastered',
-      title: 'Refresh',
+      name: 'Refresh',
       summary: 'Clear conditions and keep an ally steady under pressure.',
-      body: 'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
+      description:
+        'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
     },
     {
       type: 'water',
-      category: 'Advance & Attack',
+      approach: 'Advance & Attack',
       level: 'learned',
-      title: 'Water Jab',
+      name: 'Water Jab',
       summary: 'Surround your fist in water and strike from unexpected angles.',
-      body: 'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
+      description:
+        'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
     },
     {
       type: 'basic',
-      category: 'Advance & Attack',
+      approach: 'Advance & Attack',
       level: 'learned',
-      title: 'Smash',
+      name: 'Smash',
       summary: 'Drive a heavy blow through your target to bypass their guard.',
-      body: 'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
+      description:
+        'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
     },
     {
       type: 'basic',
-      category: 'Defend & Maneuver',
+      approach: 'Defend & Maneuver',
       level: 'learned',
-      title: 'Pounce',
+      name: 'Pounce',
       summary: 'Close the gap on a target with sudden speed.',
-      body: "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
+      description:
+        "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
     },
   ],
   inventory: [
     {
       type: 'Item',
-      title: 'Messenger Bag',
-      body: 'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
+      name: 'Messenger Bag',
+      description: 'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
     },
   ],
   notes: [
     {
       type: 'Note',
-      title: "Rad's Notebook",
-      body: 'A worn notebook filled with themes about bending and identity.',
+      name: "Rad's Notebook",
+      description: 'A worn notebook filled with themes about bending and identity.',
     },
     {
       type: 'Important NPC',
-      title: 'Professor Zei',
-      body: "Head of Bending Theory at UoE. Believes in Rad's potential.",
+      name: 'Professor Zei',
+      description: "Head of Bending Theory at UoE. Believes in Rad's potential.",
     },
     {
       type: 'Location',
-      title: 'The University of Elements',
-      body: 'A neutral sanctuary where benders from all nations study in peace.',
+      name: 'The University of Elements',
+      description: 'A neutral sanctuary where benders from all nations study in peace.',
     },
   ],
 };
 
 /** Single source of truth for the active character. Every editable
- *  surface reads from / writes to this atom (often via a derived slice).
- *  Persisted to localStorage (like FabU's character atom) so edits
- *  survive a reload even before / independent of the Convex round-trip. */
+ *  surface reads from / writes to this atom (often via a derived slice). */
 const characterStateAtom = atomWithStorage<CharacterState>(
   'avatar-legends-character',
   defaultCharacter,
@@ -423,8 +430,10 @@ const characterStateAtom = atomWithStorage<CharacterState>(
 
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
  *  shape of the AL `CharacterState` changes in a breaking way.
- *  v2 (current): `age` is `number`, technique key is `type` (was `element`). */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 2;
+ *  v2: `age` is `number`, technique key is `type` (was `element`).
+ *  v3 (current): Technique.category renamed to approach, title→name, body→description.
+ *               JournalEntry title→name, body→description. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 3;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -473,19 +482,60 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
             : typeof legacyElement === 'string'
               ? (legacyElement as TechniqueElement)
               : 'basic';
-        // Strip the legacy `element` key so it doesn't survive on
-        // the new Technique shape.
+        // Migrate v2→v3: rename category→approach, title→name, body→description
+        const nextName =
+          typeof tech.name === 'string' ? tech.name : (tech as { title?: unknown }).title;
+        const nextApproach =
+          typeof tech.approach === 'string'
+            ? tech.approach
+            : (tech as { category?: unknown }).category;
+        const nextDescription =
+          typeof tech.description === 'string'
+            ? tech.description
+            : (tech as { body?: unknown }).body;
+        // Strip legacy keys
         const rest: Record<string, unknown> = { ...tech };
         delete rest.element;
-        return { ...rest, type: nextType } as Technique;
+        delete rest.title;
+        delete rest.body;
+        delete rest.category;
+        return {
+          ...rest,
+          type: nextType,
+          name: nextName,
+          approach: nextApproach,
+          description: nextDescription,
+        } as Technique;
       })
     : defaultCharacter.techniques;
+
+  // Migrate v2→v3: rename inventory and notes items' title→name, body→description
+  const migrateJournalEntries = (entries: unknown) => {
+    if (!Array.isArray(entries)) return undefined;
+    return (entries as Array<Record<string, unknown>>).map((entry) => {
+      const nextName =
+        typeof entry.name === 'string' ? entry.name : (entry as { title?: unknown }).title;
+      const nextDescription =
+        typeof entry.description === 'string'
+          ? entry.description
+          : (entry as { body?: unknown }).body;
+      const rest: Record<string, unknown> = { ...entry };
+      delete rest.title;
+      delete rest.body;
+      return { ...rest, name: nextName, description: nextDescription } as JournalEntry;
+    });
+  };
+
+  const inventory = migrateJournalEntries(innerCandidate.inventory) ?? defaultCharacter.inventory;
+  const notes = migrateJournalEntries(innerCandidate.notes) ?? defaultCharacter.notes;
 
   return {
     ...defaultCharacter,
     ...(innerCandidate as Partial<CharacterState>),
     age,
     techniques,
+    inventory,
+    notes,
   };
 }
 
@@ -575,6 +625,7 @@ const balancePositionAtom = sliceAtom('balance');
 const activeStatusesAtom = sliceAtom('statuses');
 const activeConditionsAtom = sliceAtom('conditions');
 const fatigueAtom = sliceAtom('fatigue');
+const tempFatigueAtom = sliceAtom('tempFatigue');
 const backgroundsAtom = sliceAtom('backgrounds');
 const historyAnswersAtom = sliceAtom('historyAnswers');
 const notesAtom = sliceAtom('notes');
@@ -1060,14 +1111,7 @@ function StatsPanel() {
   return (
     <Panel>
       <SectionTitle>Stats</SectionTitle>
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 0.8,
-          mt: 0.9,
-        }}
-      >
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
         {rows.map(([label, color]) => {
           // Clamp to the pick-list range in case persisted state holds a
           // legacy value outside [-3, 3].
@@ -1185,13 +1229,14 @@ function BackgroundCheckRow({ label }: { label: string }) {
  */
 function ConditionButtonShared({ label }: { label: string }) {
   const [active, setActive] = useAtom(activeConditionsAtom);
+  const { isDarkMode } = useThemeMode();
   return (
     <StatusButton
       label={label}
       active={Boolean(active[label])}
-      // Conditions use the muted-gold bookAccent across both themes
-      // so they match the rulebook chapter-heading color everywhere.
-      activeColor={bookAccent}
+      // Conditions use a rulebook-gold fill; dark mode deepens it so
+      // active chips feel less bright against the slate surface.
+      activeColor={isDarkMode ? darkConditionGold : bookAccent}
       // Unselected label reads in black in light mode (per spec); dark
       // mode keeps the StatusButton default of white text at all times.
       inactiveTextColor="#000000"
@@ -1293,24 +1338,142 @@ function SquareInSquare({ color = ink, size = 36 }: { color?: string; size?: num
   );
 }
 
-function FatigueDiamond({ filled, size = 14 }: { filled: boolean; size?: number }) {
+function FatigueDiamond({
+  filled,
+  size = 14,
+  color = passionRed,
+  onToggle,
+  ariaLabel,
+}: {
+  filled: boolean;
+  size?: number;
+  color?: string;
+  onToggle?: () => void;
+  ariaLabel?: string;
+}) {
   return (
     <Box
       component="svg"
       viewBox="0 0 24 24"
-      sx={{ width: size, height: size, flex: '0 0 auto', display: 'block' }}
+      onClick={onToggle}
+      role={onToggle ? 'button' : undefined}
+      tabIndex={onToggle ? 0 : undefined}
+      aria-label={ariaLabel}
+      aria-pressed={onToggle ? filled : undefined}
+      onKeyDown={
+        onToggle
+          ? (event: React.KeyboardEvent<SVGSVGElement>) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onToggle();
+              }
+            }
+          : undefined
+      }
+      sx={{
+        width: size,
+        height: size,
+        flex: '0 0 auto',
+        display: 'block',
+        cursor: onToggle ? 'pointer' : 'default',
+      }}
     >
       <polygon
         points="12,2 22,12 12,22 2,12"
-        // Fatigue pips paint in the dark-red accent (`gold` — the diamond
-        // bullet / hairline divider color) instead of deep-ink so they pop
-        // on both light parchment and dark surfaces.
-        fill={filled ? gold : 'none'}
-        stroke={gold}
+        // Base fatigue uses passionRed; temporary fatigue passes the blue accent.
+        fill={filled ? color : 'none'}
+        stroke={color}
         strokeWidth={1.5}
         strokeLinejoin="round"
       />
     </Box>
+  );
+}
+
+function CapacityPicker({
+  label,
+  value,
+  color,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  onChange: (next: number) => void;
+}) {
+  const setClamped = (next: number) => onChange(Math.max(0, Math.min(10, next)));
+  return (
+    <Stack spacing={0.6}>
+      <Typography
+        sx={{
+          fontSize: '0.74rem',
+          fontWeight: 800,
+          color: brownSoft,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}
+      >
+        {label}
+      </Typography>
+      <Stack
+        direction="row"
+        alignItems="center"
+        sx={{
+          minHeight: 40,
+          borderRadius: '8px',
+          border: `1.5px solid ${color}`,
+          bgcolor: parchmentLight,
+          color: ink,
+          overflow: 'hidden',
+        }}
+      >
+        <Button
+          onClick={() => setClamped(value - 1)}
+          disabled={value <= 0}
+          aria-label={`Decrease ${label.toLowerCase()}`}
+          sx={{
+            minWidth: 42,
+            height: 40,
+            borderRadius: 0,
+            color,
+            fontSize: '1.2rem',
+            fontWeight: 900,
+            '&:disabled': { color: alpha(color, 0.35) },
+          }}
+        >
+          -
+        </Button>
+        <Typography
+          aria-live="polite"
+          sx={{
+            flex: 1,
+            textAlign: 'center',
+            fontSize: '1rem',
+            fontWeight: 900,
+            color: ink,
+            fontFamily: 'Georgia, "Times New Roman", serif',
+          }}
+        >
+          {value}
+        </Typography>
+        <Button
+          onClick={() => setClamped(value + 1)}
+          disabled={value >= 10}
+          aria-label={`Increase ${label.toLowerCase()}`}
+          sx={{
+            minWidth: 42,
+            height: 40,
+            borderRadius: 0,
+            color,
+            fontSize: '1.2rem',
+            fontWeight: 900,
+            '&:disabled': { color: alpha(color, 0.35) },
+          }}
+        >
+          +
+        </Button>
+      </Stack>
+    </Stack>
   );
 }
 
@@ -1374,9 +1537,9 @@ function HistorySection({ questions }: { questions: string[] }) {
                 sx={{
                   color: ink,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.76rem',
+                  fontSize: '0.88rem',
                   fontStyle: 'italic',
-                  lineHeight: 1.4,
+                  lineHeight: 1.45,
                 }}
               >
                 {question}
@@ -1397,7 +1560,7 @@ function HistorySection({ questions }: { questions: string[] }) {
                   background: alpha(parchmentLight, 0.85),
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.78rem',
+                  fontSize: '0.86rem',
                   lineHeight: 1.45,
                   p: 1,
                   boxSizing: 'border-box',
@@ -1475,9 +1638,11 @@ function ClassTraitAccordion({
           sx={{
             color: brown,
             fontFamily: 'Georgia, "Times New Roman", serif',
-            fontSize: '0.78rem',
+            fontSize: '0.86rem',
             lineHeight: 1.5,
-            mt: 0.4,
+            pt: 2,
+            px: 2,
+            pb: 2,
           }}
         >
           {children}
@@ -1917,14 +2082,7 @@ function CharacterPane() {
 
       <Panel>
         <SectionTitle>Background</SectionTitle>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 0.7,
-            mt: 0.9,
-          }}
-        >
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
           {['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'].map((item) => (
             <BackgroundCheckRow key={item} label={item} />
           ))}
@@ -2152,8 +2310,11 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.82rem',
+                fontSize: '0.86rem',
                 lineHeight: 1.5,
+                pt: 2,
+                px: 2,
+                pb: 2,
               }}
             >
               {entry.body}
@@ -2167,8 +2328,11 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                     sx={{
                       color: brown,
                       fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.82rem',
+                      fontSize: '0.86rem',
                       lineHeight: 1.45,
+                      pt: 0.5,
+                      px: 2,
+                      pb: 0.5,
                       mb: 0.3,
                     }}
                   >
@@ -2182,8 +2346,11 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                 sx={{
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.82rem',
+                  fontSize: '0.86rem',
                   lineHeight: 1.5,
+                  pt: 2,
+                  px: 2,
+                  pb: 2,
                 }}
               >
                 {entry.trailing}
@@ -2223,23 +2390,23 @@ function MovesPane() {
 }
 
 /**
- * Expandable Technique card. Collapsed: shows the element badge, title,
+ * Expandable Technique card. Collapsed: shows the element badge, name,
  * and summary line, with the fatigue indicator on the right. Expanded:
  * appends the full description text below the row.
  */
 function TechniqueAccordion({
-  category,
-  title,
+  approach,
+  name,
   summary,
-  body,
+  description,
   src,
   techColor,
   isBasic = false,
 }: {
-  category: TechniqueCategory;
-  title: string;
+  approach: TechniqueCategory;
+  name: string;
   summary: string;
-  body: string;
+  description: string;
   src: string;
   techColor: string;
   /**
@@ -2249,7 +2416,7 @@ function TechniqueAccordion({
   isBasic?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const categoryColor = techniqueCategoryColor(category);
+  const categoryColor = techniqueCategoryColor(approach);
   return (
     <Panel>
       <Stack spacing={0.5}>
@@ -2294,7 +2461,7 @@ function TechniqueAccordion({
             <ElementMark color={techColor} src={src} size={36} height={34} />
           )}
           <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
-            {/* Category eyebrow — color keyed to the technique's category. */}
+            {/* Approach eyebrow — color keyed to the technique's approach. */}
             <Typography
               sx={{
                 color: categoryColor,
@@ -2306,7 +2473,7 @@ function TechniqueAccordion({
                 lineHeight: 1,
               }}
             >
-              {category}
+              {approach}
             </Typography>
             <Typography
               sx={{
@@ -2319,14 +2486,14 @@ function TechniqueAccordion({
                 lineHeight: 1.1,
               }}
             >
-              {title}
+              {name}
             </Typography>
             <Typography
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.74rem',
-                lineHeight: 1.45,
+                fontSize: '0.82rem',
+                lineHeight: 1.5,
               }}
             >
               {summary}
@@ -2384,11 +2551,14 @@ function TechniqueAccordion({
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.78rem',
+                fontSize: '0.86rem',
                 lineHeight: 1.5,
+                pt: 2,
+                px: 2,
+                pb: 2,
               }}
             >
-              {body}
+              {description}
             </Typography>
           </>
         ) : null}
@@ -2398,6 +2568,7 @@ function TechniqueAccordion({
 }
 
 function CombatPane() {
+  const { isDarkMode } = useThemeMode();
   // Element filter row entries: [filter key, label, color, image src or null].
   // 'All' is the leftmost selector and shows every technique card. 'Basic'
   // is rendered with the local SquareInSquare SVG (filled square inside a
@@ -2414,7 +2585,7 @@ function CombatPane() {
     { key: 'earth', label: 'Earth', color: earth, src: elementEarth },
     { key: 'fire', label: 'Fire', color: fire, src: elementFire },
     { key: 'air', label: 'Air', color: air, src: elementAir },
-    { key: 'martial', label: 'Martial', color: martial, src: elementMartial },
+    { key: 'martial', label: 'Weapons', color: martial, src: elementMartial },
     { key: 'tech', label: 'Tech', color: tech, src: elementTech },
   ];
   const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
@@ -2439,300 +2610,334 @@ function CombatPane() {
       return elementOk && levelOk;
     });
   }, [techniques, elementFilter, techFilter]);
-  const [fatigue, setFatigue] = useAtom(fatigueAtom);
-  const toggleFatigue = (index: number) =>
-    setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
+  const fatigue = useAtomValue(fatigueAtom);
+  const tempFatigue = useAtomValue(tempFatigueAtom);
+  const [, setCharacterState] = useAtom(characterStateAtom);
+  const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
+    setCharacterState((prev) => ({ ...prev, fatigue: base, tempFatigue: temp }));
+  };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
   const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
   const toggleCondition = (label: string) =>
     setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
-  // Conditions sub-tab uses the same muted-gold bookAccent as the
-  // Character tab's Conditions panel across both themes.
-  const conditionColor = bookAccent;
+  const [inventory, setInventory] = useAtom(inventoryAtom);
+  const [pendingInventoryDelete, setPendingInventoryDelete] = useState<number | null>(null);
+  function updateInventoryItem(
+    index: number,
+    next: { type: string; name: string; description: string },
+  ) {
+    setInventory((prev) =>
+      prev.map((entry, currentIndex) => (currentIndex === index ? next : entry)),
+    );
+  }
+  function deleteInventoryItem() {
+    if (pendingInventoryDelete === null) return;
+    setInventory((prev) => prev.filter((_, index) => index !== pendingInventoryDelete));
+    setPendingInventoryDelete(null);
+  }
+  // Conditions sub-tab mirrors Character tab conditions, with dark mode
+  // using a deeper gold fill for a quieter active state.
+  const conditionColor = isDarkMode ? darkConditionGold : bookAccent;
+  const negativeStatusColor = isDarkMode ? darkNegativeRed : passionRed;
 
   return (
-    <Stack spacing={1}>
-      {/* Combat tab opens with the same Stats panel that lives on Character,
+    <>
+      <Stack spacing={1}>
+        {/* Combat tab opens with the same Stats panel that lives on Character,
           for at-a-glance reference during combat rolls. */}
-      <StatsPanel />
-      <Panel>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-          <SectionTitle>Fatigue</SectionTitle>
-          {/* Pips live on the right of the row, larger + tappable. */}
-          <Stack direction="row" gap={0.7}>
-            {fatigue.map((filled, index) => (
-              <Box
-                key={index}
-                component="button"
-                type="button"
-                onClick={() => toggleFatigue(index)}
-                aria-pressed={filled}
-                aria-label={`Fatigue ${index + 1}`}
-                sx={{
-                  background: 'none',
-                  border: 'none',
-                  p: 0,
-                  cursor: 'pointer',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <FatigueDiamond filled={filled} size={28} />
-              </Box>
-            ))}
-          </Stack>
-        </Stack>
-      </Panel>
+        <StatsPanel />
+        <FatigueCard
+          baseFatigue={fatigue}
+          tempFatigue={tempFatigue}
+          onUpdate={updateFatigueCapacity}
+        />
 
-      {/* Interactive combat sub-tabs — taller chips than the rest of the
+        {/* Interactive combat sub-tabs — taller chips than the rest of the
           app to give the four primary combat surfaces more tap area. */}
-      <FilterTabs
-        labels={['Techniques', 'Statuses', 'Conditions', 'Inventory']}
-        activeIndex={subTab}
-        onChange={setSubTab}
-        chipPy="20px"
-      />
+        <FilterTabs
+          labels={['Techniques', 'Statuses', 'Conditions', 'Inventory']}
+          activeIndex={subTab}
+          onChange={setSubTab}
+          chipPy="20px"
+        />
 
-      {/* Techniques sub-tab: element filter row + expandable technique cards */}
-      {subTab === 0 ? (
-        <>
-          {/* Element filter row: deep-ink backing matches selected filter chips,
+        {/* Techniques sub-tab: element filter row + expandable technique cards */}
+        {subTab === 0 ? (
+          <>
+            {/* Element filter row: deep-ink backing matches selected filter chips,
               keeping the extracted white symbols readable in light mode. */}
-          <Box
-            sx={{
-              background: deepInk,
-              border: `1px solid ${alpha(accent, 0.42)}`,
-              borderRadius: '4px',
-              p: '8px 10px',
-              boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
-            }}
-          >
             <Box
               sx={{
-                display: 'flex',
-                gap: 1.6,
-                overflowX: 'auto',
-                scrollbarWidth: 'none',
-                '&::-webkit-scrollbar': { display: 'none' },
+                background: deepInk,
+                border: `1px solid ${alpha(accent, 0.42)}`,
+                borderRadius: '4px',
+                p: '8px 10px',
+                boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
               }}
             >
-              {elementFilters.map((entry) => {
-                const isActive = elementFilter === entry.key;
-                return (
-                  <Stack
-                    key={entry.key}
-                    component="button"
-                    type="button"
-                    onClick={() => setElementFilter(entry.key)}
-                    aria-pressed={isActive}
-                    alignItems="center"
-                    spacing={0.4}
-                    sx={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      p: 0,
-                      flex: '0 0 auto',
-                      opacity: isActive ? 1 : 0.55,
-                      transition: 'opacity 0.15s ease',
-                    }}
-                  >
-                    {entry.key === 'all' || entry.key === 'basic' ? (
-                      <Box
-                        sx={{
-                          width: 34,
-                          height: 32,
-                          borderRadius: '3px',
-                          border: `1px solid ${alpha(chromeText, 0.34)}`,
-                          background: alpha(chromeText, 0.08),
-                          display: 'grid',
-                          placeItems: 'center',
-                          flex: '0 0 auto',
-                          boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
-                        }}
-                      >
-                        {entry.key === 'all' ? (
-                          <Typography
-                            sx={{
-                              color: chromeText,
-                              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                              fontSize: '0.62rem',
-                              fontWeight: 900,
-                              letterSpacing: '0.04em',
-                              lineHeight: 1,
-                            }}
-                          >
-                            ALL
-                          </Typography>
-                        ) : (
-                          <SquareInSquare color={chromeText} size={20} />
-                        )}
-                      </Box>
-                    ) : (
-                      <ElementMark
-                        color={chromeText}
-                        label={entry.label.slice(0, 1)}
-                        src={entry.src ?? undefined}
-                        size={34}
-                        height={32}
-                      />
-                    )}
-                    <Typography
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1.6,
+                  overflowX: 'auto',
+                  scrollbarWidth: 'none',
+                  '&::-webkit-scrollbar': { display: 'none' },
+                }}
+              >
+                {elementFilters.map((entry) => {
+                  const isActive = elementFilter === entry.key;
+                  return (
+                    <Stack
+                      key={entry.key}
+                      component="button"
+                      type="button"
+                      onClick={() => setElementFilter(entry.key)}
+                      aria-pressed={isActive}
+                      alignItems="center"
+                      spacing={0.4}
                       sx={{
-                        color: chromeText,
-                        fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                        fontSize: '0.58rem',
-                        fontWeight: 900,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        p: 0,
+                        flex: '0 0 auto',
+                        opacity: isActive ? 1 : 0.55,
+                        transition: 'opacity 0.15s ease',
                       }}
                     >
-                      {entry.label}
-                    </Typography>
-                  </Stack>
+                      {entry.key === 'all' || entry.key === 'basic' ? (
+                        <Box
+                          sx={{
+                            width: 34,
+                            height: 32,
+                            borderRadius: '3px',
+                            border: `1px solid ${alpha(chromeText, 0.34)}`,
+                            background: alpha(chromeText, 0.08),
+                            display: 'grid',
+                            placeItems: 'center',
+                            flex: '0 0 auto',
+                            boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
+                          }}
+                        >
+                          {entry.key === 'all' ? (
+                            <Typography
+                              sx={{
+                                color: chromeText,
+                                fontFamily:
+                                  '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                                fontSize: '0.62rem',
+                                fontWeight: 900,
+                                letterSpacing: '0.04em',
+                                lineHeight: 1,
+                              }}
+                            >
+                              ALL
+                            </Typography>
+                          ) : (
+                            <SquareInSquare color={chromeText} size={20} />
+                          )}
+                        </Box>
+                      ) : (
+                        <ElementMark
+                          color={chromeText}
+                          label={entry.label.slice(0, 1)}
+                          src={entry.src ?? undefined}
+                          size={34}
+                          height={32}
+                        />
+                      )}
+                      <Typography
+                        sx={{
+                          color: chromeText,
+                          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                          fontSize: '0.58rem',
+                          fontWeight: 900,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {entry.label}
+                      </Typography>
+                    </Stack>
+                  );
+                })}
+              </Box>
+            </Box>
+            {/* Secondary filter row — proficiency level for the techniques list. */}
+            <FilterTabs
+              labels={['All', 'Learned', 'Practiced', 'Mastered']}
+              activeIndex={techFilter}
+              onChange={setTechFilter}
+            />
+            {visibleTechniques.map((tech) => {
+              const isBasic = tech.type === 'basic';
+              return (
+                <TechniqueAccordion
+                  key={tech.name}
+                  approach={tech.approach}
+                  name={tech.name}
+                  summary={tech.summary}
+                  description={tech.description}
+                  isBasic={isBasic}
+                  // src is only used when isBasic=false (image badge path).
+                  src={elementWater}
+                  techColor={isBasic ? ink : water}
+                />
+              );
+            })}
+            {visibleTechniques.length === 0 ? (
+              <Panel>
+                <Typography
+                  sx={{
+                    color: brownSoft,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.86rem',
+                    fontStyle: 'italic',
+                    lineHeight: 1.5,
+                    pt: 2,
+                    px: 2,
+                    pb: 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  No techniques of that type.
+                </Typography>
+              </Panel>
+            ) : null}
+          </>
+        ) : null}
+
+        {/* Statuses sub-tab: each status is a toggleable button — blue for
+          Positive, dark red for Negative. Empty / outlined by default,
+          filled when tapped. */}
+        {subTab === 1 ? (
+          <Panel>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9 }}>
+              <Stack spacing={1.2}>
+                <Typography
+                  sx={{
+                    color: alpha(brown, 0.7),
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.56rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  POSITIVE
+                </Typography>
+                {positiveStatuses.map((label) => (
+                  <StatusButton
+                    key={label}
+                    label={label}
+                    active={Boolean(activeStatuses[label])}
+                    activeColor={water}
+                    onToggle={() => toggleStatus(label)}
+                  />
+                ))}
+              </Stack>
+              <Stack spacing={1.2}>
+                <Typography
+                  sx={{
+                    color: passionRed,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.56rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  NEGATIVE
+                </Typography>
+                {negativeStatuses.map((label) => (
+                  <StatusButton
+                    key={label}
+                    label={label}
+                    active={Boolean(activeStatuses[label])}
+                    activeColor={negativeStatusColor}
+                    onToggle={() => toggleStatus(label)}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          </Panel>
+        ) : null}
+
+        {/* Conditions sub-tab — same toggleable button pattern as Statuses
+          and the Character tab's Conditions panel. Shared state via atom
+          means toggling here also reflects on the Character tab. */}
+        {subTab === 2 ? (
+          <Panel>
+            <Box
+              sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, rowGap: 1.2 }}
+            >
+              {conditions.map((label, index, all) => {
+                const lastSolo = index === all.length - 1 && all.length % 2 === 1;
+                return (
+                  <Box
+                    key={label}
+                    sx={
+                      lastSolo
+                        ? {
+                            gridColumn: '1 / -1',
+                            justifySelf: 'center',
+                            width: 'calc(50% - 4px)',
+                          }
+                        : undefined
+                    }
+                  >
+                    <StatusButton
+                      label={label}
+                      active={Boolean(activeConditions[label])}
+                      activeColor={conditionColor}
+                      onToggle={() => toggleCondition(label)}
+                    />
+                  </Box>
                 );
               })}
             </Box>
-          </Box>
-          {/* Secondary filter row — proficiency level for the techniques list. */}
-          <FilterTabs
-            labels={['All', 'Learned', 'Practiced', 'Mastered']}
-            activeIndex={techFilter}
-            onChange={setTechFilter}
-          />
-          {visibleTechniques.map((tech) => {
-            const isBasic = tech.type === 'basic';
-            return (
-              <TechniqueAccordion
-                key={tech.title}
-                category={tech.category}
-                title={tech.title}
-                summary={tech.summary}
-                body={tech.body}
-                isBasic={isBasic}
-                // src is only used when isBasic=false (image badge path).
-                src={elementWater}
-                techColor={isBasic ? ink : water}
+          </Panel>
+        ) : null}
+
+        {/* Inventory sub-tab — same live inventory list that appears in Backpack. */}
+        {subTab === 3 ? (
+          <>
+            {inventory.map((entry, index) => (
+              <BackpackCard
+                key={index}
+                entry={entry}
+                onUpdate={(next) => updateInventoryItem(index, next)}
+                onRequestDelete={() => setPendingInventoryDelete(index)}
               />
-            );
-          })}
-        </>
-      ) : null}
-
-      {/* Statuses sub-tab: each status is a toggleable button — blue for
-          Positive, dark red for Negative. Empty / outlined by default,
-          filled when tapped. */}
-      {subTab === 1 ? (
-        <Panel>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.9 }}>
-            <Stack spacing={1.2}>
-              <Typography
-                sx={{
-                  color: alpha(brown, 0.7),
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.56rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.12em',
-                }}
-              >
-                POSITIVE
-              </Typography>
-              {positiveStatuses.map((label) => (
-                <StatusButton
-                  key={label}
-                  label={label}
-                  active={Boolean(activeStatuses[label])}
-                  activeColor={water}
-                  onToggle={() => toggleStatus(label)}
-                />
-              ))}
-            </Stack>
-            <Stack spacing={1.2}>
-              <Typography
-                sx={{
-                  color: gold,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.56rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.12em',
-                }}
-              >
-                NEGATIVE
-              </Typography>
-              {negativeStatuses.map((label) => (
-                <StatusButton
-                  key={label}
-                  label={label}
-                  active={Boolean(activeStatuses[label])}
-                  activeColor={gold}
-                  onToggle={() => toggleStatus(label)}
-                />
-              ))}
-            </Stack>
-          </Box>
-        </Panel>
-      ) : null}
-
-      {/* Conditions sub-tab — same toggleable button pattern as Statuses
-          and the Character tab's Conditions panel. Shared state via atom
-          means toggling here also reflects on the Character tab. */}
-      {subTab === 2 ? (
-        <Panel>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: 1,
-              rowGap: 1.2,
-            }}
-          >
-            {conditions.map((label, index, all) => {
-              const lastSolo = index === all.length - 1 && all.length % 2 === 1;
-              return (
-                <Box
-                  key={label}
-                  sx={
-                    lastSolo
-                      ? {
-                          gridColumn: '1 / -1',
-                          justifySelf: 'center',
-                          width: 'calc(50% - 4px)',
-                        }
-                      : undefined
-                  }
+            ))}
+            {inventory.length === 0 ? (
+              <Panel noNotch>
+                <Typography
+                  sx={{
+                    color: brownSoft,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.86rem',
+                    lineHeight: 1.5,
+                    fontStyle: 'italic',
+                    pt: 2,
+                    px: 2,
+                    pb: 2,
+                    textAlign: 'center',
+                  }}
                 >
-                  <StatusButton
-                    label={label}
-                    active={Boolean(activeConditions[label])}
-                    activeColor={conditionColor}
-                    onToggle={() => toggleCondition(label)}
-                  />
-                </Box>
-              );
-            })}
-          </Box>
-        </Panel>
-      ) : null}
-
-      {/* Inventory sub-tab — placeholder; the full inventory lives on Backpack */}
-      {subTab === 3 ? (
-        <Panel>
-          <Typography
-            sx={{
-              color: brownSoft,
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.78rem',
-              lineHeight: 1.5,
-              fontStyle: 'italic',
-            }}
-          >
-            Carried items appear under the Backpack tab's Inventory section.
-          </Typography>
-        </Panel>
-      ) : null}
-    </Stack>
+                  No inventory yet.
+                </Typography>
+              </Panel>
+            ) : null}
+          </>
+        ) : null}
+      </Stack>
+      <AvatarLegendsConfirmDialog
+        open={pendingInventoryDelete !== null}
+        onCancel={() => setPendingInventoryDelete(null)}
+        onConfirm={deleteInventoryItem}
+      />
+    </>
   );
 }
 
@@ -2807,8 +3012,11 @@ function ConnectionsSection() {
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.78rem',
+                fontSize: '0.86rem',
                 lineHeight: 1.5,
+                pt: 2,
+                px: 2,
+                pb: 2,
               }}
             >
               {note}
@@ -2850,7 +3058,7 @@ function ConnectionsSection() {
  * Editable swipe-to-delete card for both the Backpack > Notes and the
  * Backpack > Inventory lists. Same FabU-style swipe gesture as the
  * AccountMenu rows: drag left to reveal Delete (red, left) and Edit
- * (muted-gold accent, right). Edit pencils in an inline title input;
+ * (muted-gold accent, right). Edit pencils in an inline name input;
  * Delete stages a confirm dialog. Tapping the card body still
  * expands the description like the original NoteAccordion did.
  */
@@ -2859,33 +3067,39 @@ function BackpackCard({
   onUpdate,
   onRequestDelete,
 }: {
-  entry: { type: string; title: string; body: string };
-  onUpdate: (next: { type: string; title: string; body: string }) => void;
+  entry: { type: string; name: string; description: string };
+  onUpdate: (next: { type: string; name: string; description: string }) => void;
   onRequestDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draftTitle, setDraftTitle] = useState(entry.title);
+  const [editingField, setEditingField] = useState<'name' | 'description' | null>(null);
+  const [draftName, setDraftName] = useState(entry.name);
+  const [draftDescription, setDraftDescription] = useState(entry.description);
 
   function commitEdit() {
-    const trimmed = draftTitle.trim();
-    if (trimmed && trimmed !== entry.title) onUpdate({ ...entry, title: trimmed });
-    setEditing(false);
+    if (editingField === 'name') {
+      const trimmed = draftName.trim();
+      if (trimmed && trimmed !== entry.name) onUpdate({ ...entry, name: trimmed });
+    } else if (editingField === 'description') {
+      const trimmed = draftDescription.trim();
+      if (trimmed !== entry.description) onUpdate({ ...entry, description: trimmed });
+    }
+    setEditingField(null);
   }
 
   function cancelEdit() {
-    setDraftTitle(entry.title);
-    setEditing(false);
+    if (editingField === 'name') setDraftName(entry.name);
+    else if (editingField === 'description') setDraftDescription(entry.description);
+    setEditingField(null);
   }
 
-  return (
-    <SwipeableCard
-      actions={[
+  const swipeActions = open
+    ? []
+    : [
         {
           icon: <Trash2 size={18} />,
           color: '#7a2424',
           ariaLabel: 'Delete card',
-          // Keep the card swiped open while the confirm modal is up.
           closeOnClick: false,
           onClick: onRequestDelete,
         },
@@ -2894,28 +3108,41 @@ function BackpackCard({
           color: bookAccent,
           ariaLabel: 'Rename card',
           onClick: () => {
-            setDraftTitle(entry.title);
-            setEditing(true);
+            setDraftName(entry.name);
+            setEditingField('name');
           },
         },
-      ]}
-    >
+      ];
+  const descriptionSwipeActions = [
+    {
+      icon: <Pencil size={18} />,
+      color: bookAccent,
+      ariaLabel: 'Edit description',
+      onClick: () => {
+        setDraftDescription(entry.description);
+        setEditingField('description');
+      },
+    },
+  ];
+
+  return (
+    <SwipeableCard actions={swipeActions}>
       <Panel noNotch>
         <Stack spacing={0.5}>
           <Box
             component="button"
             type="button"
             onClick={() => {
-              if (editing) return;
+              if (editingField) return;
               setOpen((value) => !value);
             }}
             aria-expanded={open}
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'stretch',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
+              alignItems: 'center',
               width: '100%',
-              gap: 0.4,
+              columnGap: 0.8,
               p: 0,
               background: 'none',
               border: 'none',
@@ -2923,94 +3150,321 @@ function BackpackCard({
               textAlign: 'left',
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography
-                sx={{
-                  // Backpack eyebrows use the muted-gold bookAccent in
-                  // both themes to match the rulebook accent treatment.
-                  color: bookAccent,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.58rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {entry.type}
-              </Typography>
-              <Box
-                sx={{
-                  transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s ease',
-                  color: alpha(ink, 0.8),
-                  fontSize: '0.95rem',
-                  lineHeight: 1,
-                }}
-              >
-                ›
-              </Box>
+            <Stack spacing={0.4} sx={{ minWidth: 0 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography
+                  sx={{
+                    color: bookAccent,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.58rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {entry.type}
+                </Typography>
+              </Stack>
+              {editingField === 'name' ? (
+                <InputBase
+                  value={draftName}
+                  autoFocus
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitEdit();
+                    if (e.key === 'Escape') cancelEdit();
+                  }}
+                  onBlur={commitEdit}
+                  sx={{
+                    width: '100%',
+                    color: ink,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.98rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                    '& input': { p: 0 },
+                  }}
+                />
+              ) : (
+                <Typography
+                  sx={{
+                    color: ink,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.98rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {entry.name}
+                </Typography>
+              )}
             </Stack>
-            {editing ? (
-              <InputBase
-                value={draftTitle}
-                autoFocus
-                onChange={(e) => setDraftTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitEdit();
-                  if (e.key === 'Escape') cancelEdit();
-                }}
-                onBlur={commitEdit}
-                sx={{
-                  width: '100%',
-                  color: ink,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.98rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.1,
-                  '& input': { p: 0 },
-                }}
-              />
-            ) : (
-              <Typography
-                sx={{
-                  color: ink,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.98rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.1,
-                }}
-              >
-                {entry.title}
-              </Typography>
-            )}
+            <Box
+              sx={{
+                transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+                color: alpha(ink, 0.8),
+                fontSize: '1.4rem',
+                lineHeight: 1,
+                mr: 1,
+                display: 'flex',
+                alignItems: 'center',
+                alignSelf: 'stretch',
+              }}
+            >
+              ›
+            </Box>
           </Box>
           {open ? (
             <>
-              <Box
-                sx={{
-                  height: '1px',
-                  background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
-                }}
-              />
-              <Typography
-                sx={{
-                  color: brown,
-                  fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.78rem',
-                  lineHeight: 1.5,
-                }}
-              >
-                {entry.body}
-              </Typography>
+              <SwipeableCard actions={descriptionSwipeActions} borderRadius="4px">
+                <Box
+                  sx={{
+                    border: `1px solid ${alpha(border, 0.6)}`,
+                    borderRadius: '4px',
+                    bgcolor: alpha(parchmentLight, 0.72),
+                  }}
+                >
+                  {editingField === 'description' ? (
+                    <InputBase
+                      value={draftDescription}
+                      autoFocus
+                      multiline
+                      maxRows={6}
+                      onChange={(e) => setDraftDescription(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.ctrlKey) commitEdit();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                      onBlur={commitEdit}
+                      sx={{
+                        width: '100%',
+                        color: brown,
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                        pt: 2,
+                        px: 2,
+                        pb: 2,
+                        boxSizing: 'border-box',
+                        '& textarea': { p: 0 },
+                      }}
+                    />
+                  ) : (
+                    <Typography
+                      sx={{
+                        color: brown,
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                        pt: 2,
+                        px: 2,
+                        pb: 2,
+                      }}
+                    >
+                      {entry.description}
+                    </Typography>
+                  )}
+                </Box>
+              </SwipeableCard>
             </>
           ) : null}
         </Stack>
       </Panel>
     </SwipeableCard>
+  );
+}
+
+/**
+ * Swipeable fatigue card with modal editor for base and temp capacities.
+ * Base fatigue tracks mandatory damage; temp fatigue tracks additional
+ * boxes from conditions or abilities. Temp diamonds use the same diamond
+ * shape as base fatigue and render in the Avatar accent blue.
+ */
+function FatigueCard({
+  baseFatigue,
+  tempFatigue,
+  onUpdate,
+}: {
+  baseFatigue: boolean[];
+  tempFatigue: boolean[];
+  onUpdate: (base: boolean[], temp: boolean[]) => void;
+}) {
+  const { isDarkMode } = useThemeMode();
+  const cardAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [draftBaseCapacity, setDraftBaseCapacity] = useState(baseFatigue.length);
+  const [draftTempCapacity, setDraftTempCapacity] = useState(tempFatigue.length);
+  const tempFatigueColor = isDarkMode ? darkConditionGold : bookAccent;
+
+  function openEditor() {
+    setDraftBaseCapacity(baseFatigue.length);
+    setDraftTempCapacity(tempFatigue.length);
+    setPopoverOpen(true);
+  }
+
+  function confirmEdit() {
+    const newBaseCapacity = Math.max(0, Math.min(10, Math.floor(draftBaseCapacity)));
+    const newTempCapacity = Math.max(0, Math.min(10, Math.floor(draftTempCapacity)));
+    const newBase = [
+      ...baseFatigue.slice(0, newBaseCapacity),
+      ...Array(Math.max(0, newBaseCapacity - baseFatigue.length)).fill(false),
+    ];
+    const newTemp = [
+      ...tempFatigue.slice(0, newTempCapacity),
+      ...Array(Math.max(0, newTempCapacity - tempFatigue.length)).fill(false),
+    ];
+    onUpdate(newBase, newTemp);
+    setPopoverOpen(false);
+  }
+
+  function toggleBaseFatigue(index: number) {
+    onUpdate(
+      baseFatigue.map((filled, currentIndex) => (currentIndex === index ? !filled : filled)),
+      tempFatigue,
+    );
+  }
+
+  function toggleTempFatigue(index: number) {
+    onUpdate(
+      baseFatigue,
+      tempFatigue.map((filled, currentIndex) => (currentIndex === index ? !filled : filled)),
+    );
+  }
+
+  return (
+    <>
+      <Box ref={cardAnchorRef}>
+        <SwipeableCard
+          actions={[
+            {
+              icon: <Pencil size={18} />,
+              color: bookAccent,
+              ariaLabel: 'Edit fatigue capacity',
+              onClick: openEditor,
+            },
+          ]}
+        >
+          <Panel noNotch>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+              <Stack spacing={0.3}>
+                <SectionTitle>Fatigue</SectionTitle>
+                {tempFatigue.length > 0 ? (
+                  <Typography
+                    sx={{
+                      color: alpha(brown, 0.7),
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {baseFatigue.length} base + {tempFatigue.length} temp
+                  </Typography>
+                ) : null}
+              </Stack>
+              <Stack direction="row" gap={0.7}>
+                {tempFatigue.map((filled, index) => (
+                  <FatigueDiamond
+                    key={`temp-${index}`}
+                    filled={filled}
+                    color={tempFatigueColor}
+                    size={28}
+                    ariaLabel={`Toggle temporary fatigue ${index + 1}`}
+                    onToggle={() => toggleTempFatigue(index)}
+                  />
+                ))}
+                {Array.from({ length: baseFatigue.length }).map((_, index) => (
+                  <FatigueDiamond
+                    key={`base-${index}`}
+                    filled={baseFatigue[index]}
+                    size={28}
+                    ariaLabel={`Toggle base fatigue ${index + 1}`}
+                    onToggle={() => toggleBaseFatigue(index)}
+                  />
+                ))}
+              </Stack>
+            </Stack>
+          </Panel>
+        </SwipeableCard>
+      </Box>
+
+      <Popover
+        open={popoverOpen}
+        anchorEl={cardAnchorRef.current}
+        onClose={() => setPopoverOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        PaperProps={{
+          sx: {
+            bgcolor: parchment,
+            backgroundImage: 'none',
+            border: `1px solid ${isDarkMode ? '#ffffff' : border}`,
+            borderRadius: '10px',
+            p: 2.25,
+            mt: 0.75,
+            width: cardAnchorRef.current?.getBoundingClientRect().width ?? 320,
+            maxWidth: 'calc(100vw - 32px)',
+            boxShadow: `0 8px 22px ${alpha(deepInk, 0.28)}`,
+          },
+        }}
+      >
+        <Stack spacing={1.8}>
+          <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: ink }}>
+            Edit Fatigue Capacity
+          </Typography>
+
+          <CapacityPicker
+            label="Base Capacity"
+            value={draftBaseCapacity}
+            color={passionRed}
+            onChange={setDraftBaseCapacity}
+          />
+
+          <CapacityPicker
+            label="Temporary Capacity"
+            value={draftTempCapacity}
+            color={tempFatigueColor}
+            onChange={setDraftTempCapacity}
+          />
+
+          <Stack direction="row" gap={1} sx={{ pt: 1.2 }}>
+            <Button
+              onClick={() => setPopoverOpen(false)}
+              sx={{
+                flex: 1,
+                height: 40,
+                borderRadius: '8px',
+                border: `1px solid ${border}`,
+                color: brown,
+                textTransform: 'none',
+                fontWeight: 800,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmEdit}
+              variant="contained"
+              sx={{
+                flex: 1,
+                height: 40,
+                borderRadius: '8px',
+                bgcolor: bookAccent,
+                color: '#000000',
+                textTransform: 'none',
+                fontWeight: 800,
+                '&:hover': { bgcolor: bookAccent },
+              }}
+            >
+              Save
+            </Button>
+          </Stack>
+        </Stack>
+      </Popover>
+    </>
   );
 }
 
@@ -3118,21 +3572,38 @@ function BackpackPane() {
   } | null>(null);
 
   function addNote() {
-    setNotes((prev) => [...prev, { type: 'Note', title: 'New Note', body: 'Add a note here.' }]);
+    setNotes((prev) => [
+      ...prev,
+      { type: 'Note', name: 'New Note', description: 'Add a note here.' },
+    ]);
   }
 
   function addItem() {
     setInventory((prev) => [
       ...prev,
-      { type: 'Item', title: 'New Item', body: 'Add a description here.' },
+      { type: 'Item', name: 'New Item', description: 'Add a description here.' },
     ]);
   }
 
-  function updateNote(index: number, next: { type: string; title: string; body: string }) {
+  function addLore() {
+    setNotes((prev) => [
+      ...prev,
+      { type: 'Lore', name: 'New Lore', description: 'Add lore here.' },
+    ]);
+  }
+
+  function addSessionNote() {
+    setNotes((prev) => [
+      ...prev,
+      { type: 'Session Note', name: 'New Session Note', description: 'Add session notes here.' },
+    ]);
+  }
+
+  function updateNote(index: number, next: { type: string; name: string; description: string }) {
     setNotes((prev) => prev.map((entry, i) => (i === index ? next : entry)));
   }
 
-  function updateItem(index: number, next: { type: string; title: string; body: string }) {
+  function updateItem(index: number, next: { type: string; name: string; description: string }) {
     setInventory((prev) => prev.map((entry, i) => (i === index ? next : entry)));
   }
 
@@ -3146,6 +3617,16 @@ function BackpackPane() {
       setInventory((prev) => prev.filter((_, i) => i !== index));
     }
   }
+
+  const visibleNoteEntries = notes
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.type !== 'Lore' && entry.type !== 'Session Note');
+  const loreEntries = notes
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.type === 'Lore');
+  const sessionEntries = notes
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.type === 'Session Note');
 
   // Shared style for the "+ X" add buttons at the bottom of each list.
   const addButtonContent = (label: string) => (
@@ -3186,7 +3667,7 @@ function BackpackPane() {
       {/* Notes sub-tab: editable + deletable accordion cards. */}
       {subTab === 0 ? (
         <>
-          {notes.map((entry, index) => (
+          {visibleNoteEntries.map(({ entry, index }) => (
             <BackpackCard
               key={index}
               entry={entry}
@@ -3239,21 +3720,58 @@ function BackpackPane() {
         </>
       ) : null}
 
-      {/* Lore + Sessions sub-tabs — placeholders until content is wired. */}
-      {subTab === 2 || subTab === 3 ? (
-        <Panel noNotch>
-          <Typography
+      {subTab === 2 ? (
+        <>
+          {loreEntries.map(({ entry, index }) => (
+            <BackpackCard
+              key={index}
+              entry={entry}
+              onUpdate={(next) => updateNote(index, next)}
+              onRequestDelete={() => setPendingDelete({ list: 'notes', index })}
+            />
+          ))}
+          <Box
+            component="button"
+            type="button"
+            onClick={addLore}
             sx={{
-              color: brownSoft,
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.78rem',
-              lineHeight: 1.5,
-              fontStyle: 'italic',
+              background: 'none',
+              border: 'none',
+              p: 0,
+              cursor: 'pointer',
+              width: '100%',
             }}
           >
-            Nothing here yet.
-          </Typography>
-        </Panel>
+            <Panel noNotch>{addButtonContent('Lore')}</Panel>
+          </Box>
+        </>
+      ) : null}
+
+      {subTab === 3 ? (
+        <>
+          {sessionEntries.map(({ entry, index }) => (
+            <BackpackCard
+              key={index}
+              entry={entry}
+              onUpdate={(next) => updateNote(index, next)}
+              onRequestDelete={() => setPendingDelete({ list: 'notes', index })}
+            />
+          ))}
+          <Box
+            component="button"
+            type="button"
+            onClick={addSessionNote}
+            sx={{
+              background: 'none',
+              border: 'none',
+              p: 0,
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <Panel noNotch>{addButtonContent('Session Note')}</Panel>
+          </Box>
+        </>
       ) : null}
       <AvatarLegendsConfirmDialog
         open={pendingDelete !== null}
@@ -3379,14 +3897,7 @@ function AvatarLegends() {
 
           {/* Page corner ornaments — near-white in both modes, sitting on
             the deep-navy header. */}
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 2,
-              pointerEvents: 'none',
-            }}
-          >
+          <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
             <CornerOrnament position="tl" color={chromeText} size={18} />
             <CornerOrnament position="tr" color={chromeText} size={18} />
           </Box>
@@ -3511,6 +4022,7 @@ function AvatarLegends() {
                 flex: 1,
                 overflowY: 'auto',
                 px: 1.25,
+                pt: 2.5,
                 // Reserve room at the bottom so the last bit of content
                 // scrolls up clear of the absolutely-positioned nav. Now
                 // tight to the actual nav height (no bristle band sits
@@ -3519,7 +4031,7 @@ function AvatarLegends() {
                 // Footer pb dropped by 8px (see below) — content reserve
                 // shrinks to match so the last row sits flush against the
                 // nav top.
-                pb: '76px',
+                pb: 'calc(76px + 20px)',
               }}
             >
               {activeTab === 'character' ? <CharacterPane /> : null}
