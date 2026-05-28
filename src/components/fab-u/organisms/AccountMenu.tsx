@@ -510,6 +510,17 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
             boxShadow: fabUTokens.shadow.soft,
           },
         }}
+        // Use the active palette's brand color (AL header navy / FabU
+        // green) for the backdrop so the visible top-of-viewport color
+        // stays the same shade as the app header while the dialog is
+        // animating in. Without this, iOS standalone PWA reads the
+        // top pixel through a fading-in black backdrop and shifts the
+        // status bar color in two perceptible steps.
+        slotProps={{
+          backdrop: {
+            sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 },
+          },
+        }}
       >
         <DialogTitle sx={{ p: 1.6, pb: 0.8 }}>
           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>

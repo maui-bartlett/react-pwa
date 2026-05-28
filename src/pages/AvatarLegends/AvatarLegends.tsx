@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -3014,6 +3015,13 @@ function AvatarLegendsConfirmDialog({
           m: 2,
         },
       }}
+      // AL navy backdrop so iOS standalone PWA's status bar doesn't
+      // pick up a different color while the dialog is animating in.
+      slotProps={{
+        backdrop: {
+          sx: { backgroundColor: deepInk, opacity: 0.92 },
+        },
+      }}
     >
       <Stack spacing={2.25}>
         <Typography
@@ -3255,7 +3263,17 @@ function AvatarLegends() {
     <>
       {/* Render-less mount that keeps the characterStateAtom in lockstep
           with the user's Convex character record while they're signed in. */}
-      <ConvexCharacterSyncMount />
+      {/* Sync hook lives behind an error boundary so a transient
+          Convex / auth failure doesn't crash the whole page — same
+          pattern FabU's `ConvexCharacterSyncBoundary` uses. */}
+      <ErrorBoundary
+        fallbackRender={() => null}
+        onError={(error) => {
+          console.warn('Avatar Legends Convex sync is unavailable; continuing locally.', error);
+        }}
+      >
+        <ConvexCharacterSyncMount />
+      </ErrorBoundary>
       <Box
         sx={{
           // Use the *large* viewport unit so the outer mat extends through
@@ -3566,10 +3584,11 @@ function AvatarLegends() {
                           // so dark red is reserved for semantic warnings.
                           background: selected ? accent : 'transparent',
                           boxShadow: selected ? `0 0 6px ${alpha(accent, 0.7)}` : 'none',
-                          // Animate only colour + shadow — `all`
-                          // could pull in implicit size/position
-                          // changes that read as a jump on tap.
-                          transition: 'background 0.2s ease, box-shadow 0.2s ease',
+                          // No transition — colour + shadow flip
+                          // instantly when selection changes, so the
+                          // mobile PWA doesn't render an intermediate
+                          // frame the user could read as movement.
+                          transition: 'none',
                         }}
                       />
                       {/* spacing=1.05 (~8.4px) — was 0.3 (~2.4px); +6px
@@ -3586,7 +3605,7 @@ function AvatarLegends() {
                               display: 'grid',
                               placeItems: 'center',
                               opacity: selected ? 1 : 0.6,
-                              transition: 'opacity 0.2s ease',
+                              transition: 'none',
                             }}
                           >
                             {tab.renderIcon({
@@ -3606,7 +3625,7 @@ function AvatarLegends() {
                               objectPosition: 'center',
                               opacity: selected ? 1 : 0.5,
                               filter: 'brightness(0) invert(1)',
-                              transition: 'opacity 0.2s ease',
+                              transition: 'none',
                             }}
                           />
                         )}
@@ -3614,7 +3633,11 @@ function AvatarLegends() {
                           sx={{
                             fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                             fontSize: '0.58rem',
-                            fontWeight: selected ? 900 : 700,
+                            // Keep weight constant so the label glyph
+                            // bounds don't change between selected /
+                            // unselected — the mobile PWA was reading
+                            // the weight swap as a tiny icon shift.
+                            fontWeight: 700,
                             letterSpacing: '0.1em',
                             textTransform: 'uppercase',
                             lineHeight: 1,
