@@ -925,11 +925,19 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 62,
                         borderRadius: '8px',
-                        bgcolor: fabUTokens.color.brand,
+                        bgcolor:
+                          gameSystem === 'avatar-legends' && themeMode === 'dark'
+                            ? '#0c131c'
+                            : fabUTokens.color.brand,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
-                        '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                        '&:hover': {
+                          bgcolor:
+                            gameSystem === 'avatar-legends' && themeMode === 'dark'
+                              ? '#161e29'
+                              : fabUTokens.color.brandStrong,
+                        },
                       }}
                     >
                       Characters
@@ -941,11 +949,19 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 62,
                         borderRadius: '8px',
-                        bgcolor: fabUTokens.color.brand,
+                        bgcolor:
+                          gameSystem === 'avatar-legends' && themeMode === 'dark'
+                            ? '#0c131c'
+                            : fabUTokens.color.brand,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
-                        '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                        '&:hover': {
+                          bgcolor:
+                            gameSystem === 'avatar-legends' && themeMode === 'dark'
+                              ? '#161e29'
+                              : fabUTokens.color.brandStrong,
+                        },
                       }}
                     >
                       Campaigns
@@ -1008,11 +1024,19 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 54,
                         borderRadius: '8px',
-                        bgcolor: fabUTokens.color.brand,
+                        bgcolor:
+                          gameSystem === 'avatar-legends' && themeMode === 'dark'
+                            ? '#0c131c'
+                            : fabUTokens.color.brand,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
-                        '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                        '&:hover': {
+                          bgcolor:
+                            gameSystem === 'avatar-legends' && themeMode === 'dark'
+                              ? '#161e29'
+                              : fabUTokens.color.brandStrong,
+                        },
                       }}
                     >
                       Characters
@@ -1024,11 +1048,19 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 54,
                         borderRadius: '8px',
-                        bgcolor: fabUTokens.color.brand,
+                        bgcolor:
+                          gameSystem === 'avatar-legends' && themeMode === 'dark'
+                            ? '#0c131c'
+                            : fabUTokens.color.brand,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
-                        '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                        '&:hover': {
+                          bgcolor:
+                            gameSystem === 'avatar-legends' && themeMode === 'dark'
+                              ? '#161e29'
+                              : fabUTokens.color.brandStrong,
+                        },
                       }}
                     >
                       Campaigns
