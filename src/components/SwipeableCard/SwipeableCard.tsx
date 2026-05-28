@@ -88,21 +88,18 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
     touchEventOptions: { passive: true },
   });
 
-  // Flatten the right corners while the card is open so the meeting
-  // edge with the revealed action strip is a clean vertical line. The
-  // forced `&` selector also pushes the right-corner reset down onto
-  // the immediate child so it doesn't peek through with a rounded edge.
-  const openCornerOverride =
-    snapX !== 0 || (swiping && currentDeltaX < -5)
-      ? {
-          borderTopRightRadius: 0,
-          borderBottomRightRadius: 0,
-          '& > *': {
-            borderTopRightRadius: '0 !important',
-            borderBottomRightRadius: '0 !important',
-          },
-        }
-      : null;
+  // When the card is open (or actively swiping open), flatten the
+  // INNER card's right corners so the meeting edge with the action
+  // strip is a clean vertical line. The OUTER wrapper keeps its full
+  // border radius, so the rightmost revealed action button (e.g. Edit)
+  // still gets a rounded right corner that matches the card's
+  // original silhouette.
+  const cardOpen = snapX !== 0 || (swiping && currentDeltaX < -5);
+  const innerBorderRadius = cardOpen
+    ? typeof borderRadius === 'number'
+      ? `${borderRadius}px 0 0 ${borderRadius}px`
+      : `${borderRadius} 0 0 ${borderRadius}`
+    : borderRadius;
 
   return (
     <Box
@@ -110,7 +107,6 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
         position: 'relative',
         overflow: 'hidden',
         borderRadius,
-        ...openCornerOverride,
       }}
     >
       {channelVisible && (
@@ -173,7 +169,11 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
           if (snapX !== 0) close();
         }}
       >
-        {children}
+        {/* Inner wrapper clips its children to the (possibly flattened)
+            right corners so the card body's visual right edge follows
+            our open / closed state independent of whatever child the
+            caller renders. */}
+        <Box sx={{ borderRadius: innerBorderRadius, overflow: 'hidden' }}>{children}</Box>
       </Box>
     </Box>
   );
