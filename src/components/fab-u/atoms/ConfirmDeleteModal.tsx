@@ -37,6 +37,15 @@ function ConfirmDeleteModal({ open, onConfirm, onCancel }: ConfirmDeleteModalPro
           m: 2,
         },
       }}
+      // Tint the backdrop with the active palette's brand color so the
+      // top-of-viewport color stays steady on iOS standalone PWA (the
+      // status bar reads the top pixel and shifts in two steps if the
+      // backdrop fades in from black).
+      slotProps={{
+        backdrop: {
+          sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 },
+        },
+      }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
         <Typography
