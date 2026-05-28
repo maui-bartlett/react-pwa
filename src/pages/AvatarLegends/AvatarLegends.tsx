@@ -2902,7 +2902,11 @@ function AvatarLegends() {
   return (
     <Box
       sx={{
-        minHeight: '100svh',
+        // Use the *large* viewport unit so the outer mat extends through
+        // iOS safe areas (home indicator strip) instead of stopping at
+        // the small-viewport line and exposing the page background
+        // colour below the app card.
+        minHeight: '100vh',
         // Outer mat around the parchment card — gradient switches with mode.
         background: pageBg,
         display: 'grid',
@@ -2913,7 +2917,9 @@ function AvatarLegends() {
       <Box
         sx={{
           width: 'min(100vw, 430px)',
-          height: { xs: '100svh', sm: 'min(860px, calc(100svh - 32px))' },
+          // 100vh on mobile so the card itself fills through the safe
+          // area too; desktop keeps its capped card height.
+          height: { xs: '100vh', sm: 'min(860px, calc(100vh - 32px))' },
           borderRadius: { xs: 0, sm: '12px' },
           // Flat solid card background. The cornflower watercolor wash
           // applied on top (see overlay layer below) handles the colour
