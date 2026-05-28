@@ -1,127 +1,151 @@
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 
-const REVEAL_PX = 84;
-const SWIPE_THRESHOLD = 40;
-const HORIZONTAL_BIAS = 1.2;
-
-type SwipeableCardProps = {
-  /** Foreground content (the actual card). */
-  children: ReactNode;
-  /** Action revealed when the user swipes the card to the right.
-   *  Rendered fixed under the card; gets its own click handler. */
-  action: ReactNode;
-  /** Optional callback fired when the card snaps fully open. */
-  onOpen?: () => void;
+export type SwipeableAction = {
+  /** Icon shown inside the action button (e.g. lucide-react Pencil). */
+  icon: ReactNode;
+  /** Background colour for the action button surface. */
+  color: string;
+  /** Foreground colour for the icon. Defaults to white. */
+  iconColor?: string;
+  /** Accessibility label for the button. */
+  ariaLabel: string;
+  /** Click handler. The card auto-closes after invoking. */
+  onClick: () => void;
 };
 
-/**
- * Lightweight swipe-to-reveal wrapper. Drag the card horizontally to
- * the right and an action panel (e.g. an Edit button) slides into view
- * from underneath. Releasing past the threshold snaps fully open; tap
- * anywhere outside the action or swipe back left to dismiss.
- *
- * Pointer events drive the gesture so mouse + touch + pen all work.
- * Vertical drags pass through (the page can still scroll).
- */
-function SwipeableCard({ children, action, onOpen }: SwipeableCardProps) {
-  const [offset, setOffset] = useState(0);
-  const [opened, setOpened] = useState(false);
-  const startXRef = useRef<number | null>(null);
-  const startYRef = useRef<number | null>(null);
-  const draggingRef = useRef(false);
-  const surfaceRef = useRef<HTMLDivElement | null>(null);
+type SwipeableCardProps = {
+  /** Card surface content. */
+  children: ReactNode;
+  /** Actions revealed when the user swipes the card left, rendered in
+   *  order from left to right inside the revealed right-side strip.
+   *  Pass `[deleteAction, editAction]` to match the spec (delete on
+   *  the left of edit). Empty / falsy entries are ignored. */
+  actions: Array<SwipeableAction | null | undefined | false>;
+  /** Optional radius applied to the card surface (default 9px to match
+   *  the rest of the AccountMenu rows). */
+  borderRadius?: number | string;
+};
 
-  function reset() {
-    setOffset(0);
-    setOpened(false);
-    startXRef.current = null;
-    startYRef.current = null;
-    draggingRef.current = false;
+const ACTION_WIDTH = 64;
+
+/**
+ * Swipe-to-reveal card wrapper that mirrors the FabU `SwipeableTraitRow`
+ * styling: drag the card left and a strip of right-anchored action
+ * buttons (e.g. Delete + Edit) animates into view from underneath.
+ * Releasing past the threshold snaps fully open; tapping the card or
+ * swiping back right snaps it closed.
+ *
+ * Powered by `react-swipeable` so touch + mouse + pen all work; vertical
+ * scrolls pass through.
+ */
+function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCardProps) {
+  const visibleActions = actions.filter((action): action is SwipeableAction => Boolean(action));
+  const channelWidth = visibleActions.length * ACTION_WIDTH;
+
+  const [snapX, setSnapX] = useState(0);
+  const [currentDeltaX, setCurrentDeltaX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+
+  // Clamp the visual offset so the card can only translate within the
+  // channel range. Positive deltas (right-swipes) snap us back to 0.
+  const visualX = Math.max(-channelWidth, Math.min(0, snapX + currentDeltaX));
+  const channelVisible =
+    visibleActions.length > 0 && (snapX !== 0 || (swiping && currentDeltaX < -5));
+
+  function close() {
+    setSnapX(0);
+    setCurrentDeltaX(0);
   }
 
-  return (
-    <Box sx={{ position: 'relative', overflow: 'hidden', borderRadius: '12px' }}>
-      {/* Revealed action panel — sits behind the card on the left edge. */}
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'stretch',
-          // Action button hugs the left edge so swipe-right reveals it.
-          pointerEvents: opened ? 'auto' : 'none',
-        }}
-      >
-        {action}
-      </Box>
+  const swipeHandlers = useSwipeable({
+    onSwiping: ({ deltaX, deltaY }) => {
+      if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5 && Math.abs(deltaX) > 8) {
+        setSwiping(true);
+      }
+      setCurrentDeltaX(deltaX);
+    },
+    onSwiped: ({ dir, absX }) => {
+      setSwiping(false);
+      if (dir === 'Left' && absX > 50 && snapX === 0 && visibleActions.length > 0) {
+        setSnapX(-channelWidth);
+      } else if (dir === 'Right' && absX > 50 && snapX !== 0) {
+        close();
+      }
+      setCurrentDeltaX(0);
+    },
+    trackMouse: true,
+    delta: 10,
+    preventScrollOnSwipe: false,
+    touchEventOptions: { passive: true },
+  });
 
-      {/* The card itself — translates rightward to reveal the action. */}
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius,
+      }}
+    >
+      {channelVisible && (
+        <Box
+          sx={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: channelWidth,
+            display: 'flex',
+            zIndex: 0,
+          }}
+        >
+          <Stack direction="row" sx={{ width: '100%' }}>
+            {visibleActions.map((action, idx) => (
+              <Box
+                key={idx}
+                role="button"
+                aria-label={action.ariaLabel}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.onClick();
+                  close();
+                }}
+                sx={{
+                  flex: 1,
+                  bgcolor: action.color,
+                  color: action.iconColor ?? '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                {action.icon}
+              </Box>
+            ))}
+          </Stack>
+        </Box>
+      )}
       <Box
-        ref={surfaceRef}
-        onPointerDown={(e) => {
-          startXRef.current = e.clientX;
-          startYRef.current = e.clientY;
-          draggingRef.current = false;
-        }}
-        onPointerMove={(e) => {
-          if (startXRef.current === null || startYRef.current === null) return;
-          const dx = e.clientX - startXRef.current;
-          const dy = e.clientY - startYRef.current;
-          if (!draggingRef.current) {
-            // Only claim the gesture once horizontal travel clearly
-            // dominates vertical — keeps page scrolling intact.
-            if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy) * HORIZONTAL_BIAS) {
-              draggingRef.current = true;
-              (e.target as Element).setPointerCapture?.(e.pointerId);
-            } else if (Math.abs(dy) > Math.abs(dx)) {
-              startXRef.current = null;
-              startYRef.current = null;
-              return;
-            } else {
-              return;
-            }
-          }
-          // Only allow positive (right-swipe) translation. Clamp at the
-          // reveal width so the card can't be over-dragged.
-          const next = Math.max(0, Math.min(REVEAL_PX, opened ? REVEAL_PX + dx : dx));
-          setOffset(next);
-        }}
-        onPointerUp={(e) => {
-          if (!draggingRef.current) {
-            // No horizontal drag — treat as a tap. If the card is open,
-            // a tap on the surface closes it.
-            if (opened) {
-              reset();
-            }
-            startXRef.current = null;
-            startYRef.current = null;
-            return;
-          }
-          (e.target as Element).releasePointerCapture?.(e.pointerId);
-          if (offset >= SWIPE_THRESHOLD) {
-            setOffset(REVEAL_PX);
-            if (!opened) {
-              setOpened(true);
-              onOpen?.();
-            }
-          } else {
-            reset();
-          }
-          startXRef.current = null;
-          startYRef.current = null;
-          draggingRef.current = false;
-        }}
-        onPointerCancel={() => {
-          reset();
-        }}
+        {...swipeHandlers}
         sx={{
           position: 'relative',
-          transform: `translateX(${offset}px)`,
-          transition: draggingRef.current ? 'none' : 'transform 0.2s ease',
+          zIndex: 1,
+          transform: `translateX(${visualX}px)`,
+          transition: swiping ? 'none' : 'transform 0.22s ease',
           touchAction: 'pan-y',
-          willChange: 'transform',
+          userSelect: 'none',
+        }}
+        onClick={() => {
+          // Tapping the card surface while open closes it. Open cards
+          // intercept the click so the underlying content's onClick
+          // (e.g. select character) doesn't fire when the user just
+          // wanted to dismiss the action panel.
+          if (snapX !== 0) close();
         }}
       >
         {children}

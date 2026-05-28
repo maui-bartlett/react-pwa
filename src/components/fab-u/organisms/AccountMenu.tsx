@@ -26,11 +26,13 @@ import {
   Settings,
   ShieldCheck,
   Sun,
+  Trash2,
   UserRound,
   X,
 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
+import ConfirmDeleteModal from '@/components/fab-u/atoms/ConfirmDeleteModal';
 import { CHARACTER_SCHEMA_VERSION, createDefaultCharacter } from '@/domain/fabU/characterDefaults';
 import {
   deserializeCharacterFromBackend,
@@ -246,6 +248,8 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
   );
   const renameCharacter = useMutation(api.characters.renameCharacter);
   const updateCampaign = useMutation(api.campaigns.update);
+  const archiveCharacter = useMutation(api.characters.archive);
+  const archiveCampaign = useMutation(api.campaigns.archive);
   // Inline-rename state for the swipe-to-edit cards. `editingTarget`
   // disambiguates which list we're editing inside the same dialog.
   const [editingTarget, setEditingTarget] = useState<{
@@ -253,6 +257,13 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     id: string;
   } | null>(null);
   const [editingName, setEditingName] = useState('');
+  // Pending-delete state drives the FabU-style ConfirmDeleteModal: the
+  // delete action on a SwipeableCard stages the target here, the modal
+  // opens, and confirm runs the archive mutation.
+  const [pendingDelete, setPendingDelete] = useState<{
+    kind: 'character' | 'campaign';
+    id: string;
+  } | null>(null);
 
   function beginEdit(kind: 'character' | 'campaign', id: string, currentName: string) {
     setEditingTarget({ kind, id });
@@ -283,6 +294,29 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
       });
     }
     cancelEdit();
+  }
+
+  function requestDelete(kind: 'character' | 'campaign', id: string) {
+    setPendingDelete({ kind, id });
+  }
+
+  async function confirmPendingDelete() {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setPendingDelete(null);
+    try {
+      if (target.kind === 'character') {
+        await archiveCharacter({ characterId: target.id as Id<'characters'> });
+      } else {
+        await archiveCampaign({ campaignId: target.id as Id<'campaigns'> });
+      }
+    } catch (error) {
+      console.warn('[account-menu] failed to archive', { error, target });
+    }
+  }
+
+  function cancelPendingDelete() {
+    setPendingDelete(null);
   }
   const visibleCampaigns = useMemo(
     () => campaigns?.filter((item) => item !== null) ?? [],
@@ -568,25 +602,22 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                     return (
                       <SwipeableCard
                         key={character._id}
-                        action={
-                          <Button
-                            onClick={() => beginEdit('character', character._id, displayName)}
-                            sx={{
-                              minWidth: 84,
-                              height: '100%',
-                              borderRadius: 0,
-                              bgcolor: fabUTokens.color.highlight,
-                              color: fabUTokens.color.highlightFg,
-                              textTransform: 'none',
-                              fontWeight: 800,
-                              gap: 0.5,
-                              '&:hover': { bgcolor: fabUTokens.color.highlight },
-                            }}
-                          >
-                            <Pencil size={14} />
-                            Edit
-                          </Button>
-                        }
+                        actions={[
+                          {
+                            icon: <Trash2 size={18} />,
+                            color: fabUTokens.color.danger,
+                            ariaLabel: 'Delete character',
+                            onClick: () => requestDelete('character', character._id),
+                          },
+                          {
+                            icon: <Pencil size={18} />,
+                            // Mirror the FabU edit-channel green so the
+                            // gesture feels familiar across apps.
+                            color: fabUTokens.isDark ? '#3d7060' : '#4d8070',
+                            ariaLabel: 'Rename character',
+                            onClick: () => beginEdit('character', character._id, displayName),
+                          },
+                        ]}
                       >
                         {isEditing ? (
                           <Stack
@@ -705,27 +736,21 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                     return (
                       <SwipeableCard
                         key={item.campaign._id}
-                        action={
-                          <Button
-                            onClick={() =>
-                              beginEdit('campaign', item.campaign._id, item.campaign.name)
-                            }
-                            sx={{
-                              minWidth: 84,
-                              height: '100%',
-                              borderRadius: 0,
-                              bgcolor: fabUTokens.color.highlight,
-                              color: fabUTokens.color.highlightFg,
-                              textTransform: 'none',
-                              fontWeight: 800,
-                              gap: 0.5,
-                              '&:hover': { bgcolor: fabUTokens.color.highlight },
-                            }}
-                          >
-                            <Pencil size={14} />
-                            Edit
-                          </Button>
-                        }
+                        actions={[
+                          {
+                            icon: <Trash2 size={18} />,
+                            color: fabUTokens.color.danger,
+                            ariaLabel: 'Delete campaign',
+                            onClick: () => requestDelete('campaign', item.campaign._id),
+                          },
+                          {
+                            icon: <Pencil size={18} />,
+                            color: fabUTokens.isDark ? '#3d7060' : '#4d8070',
+                            ariaLabel: 'Rename campaign',
+                            onClick: () =>
+                              beginEdit('campaign', item.campaign._id, item.campaign.name),
+                          },
+                        ]}
                       >
                         {isEditing ? (
                           <Stack
@@ -1098,6 +1123,13 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
           </Box>
         </DialogContent>
       </Dialog>
+      {/* Renders only while a delete is staged. Matches the dialog
+          used by the FabU Backpack swipe-to-delete flow. */}
+      <ConfirmDeleteModal
+        open={pendingDelete !== null}
+        onConfirm={() => void confirmPendingDelete()}
+        onCancel={cancelPendingDelete}
+      />
     </>
   );
 }

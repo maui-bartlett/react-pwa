@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
@@ -10,6 +10,7 @@ import { atom, useAtom, useAtomValue } from 'jotai';
 import { Backpack, HandFist } from 'lucide-react';
 
 import AccountSettings from '@/sections/AccountSettings';
+import { createCharacterHistory } from '@/state/createCharacterHistory';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 import { useThemeMode } from '@/theme/hooks';
 
@@ -476,17 +477,27 @@ function describeAvatarLegendsCharacter(state: CharacterState) {
   return state.name || 'Avatar Legends Character';
 }
 
+/** Shared undo/redo history hook for the AL character. Built on the
+ *  reusable factory in `src/state/createCharacterHistory.ts` — same
+ *  machinery FabU uses. Every change to `characterStateAtom` (whether
+ *  via a slice atom or a direct write) is captured automatically. */
+const useAvatarLegendsCharacterHistory = createCharacterHistory(characterStateAtom);
+
 /** Mounts the generic Convex character sync hook against the AL
  *  `characterStateAtom`. Renders nothing — just keeps the local atom
  *  and the Convex `characters` table in lockstep while the user is
- *  signed in. The hook is a no-op for signed-out users. */
-function useAvatarLegendsConvexSync() {
-  const [character, setCharacter] = useAtom(characterStateAtom);
+ *  signed in. The hook is a no-op for signed-out users. Also wires
+ *  the Cmd/Ctrl+Z undo / Cmd+Shift+Z redo shortcuts. */
+function ConvexCharacterSyncMount() {
+  const [character, , historyControls] = useAvatarLegendsCharacterHistory();
   const applyRemote = useCallback(
     (remote: CharacterState) => {
-      setCharacter(remote);
+      // history.replace swaps in the remote and clears the undo stack
+      // so post-pull undos don't try to walk back into a stale local
+      // history that never matched the remote anyway.
+      historyControls.replace(remote);
     },
-    [setCharacter],
+    [historyControls],
   );
   useConvexCharacterSync<CharacterState>({
     character,
@@ -499,10 +510,27 @@ function useAvatarLegendsConvexSync() {
     selectCharacterEventName: AVATAR_LEGENDS_SELECT_CHARACTER_EVENT,
     describeCharacter: describeAvatarLegendsCharacter,
   });
-}
 
-function ConvexCharacterSyncMount() {
-  useAvatarLegendsConvexSync();
+  // Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z = redo. Skip if focus is in
+  // a text input so native text-editor undo still works there.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key.toLowerCase() !== 'z') return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const isEditable =
+        tag === 'INPUT' || tag === 'TEXTAREA' || (target?.isContentEditable ?? false);
+      if (isEditable) return;
+      e.preventDefault();
+      if (e.shiftKey) historyControls.redo();
+      else historyControls.undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [historyControls]);
+
   return null;
 }
 
@@ -3227,9 +3255,10 @@ function AvatarLegends() {
                 // tight to the actual nav height (no bristle band sits
                 // behind it) so there's no dark strip for content to
                 // scroll over.
-                // Reserve room at the bottom now that the nav grew by
-                // ~20px of additional bottom padding (see below).
-                pb: '84px',
+                // Footer pb dropped by 8px (see below) — content reserve
+                // shrinks to match so the last row sits flush against the
+                // nav top.
+                pb: '76px',
               }}
             >
               {activeTab === 'character' ? <CharacterPane /> : null}
@@ -3246,10 +3275,10 @@ function AvatarLegends() {
             <Box
               sx={{
                 px: 0.5,
-                // +20px of bottom padding so the nav clears the iOS home
-                // indicator safe-area, and the overall footer grows by
-                // the same +20px (its height is content-driven).
-                pb: '28px',
+                // ~12px of bottom padding to clear the iOS home
+                // indicator without making the footer feel oversized.
+                // (Was 28px — shrunk by 8px per spec.)
+                pb: '20px',
                 pt: 0.3,
                 position: 'absolute',
                 bottom: 0,
