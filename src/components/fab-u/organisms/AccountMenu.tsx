@@ -357,6 +357,9 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     if (user?.email) return user.email;
     return 'Settings';
   }, [isPending, user?.email, user?.name]);
+  const isAvatarDark = gameSystem === 'avatar-legends' && themeMode === 'dark';
+  const accountActionBg = isAvatarDark ? '#0c131c' : fabUTokens.color.brand;
+  const accountActionHoverBg = isAvatarDark ? '#161e29' : fabUTokens.color.brandStrong;
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -503,7 +506,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
           sx: {
             width: 'min(360px, calc(100vw - 24px))',
             borderRadius: '12px',
-            border: `1px solid ${fabUTokens.color.border}`,
+            border: `1px solid ${isAvatarDark ? '#ffffff' : fabUTokens.color.border}`,
             bgcolor: fabUTokens.color.surface,
             color: fabUTokens.color.textPrimary,
             backgroundImage: 'none',
@@ -518,7 +521,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
         // status bar color in two perceptible steps.
         slotProps={{
           backdrop: {
-            sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 },
+            sx: { backgroundColor: accountActionBg, opacity: 0.92 },
           },
         }}
       >
@@ -925,18 +928,12 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 62,
                         borderRadius: '8px',
-                        bgcolor:
-                          gameSystem === 'avatar-legends' && themeMode === 'dark'
-                            ? '#0c131c'
-                            : fabUTokens.color.brand,
+                        bgcolor: accountActionBg,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
                         '&:hover': {
-                          bgcolor:
-                            gameSystem === 'avatar-legends' && themeMode === 'dark'
-                              ? '#161e29'
-                              : fabUTokens.color.brandStrong,
+                          bgcolor: accountActionHoverBg,
                         },
                       }}
                     >
@@ -949,18 +946,12 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 62,
                         borderRadius: '8px',
-                        bgcolor:
-                          gameSystem === 'avatar-legends' && themeMode === 'dark'
-                            ? '#0c131c'
-                            : fabUTokens.color.brand,
+                        bgcolor: accountActionBg,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
                         '&:hover': {
-                          bgcolor:
-                            gameSystem === 'avatar-legends' && themeMode === 'dark'
-                              ? '#161e29'
-                              : fabUTokens.color.brandStrong,
+                          bgcolor: accountActionHoverBg,
                         },
                       }}
                     >
@@ -1024,18 +1015,12 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 54,
                         borderRadius: '8px',
-                        bgcolor:
-                          gameSystem === 'avatar-legends' && themeMode === 'dark'
-                            ? '#0c131c'
-                            : fabUTokens.color.brand,
+                        bgcolor: accountActionBg,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
                         '&:hover': {
-                          bgcolor:
-                            gameSystem === 'avatar-legends' && themeMode === 'dark'
-                              ? '#161e29'
-                              : fabUTokens.color.brandStrong,
+                          bgcolor: accountActionHoverBg,
                         },
                       }}
                     >
@@ -1048,18 +1033,12 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       sx={{
                         minHeight: 54,
                         borderRadius: '8px',
-                        bgcolor:
-                          gameSystem === 'avatar-legends' && themeMode === 'dark'
-                            ? '#0c131c'
-                            : fabUTokens.color.brand,
+                        bgcolor: accountActionBg,
                         color: '#ffffff',
                         textTransform: 'none',
                         fontWeight: 800,
                         '&:hover': {
-                          bgcolor:
-                            gameSystem === 'avatar-legends' && themeMode === 'dark'
-                              ? '#161e29'
-                              : fabUTokens.color.brandStrong,
+                          bgcolor: accountActionHoverBg,
                         },
                       }}
                     >
@@ -1093,14 +1072,17 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                               minWidth: 0,
                               minHeight: 32,
                               borderRadius: '7px',
-                              bgcolor: selected ? fabUTokens.color.surface : 'transparent',
-                              color: selected
-                                ? fabUTokens.color.textPrimary
-                                : fabUTokens.color.textSecondary,
+                              bgcolor: selected ? accountActionBg : 'transparent',
+                              color: selected ? '#ffffff' : fabUTokens.color.textSecondary,
                               boxShadow: selected ? fabUTokens.shadow.card : 'none',
                               textTransform: 'none',
                               fontSize: '0.72rem',
                               fontWeight: 800,
+                              '&:hover': {
+                                bgcolor: selected
+                                  ? accountActionHoverBg
+                                  : alpha(accountActionBg, 0.08),
+                              },
                             }}
                           >
                             {authMode.label}

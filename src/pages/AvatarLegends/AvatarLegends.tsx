@@ -200,9 +200,8 @@ const fire = '#a8413a';
 const air = '#a3bbc4';
 const martial = '#3d3d4a';
 const tech = '#7a5d8a';
-const darkConditionGold = '#8a6a22';
+const darkConditionGold = '#b98535';
 const darkNegativeRed = '#5f1717';
-const tempFatigueGold = '#8a6a22';
 
 const tabs: TabConfig[] = [
   {
@@ -286,6 +285,7 @@ type CharacterState = {
   conditions: Record<string, boolean>;
   statuses: Record<string, boolean>;
   fatigue: boolean[];
+  tempFatigue: boolean[];
   backgrounds: Record<string, boolean>;
   classTraitTitle: string;
   classTraitBody: string;
@@ -313,6 +313,7 @@ const defaultCharacter: CharacterState = {
   // Fatigue marks fill from the right toward the left by default — two
   // marks pre-filled on the right side of the tracker on first load.
   fatigue: [false, false, false, true, true],
+  tempFatigue: [],
   backgrounds: { Urban: true, Privileged: true },
   classTraitTitle: 'A Tainted Past',
   classTraitBody:
@@ -620,6 +621,7 @@ const balancePositionAtom = sliceAtom('balance');
 const activeStatusesAtom = sliceAtom('statuses');
 const activeConditionsAtom = sliceAtom('conditions');
 const fatigueAtom = sliceAtom('fatigue');
+const tempFatigueAtom = sliceAtom('tempFatigue');
 const backgroundsAtom = sliceAtom('backgrounds');
 const historyAnswersAtom = sliceAtom('historyAnswers');
 const notesAtom = sliceAtom('notes');
@@ -2605,7 +2607,7 @@ function CombatPane() {
     });
   }, [techniques, elementFilter, techFilter]);
   const [fatigue, setFatigue] = useAtom(fatigueAtom);
-  const [tempFatigue, setTempFatigue] = useState<boolean[]>([]);
+  const [tempFatigue, setTempFatigue] = useAtom(tempFatigueAtom);
   const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
     setFatigue(base);
     setTempFatigue(temp);
@@ -3132,11 +3134,11 @@ function BackpackCard({
             }}
             aria-expanded={open}
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'stretch',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto',
+              alignItems: 'center',
               width: '100%',
-              gap: 0.4,
+              columnGap: 0.8,
               p: 0,
               background: 'none',
               border: 'none',
@@ -3144,81 +3146,77 @@ function BackpackCard({
               textAlign: 'left',
             }}
           >
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography
-                sx={{
-                  color: bookAccent,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.58rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {entry.type}
-              </Typography>
-              <Box
-                sx={{
-                  transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s ease',
-                  color: alpha(ink, 0.8),
-                  fontSize: '1.4rem',
-                  lineHeight: 1,
-                  mr: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                ›
-              </Box>
+            <Stack spacing={0.4} sx={{ minWidth: 0 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography
+                  sx={{
+                    color: bookAccent,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.58rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {entry.type}
+                </Typography>
+              </Stack>
+              {editingField === 'name' ? (
+                <InputBase
+                  value={draftName}
+                  autoFocus
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitEdit();
+                    if (e.key === 'Escape') cancelEdit();
+                  }}
+                  onBlur={commitEdit}
+                  sx={{
+                    width: '100%',
+                    color: ink,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.98rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                    '& input': { p: 0 },
+                  }}
+                />
+              ) : (
+                <Typography
+                  sx={{
+                    color: ink,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.98rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {entry.name}
+                </Typography>
+              )}
             </Stack>
-            {editingField === 'name' ? (
-              <InputBase
-                value={draftName}
-                autoFocus
-                onChange={(e) => setDraftName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitEdit();
-                  if (e.key === 'Escape') cancelEdit();
-                }}
-                onBlur={commitEdit}
-                sx={{
-                  width: '100%',
-                  color: ink,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.98rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.1,
-                  '& input': { p: 0 },
-                }}
-              />
-            ) : (
-              <Typography
-                sx={{
-                  color: ink,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.98rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.1,
-                }}
-              >
-                {entry.name}
-              </Typography>
-            )}
+            <Box
+              sx={{
+                transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+                color: alpha(ink, 0.8),
+                fontSize: '1.4rem',
+                lineHeight: 1,
+                mr: 1,
+                display: 'flex',
+                alignItems: 'center',
+                alignSelf: 'stretch',
+              }}
+            >
+              ›
+            </Box>
           </Box>
           {open ? (
             <>
-              <Box
-                sx={{
-                  height: '1px',
-                  background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
-                  borderTop: `1px solid ${alpha(border, 0.5)}`,
-                }}
-              />
               <SwipeableCard actions={descriptionSwipeActions} borderRadius="4px">
                 <Box
                   sx={{
@@ -3297,6 +3295,7 @@ function FatigueCard({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [draftBaseCapacity, setDraftBaseCapacity] = useState(baseFatigue.length);
   const [draftTempCapacity, setDraftTempCapacity] = useState(tempFatigue.length);
+  const tempFatigueColor = isDarkMode ? darkConditionGold : bookAccent;
 
   function openEditor() {
     setDraftBaseCapacity(baseFatigue.length);
@@ -3367,7 +3366,7 @@ function FatigueCard({
                   <FatigueDiamond
                     key={`temp-${index}`}
                     filled={filled}
-                    color={tempFatigueGold}
+                    color={tempFatigueColor}
                     size={28}
                     ariaLabel={`Toggle temporary fatigue ${index + 1}`}
                     onToggle={() => toggleTempFatigue(index)}
@@ -3423,7 +3422,7 @@ function FatigueCard({
           <CapacityPicker
             label="Temporary Capacity"
             value={draftTempCapacity}
-            color={tempFatigueGold}
+            color={tempFatigueColor}
             onChange={setDraftTempCapacity}
           />
 
@@ -3582,6 +3581,20 @@ function BackpackPane() {
     ]);
   }
 
+  function addLore() {
+    setNotes((prev) => [
+      ...prev,
+      { type: 'Lore', name: 'New Lore', description: 'Add lore here.' },
+    ]);
+  }
+
+  function addSessionNote() {
+    setNotes((prev) => [
+      ...prev,
+      { type: 'Session Note', name: 'New Session Note', description: 'Add session notes here.' },
+    ]);
+  }
+
   function updateNote(index: number, next: { type: string; name: string; description: string }) {
     setNotes((prev) => prev.map((entry, i) => (i === index ? next : entry)));
   }
@@ -3693,24 +3706,38 @@ function BackpackPane() {
         </>
       ) : null}
 
-      {/* Lore + Sessions sub-tabs — placeholders until content is wired. */}
-      {subTab === 2 || subTab === 3 ? (
-        <Panel noNotch>
-          <Typography
-            sx={{
-              color: brownSoft,
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.86rem',
-              lineHeight: 1.5,
-              fontStyle: 'italic',
-              pt: 2,
-              px: 2,
-              pb: 2,
-            }}
-          >
-            Nothing here yet.
-          </Typography>
-        </Panel>
+      {subTab === 2 ? (
+        <Box
+          component="button"
+          type="button"
+          onClick={addLore}
+          sx={{
+            background: 'none',
+            border: 'none',
+            p: 0,
+            cursor: 'pointer',
+            width: '100%',
+          }}
+        >
+          <Panel noNotch>{addButtonContent('Lore')}</Panel>
+        </Box>
+      ) : null}
+
+      {subTab === 3 ? (
+        <Box
+          component="button"
+          type="button"
+          onClick={addSessionNote}
+          sx={{
+            background: 'none',
+            border: 'none',
+            p: 0,
+            cursor: 'pointer',
+            width: '100%',
+          }}
+        >
+          <Panel noNotch>{addButtonContent('Session Note')}</Panel>
+        </Box>
       ) : null}
       <AvatarLegendsConfirmDialog
         open={pendingDelete !== null}
