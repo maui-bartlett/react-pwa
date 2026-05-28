@@ -2606,11 +2606,11 @@ function CombatPane() {
       return elementOk && levelOk;
     });
   }, [techniques, elementFilter, techFilter]);
-  const [fatigue, setFatigue] = useAtom(fatigueAtom);
-  const [tempFatigue, setTempFatigue] = useAtom(tempFatigueAtom);
+  const fatigue = useAtomValue(fatigueAtom);
+  const tempFatigue = useAtomValue(tempFatigueAtom);
+  const [, setCharacterState] = useAtom(characterStateAtom);
   const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
-    setFatigue(base);
-    setTempFatigue(temp);
+    setCharacterState((prev) => ({ ...prev, fatigue: base, tempFatigue: temp }));
   };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const toggleStatus = (label: string) =>
@@ -3614,6 +3614,16 @@ function BackpackPane() {
     }
   }
 
+  const visibleNoteEntries = notes
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.type !== 'Lore' && entry.type !== 'Session Note');
+  const loreEntries = notes
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.type === 'Lore');
+  const sessionEntries = notes
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.type === 'Session Note');
+
   // Shared style for the "+ X" add buttons at the bottom of each list.
   const addButtonContent = (label: string) => (
     <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
@@ -3653,7 +3663,7 @@ function BackpackPane() {
       {/* Notes sub-tab: editable + deletable accordion cards. */}
       {subTab === 0 ? (
         <>
-          {notes.map((entry, index) => (
+          {visibleNoteEntries.map(({ entry, index }) => (
             <BackpackCard
               key={index}
               entry={entry}
@@ -3707,37 +3717,57 @@ function BackpackPane() {
       ) : null}
 
       {subTab === 2 ? (
-        <Box
-          component="button"
-          type="button"
-          onClick={addLore}
-          sx={{
-            background: 'none',
-            border: 'none',
-            p: 0,
-            cursor: 'pointer',
-            width: '100%',
-          }}
-        >
-          <Panel noNotch>{addButtonContent('Lore')}</Panel>
-        </Box>
+        <>
+          {loreEntries.map(({ entry, index }) => (
+            <BackpackCard
+              key={index}
+              entry={entry}
+              onUpdate={(next) => updateNote(index, next)}
+              onRequestDelete={() => setPendingDelete({ list: 'notes', index })}
+            />
+          ))}
+          <Box
+            component="button"
+            type="button"
+            onClick={addLore}
+            sx={{
+              background: 'none',
+              border: 'none',
+              p: 0,
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <Panel noNotch>{addButtonContent('Lore')}</Panel>
+          </Box>
+        </>
       ) : null}
 
       {subTab === 3 ? (
-        <Box
-          component="button"
-          type="button"
-          onClick={addSessionNote}
-          sx={{
-            background: 'none',
-            border: 'none',
-            p: 0,
-            cursor: 'pointer',
-            width: '100%',
-          }}
-        >
-          <Panel noNotch>{addButtonContent('Session Note')}</Panel>
-        </Box>
+        <>
+          {sessionEntries.map(({ entry, index }) => (
+            <BackpackCard
+              key={index}
+              entry={entry}
+              onUpdate={(next) => updateNote(index, next)}
+              onRequestDelete={() => setPendingDelete({ list: 'notes', index })}
+            />
+          ))}
+          <Box
+            component="button"
+            type="button"
+            onClick={addSessionNote}
+            sx={{
+              background: 'none',
+              border: 'none',
+              p: 0,
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            <Panel noNotch>{addButtonContent('Session Note')}</Panel>
+          </Box>
+        </>
       ) : null}
       <AvatarLegendsConfirmDialog
         open={pendingDelete !== null}
