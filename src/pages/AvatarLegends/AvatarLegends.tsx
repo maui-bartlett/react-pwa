@@ -1093,6 +1093,9 @@ function ConditionButtonShared({ label }: { label: string }) {
       // Conditions use the muted-gold bookAccent across both themes
       // so they match the rulebook chapter-heading color everywhere.
       activeColor={bookAccent}
+      // Unselected label reads in black in light mode (per spec); dark
+      // mode keeps the StatusButton default of white text at all times.
+      inactiveTextColor="#000000"
       onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
     />
   );
@@ -1107,19 +1110,30 @@ function StatusButton({
   label,
   active,
   activeColor,
+  inactiveTextColor,
   onToggle,
 }: {
   label: string;
   active: boolean;
   activeColor: string;
+  /** Optional override for the unselected label color in light mode.
+   *  Defaults to `activeColor` (the legacy color-coded look the
+   *  positive / negative Statuses buttons use). Conditions pass black
+   *  here so unselected condition labels stay readable on parchment. */
+  inactiveTextColor?: string;
   onToggle: () => void;
 }) {
   // In dark mode the inactive text would otherwise sit at the activeColor
   // (e.g., the dark-red `gold`), which is hard to read against the slate
   // body. Force the label to white at all times in dark mode; light mode
-  // keeps the original active=white / inactive=activeColor behaviour.
+  // uses `inactiveTextColor` (or falls back to the active border color
+  // for the existing color-coded behaviour).
   const { isDarkMode } = useThemeMode();
-  const textColor = isDarkMode ? '#ffffff' : active ? '#ffffff' : activeColor;
+  const textColor = isDarkMode
+    ? '#ffffff'
+    : active
+      ? '#ffffff'
+      : (inactiveTextColor ?? activeColor);
   return (
     <Box
       component="button"
