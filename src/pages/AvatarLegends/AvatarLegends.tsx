@@ -1547,6 +1547,7 @@ function ClassTraitAccordion({
             fontSize: '0.86rem',
             lineHeight: 1.5,
             pt: 2,
+            px: 2,
             pb: 2,
           }}
         >
@@ -2218,6 +2219,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                 fontSize: '0.86rem',
                 lineHeight: 1.5,
                 pt: 2,
+                px: 2,
                 pb: 2,
               }}
             >
@@ -2235,6 +2237,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                       fontSize: '0.86rem',
                       lineHeight: 1.45,
                       pt: 0.5,
+                      px: 2,
                       pb: 0.5,
                       mb: 0.3,
                     }}
@@ -2252,6 +2255,7 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                   fontSize: '0.86rem',
                   lineHeight: 1.5,
                   pt: 2,
+                  px: 2,
                   pb: 2,
                 }}
               >
@@ -2394,8 +2398,8 @@ function TechniqueAccordion({
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.74rem',
-                lineHeight: 1.45,
+                fontSize: '0.82rem',
+                lineHeight: 1.5,
               }}
             >
               {summary}
@@ -2456,6 +2460,7 @@ function TechniqueAccordion({
                 fontSize: '0.86rem',
                 lineHeight: 1.5,
                 pt: 2,
+                px: 2,
                 pb: 2,
               }}
             >
@@ -2671,6 +2676,25 @@ function CombatPane() {
               />
             );
           })}
+          {visibleTechniques.length === 0 ? (
+            <Panel>
+              <Typography
+                sx={{
+                  color: brownSoft,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.86rem',
+                  fontStyle: 'italic',
+                  lineHeight: 1.5,
+                  pt: 2,
+                  px: 2,
+                  pb: 2,
+                  textAlign: 'center',
+                }}
+              >
+                No techniques of that type.
+              </Typography>
+            </Panel>
+          ) : null}
         </>
       ) : null}
 
@@ -2773,6 +2797,7 @@ function CombatPane() {
               lineHeight: 1.5,
               fontStyle: 'italic',
               pt: 2,
+              px: 2,
               pb: 2,
             }}
           >
@@ -2858,6 +2883,7 @@ function ConnectionsSection() {
                 fontSize: '0.86rem',
                 lineHeight: 1.5,
                 pt: 2,
+                px: 2,
                 pb: 2,
               }}
             >
@@ -3086,7 +3112,9 @@ function BackpackCard({
                     fontSize: '0.86rem',
                     lineHeight: 1.5,
                     pt: 2,
+                    px: 2,
                     pb: 2,
+                    boxSizing: 'border-box',
                     '& textarea': { p: 0 },
                   }}
                 />
@@ -3098,6 +3126,7 @@ function BackpackCard({
                     fontSize: '0.86rem',
                     lineHeight: 1.5,
                     pt: 2,
+                    px: 2,
                     pb: 2,
                   }}
                 >
@@ -3585,6 +3614,7 @@ function BackpackPane() {
               lineHeight: 1.5,
               fontStyle: 'italic',
               pt: 2,
+              px: 2,
               pb: 2,
             }}
           >
