@@ -2470,8 +2470,11 @@ function CombatPane() {
     });
   }, [techniques, elementFilter, techFilter]);
   const [fatigue, setFatigue] = useAtom(fatigueAtom);
-  const toggleFatigue = (index: number) =>
-    setFatigue((prev) => prev.map((value, i) => (i === index ? !value : value)));
+  const [tempFatigue, setTempFatigue] = useState(0);
+  const updateFatigueCapacity = (base: boolean[], temp: number) => {
+    setFatigue(base);
+    setTempFatigue(temp);
+  };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -2487,34 +2490,11 @@ function CombatPane() {
       {/* Combat tab opens with the same Stats panel that lives on Character,
           for at-a-glance reference during combat rolls. */}
       <StatsPanel />
-      <Panel>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-          <SectionTitle>Fatigue</SectionTitle>
-          {/* Pips live on the right of the row, larger + tappable. */}
-          <Stack direction="row" gap={0.7}>
-            {fatigue.map((filled, index) => (
-              <Box
-                key={index}
-                component="button"
-                type="button"
-                onClick={() => toggleFatigue(index)}
-                aria-pressed={filled}
-                aria-label={`Fatigue ${index + 1}`}
-                sx={{
-                  background: 'none',
-                  border: 'none',
-                  p: 0,
-                  cursor: 'pointer',
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <FatigueDiamond filled={filled} size={28} />
-              </Box>
-            ))}
-          </Stack>
-        </Stack>
-      </Panel>
+      <FatigueCard
+        baseFatigue={fatigue}
+        tempFatigue={tempFatigue}
+        onUpdate={updateFatigueCapacity}
+      />
 
       {/* Interactive combat sub-tabs — taller chips than the rest of the
           app to give the four primary combat surfaces more tap area. */}
@@ -3075,6 +3055,225 @@ function BackpackCard({
         </Stack>
       </Panel>
     </SwipeableCard>
+  );
+}
+
+/**
+ * Swipeable fatigue card with modal editor for base and temp capacities.
+ * Base fatigue tracks mandatory damage; temp fatigue tracks additional
+ * boxes from conditions or abilities. Temp diamonds render with an accent
+ * outline to distinguish them visually.
+ */
+function FatigueCard({
+  baseFatigue,
+  tempFatigue,
+  onUpdate,
+}: {
+  baseFatigue: boolean[];
+  tempFatigue: number;
+  onUpdate: (base: boolean[], temp: number) => void;
+}) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [draftBaseCapacity, setDraftBaseCapacity] = useState(baseFatigue.length);
+  const [draftTempCapacity, setDraftTempCapacity] = useState(tempFatigue);
+
+  function openEditor() {
+    setDraftBaseCapacity(baseFatigue.length);
+    setDraftTempCapacity(tempFatigue);
+    setModalOpen(true);
+  }
+
+  function confirmEdit() {
+    const newBaseCapacity = Math.max(0, Math.floor(draftBaseCapacity));
+    const newTempCapacity = Math.max(0, Math.floor(draftTempCapacity));
+    const newBase = [
+      ...baseFatigue.slice(0, newBaseCapacity),
+      ...Array(Math.max(0, newBaseCapacity - baseFatigue.length)).fill(false),
+    ];
+    onUpdate(newBase, newTempCapacity);
+    setModalOpen(false);
+  }
+
+  return (
+    <>
+      <SwipeableCard
+        actions={[
+          {
+            icon: <Pencil size={18} />,
+            color: bookAccent,
+            ariaLabel: 'Edit fatigue capacity',
+            onClick: openEditor,
+          },
+        ]}
+      >
+        <Panel noNotch>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+            <Stack spacing={0.3}>
+              <SectionTitle>Fatigue</SectionTitle>
+              {tempFatigue > 0 ? (
+                <Typography
+                  sx={{
+                    color: alpha(brown, 0.7),
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {baseFatigue.length} base + {tempFatigue} temp
+                </Typography>
+              ) : null}
+            </Stack>
+            <Stack direction="row" gap={0.7}>
+              {Array.from({ length: baseFatigue.length }).map((_, index) => (
+                <FatigueDiamond key={`base-${index}`} filled={baseFatigue[index]} size={28} />
+              ))}
+              {Array.from({ length: tempFatigue }).map((_, index) => (
+                <Box
+                  key={`temp-${index}`}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <svg viewBox="0 0 14 14" width={14} height={14}>
+                    <polygon
+                      points="7,1 13,5 13,9 7,13 1,9 1,5"
+                      fill="none"
+                      stroke={accent}
+                      strokeWidth={1.5}
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </Box>
+              ))}
+            </Stack>
+          </Stack>
+        </Panel>
+      </SwipeableCard>
+
+      <Dialog
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: parchment,
+            backgroundImage: 'none',
+            border: `1px solid ${border}`,
+            borderRadius: '14px',
+            p: 2.25,
+          },
+        }}
+        slotProps={{
+          backdrop: {
+            sx: { backgroundColor: deepInk, opacity: 0.92 },
+          },
+        }}
+      >
+        <DialogTitle sx={{ p: 0, pb: 1.5 }}>
+          <Typography sx={{ fontSize: '1.1rem', fontWeight: 800, color: ink }}>
+            Edit Fatigue Capacity
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', gap: 1.8 }}>
+          <Stack spacing={0.6}>
+            <Typography
+              sx={{
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                color: brownSoft,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Base Capacity
+            </Typography>
+            <InputBase
+              type="number"
+              inputProps={{ min: 0, max: 20 }}
+              value={draftBaseCapacity}
+              onChange={(e) => setDraftBaseCapacity(Math.max(0, parseInt(e.target.value) || 0))}
+              sx={{
+                minHeight: 40,
+                borderRadius: '8px',
+                border: `1px solid ${border}`,
+                bgcolor: parchmentLight,
+                color: ink,
+                px: 1.2,
+                fontSize: '0.86rem',
+                '& input': { p: 0, height: 40, textAlign: 'center' },
+              }}
+            />
+          </Stack>
+
+          <Stack spacing={0.6}>
+            <Typography
+              sx={{
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                color: brownSoft,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Temporary Capacity
+            </Typography>
+            <InputBase
+              type="number"
+              inputProps={{ min: 0, max: 20 }}
+              value={draftTempCapacity}
+              onChange={(e) => setDraftTempCapacity(Math.max(0, parseInt(e.target.value) || 0))}
+              sx={{
+                minHeight: 40,
+                borderRadius: '8px',
+                border: `1px solid ${border}`,
+                bgcolor: parchmentLight,
+                color: ink,
+                px: 1.2,
+                fontSize: '0.86rem',
+                '& input': { p: 0, height: 40, textAlign: 'center' },
+              }}
+            />
+          </Stack>
+
+          <Stack direction="row" gap={1} sx={{ pt: 1.2 }}>
+            <Button
+              onClick={() => setModalOpen(false)}
+              sx={{
+                flex: 1,
+                height: 40,
+                borderRadius: '8px',
+                border: `1px solid ${border}`,
+                color: brown,
+                textTransform: 'none',
+                fontWeight: 800,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmEdit}
+              variant="contained"
+              sx={{
+                flex: 1,
+                height: 40,
+                borderRadius: '8px',
+                bgcolor: bookAccent,
+                color: '#000000',
+                textTransform: 'none',
+                fontWeight: 800,
+                '&:hover': { bgcolor: bookAccent },
+              }}
+            >
+              Save
+            </Button>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
