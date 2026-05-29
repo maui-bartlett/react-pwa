@@ -1146,11 +1146,14 @@ function WatercolorBand({
     ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
     : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
   const flameOuterPath = bottom
-    ? `M0,0 L430,0 L430,22 C412,18 408,43 391,52 C382,30 363,17 347,6 C352,31 331,41 323,60 C318,39 302,25 285,13 C294,40 270,49 264,69 C251,39 228,31 211,6 C219,35 199,44 189,62 C184,37 164,30 151,14 C154,37 135,51 124,68 C119,43 99,28 82,7 C91,38 62,43 54,66 C47,41 27,29 9,16 C14,35 4,43 0,54 Z`
-    : `M0,${height} L430,${height} L430,${height - 22} C412,${height - 18} 408,${height - 43} 391,${height - 52} C382,${height - 30} 363,${height - 17} 347,${height - 6} C352,${height - 31} 331,${height - 41} 323,${height - 60} C318,${height - 39} 302,${height - 25} 285,${height - 13} C294,${height - 40} 270,${height - 49} 264,${height - 69} C251,${height - 39} 228,${height - 31} 211,${height - 6} C219,${height - 35} 199,${height - 44} 189,${height - 62} C184,${height - 37} 164,${height - 30} 151,${height - 14} C154,${height - 37} 135,${height - 51} 124,${height - 68} C119,${height - 43} 99,${height - 28} 82,${height - 7} C91,${height - 38} 62,${height - 43} 54,${height - 66} C47,${height - 41} 27,${height - 29} 9,${height - 16} C14,${height - 35} 4,${height - 43} 0,${height - 54} Z`;
+    ? `M0,0 L430,0 L430,12 C414,20 414,39 399,56 C395,36 382,23 363,10 C371,35 358,50 342,70 C336,43 319,25 296,8 C308,39 288,51 279,78 C267,45 246,34 222,7 C232,41 215,57 198,82 C194,49 176,31 154,12 C164,45 139,55 129,80 C123,48 103,31 78,8 C91,44 68,56 54,80 C48,51 30,33 4,16 C13,43 2,53 0,66 Z`
+    : `M0,${height} L430,${height} L430,${height - 12} C414,${height - 20} 414,${height - 39} 399,${height - 56} C395,${height - 36} 382,${height - 23} 363,${height - 10} C371,${height - 35} 358,${height - 50} 342,${height - 70} C336,${height - 43} 319,${height - 25} 296,${height - 8} C308,${height - 39} 288,${height - 51} 279,${height - 78} C267,${height - 45} 246,${height - 34} 222,${height - 7} C232,${height - 41} 215,${height - 57} 198,${height - 82} C194,${height - 49} 176,${height - 31} 154,${height - 12} C164,${height - 45} 139,${height - 55} 129,${height - 80} C123,${height - 48} 103,${height - 31} 78,${height - 8} C91,${height - 44} 68,${height - 56} 54,${height - 80} C48,${height - 51} 30,${height - 33} 4,${height - 16} C13,${height - 43} 2,${height - 53} 0,${height - 66} Z`;
   const flameInnerPath = bottom
-    ? `M31,0 C47,16 42,31 31,45 C58,34 77,21 72,0 Z M116,0 C133,20 125,36 112,51 C144,36 165,20 156,0 Z M200,0 C219,20 211,39 196,55 C228,39 247,22 239,0 Z M292,0 C309,18 301,35 288,50 C319,35 337,19 330,0 Z M374,0 C392,17 386,31 374,45 C400,35 417,19 411,0 Z`
-    : `M31,${height} C47,${height - 16} 42,${height - 31} 31,${height - 45} C58,${height - 34} 77,${height - 21} 72,${height} Z M116,${height} C133,${height - 20} 125,${height - 36} 112,${height - 51} C144,${height - 36} 165,${height - 20} 156,${height} Z M200,${height} C219,${height - 20} 211,${height - 39} 196,${height - 55} C228,${height - 39} 247,${height - 22} 239,${height} Z M292,${height} C309,${height - 18} 301,${height - 35} 288,${height - 50} C319,${height - 35} 337,${height - 19} 330,${height} Z M374,${height} C392,${height - 17} 386,${height - 31} 374,${height - 45} C400,${height - 35} 417,${height - 19} 411,${height} Z`;
+    ? `M22,0 C42,17 41,37 24,57 C54,42 77,25 74,0 Z M99,0 C117,18 114,38 96,60 C131,45 153,25 148,0 Z M181,0 C203,20 202,45 180,70 C218,49 243,27 236,0 Z M265,0 C286,18 284,39 266,63 C301,47 324,26 318,0 Z M354,0 C374,17 372,36 356,57 C387,42 408,24 402,0 Z`
+    : `M22,${height} C42,${height - 17} 41,${height - 37} 24,${height - 57} C54,${height - 42} 77,${height - 25} 74,${height} Z M99,${height} C117,${height - 18} 114,${height - 38} 96,${height - 60} C131,${height - 45} 153,${height - 25} 148,${height} Z M181,${height} C203,${height - 20} 202,${height - 45} 180,${height - 70} C218,${height - 49} 243,${height - 27} 236,${height} Z M265,${height} C286,${height - 18} 284,${height - 39} 266,${height - 63} C301,${height - 47} 324,${height - 26} 318,${height} Z M354,${height} C374,${height - 17} 372,${height - 36} 356,${height - 57} C387,${height - 42} 408,${height - 24} 402,${height} Z`;
+  const flameCutoutPath = bottom
+    ? `M44,0 C57,20 51,48 29,77 C61,58 86,33 88,0 Z M132,0 C149,27 142,55 118,84 C156,65 178,31 174,0 Z M236,0 C254,25 248,56 220,88 C263,66 287,31 279,0 Z M330,0 C345,22 340,50 317,80 C355,59 377,28 371,0 Z`
+    : `M44,${height} C57,${height - 20} 51,${height - 48} 29,${height - 77} C61,${height - 58} 86,${height - 33} 88,${height} Z M132,${height} C149,${height - 27} 142,${height - 55} 118,${height - 84} C156,${height - 65} 178,${height - 31} 174,${height} Z M236,${height} C254,${height - 25} 248,${height - 56} 220,${height - 88} C263,${height - 66} 287,${height - 31} 279,${height} Z M330,${height} C345,${height - 22} 340,${height - 50} 317,${height - 80} C355,${height - 59} 377,${height - 28} 371,${height} Z`;
   const windY = bottom ? height - solidEdge - 6 : solidEdge + 2;
   const windDirection = bottom ? -1 : 1;
   const bladeY = bottom ? height - solidEdge - 12 : solidEdge + 8;
@@ -1236,7 +1239,12 @@ function WatercolorBand({
         {brushBorder === 'flame' ? (
           <>
             <path d={flameOuterPath} fill={alpha(brushColor, 0.92)} />
-            <path d={flameOuterPath} fill={alpha('#df4d22', 0.34)} transform="translate(0 4)" />
+            <path
+              d={flameOuterPath}
+              fill={alpha('#df4d22', 0.42)}
+              transform={`translate(0 ${bottom ? -5 : 5}) scale(1 0.9)`}
+            />
+            <path d={flameCutoutPath} fill={bandFill} />
             <path d={flameInnerPath} fill={alpha('#f4b45f', 0.72)} />
             <path
               d={flameInnerPath}
@@ -1282,15 +1290,15 @@ function WatercolorBand({
         ) : null}
         {brushBorder === 'blade' ? (
           <>
-            {Array.from({ length: 9 }).map((_, index) => {
-              const x = index * 54 - 18;
+            {Array.from({ length: 13 }).map((_, index) => {
+              const x = index * 36 - 28;
               return (
                 <path
                   key={`blade-${index}`}
                   d={
                     bottom
-                      ? `M${x},${bladeY + 12} L${x + 48},${bladeY - 2} L${x + 76},${bladeY + 9} L${x + 22},${bladeY + 19} Z`
-                      : `M${x},${bladeY - 12} L${x + 48},${bladeY + 2} L${x + 76},${bladeY - 9} L${x + 22},${bladeY - 19} Z`
+                      ? `M${x},${bladeY - 1} L${x + 18},${bladeY - 18} L${x + 36},${bladeY + 2} L${x + 54},${bladeY - 17} L${x + 72},${bladeY + 3} L${x + 72},${bladeY + 14} L${x},${bladeY + 14} Z`
+                      : `M${x},${bladeY + 1} L${x + 18},${bladeY + 18} L${x + 36},${bladeY - 2} L${x + 54},${bladeY + 17} L${x + 72},${bladeY - 3} L${x + 72},${bladeY - 14} L${x},${bladeY - 14} Z`
                   }
                   fill={alpha(brushColor, index % 2 === 0 ? 0.68 : 0.42)}
                 />
@@ -1302,6 +1310,17 @@ function WatercolorBand({
               width={430}
               height={2}
               fill={alpha('#ffffff', 0.18)}
+            />
+            <path
+              d={
+                bottom
+                  ? `M0,${bladeY + 14} L430,${bladeY + 14}`
+                  : `M0,${bladeY - 14} L430,${bladeY - 14}`
+              }
+              fill="none"
+              stroke={alpha('#ffffff', 0.14)}
+              strokeWidth={1.5}
+              strokeDasharray="18 18"
             />
           </>
         ) : null}
