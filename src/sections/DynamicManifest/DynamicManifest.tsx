@@ -6,18 +6,18 @@ import { useLocation } from 'react-router';
  * the runtime override can read from it without a JSON import (the
  * project's tsconfig.app only includes `src/`). Keep these fields in
  * sync with the on-disk `manifest.json` — every field except
- * `background_color` is copied verbatim; `background_color` is set
- * dynamically per route below.
+ * `background_color` and `theme_color` is copied verbatim; those colors
+ * are set dynamically per route below.
  */
 const manifestBase = {
   name: 'React PWA',
   short_name: 'reactpwa',
   description: 'Starter kit for modern web applications',
-  theme_color: '#111a24',
-  background_color: '#111a24',
+  theme_color: '#173755',
+  background_color: '#173755',
   display: 'standalone',
   orientation: 'portrait',
-  pwa_version: '2026.05.29.06',
+  pwa_version: '2026.05.29.07',
   icons: [
     { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
     { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

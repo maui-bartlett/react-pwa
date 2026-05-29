@@ -25,16 +25,11 @@ import { useThemeMode } from '@/theme/hooks';
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
 import elementEarth from './assets/earthbending-symbol.png';
+import flameMask from './assets/fire-flame-mask.png';
 import elementFire from './assets/firebending-symbol.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
 import elementMartial from './assets/weapons-symbol.png';
-
-// Outer-mat gradients used behind the parchment card. Theme-aware.
-const lightPageBg = 'linear-gradient(140deg, #162a45 0%, #0e2e4a 50%, #162a45 100%)';
-// Dark mode mat: slate-blue gradient — guided by the AL cover art's
-// deep twilight, halfway between the prior gray mat and full navy.
-const darkPageBg = 'linear-gradient(140deg, #060a11 0%, #0c131c 50%, #060a11 100%)';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -400,6 +395,7 @@ const primaryTrainingThemes: Record<
   PrimaryTraining,
   {
     bodyWash: string;
+    chromeColor: string;
     chromeFill: string;
     headerBorder: string;
     footerBorder: string;
@@ -414,10 +410,11 @@ const primaryTrainingThemes: Record<
       radial-gradient(circle at 50% 50%, ${alpha('#9fc2d7', 0.25)} 0%, transparent 50%),
       linear-gradient(135deg, rgba(230, 236, 245, 0.45), rgba(220, 227, 238, 0.4))
     `,
-    chromeFill: 'linear-gradient(180deg, #111a24 0%, #173755 100%)',
+    chromeColor: '#173755',
+    chromeFill: 'linear-gradient(180deg, #173755 0%, #10283e 100%)',
     headerBorder: water,
     footerBorder: water,
-    pageBg: { dark: darkPageBg, light: lightPageBg },
+    pageBg: { dark: '#173755', light: '#173755' },
     brushBorder: 'wavy',
   },
   Earthbending: {
@@ -426,13 +423,11 @@ const primaryTrainingThemes: Record<
       radial-gradient(circle at 78% 72%, ${alpha('#9cab70', 0.32)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(232, 238, 225, 0.46), rgba(218, 229, 211, 0.4))
     `,
-    chromeFill: 'linear-gradient(180deg, #111a24 0%, #24351f 100%)',
+    chromeColor: '#24351f',
+    chromeFill: 'linear-gradient(180deg, #24351f 0%, #182615 100%)',
     headerBorder: elementFilterFrames.earth,
     footerBorder: '#92a66a',
-    pageBg: {
-      dark: 'linear-gradient(140deg, #071008 0%, #132016 50%, #071008 100%)',
-      light: 'linear-gradient(140deg, #1a351f 0%, #244b28 50%, #1a351f 100%)',
-    },
+    pageBg: { dark: '#24351f', light: '#24351f' },
     brushBorder: 'dry',
   },
   Firebending: {
@@ -441,13 +436,11 @@ const primaryTrainingThemes: Record<
       radial-gradient(circle at 78% 72%, ${alpha('#d07a42', 0.26)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(241, 228, 221, 0.48), rgba(232, 217, 211, 0.38))
     `,
-    chromeFill: 'linear-gradient(180deg, #111a24 0%, #4a1f1b 100%)',
+    chromeColor: '#4a1f1b',
+    chromeFill: 'linear-gradient(180deg, #4a1f1b 0%, #2b100e 100%)',
     headerBorder: fire,
     footerBorder: '#c35a42',
-    pageBg: {
-      dark: 'linear-gradient(140deg, #100706 0%, #241312 50%, #100706 100%)',
-      light: 'linear-gradient(140deg, #4c1d1a 0%, #682a24 50%, #4c1d1a 100%)',
-    },
+    pageBg: { dark: '#4a1f1b', light: '#4a1f1b' },
     brushBorder: 'flame',
   },
   Airbending: {
@@ -456,13 +449,11 @@ const primaryTrainingThemes: Record<
       radial-gradient(circle at 78% 72%, ${alpha('#e2cc68', 0.28)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(243, 239, 220, 0.5), rgba(231, 232, 213, 0.4))
     `,
-    chromeFill: 'linear-gradient(180deg, #111a24 0%, #544821 100%)',
+    chromeColor: '#544821',
+    chromeFill: 'linear-gradient(180deg, #544821 0%, #332b13 100%)',
     headerBorder: elementFilterFrames.air,
     footerBorder: '#e0c75f',
-    pageBg: {
-      dark: 'linear-gradient(140deg, #0e0b05 0%, #211c10 50%, #0e0b05 100%)',
-      light: 'linear-gradient(140deg, #4c421e 0%, #66582a 50%, #4c421e 100%)',
-    },
+    pageBg: { dark: '#544821', light: '#544821' },
     brushBorder: 'wind',
   },
   Weapons: {
@@ -471,13 +462,11 @@ const primaryTrainingThemes: Record<
       radial-gradient(circle at 78% 72%, ${alpha('#515c69', 0.3)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(224, 229, 234, 0.42), rgba(210, 217, 224, 0.36))
     `,
-    chromeFill: `linear-gradient(180deg, #111a24 0%, ${elementFilterFrames.martial} 100%)`,
+    chromeColor: elementFilterFrames.martial,
+    chromeFill: `linear-gradient(180deg, ${elementFilterFrames.martial} 0%, #030507 100%)`,
     headerBorder: '#4a5563',
     footerBorder: '#5c6674',
-    pageBg: {
-      dark: 'linear-gradient(140deg, #05080c 0%, #0b1018 50%, #05080c 100%)',
-      light: 'linear-gradient(140deg, #202936 0%, #303b49 50%, #202936 100%)',
-    },
+    pageBg: { dark: elementFilterFrames.martial, light: elementFilterFrames.martial },
     brushBorder: 'blade',
   },
   Technology: {
@@ -486,13 +475,11 @@ const primaryTrainingThemes: Record<
       radial-gradient(circle at 78% 72%, ${alpha('#9a79ad', 0.28)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(235, 225, 240, 0.44), rgba(222, 215, 232, 0.38))
     `,
-    chromeFill: 'linear-gradient(180deg, #111a24 0%, #3c294c 100%)',
+    chromeColor: '#3c294c',
+    chromeFill: 'linear-gradient(180deg, #3c294c 0%, #24172f 100%)',
     headerBorder: tech,
     footerBorder: '#9977aa',
-    pageBg: {
-      dark: 'linear-gradient(140deg, #0d0710 0%, #201327 50%, #0d0710 100%)',
-      light: 'linear-gradient(140deg, #3d254b 0%, #573466 50%, #3d254b 100%)',
-    },
+    pageBg: { dark: '#3c294c', light: '#3c294c' },
     brushBorder: 'gear',
   },
 };
@@ -1097,9 +1084,6 @@ function WatercolorBand({
   const wavyPathLight = bottom
     ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
     : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
-  const flamePath = bottom
-    ? `M0,${height} L430,${height} L430,24 L407,16 L394,34 L368,12 L354,31 L327,9 L313,36 L286,13 L271,32 L242,6 L226,34 L199,11 L181,35 L154,8 L139,32 L110,12 L94,36 L67,15 L49,31 L25,13 L10,28 L0,18 Z`
-    : `M0,0 L430,0 L430,${height - 24} L407,${height - 16} L394,${height - 34} L368,${height - 12} L354,${height - 31} L327,${height - 9} L313,${height - 36} L286,${height - 13} L271,${height - 32} L242,${height - 6} L226,${height - 34} L199,${height - 11} L181,${height - 35} L154,${height - 8} L139,${height - 32} L110,${height - 12} L94,${height - 36} L67,${height - 15} L49,${height - 31} L25,${height - 13} L10,${height - 28} L0,${height - 18} Z`;
   const windY = bottom ? height - solidEdge - 8 : solidEdge + 4;
   const bladeY = bottom ? height - solidEdge - 12 : solidEdge + 8;
   const gearY = bottom ? height - solidEdge - 8 : solidEdge + 6;
@@ -1179,16 +1163,6 @@ function WatercolorBand({
           <>
             <path d={wavyPath} fill={alpha(brushColor, 0.82)} />
             <path d={wavyPathLight} fill={alpha(brushColor, 0.36)} />
-          </>
-        ) : null}
-        {brushBorder === 'flame' ? (
-          <>
-            <path d={flamePath} fill={alpha(brushColor, 0.78)} />
-            <path
-              d={flamePath}
-              fill={alpha('#f0a448', 0.24)}
-              transform={`translate(0 ${bottom ? -6 : 6}) scale(1 0.78)`}
-            />
           </>
         ) : null}
         {brushBorder === 'wind' ? (
@@ -1274,6 +1248,32 @@ function WatercolorBand({
           </>
         ) : null}
       </Box>
+      {brushBorder === 'flame' ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            ...edgePosition,
+            height: 44,
+            background: `linear-gradient(180deg, ${alpha('#f4b45f', 0.95)} 0%, ${alpha(
+              brushColor,
+              0.95,
+            )} 72%)`,
+            opacity: 0.96,
+            transform: bottom ? 'scaleY(-1)' : 'none',
+            transformOrigin: 'center',
+            WebkitMaskImage: `url(${flameMask})`,
+            maskImage: `url(${flameMask})`,
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat',
+            WebkitMaskSize: '100% 100%',
+            maskSize: '100% 100%',
+            WebkitMaskPosition: bottom ? 'center top' : 'center bottom',
+            maskPosition: bottom ? 'center top' : 'center bottom',
+          }}
+        />
+      ) : null}
       {borderColor ? (
         <Box
           aria-hidden

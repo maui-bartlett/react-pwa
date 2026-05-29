@@ -14,5 +14,5 @@ body,
    current route's header chrome. The default below is a neutral fallback
    used until the route effect runs on first paint. */
 body {
-  background: #111a24;
+  background: #173755;
 }
