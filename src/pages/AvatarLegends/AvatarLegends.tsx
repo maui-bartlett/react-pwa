@@ -897,6 +897,7 @@ function WatercolorBand({
   const solidEdge = height - 18;
   const bandFill = fill ?? deepInk;
   const edgePosition = bottom ? { top: 0 } : { bottom: 0 };
+  const brushColor = borderColor ?? deepInk;
 
   return (
     <Box
@@ -910,8 +911,6 @@ function WatercolorBand({
         zIndex: 0,
       }}
     >
-      {/* Painted block — supports either a solid color or a CSS gradient
-          via the `fill` prop. */}
       <Box
         sx={{
           position: 'absolute',
@@ -922,6 +921,56 @@ function WatercolorBand({
           background: bandFill,
         }}
       />
+      <Box
+        component="svg"
+        viewBox={`0 0 430 ${height}`}
+        preserveAspectRatio="none"
+        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
+      >
+        {brushBorder ? (
+          <>
+            <rect
+              x={0}
+              y={bottom ? height - solidEdge - 3 : solidEdge}
+              width={430}
+              height={3}
+              fill={alpha(brushColor, 0.55)}
+            />
+            {[
+              { x: 14, w: 70, opacity: 0.55 },
+              { x: 96, w: 50, opacity: 0.4 },
+              { x: 156, w: 90, opacity: 0.6 },
+              { x: 256, w: 60, opacity: 0.35 },
+              { x: 324, w: 78, opacity: 0.5 },
+            ].map((streak, index) => (
+              <rect
+                key={`streak-${index}`}
+                x={streak.x}
+                y={bottom ? height - solidEdge - 9 : solidEdge + 6}
+                width={streak.w}
+                height={1.5}
+                fill={alpha(brushColor, streak.opacity)}
+              />
+            ))}
+            {[
+              { x: 40, w: 36, opacity: 0.22 },
+              { x: 130, w: 50, opacity: 0.18 },
+              { x: 220, w: 30, opacity: 0.24 },
+              { x: 290, w: 44, opacity: 0.18 },
+              { x: 360, w: 30, opacity: 0.22 },
+            ].map((streak, index) => (
+              <rect
+                key={`far-streak-${index}`}
+                x={streak.x}
+                y={bottom ? height - solidEdge - 14 : solidEdge + 11}
+                width={streak.w}
+                height={1}
+                fill={alpha(brushColor, streak.opacity)}
+              />
+            ))}
+          </>
+        ) : null}
+      </Box>
       {borderColor ? (
         <Box
           aria-hidden
@@ -931,15 +980,7 @@ function WatercolorBand({
             right: 0,
             ...edgePosition,
             height: brushBorder ? 18 : 2,
-            background: brushBorder
-              ? `linear-gradient(90deg, transparent 0%, ${alpha(borderColor, 0.9)} 10%, ${alpha(borderColor, 0.72)} 42%, ${alpha('#ffffff', 0.2)} 50%, ${alpha(borderColor, 0.72)} 58%, ${alpha(borderColor, 0.9)} 90%, transparent 100%)`
-              : borderColor,
-            opacity: brushBorder ? 0.92 : 1,
-            clipPath: brushBorder
-              ? bottom
-                ? 'polygon(0 42%, 8% 22%, 18% 48%, 31% 28%, 45% 52%, 58% 26%, 73% 45%, 88% 24%, 100% 46%, 100% 100%, 0 100%)'
-                : 'polygon(0 0, 100% 0, 100% 54%, 89% 76%, 74% 55%, 58% 78%, 44% 51%, 30% 73%, 16% 47%, 7% 76%, 0 58%)'
-              : 'none',
+            background: brushBorder ? 'transparent' : borderColor,
           }}
         />
       ) : null}
