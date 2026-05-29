@@ -665,13 +665,6 @@ function SkillsTable({
     } else if (editingSkill && onEditSkill) {
       const nextDraft = { ...editingSkill, level: String(targetLevel) };
       setEditingSkill(nextDraft);
-      onEditSkill(nextDraft.originalName, {
-        name: nextDraft.name.trim() || nextDraft.originalName,
-        level: nextDraft.level,
-        maxLevel: activeSkill.maxLevel,
-        effect: activeSkill.effect,
-        description: activeSkill.description,
-      });
     }
     closeLevelMenu();
   }
@@ -696,14 +689,20 @@ function SkillsTable({
   }
 
   function commitSkillEdit() {
+    const original = originalSkillDataRef.current;
+    if (original && editingSkill && onEditSkill) {
+      onEditSkill(editingSkill.originalName, {
+        name: editingSkill.name.trim() || editingSkill.originalName,
+        level: editingSkill.level || '0',
+        maxLevel: original.maxLevel,
+        effect: original.effect,
+        description: original.description,
+      });
+    }
     setEditingSkill(null);
   }
 
   function revertSkillEdit() {
-    const original = originalSkillDataRef.current;
-    if (original && onEditSkill && editingSkill) {
-      onEditSkill(editingSkill.originalName, original);
-    }
     setEditingSkill(null);
   }
 
@@ -804,15 +803,6 @@ function SkillsTable({
                 editDraft={isEditing ? editingSkill : null}
                 onEditDraftChange={(draft) => {
                   setEditingSkill(draft);
-                  if (onEditSkill) {
-                    onEditSkill(draft.originalName, {
-                      name: draft.name.trim() || draft.originalName,
-                      level: draft.level || '0',
-                      maxLevel: row.maxLevel,
-                      effect: row.effect,
-                      description: row.description,
-                    });
-                  }
                 }}
                 onCommitEdit={commitSkillEdit}
                 onRevertEdit={revertSkillEdit}
