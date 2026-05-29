@@ -501,7 +501,7 @@ const primaryTrainingThemes: Record<
       linear-gradient(135deg, rgba(241, 228, 221, 0.48), rgba(232, 217, 211, 0.38))
     `,
     chromeColor: '#4a1f1b',
-    chromeFill: 'linear-gradient(180deg, #4a1f1b 0%, #c35a42 100%)',
+    chromeFill: 'linear-gradient(180deg, #4a1f1b 0%, #c35a42 58%, #c35a42 100%)',
     headerBorder: fire,
     footerBorder: '#c35a42',
     pageBg: { dark: '#4a1f1b', light: '#4a1f1b' },
@@ -1165,6 +1165,9 @@ function WatercolorBand({
   fill,
   borderColor,
   brushBorder = false,
+  borderOffsetY = 0,
+  mirrorX = false,
+  zIndex = 2,
 }: {
   bottom?: boolean;
   height?: number;
@@ -1174,6 +1177,9 @@ function WatercolorBand({
   fill?: string;
   borderColor?: string;
   brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear' | false;
+  borderOffsetY?: number;
+  mirrorX?: boolean;
+  zIndex?: number;
 }) {
   const solidEdge = height - 18;
   const bandFill = fill ?? deepInk;
@@ -1193,6 +1199,9 @@ function WatercolorBand({
     : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
   const windY = bottom ? height - solidEdge - 6 : solidEdge + 2;
   const windDirection = bottom ? -1 : 1;
+  const windLowerSwirl = bottom
+    ? { cx: 353, cy: windY + 18 * windDirection, r: 18, clockwise: false }
+    : { cx: 384, cy: windY - 22, r: 18, clockwise: false };
   const windSwirl = (cx: number, cy: number, r: number, clockwise = true) =>
     clockwise
       ? `M${cx + r},${cy} C${cx + r},${cy - r * 0.95} ${cx - r * 0.86},${cy - r * 1.05} ${cx - r},${cy} C${cx - r * 1.1},${cy + r * 0.9} ${cx + r * 0.62},${cy + r * 0.92} ${cx + r * 0.46},${cy + r * 0.1} C${cx + r * 0.36},${cy - r * 0.4} ${cx - r * 0.34},${cy - r * 0.3} ${cx - r * 0.22},${cy + r * 0.08}`
@@ -1209,7 +1218,7 @@ function WatercolorBand({
         [bottom ? 'bottom' : 'top']: 0,
         height,
         pointerEvents: 'none',
-        zIndex: 2,
+        zIndex,
       }}
     >
       <Box
@@ -1226,7 +1235,17 @@ function WatercolorBand({
         component="svg"
         viewBox={`0 0 430 ${height}`}
         preserveAspectRatio="none"
-        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          transform: `${mirrorX ? 'scaleX(-1)' : ''} ${
+            borderOffsetY ? `translateY(${borderOffsetY}px)` : ''
+          }`.trim(),
+          transformOrigin: 'center',
+        }}
       >
         {isWaterWave ? (
           <defs>
@@ -1263,6 +1282,31 @@ function WatercolorBand({
               height={3}
               fill={brushHighlight}
             />
+            {!bottom ? (
+              <>
+                <rect
+                  x={18}
+                  y={solidEdge - 11}
+                  width={132}
+                  height={1.4}
+                  fill={alpha(brushColor, 0.46)}
+                />
+                <rect
+                  x={170}
+                  y={solidEdge - 15}
+                  width={82}
+                  height={1.1}
+                  fill={alpha(brushColor, 0.34)}
+                />
+                <rect
+                  x={268}
+                  y={solidEdge - 10}
+                  width={118}
+                  height={1.3}
+                  fill={alpha(brushColor, 0.42)}
+                />
+              </>
+            ) : null}
             {[
               { x: 14, w: 70, opacity: 0.55 },
               { x: 96, w: 50, opacity: 0.4 },
@@ -1323,7 +1367,12 @@ function WatercolorBand({
               strokeLinecap="round"
             />
             <path
-              d={windSwirl(353, windY + 18 * windDirection, 18, false)}
+              d={windSwirl(
+                windLowerSwirl.cx,
+                windLowerSwirl.cy,
+                windLowerSwirl.r,
+                windLowerSwirl.clockwise,
+              )}
               fill="none"
               stroke={alpha(brushColor, 0.58)}
               strokeWidth={1.75}
@@ -1419,6 +1468,7 @@ function WatercolorBand({
                 )} 100%)`,
             transform: bottom ? 'scaleY(-1)' : 'none',
             transformOrigin: 'center',
+            translate: borderOffsetY ? `0 ${borderOffsetY}px` : undefined,
             WebkitMaskImage: `url(${fireBorderMask})`,
             maskImage: `url(${fireBorderMask})`,
             WebkitMaskRepeat: 'repeat-x',
@@ -4596,17 +4646,22 @@ function AvatarLegends() {
     [isDarkMode, trainingTheme],
   );
   const trainingHeaderBorder =
-    character.primaryTraining === 'Earthbending'
-      ? isDarkMode
-        ? '#9a7a2f'
-        : '#182615'
-      : trainingTheme.headerBorder;
+    character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.headerBorder;
   const trainingFooterBorder =
-    character.primaryTraining === 'Earthbending'
-      ? isDarkMode
-        ? '#9a7a2f'
-        : '#182615'
-      : trainingTheme.footerBorder;
+    character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.footerBorder;
+  const trainingHeaderFill =
+    character.primaryTraining === 'Firebending'
+      ? 'linear-gradient(180deg, #4a1f1b 0%, #c35a42 48%, #c35a42 100%)'
+      : trainingTheme.chromeFill;
+  const trainingFooterFill =
+    character.primaryTraining === 'Firebending'
+      ? 'linear-gradient(180deg, #f4b45f 0%, #c35a42 42%, #c35a42 100%)'
+      : trainingTheme.chromeFill;
+  const shouldMirrorHeader =
+    character.primaryTraining === 'Waterbending' || character.primaryTraining === 'Airbending';
+  const trainingBandZIndex = character.primaryTraining === 'Weapons' ? 0 : 2;
+  const headerBorderOffsetY = character.primaryTraining === 'Technology' ? -20 : 0;
+  const footerBorderOffsetY = character.primaryTraining === 'Technology' ? 15 : 0;
   const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
   // White cornflower gradient applied to the active-tab title bar in
   // light mode (transferred from the app header per the user spec).
@@ -4694,26 +4749,31 @@ function AvatarLegends() {
           {/* Top header band — deep cover-art navy in both modes. */}
           <WatercolorBand
             height={92}
-            fill={trainingTheme.chromeFill}
+            fill={trainingHeaderFill}
             borderColor={trainingHeaderBorder}
             brushBorder={trainingTheme.brushBorder}
+            borderOffsetY={headerBorderOffsetY}
+            mirrorX={shouldMirrorHeader}
+            zIndex={trainingBandZIndex}
           />
           <WatercolorBand
             bottom
             height={86}
-            fill={trainingTheme.chromeFill}
+            fill={trainingFooterFill}
             borderColor={trainingFooterBorder}
             brushBorder={trainingTheme.brushBorder}
+            borderOffsetY={footerBorderOffsetY}
+            zIndex={trainingBandZIndex}
           />
 
           {/* Page corner ornaments — near-white in both modes, sitting on
             the deep-navy header. */}
-          <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
+          <Box sx={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
             <CornerOrnament position="tl" color={chromeText} size={18} />
             <CornerOrnament position="tr" color={chromeText} size={18} />
           </Box>
 
-          <Stack sx={{ position: 'relative', height: '100%', zIndex: 1 }}>
+          <Stack sx={{ position: 'relative', height: '100%' }}>
             {/* Top header — dark navy brush-stroke band. Heading text on the
               left, app-level settings button on the right, both centered
               vertically within the solid portion of the band. The heading
@@ -4724,7 +4784,7 @@ function AvatarLegends() {
                 height: 76,
                 flex: '0 0 auto',
                 position: 'relative',
-                zIndex: 2,
+                zIndex: 4,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -4871,8 +4931,8 @@ function AvatarLegends() {
                 zIndex: 10,
                 // Solid backdrop matching the active training chrome so body
                 // content scrolling behind the nav is fully occluded.
-                background: trainingTheme.chromeFill,
-                borderTop: `2px solid ${trainingTheme.footerBorder}`,
+                background: trainingFooterFill,
+                borderTop: `2px solid ${trainingFooterBorder}`,
               }}
             >
               {/* 15px pull-in on each side (~30px total) trims the visible

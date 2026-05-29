@@ -357,11 +357,11 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     if (user?.email) return user.email;
     return 'Settings';
   }, [isPending, user?.email, user?.name]);
-  const isAvatarDark = gameSystem === 'avatar-legends' && themeMode === 'dark';
   const accountModalBg = fabUTokens.color.surface;
   const accountActionBg = fabUTokens.color.brand;
   const accountActionHoverBg = fabUTokens.color.brandStrong;
   const accountBackdropBg = accountActionBg;
+  const accountModalBorder = themeMode === 'dark' ? '#ffffff' : '#d8dde3';
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -508,7 +508,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
           sx: {
             width: 'min(360px, calc(100vw - 24px))',
             borderRadius: '12px',
-            border: `1px solid ${isAvatarDark ? '#ffffff' : fabUTokens.color.border}`,
+            border: `1px solid ${accountModalBorder}`,
             bgcolor: accountModalBg,
             color: fabUTokens.color.textPrimary,
             backgroundImage: 'none',
