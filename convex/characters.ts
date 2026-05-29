@@ -1,5 +1,7 @@
 import { ConvexError, v } from 'convex/values';
 
+import type { Doc } from './_generated/dataModel';
+import type { QueryCtx } from './_generated/server';
 import { internalMutation, mutation, query } from './_generated/server';
 import {
   canReadCharacter,
@@ -62,6 +64,38 @@ function titleCaseLabel(label: string) {
     .join('');
 }
 
+function getCharacterClassName(character: Doc<'characters'>) {
+  const state =
+    character.characterState && typeof character.characterState === 'object'
+      ? (character.characterState as Record<string, unknown>)
+      : null;
+  const inner =
+    state?.character && typeof state.character === 'object'
+      ? (state.character as Record<string, unknown>)
+      : null;
+  return typeof inner?.className === 'string' ? titleCaseLabel(inner.className) : null;
+}
+
+async function getAvatarLegendsClassForCharacter(ctx: QueryCtx, character: Doc<'characters'>) {
+  if (character.meta?.gameSystem !== 'avatar-legends') return null;
+  const className = getCharacterClassName(character);
+  if (!className) return null;
+
+  const classDoc = await ctx.db
+    .query('classes')
+    .withIndex('by_classMetaGameSystem_className', (q) =>
+      q.eq('class.meta.gameSystem', 'avatar-legends').eq('class.className', className),
+    )
+    .unique();
+
+  return classDoc?.class ?? null;
+}
+
+async function withAvatarLegendsClass(ctx: QueryCtx, character: Doc<'characters'>) {
+  const matchedClass = await getAvatarLegendsClassForCharacter(ctx, character);
+  return matchedClass ? { ...character, class: matchedClass } : character;
+}
+
 export const listMine = query({
   args: { gameSystem: v.string(), includeArchived: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
@@ -74,7 +108,13 @@ export const listMine = query({
         q.eq('ownerUserId', profile._id).eq('meta.gameSystem', args.gameSystem),
       )
       .collect();
-    return args.includeArchived ? characters : characters.filter((c) => !c.archivedAt);
+    const visibleCharacters = args.includeArchived
+      ? characters
+      : characters.filter((c) => !c.archivedAt);
+    if (args.gameSystem !== 'avatar-legends') return visibleCharacters;
+    return await Promise.all(
+      visibleCharacters.map((character) => withAvatarLegendsClass(ctx, character)),
+    );
   },
 });
 
@@ -91,13 +131,15 @@ export const getActiveMine = query({
       )
       .collect();
 
-    return (
+    const activeCharacter =
       characters.find(
         (character) => !character.archivedAt && isActiveForProfile(character, profile._id),
       ) ??
       characters.find((character) => !character.archivedAt) ??
-      null
-    );
+      null;
+    if (!activeCharacter) return null;
+    if (args.gameSystem !== 'avatar-legends') return activeCharacter;
+    return await withAvatarLegendsClass(ctx, activeCharacter);
   },
 });
 
@@ -106,7 +148,7 @@ export const get = query({
   handler: async (ctx, args) => {
     const character = await canReadCharacter(ctx, args.characterId);
     if (!character) throw new ConvexError('CHARACTER_NOT_FOUND');
-    return character;
+    return await withAvatarLegendsClass(ctx, character);
   },
 });
 
