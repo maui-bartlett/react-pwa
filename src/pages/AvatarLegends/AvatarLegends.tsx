@@ -27,6 +27,7 @@ import { useThemeMode } from '@/theme/hooks';
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
 import elementEarth from './assets/earthbending-symbol.png';
+import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
@@ -473,7 +474,7 @@ const primaryTrainingThemes: Record<
     `,
     chromeColor: '#173755',
     chromeFill: 'linear-gradient(180deg, #173755 0%, #10283e 100%)',
-    headerBorder: water,
+    headerBorder: '#173755',
     footerBorder: water,
     pageBg: { dark: '#173755', light: '#173755' },
     brushBorder: 'wavy',
@@ -486,8 +487,8 @@ const primaryTrainingThemes: Record<
     `,
     chromeColor: '#24351f',
     chromeFill: 'linear-gradient(180deg, #24351f 0%, #182615 100%)',
-    headerBorder: elementFilterFrames.earth,
-    footerBorder: '#92a66a',
+    headerBorder: '#24351f',
+    footerBorder: '#24351f',
     pageBg: { dark: '#24351f', light: '#24351f' },
     brushBorder: 'dry',
   },
@@ -1145,17 +1146,12 @@ function WatercolorBand({
   const wavyPathLight = bottom
     ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
     : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
-  const flameOuterPath = bottom
-    ? `M0,0 L430,0 L430,12 C414,20 414,39 399,56 C395,36 382,23 363,10 C371,35 358,50 342,70 C336,43 319,25 296,8 C308,39 288,51 279,78 C267,45 246,34 222,7 C232,41 215,57 198,82 C194,49 176,31 154,12 C164,45 139,55 129,80 C123,48 103,31 78,8 C91,44 68,56 54,80 C48,51 30,33 4,16 C13,43 2,53 0,66 Z`
-    : `M0,${height} L430,${height} L430,${height - 12} C414,${height - 20} 414,${height - 39} 399,${height - 56} C395,${height - 36} 382,${height - 23} 363,${height - 10} C371,${height - 35} 358,${height - 50} 342,${height - 70} C336,${height - 43} 319,${height - 25} 296,${height - 8} C308,${height - 39} 288,${height - 51} 279,${height - 78} C267,${height - 45} 246,${height - 34} 222,${height - 7} C232,${height - 41} 215,${height - 57} 198,${height - 82} C194,${height - 49} 176,${height - 31} 154,${height - 12} C164,${height - 45} 139,${height - 55} 129,${height - 80} C123,${height - 48} 103,${height - 31} 78,${height - 8} C91,${height - 44} 68,${height - 56} 54,${height - 80} C48,${height - 51} 30,${height - 33} 4,${height - 16} C13,${height - 43} 2,${height - 53} 0,${height - 66} Z`;
-  const flameInnerPath = bottom
-    ? `M22,0 C42,17 41,37 24,57 C54,42 77,25 74,0 Z M99,0 C117,18 114,38 96,60 C131,45 153,25 148,0 Z M181,0 C203,20 202,45 180,70 C218,49 243,27 236,0 Z M265,0 C286,18 284,39 266,63 C301,47 324,26 318,0 Z M354,0 C374,17 372,36 356,57 C387,42 408,24 402,0 Z`
-    : `M22,${height} C42,${height - 17} 41,${height - 37} 24,${height - 57} C54,${height - 42} 77,${height - 25} 74,${height} Z M99,${height} C117,${height - 18} 114,${height - 38} 96,${height - 60} C131,${height - 45} 153,${height - 25} 148,${height} Z M181,${height} C203,${height - 20} 202,${height - 45} 180,${height - 70} C218,${height - 49} 243,${height - 27} 236,${height} Z M265,${height} C286,${height - 18} 284,${height - 39} 266,${height - 63} C301,${height - 47} 324,${height - 26} 318,${height} Z M354,${height} C374,${height - 17} 372,${height - 36} 356,${height - 57} C387,${height - 42} 408,${height - 24} 402,${height} Z`;
-  const flameCutoutPath = bottom
-    ? `M44,0 C57,20 51,48 29,77 C61,58 86,33 88,0 Z M132,0 C149,27 142,55 118,84 C156,65 178,31 174,0 Z M236,0 C254,25 248,56 220,88 C263,66 287,31 279,0 Z M330,0 C345,22 340,50 317,80 C355,59 377,28 371,0 Z`
-    : `M44,${height} C57,${height - 20} 51,${height - 48} 29,${height - 77} C61,${height - 58} 86,${height - 33} 88,${height} Z M132,${height} C149,${height - 27} 142,${height - 55} 118,${height - 84} C156,${height - 65} 178,${height - 31} 174,${height} Z M236,${height} C254,${height - 25} 248,${height - 56} 220,${height - 88} C263,${height - 66} 287,${height - 31} 279,${height} Z M330,${height} C345,${height - 22} 340,${height - 50} 317,${height - 80} C355,${height - 59} 377,${height - 28} 371,${height} Z`;
   const windY = bottom ? height - solidEdge - 6 : solidEdge + 2;
   const windDirection = bottom ? -1 : 1;
+  const windSwirl = (cx: number, cy: number, r: number, clockwise = true) =>
+    clockwise
+      ? `M${cx + r},${cy} C${cx + r},${cy - r * 0.95} ${cx - r * 0.86},${cy - r * 1.05} ${cx - r},${cy} C${cx - r * 1.1},${cy + r * 0.9} ${cx + r * 0.62},${cy + r * 0.92} ${cx + r * 0.46},${cy + r * 0.1} C${cx + r * 0.36},${cy - r * 0.4} ${cx - r * 0.34},${cy - r * 0.3} ${cx - r * 0.22},${cy + r * 0.08}`
+      : `M${cx - r},${cy} C${cx - r},${cy - r * 0.95} ${cx + r * 0.86},${cy - r * 1.05} ${cx + r},${cy} C${cx + r * 1.1},${cy + r * 0.9} ${cx - r * 0.62},${cy + r * 0.92} ${cx - r * 0.46},${cy + r * 0.1} C${cx - r * 0.36},${cy - r * 0.4} ${cx + r * 0.34},${cy - r * 0.3} ${cx + r * 0.22},${cy + r * 0.08}`;
   const bladeY = bottom ? height - solidEdge - 12 : solidEdge + 8;
   const gearY = bottom ? height - solidEdge - 8 : solidEdge + 6;
 
@@ -1236,69 +1232,59 @@ function WatercolorBand({
             <path d={wavyPathLight} fill={alpha(brushColor, 0.36)} />
           </>
         ) : null}
-        {brushBorder === 'flame' ? (
-          <>
-            <path d={flameOuterPath} fill={alpha(brushColor, 0.92)} />
-            <path
-              d={flameOuterPath}
-              fill={alpha('#df4d22', 0.42)}
-              transform={`translate(0 ${bottom ? -5 : 5}) scale(1 0.9)`}
-            />
-            <path d={flameCutoutPath} fill={bandFill} />
-            <path d={flameInnerPath} fill={alpha('#f4b45f', 0.72)} />
-            <path
-              d={flameInnerPath}
-              fill={alpha('#fff1a6', 0.34)}
-              transform={`translate(0 ${bottom ? -4 : 4}) scale(1 0.74)`}
-            />
-          </>
-        ) : null}
         {brushBorder === 'wind' ? (
           <>
-            {[-8, -2, 4].map((offset, index) => (
+            {[-7, -1, 5].map((offset, index) => (
               <path
                 key={`wind-stream-${index}`}
-                d={`M-12,${windY + offset * windDirection} C52,${windY - (10 - offset) * windDirection} 100,${windY + (9 + offset) * windDirection} 156,${windY + (2 + offset) * windDirection} S270,${windY - (18 - offset) * windDirection} 440,${windY - (12 - offset) * windDirection}`}
+                d={`M-8,${windY + offset * windDirection} C54,${windY - (8 - offset) * windDirection} 96,${windY + (8 + offset) * windDirection} 152,${windY + (2 + offset) * windDirection} C214,${windY - (7 - offset) * windDirection} 254,${windY - (24 - offset) * windDirection} 320,${windY - (19 - offset) * windDirection} C362,${windY - (16 - offset) * windDirection} 398,${windY - (8 - offset) * windDirection} 438,${windY - (4 - offset) * windDirection}`}
                 fill="none"
-                stroke={alpha(brushColor, index === 1 ? 0.78 : 0.48)}
-                strokeWidth={index === 1 ? 2.6 : 1.8}
+                stroke={alpha(brushColor, index === 1 ? 0.76 : 0.52)}
+                strokeWidth={index === 1 ? 2 : 1.45}
                 strokeLinecap="round"
               />
             ))}
             <path
-              d={`M104,${windY - 11 * windDirection} C132,${windY - 34 * windDirection} 178,${windY - 24 * windDirection} 174,${windY + 4 * windDirection} C171,${windY + 24 * windDirection} 135,${windY + 23 * windDirection} 140,${windY + 2 * windDirection} C144,${windY - 14 * windDirection} 172,${windY - 10 * windDirection} 164,${windY + 4 * windDirection}`}
+              d={windSwirl(132, windY - 18 * windDirection, 23, true)}
               fill="none"
-              stroke={alpha(brushColor, 0.55)}
-              strokeWidth={2.2}
-              strokeLinecap="round"
-            />
-            <path
-              d={`M288,${windY - 16 * windDirection} C330,${windY - 31 * windDirection} 386,${windY - 22 * windDirection} 430,${windY - 10 * windDirection} C446,${windY - 4 * windDirection} 448,${windY + 18 * windDirection} 430,${windY + 18 * windDirection} C412,${windY + 18 * windDirection} 414,${windY - 5 * windDirection} 431,${windY - 2 * windDirection}`}
-              fill="none"
-              stroke={alpha(brushColor, 0.64)}
-              strokeWidth={2.2}
-              strokeLinecap="round"
-            />
-            <path
-              d={`M222,${windY + 2 * windDirection} C247,${windY + 20 * windDirection} 288,${windY + 10 * windDirection} 304,${windY + 30 * windDirection} C315,${windY + 45 * windDirection} 287,${windY + 55 * windDirection} 281,${windY + 36 * windDirection} C277,${windY + 22 * windDirection} 298,${windY + 20 * windDirection} 296,${windY + 34 * windDirection}`}
-              fill="none"
-              stroke={alpha(brushColor, 0.42)}
+              stroke={alpha(brushColor, 0.62)}
               strokeWidth={1.8}
+              strokeLinecap="round"
+            />
+            <path
+              d={windSwirl(353, windY + 18 * windDirection, 18, false)}
+              fill="none"
+              stroke={alpha(brushColor, 0.58)}
+              strokeWidth={1.75}
+              strokeLinecap="round"
+            />
+            <path
+              d={windSwirl(257, windY - 26 * windDirection, 12, true)}
+              fill="none"
+              stroke={alpha(brushColor, 0.5)}
+              strokeWidth={1.45}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M34,${windY + 10 * windDirection} L90,${windY + 10 * windDirection} M112,${windY + 10 * windDirection} L168,${windY + 10 * windDirection} M196,${windY + 10 * windDirection} C232,${windY + 8 * windDirection} 262,${windY + 4 * windDirection} 299,${windY + 12 * windDirection}`}
+              fill="none"
+              stroke={alpha(brushColor, 0.38)}
+              strokeWidth={1.3}
               strokeLinecap="round"
             />
           </>
         ) : null}
         {brushBorder === 'blade' ? (
           <>
-            {Array.from({ length: 13 }).map((_, index) => {
-              const x = index * 36 - 28;
+            {Array.from({ length: 9 }).map((_, index) => {
+              const x = index * 54 - 18;
               return (
                 <path
                   key={`blade-${index}`}
                   d={
                     bottom
-                      ? `M${x},${bladeY - 1} L${x + 18},${bladeY - 18} L${x + 36},${bladeY + 2} L${x + 54},${bladeY - 17} L${x + 72},${bladeY + 3} L${x + 72},${bladeY + 14} L${x},${bladeY + 14} Z`
-                      : `M${x},${bladeY + 1} L${x + 18},${bladeY + 18} L${x + 36},${bladeY - 2} L${x + 54},${bladeY + 17} L${x + 72},${bladeY - 3} L${x + 72},${bladeY - 14} L${x},${bladeY - 14} Z`
+                      ? `M${x},${bladeY + 12} L${x + 48},${bladeY - 2} L${x + 76},${bladeY + 9} L${x + 22},${bladeY + 19} Z`
+                      : `M${x},${bladeY - 12} L${x + 48},${bladeY + 2} L${x + 76},${bladeY - 9} L${x + 22},${bladeY - 19} Z`
                   }
                   fill={alpha(brushColor, index % 2 === 0 ? 0.68 : 0.42)}
                 />
@@ -1310,17 +1296,6 @@ function WatercolorBand({
               width={430}
               height={2}
               fill={alpha('#ffffff', 0.18)}
-            />
-            <path
-              d={
-                bottom
-                  ? `M0,${bladeY + 14} L430,${bladeY + 14}`
-                  : `M0,${bladeY - 14} L430,${bladeY - 14}`
-              }
-              fill="none"
-              stroke={alpha('#ffffff', 0.14)}
-              strokeWidth={1.5}
-              strokeDasharray="18 18"
             />
           </>
         ) : null}
@@ -1361,6 +1336,31 @@ function WatercolorBand({
           </>
         ) : null}
       </Box>
+      {brushBorder === 'flame' ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            ...edgePosition,
+            height: 48,
+            background: `linear-gradient(180deg, ${alpha('#f4b45f', 0.92)} 0%, ${alpha(
+              brushColor,
+              0.95,
+            )} 78%)`,
+            transform: bottom ? 'scaleY(-1)' : 'none',
+            transformOrigin: 'center',
+            WebkitMaskImage: `url(${fireBorderMask})`,
+            maskImage: `url(${fireBorderMask})`,
+            WebkitMaskRepeat: 'repeat-x',
+            maskRepeat: 'repeat-x',
+            WebkitMaskSize: 'auto 100%',
+            maskSize: 'auto 100%',
+            WebkitMaskPosition: bottom ? 'center bottom' : 'center top',
+            maskPosition: bottom ? 'center bottom' : 'center top',
+          }}
+        />
+      ) : null}
       {borderColor ? (
         <Box
           aria-hidden
@@ -1544,19 +1544,42 @@ function BalanceTrack() {
         {notchIndexes.map((idx) => (
           <Box
             key={idx}
-            aria-hidden
+            component="button"
+            aria-label={`Set balance to ${idx}`}
+            type="button"
+            onClick={() => setPosition(idx)}
             sx={{
               position: 'absolute',
-              top: -5,
+              top: -13,
               left: `${toPercent(idx)}%`,
-              width: 2,
-              height: 12,
-              background: notchColor,
+              width: 22,
+              height: 28,
+              p: 0,
+              border: 0,
+              background: 'transparent',
               transform: 'translateX(-50%)',
-              borderRadius: '1px',
-              pointerEvents: 'none',
+              cursor: 'pointer',
+              '&:focus-visible': {
+                outline: `2px solid ${alpha(deepInk, 0.5)}`,
+                outlineOffset: 2,
+                borderRadius: '6px',
+              },
             }}
-          />
+          >
+            <Box
+              aria-hidden
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: '50%',
+                width: 2,
+                height: 12,
+                background: notchColor,
+                transform: 'translateX(-50%)',
+                borderRadius: '1px',
+              }}
+            />
+          </Box>
         ))}
         {/* Bottom label row — mirrors the top, with the sign flipped so
             +i on the right side corresponds to the Progress direction. */}
@@ -1630,7 +1653,7 @@ function BalanceTrack() {
             cursor: 'grab',
             touchAction: 'none',
             userSelect: 'none',
-            transition: 'left 0.08s ease',
+            transition: draggingRef.current ? 'none' : 'left 220ms ease',
             '&:active': { cursor: 'grabbing' },
             '&:focus-visible': {
               outline: `2px solid ${alpha(deepInk, 0.6)}`,
@@ -1739,6 +1762,8 @@ function StatsPanel() {
                   fontWeight: 700,
                   lineHeight: 1,
                   p: 0,
+                  pr: '5px',
+                  boxSizing: 'border-box',
                   outline: 'none',
                   cursor: 'pointer',
                   // Hide the native chevron — keep the field looking like
@@ -1804,11 +1829,13 @@ function BackgroundCheckRow({ label }: { label: string }) {
 
 function PrimaryTrainingSelect() {
   const [character, setCharacter] = useAtom(characterStateAtom);
+  const { isDarkMode } = useThemeMode();
   const currentTraining = primaryTrainingOptions.includes(character.primaryTraining)
     ? character.primaryTraining
     : defaultCharacter.primaryTraining;
+  const arrowColor = encodeURIComponent(isDarkMode ? '#ffffff' : ink);
   return (
-    <Stack spacing={0.45} sx={{ width: 'min(100%, 220px)', pt: 0.1 }}>
+    <Stack spacing={0.45} sx={{ width: 'min(100%, 220px)', pt: '5px' }}>
       <Typography
         sx={{
           color: alpha(brown, 0.76),
@@ -1835,7 +1862,7 @@ function PrimaryTrainingSelect() {
         }}
         sx={{
           width: '100%',
-          minHeight: 34,
+          minHeight: 39,
           borderRadius: '4px',
           border: `1px solid ${alpha(accent, 0.72)}`,
           bgcolor: alpha(parchmentLight, 0.72),
@@ -1847,9 +1874,17 @@ function PrimaryTrainingSelect() {
           textTransform: 'uppercase',
           textAlign: 'center',
           textAlignLast: 'center',
-          px: 1,
+          pl: 1,
+          pr: 3,
           outline: 'none',
           cursor: 'pointer',
+          WebkitAppearance: 'none',
+          MozAppearance: 'none',
+          appearance: 'none',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5' stroke='${arrowColor}' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 10px center',
+          backgroundSize: '14px 14px',
           '&:focus': {
             borderColor: accent,
             boxShadow: `0 0 0 2px ${alpha(accent, 0.25)}`,
