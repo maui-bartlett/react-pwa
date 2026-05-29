@@ -5,6 +5,7 @@ import { useSetAtom } from 'jotai';
 import { FabUTokensContext } from '@/components/fab-u/ThemeContext';
 import AccountMenu from '@/components/fab-u/organisms/AccountMenu';
 import {
+  FabUTokens,
   avatarDarkTokens,
   avatarLightTokens,
   darkFabUTokens,
@@ -23,6 +24,8 @@ type AccountSettingsProps = {
   gameSystem: GameSystem;
   /** Optional locally-active character name. */
   localCharacterName?: string;
+  /** Optional palette override for game surfaces with dynamic theme colors. */
+  tokensOverride?: FabUTokens;
 };
 
 /**
@@ -32,7 +35,7 @@ type AccountSettingsProps = {
  *   3. a FabUTokensContext.Provider scoped to this dialog so the menu
  *      inherits the right palette (green for FabU, blue for Avatar Legends)
  */
-function AccountSettings({ gameSystem, localCharacterName }: AccountSettingsProps) {
+function AccountSettings({ gameSystem, localCharacterName, tokensOverride }: AccountSettingsProps) {
   const setGameSystem = useSetAtom(gameSystemAtom);
   const { isDarkMode, toggle } = useThemeMode();
 
@@ -45,11 +48,12 @@ function AccountSettings({ gameSystem, localCharacterName }: AccountSettingsProp
   // gets its green look); this wrapper only overrides it for the menu's
   // own subtree.
   const tokens = useMemo(() => {
+    if (tokensOverride) return tokensOverride;
     if (gameSystem === 'avatar-legends') {
       return isDarkMode ? avatarDarkTokens : avatarLightTokens;
     }
     return isDarkMode ? darkFabUTokens : fabUTokens;
-  }, [gameSystem, isDarkMode]);
+  }, [gameSystem, isDarkMode, tokensOverride]);
 
   return (
     <FabUTokensContext.Provider value={tokens}>
