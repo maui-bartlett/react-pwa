@@ -194,13 +194,24 @@ function applyAvatarPalette(isDarkMode: boolean) {
 const chromeText = '#f3f7fb';
 
 // Element-specific colors stay constant — they identify the element, not
-// the theme.
+// the theme. The dark-mode stat labels use slightly brighter variants
+// so the small-caps labels keep their elemental identity on slate cards.
 const water = '#4a7fa8';
 const earth = '#7d8c5a';
 const fire = '#a8413a';
 const air = '#a3bbc4';
 const martial = '#3d3d4a';
 const tech = '#7a5d8a';
+const darkStatWater = '#6fa9d6';
+const darkStatEarth = '#a3ba72';
+const elementFilterFrames: Record<Exclude<TechniqueElementFilter, 'all' | 'basic'>, string> = {
+  water,
+  earth: '#6f8f4e',
+  fire,
+  air: '#d4b74b',
+  martial: '#0b1018',
+  tech,
+};
 const darkConditionGold = '#b98535';
 const darkNegativeRed = '#5f1717';
 
@@ -1092,10 +1103,11 @@ function BalanceTrack() {
  *   - Passion:    a warm red (its own hue)
  */
 function StatsPanel() {
+  const { isDarkMode } = useThemeMode();
   const rows: Array<[string, string]> = [
-    ['Creativity', water],
-    ['Focus', earth],
-    ['Harmony', water],
+    ['Creativity', isDarkMode ? darkStatWater : water],
+    ['Focus', isDarkMode ? darkStatEarth : earth],
+    ['Harmony', isDarkMode ? darkStatWater : water],
     ['Passion', passionRed],
   ];
   const [stats, setStats] = useAtom(statsAtom);
@@ -1785,12 +1797,14 @@ function ElementMark({
   color,
   label,
   src,
+  frameColor,
   size = 32,
   height,
 }: {
   color: string;
   label?: string;
   src?: string | undefined;
+  frameColor?: string;
   size?: number;
   /**
    * Optional explicit frame height. When supplied, the frame is `size` wide
@@ -1806,10 +1820,12 @@ function ElementMark({
         width: size,
         height: frameHeight,
         borderRadius: '3px',
-        border: `1px solid ${alpha(deepInk, 0.35)}`,
-        background: src
-          ? 'transparent'
-          : `linear-gradient(180deg, ${alpha(color, 0.45)} 0%, ${alpha(color, 0.7)} 100%)`,
+        border: `1px solid ${alpha(frameColor ?? deepInk, 0.62)}`,
+        background:
+          frameColor ??
+          (src
+            ? 'transparent'
+            : `linear-gradient(180deg, ${alpha(color, 0.45)} 0%, ${alpha(color, 0.7)} 100%)`),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -2666,11 +2682,11 @@ function CombatPane() {
         {/* Techniques sub-tab: element filter row + expandable technique cards */}
         {subTab === 0 ? (
           <>
-            {/* Element filter row: deep-ink backing matches selected filter chips,
-              keeping the extracted white symbols readable in light mode. */}
+            {/* Element filter row: element-coloured frames keep the extracted
+              white symbols readable on a light card. */}
             <Box
               sx={{
-                background: deepInk,
+                background: isDarkMode ? deepInk : '#ffffff',
                 border: `1px solid ${alpha(accent, 0.42)}`,
                 borderRadius: '4px',
                 p: '8px 10px',
@@ -2688,6 +2704,10 @@ function CombatPane() {
               >
                 {elementFilters.map((entry) => {
                   const isActive = elementFilter === entry.key;
+                  const frameColor =
+                    entry.key === 'all' || entry.key === 'basic'
+                      ? deepInk
+                      : elementFilterFrames[entry.key];
                   return (
                     <Stack
                       key={entry.key}
@@ -2713,12 +2733,12 @@ function CombatPane() {
                             width: 34,
                             height: 32,
                             borderRadius: '3px',
-                            border: `1px solid ${alpha(chromeText, 0.34)}`,
-                            background: alpha(chromeText, 0.08),
+                            border: `1px solid ${alpha(frameColor, 0.62)}`,
+                            background: frameColor,
                             display: 'grid',
                             placeItems: 'center',
                             flex: '0 0 auto',
-                            boxShadow: `0 0 0 2px ${alpha(parchmentLight, 0.75)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
+                            boxShadow: `0 0 0 2px ${alpha(isDarkMode ? parchmentLight : '#ffffff', 0.85)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
                           }}
                         >
                           {entry.key === 'all' ? (
@@ -2744,13 +2764,14 @@ function CombatPane() {
                           color={chromeText}
                           label={entry.label.slice(0, 1)}
                           src={entry.src ?? undefined}
+                          frameColor={frameColor}
                           size={34}
                           height={32}
                         />
                       )}
                       <Typography
                         sx={{
-                          color: chromeText,
+                          color: isDarkMode ? chromeText : deepInk,
                           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                           fontSize: '0.58rem',
                           fontWeight: 900,

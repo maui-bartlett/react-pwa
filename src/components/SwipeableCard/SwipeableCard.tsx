@@ -178,7 +178,20 @@ function SwipeableCard({ children, actions, borderRadius = '9px' }: SwipeableCar
             right corners so the card body's visual right edge follows
             our open / closed state independent of whatever child the
             caller renders. */}
-        <Box sx={{ borderRadius: innerBorderRadius, overflow: 'hidden' }}>{children}</Box>
+        <Box
+          sx={{
+            borderRadius: innerBorderRadius,
+            overflow: 'hidden',
+            '& > *': cardOpen
+              ? {
+                  borderTopRightRadius: '0 !important',
+                  borderBottomRightRadius: '0 !important',
+                }
+              : undefined,
+          }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );
