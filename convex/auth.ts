@@ -8,7 +8,9 @@ import type { DataModel } from './_generated/dataModel';
 import { query } from './_generated/server';
 import authConfig from './auth.config';
 
-const productionSiteUrl = 'https://react-pwa-lime.vercel.app';
+const productionSiteUrl = 'https://table-top.online';
+const devSiteUrl = 'https://dev.table-top.online';
+const legacyProductionSiteUrl = 'https://react-pwa-lime.vercel.app';
 const localSiteUrl = 'http://localhost:5173';
 const siteUrl = process.env.SITE_URL ?? productionSiteUrl;
 const extraTrustedOrigins =
@@ -80,6 +82,8 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
     trustedOrigins: [
       siteUrl,
       productionSiteUrl,
+      devSiteUrl,
+      legacyProductionSiteUrl,
       localSiteUrl,
       'https://appleid.apple.com',
       ...extraTrustedOrigins,
