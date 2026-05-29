@@ -227,7 +227,7 @@ const primaryTrainingThemes: Record<
     chromeFill: string;
     headerBorder: string;
     footerBorder: string;
-    brushBorder?: boolean;
+    brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear';
   }
 > = {
   Waterbending: {
@@ -240,7 +240,7 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #173755 100%)',
     headerBorder: water,
     footerBorder: water,
-    brushBorder: true,
+    brushBorder: 'wavy',
   },
   Earthbending: {
     bodyWash: `
@@ -251,6 +251,7 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #24351f 100%)',
     headerBorder: elementFilterFrames.earth,
     footerBorder: '#92a66a',
+    brushBorder: 'dry',
   },
   Firebending: {
     bodyWash: `
@@ -261,6 +262,7 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #4a1f1b 100%)',
     headerBorder: fire,
     footerBorder: '#c35a42',
+    brushBorder: 'flame',
   },
   Airbending: {
     bodyWash: `
@@ -271,6 +273,7 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #544821 100%)',
     headerBorder: elementFilterFrames.air,
     footerBorder: '#e0c75f',
+    brushBorder: 'wind',
   },
   Weapons: {
     bodyWash: `
@@ -281,6 +284,7 @@ const primaryTrainingThemes: Record<
     chromeFill: `linear-gradient(180deg, #111a24 0%, ${elementFilterFrames.martial} 100%)`,
     headerBorder: '#4a5563',
     footerBorder: '#5c6674',
+    brushBorder: 'blade',
   },
   Technology: {
     bodyWash: `
@@ -291,6 +295,7 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #3c294c 100%)',
     headerBorder: tech,
     footerBorder: '#9977aa',
+    brushBorder: 'gear',
   },
 };
 const darkConditionGold = '#b98535';
@@ -871,10 +876,8 @@ function techniqueElementVisual(type: TechniqueElement): {
 }
 
 /**
- * Painted brush-stroke band — a straight dark navy band with a painted
- * (not wavy) edge, suggesting a flat brush dragged across the page. The
- * far edge is built from a solid rectangle plus a few thin streaks that
- * fade out to mimic dry brush bristles.
+ * Painted chrome band. Trainings can opt into themed SVG border motifs
+ * at the inner edge while sharing the same header/footer layout.
  */
 function WatercolorBand({
   bottom = false,
@@ -890,14 +893,25 @@ function WatercolorBand({
    *  light-mode top header passes a whiter gradient. */
   fill?: string;
   borderColor?: string;
-  brushBorder?: boolean;
+  brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear' | false;
 }) {
-  // Solid painted block only — no bristle streaks. `solidEdge` defines the
-  // depth of the painted band; outside that, the parchment shows through.
   const solidEdge = height - 18;
   const bandFill = fill ?? deepInk;
   const edgePosition = bottom ? { top: 0 } : { bottom: 0 };
   const brushColor = borderColor ?? deepInk;
+  const brushHighlight = borderColor ? alpha(borderColor, 0.55) : alpha(deepInk, 0.55);
+  const wavyPath = bottom
+    ? `M0,${height} L430,${height} L430,28 Q400,8 360,18 Q320,30 280,14 Q240,0 200,18 Q160,34 120,16 Q80,0 40,22 Q15,32 0,18 Z`
+    : `M0,0 L430,0 L430,${height - 30} Q400,${height - 8} 360,${height - 18} Q320,${height - 30} 280,${height - 12} Q240,${height + 4} 200,${height - 18} Q160,${height - 34} 120,${height - 14} Q80,${height + 2} 40,${height - 22} Q15,${height - 32} 0,${height - 16} Z`;
+  const wavyPathLight = bottom
+    ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
+    : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
+  const flamePath = bottom
+    ? `M0,${height} L430,${height} L430,22 C404,12 398,33 378,18 C356,3 350,31 326,16 C302,0 294,34 270,17 C244,0 236,31 214,15 C190,-1 178,32 154,16 C128,0 119,34 95,18 C70,2 58,31 36,18 C18,8 8,28 0,18 Z`
+    : `M0,0 L430,0 L430,${height - 22} C404,${height - 12} 398,${height - 33} 378,${height - 18} C356,${height - 3} 350,${height - 31} 326,${height - 16} C302,${height} 294,${height - 34} 270,${height - 17} C244,${height} 236,${height - 31} 214,${height - 15} C190,${height + 1} 178,${height - 32} 154,${height - 16} C128,${height} 119,${height - 34} 95,${height - 18} C70,${height - 2} 58,${height - 31} 36,${height - 18} C18,${height - 8} 8,${height - 28} 0,${height - 18} Z`;
+  const windY = bottom ? height - solidEdge - 10 : solidEdge + 10;
+  const bladeY = bottom ? height - solidEdge - 12 : solidEdge + 8;
+  const gearY = bottom ? height - solidEdge - 12 : solidEdge + 12;
 
   return (
     <Box
@@ -927,14 +941,14 @@ function WatercolorBand({
         preserveAspectRatio="none"
         sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
       >
-        {brushBorder ? (
+        {brushBorder === 'dry' ? (
           <>
             <rect
               x={0}
               y={bottom ? height - solidEdge - 3 : solidEdge}
               width={430}
               height={3}
-              fill={alpha(brushColor, 0.55)}
+              fill={brushHighlight}
             />
             {[
               { x: 14, w: 70, opacity: 0.55 },
@@ -968,6 +982,104 @@ function WatercolorBand({
                 fill={alpha(brushColor, streak.opacity)}
               />
             ))}
+          </>
+        ) : null}
+        {brushBorder === 'wavy' ? (
+          <>
+            <path d={wavyPath} fill={alpha(brushColor, 0.82)} />
+            <path d={wavyPathLight} fill={alpha('#8bb8d4', 0.36)} />
+          </>
+        ) : null}
+        {brushBorder === 'flame' ? (
+          <>
+            <path d={flamePath} fill={alpha(brushColor, 0.78)} />
+            <path
+              d={flamePath}
+              fill={alpha('#f0a448', 0.24)}
+              transform={`translate(0 ${bottom ? -6 : 6}) scale(1 0.78)`}
+            />
+          </>
+        ) : null}
+        {brushBorder === 'wind' ? (
+          <>
+            {[0, 92, 184, 276].map((x, index) => (
+              <path
+                key={`wind-${index}`}
+                d={`M${x},${windY} C${x + 28},${windY - (bottom ? 10 : -10)} ${x + 54},${windY + (bottom ? 10 : -10)} ${x + 84},${windY} S${x + 142},${windY} ${x + 170},${windY - (bottom ? 6 : -6)}`}
+                fill="none"
+                stroke={alpha(brushColor, index % 2 === 0 ? 0.72 : 0.48)}
+                strokeWidth={index % 2 === 0 ? 3 : 2}
+                strokeLinecap="round"
+              />
+            ))}
+            <path
+              d={`M0,${bottom ? height - solidEdge - 2 : solidEdge + 2} C70,${windY} 130,${windY - (bottom ? 9 : -9)} 205,${windY} S350,${windY + (bottom ? 8 : -8)} 430,${windY - (bottom ? 2 : -2)}`}
+              fill="none"
+              stroke={alpha(brushColor, 0.28)}
+              strokeWidth={5}
+              strokeLinecap="round"
+            />
+          </>
+        ) : null}
+        {brushBorder === 'blade' ? (
+          <>
+            {Array.from({ length: 9 }).map((_, index) => {
+              const x = index * 54 - 18;
+              return (
+                <path
+                  key={`blade-${index}`}
+                  d={
+                    bottom
+                      ? `M${x},${bladeY + 12} L${x + 48},${bladeY - 2} L${x + 76},${bladeY + 9} L${x + 22},${bladeY + 19} Z`
+                      : `M${x},${bladeY - 12} L${x + 48},${bladeY + 2} L${x + 76},${bladeY - 9} L${x + 22},${bladeY - 19} Z`
+                  }
+                  fill={alpha(brushColor, index % 2 === 0 ? 0.68 : 0.42)}
+                />
+              );
+            })}
+            <rect
+              x={0}
+              y={bottom ? bladeY + 10 : bladeY - 12}
+              width={430}
+              height={2}
+              fill={alpha('#ffffff', 0.18)}
+            />
+          </>
+        ) : null}
+        {brushBorder === 'gear' ? (
+          <>
+            <rect
+              x={0}
+              y={bottom ? gearY + 6 : gearY - 8}
+              width={430}
+              height={2.5}
+              fill={alpha(brushColor, 0.58)}
+            />
+            {Array.from({ length: 11 }).map((_, index) => {
+              const x = index * 42 + 8;
+              return (
+                <Box
+                  key={`gear-${index}`}
+                  component="g"
+                  transform={`translate(${x} ${gearY}) rotate(${index * 18})`}
+                >
+                  {Array.from({ length: 8 }).map((__, tooth) => (
+                    <rect
+                      key={tooth}
+                      x={-2}
+                      y={-13}
+                      width={4}
+                      height={6}
+                      rx={1}
+                      fill={alpha(brushColor, 0.54)}
+                      transform={`rotate(${tooth * 45})`}
+                    />
+                  ))}
+                  <circle r={9} fill="none" stroke={alpha(brushColor, 0.6)} strokeWidth={2} />
+                  <circle r={3} fill={alpha(brushColor, 0.5)} />
+                </Box>
+              );
+            })}
           </>
         ) : null}
       </Box>
