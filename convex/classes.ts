@@ -130,9 +130,8 @@ export const replaceAvatarLegendsClasses = internalMutation({
         .filter((classDoc) => {
           const oldShapeGameSystem = (classDoc as { meta?: { gameSystem?: string } }).meta
             ?.gameSystem;
-          const newShapeGameSystem = (
-            classDoc as { class?: { meta?: { gameSystem?: string } } }
-          ).class?.meta?.gameSystem;
+          const newShapeGameSystem = (classDoc as { class?: { meta?: { gameSystem?: string } } })
+            .class?.meta?.gameSystem;
           return (
             oldShapeGameSystem === AVATAR_LEGENDS_GAME_SYSTEM ||
             newShapeGameSystem === AVATAR_LEGENDS_GAME_SYSTEM
@@ -170,5 +169,19 @@ export const listAvatarLegendsClasses = query({
         q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM),
       )
       .collect();
+  },
+});
+
+export const getAvatarLegendsClassByName = query({
+  args: { className: v.string() },
+  handler: async (ctx, args) => {
+    const className = titleCaseLabel(args.className);
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', className),
+      )
+      .unique();
+    return classDoc?.class ?? null;
   },
 });

@@ -11,6 +11,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { Backpack, HandFist, Pencil, Trash2 } from 'lucide-react';
@@ -23,6 +24,7 @@ import { createCharacterHistory } from '@/state/createCharacterHistory';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 import { useThemeMode } from '@/theme/hooks';
 
+import { api } from '../../../convex/_generated/api';
 // White training symbols extracted from the Avatar Legends training reference pages.
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
@@ -499,7 +501,7 @@ const primaryTrainingThemes: Record<
       linear-gradient(135deg, rgba(241, 228, 221, 0.48), rgba(232, 217, 211, 0.38))
     `,
     chromeColor: '#4a1f1b',
-    chromeFill: 'linear-gradient(180deg, #4a1f1b 0%, #2b100e 100%)',
+    chromeFill: 'linear-gradient(180deg, #4a1f1b 0%, #c35a42 100%)',
     headerBorder: fire,
     footerBorder: '#c35a42',
     pageBg: { dark: '#4a1f1b', light: '#4a1f1b' },
@@ -633,14 +635,17 @@ type CharacterState = {
   fatigue: boolean[];
   tempFatigue: boolean[];
   backgrounds: Record<string, boolean>;
-  classTraitTitle: string;
-  classTraitBody: string;
-  historyAnswers: Record<number, string>;
+  historyAnswers: Record<string, string>;
   connections: Connection[];
   classMoves: MoveEntry[];
   techniques: Technique[];
   inventory: JournalEntry[];
   notes: JournalEntry[];
+};
+
+type AvatarClassData = {
+  classTrait?: { name?: unknown; text?: unknown };
+  historyQuestions?: unknown;
 };
 
 /** Starter values — match what the sheet previously rendered as static
@@ -662,9 +667,6 @@ const defaultCharacter: CharacterState = {
   fatigue: [false, false, false, true, true],
   tempFatigue: [],
   backgrounds: { Urban: true, Privileged: true },
-  classTraitTitle: 'A Tainted Past',
-  classTraitBody:
-    'You carry a heavy legacy — a name, a debt, or a deed that shadows your every step. Once per session, when your past complicates the situation, the GM may offer you an opportunity to mark fatigue and either reveal a useful connection from your old life or learn a fragment of hidden lore that bears on the current scene.',
   historyAnswers: {},
   connections: [
     {
@@ -767,6 +769,19 @@ const defaultCharacter: CharacterState = {
   ],
 };
 
+const defaultClassTrait = {
+  title: 'A Tainted Past',
+  body: 'You carry a heavy legacy — a name, a debt, or a deed that shadows your every step. Once per session, when your past complicates the situation, the GM may offer you an opportunity to mark fatigue and either reveal a useful connection from your old life or learn a fragment of hidden lore that bears on the current scene.',
+};
+
+const defaultHistoryQuestions = [
+  'Where did you grow up, and who raised you?',
+  'What event most shaped who you are today?',
+  'Who do you owe something to — and what is it?',
+  'What did you leave behind when you took up this calling?',
+  'What lesson from your past still guides you?',
+];
+
 /** Single source of truth for the active character. Every editable
  *  surface reads from / writes to this atom (often via a derived slice). */
 const characterStateAtom = atomWithStorage<CharacterState>(
@@ -779,8 +794,10 @@ const characterStateAtom = atomWithStorage<CharacterState>(
  *  v2: `age` is `number`, technique key is `type` (was `element`).
  *  v3: Technique.category renamed to approach, title→name, body→description.
  *      JournalEntry title→name, body→description.
- *  v4 (current): add primaryTraining for training-themed app chrome. */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 4;
+ *  v4: add primaryTraining for training-themed app chrome.
+ *  v5 (current): class trait display data comes from the classes table;
+ *      history answers are stored on the character by prompt text. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 5;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -790,7 +807,14 @@ const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
  *  so the persisted blob has room to grow with shape-level metadata
  *  (schema version, etc) without colliding with the character fields. */
 function serializeAvatarLegendsCharacter(state: CharacterState) {
-  return { schemaVersion: AVATAR_LEGENDS_SCHEMA_VERSION, character: state };
+  const legacy = state as CharacterState & {
+    classTraitBody?: unknown;
+    classTraitTitle?: unknown;
+  };
+  const character = { ...legacy };
+  delete character.classTraitBody;
+  delete character.classTraitTitle;
+  return { schemaVersion: AVATAR_LEGENDS_SCHEMA_VERSION, character };
 }
 
 /** Apply incoming backend payload back to the AL shape, with a defensive
@@ -880,12 +904,28 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     primaryTrainingOptions.includes(innerCandidate.primaryTraining as PrimaryTraining)
       ? (innerCandidate.primaryTraining as PrimaryTraining)
       : defaultCharacter.primaryTraining;
+  const rawHistoryAnswers = innerCandidate.historyAnswers;
+  const historyAnswers =
+    rawHistoryAnswers && typeof rawHistoryAnswers === 'object'
+      ? Object.fromEntries(
+          Object.entries(rawHistoryAnswers as Record<string, unknown>)
+            .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+            .map(([key, value]) => [key, value]),
+        )
+      : defaultCharacter.historyAnswers;
+  const rest = { ...innerCandidate } as Partial<CharacterState> & {
+    classTraitBody?: unknown;
+    classTraitTitle?: unknown;
+  };
+  delete rest.classTraitBody;
+  delete rest.classTraitTitle;
 
   return {
     ...defaultCharacter,
-    ...(innerCandidate as Partial<CharacterState>),
+    ...rest,
     age,
     primaryTraining,
+    historyAnswers,
     techniques,
     inventory,
     notes,
@@ -1141,7 +1181,6 @@ function WatercolorBand({
   const brushColor = borderColor ?? deepInk;
   const brushHighlight = borderColor ? alpha(borderColor, 0.55) : alpha(deepInk, 0.55);
   const isWaterWave = brushBorder === 'wavy' && brushColor === water;
-  const isEarthDryBrush = brushBorder === 'dry' && brushColor === '#182615';
   const waveFillId = bottom ? 'water-wave-fill-bottom' : 'water-wave-fill-top';
   const waveLightFillId = bottom ? 'water-wave-light-fill-bottom' : 'water-wave-light-fill-top';
   const waveFill = isWaterWave ? `url(#${waveFillId})` : alpha(brushColor, 0.82);
@@ -1170,7 +1209,7 @@ function WatercolorBand({
         [bottom ? 'bottom' : 'top']: 0,
         height,
         pointerEvents: 'none',
-        zIndex: 0,
+        zIndex: 2,
       }}
     >
       <Box
@@ -1219,7 +1258,7 @@ function WatercolorBand({
           <>
             <rect
               x={0}
-              y={bottom ? height - solidEdge - 3 : isEarthDryBrush ? solidEdge - 8 : solidEdge}
+              y={bottom ? height - solidEdge - 3 : solidEdge}
               width={430}
               height={3}
               fill={brushHighlight}
@@ -1234,7 +1273,7 @@ function WatercolorBand({
               <rect
                 key={`streak-${index}`}
                 x={streak.x}
-                y={bottom ? height - solidEdge - 9 : solidEdge + (isEarthDryBrush ? -2 : 6)}
+                y={bottom ? height - solidEdge - 9 : solidEdge + 6}
                 width={streak.w}
                 height={1.5}
                 fill={alpha(brushColor, streak.opacity)}
@@ -1250,7 +1289,7 @@ function WatercolorBand({
               <rect
                 key={`far-streak-${index}`}
                 x={streak.x}
-                y={bottom ? height - solidEdge - 14 : solidEdge + (isEarthDryBrush ? 3 : 11)}
+                y={bottom ? height - solidEdge - 14 : solidEdge + 11}
                 width={streak.w}
                 height={1}
                 fill={alpha(brushColor, streak.opacity)}
@@ -1277,7 +1316,7 @@ function WatercolorBand({
               />
             ))}
             <path
-              d={windSwirl(132, windY - 18 * windDirection, 23, true)}
+              d={windSwirl(182, windY - 18 * windDirection, 23, true)}
               fill="none"
               stroke={alpha(brushColor, 0.62)}
               strokeWidth={1.8}
@@ -1291,17 +1330,10 @@ function WatercolorBand({
               strokeLinecap="round"
             />
             <path
-              d={windSwirl(257, windY - 26 * windDirection, 12, true)}
+              d={windSwirl(307, windY - 26 * windDirection, 12, true)}
               fill="none"
               stroke={alpha(brushColor, 0.5)}
               strokeWidth={1.45}
-              strokeLinecap="round"
-            />
-            <path
-              d={`M34,${windY + 10 * windDirection} L90,${windY + 10 * windDirection} M112,${windY + 10 * windDirection} L168,${windY + 10 * windDirection} M196,${windY + 10 * windDirection} C232,${windY + 8 * windDirection} 262,${windY + 4 * windDirection} 299,${windY + 12 * windDirection}`}
-              fill="none"
-              stroke={alpha(brushColor, 0.38)}
-              strokeWidth={1.3}
               strokeLinecap="round"
             />
           </>
@@ -2263,9 +2295,9 @@ function HistorySection({ questions }: { questions: string[] }) {
               <Box
                 component="textarea"
                 rows={2}
-                value={answers[index] ?? ''}
+                value={answers[question] ?? answers[index] ?? ''}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setAnswers((prev) => ({ ...prev, [index]: e.target.value }))
+                  setAnswers((prev) => ({ ...prev, [question]: e.target.value }))
                 }
                 sx={{
                   width: '100%',
@@ -2722,8 +2754,34 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+function resolveAvatarClassTrait(classData: AvatarClassData | null | undefined) {
+  const title =
+    typeof classData?.classTrait?.name === 'string'
+      ? classData.classTrait.name
+      : defaultClassTrait.title;
+  const body =
+    typeof classData?.classTrait?.text === 'string'
+      ? classData.classTrait.text
+      : defaultClassTrait.body;
+  return { title, body };
+}
+
+function resolveAvatarHistoryQuestions(classData: AvatarClassData | null | undefined) {
+  return Array.isArray(classData?.historyQuestions)
+    ? classData.historyQuestions.filter(
+        (question): question is string =>
+          typeof question === 'string' && question.trim().length > 0,
+      )
+    : defaultHistoryQuestions;
+}
+
 function CharacterPane() {
   const character = useAtomValue(characterStateAtom);
+  const avatarClass = useQuery(api.classes.getAvatarLegendsClassByName, {
+    className: character.className,
+  }) as AvatarClassData | null | undefined;
+  const classTrait = resolveAvatarClassTrait(avatarClass);
+  const historyQuestions = resolveAvatarHistoryQuestions(avatarClass);
   // Age is now a plain number on the character record; render as
   // "Age <n>" inline. Falsy guards keep blank/0 values out of the row.
   const ageLabel =
@@ -2857,21 +2915,11 @@ function CharacterPane() {
       </Panel>
 
       <Panel>
-        <ClassTraitAccordion title={character.classTraitTitle}>
-          {character.classTraitBody}
-        </ClassTraitAccordion>
+        <ClassTraitAccordion title={classTrait.title}>{classTrait.body}</ClassTraitAccordion>
       </Panel>
 
       <Panel>
-        <HistorySection
-          questions={[
-            'Where did you grow up, and who raised you?',
-            'What event most shaped who you are today?',
-            'Who do you owe something to — and what is it?',
-            'What did you leave behind when you took up this calling?',
-            'What lesson from your past still guides you?',
-          ]}
-        />
+        <HistorySection questions={historyQuestions} />
       </Panel>
 
       {/* Connections is a section on the Character tab (formerly the standalone Bonds tab) */}
@@ -3328,7 +3376,8 @@ function CombatPane() {
   const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
   // Techniques live on the character record (characterStateAtom) so
   // each character carries their own set of known techniques.
-  const techniques = useAtomValue(characterStateAtom).techniques;
+  const character = useAtomValue(characterStateAtom);
+  const techniques = character.techniques;
   // Filter by both element and proficiency level. techFilter 0 = All
   // (no level filter); 1..3 map to learned / practiced / mastered.
   const visibleTechniques = useMemo(() => {
@@ -3371,6 +3420,12 @@ function CombatPane() {
   // using a deeper gold fill for a quieter active state.
   const conditionColor = isDarkMode ? darkConditionGold : bookAccent;
   const negativeStatusColor = isDarkMode ? darkNegativeRed : passionRed;
+  const positiveStatusColor =
+    character.primaryTraining === 'Firebending'
+      ? '#f4b45f'
+      : isDarkMode
+        ? uiPrimaryDark
+        : uiPrimary;
 
   return (
     <>
@@ -3555,7 +3610,7 @@ function CombatPane() {
               <Stack spacing={1.2}>
                 <Typography
                   sx={{
-                    color: alpha(brown, 0.7),
+                    color: positiveStatusColor,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '0.56rem',
                     fontWeight: 900,
@@ -3569,7 +3624,7 @@ function CombatPane() {
                     key={label}
                     label={label}
                     active={Boolean(activeStatuses[label])}
-                    activeColor={isDarkMode ? uiPrimaryDark : uiPrimary}
+                    activeColor={positiveStatusColor}
                     onToggle={() => toggleStatus(label)}
                   />
                 ))}
@@ -4540,6 +4595,18 @@ function AvatarLegends() {
     () => createAvatarAccountTokens(isDarkMode, trainingTheme),
     [isDarkMode, trainingTheme],
   );
+  const trainingHeaderBorder =
+    character.primaryTraining === 'Earthbending'
+      ? isDarkMode
+        ? '#9a7a2f'
+        : '#182615'
+      : trainingTheme.headerBorder;
+  const trainingFooterBorder =
+    character.primaryTraining === 'Earthbending'
+      ? isDarkMode
+        ? '#9a7a2f'
+        : '#182615'
+      : trainingTheme.footerBorder;
   const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
   // White cornflower gradient applied to the active-tab title bar in
   // light mode (transferred from the app header per the user spec).
@@ -4628,14 +4695,14 @@ function AvatarLegends() {
           <WatercolorBand
             height={92}
             fill={trainingTheme.chromeFill}
-            borderColor={trainingTheme.headerBorder}
+            borderColor={trainingHeaderBorder}
             brushBorder={trainingTheme.brushBorder}
           />
           <WatercolorBand
             bottom
             height={86}
             fill={trainingTheme.chromeFill}
-            borderColor={trainingTheme.footerBorder}
+            borderColor={trainingFooterBorder}
             brushBorder={trainingTheme.brushBorder}
           />
 

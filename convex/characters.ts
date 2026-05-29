@@ -680,6 +680,95 @@ export const normalizeAvatarLegendsClassNames = internalMutation({
 });
 
 /**
+ * One-shot migration for Avatar Legends v5 character data:
+ *   - class trait display data now comes from the matching `classes`
+ *     document, so strip legacy `classTraitTitle` / `classTraitBody`
+ *     from the character blob.
+ *   - history answers remain on the character, keyed by prompt text
+ *     when the matching class data is available.
+ * Safe to re-run.
+ */
+export const migrateAvatarLegendsV5ClassData = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      if (row.meta?.gameSystem !== 'avatar-legends') continue;
+      const state =
+        row.characterState && typeof row.characterState === 'object'
+          ? (row.characterState as Record<string, unknown>)
+          : null;
+      const inner =
+        state?.character && typeof state.character === 'object'
+          ? (state.character as Record<string, unknown>)
+          : null;
+      if (!state || !inner) continue;
+
+      let touched = false;
+      const nextInner: Record<string, unknown> = { ...inner };
+
+      if ('classTraitTitle' in nextInner) {
+        delete nextInner.classTraitTitle;
+        touched = true;
+      }
+      if ('classTraitBody' in nextInner) {
+        delete nextInner.classTraitBody;
+        touched = true;
+      }
+
+      const className =
+        typeof inner.className === 'string' ? titleCaseLabel(inner.className) : null;
+      const historyAnswers =
+        inner.historyAnswers && typeof inner.historyAnswers === 'object'
+          ? (inner.historyAnswers as Record<string, unknown>)
+          : null;
+      if (historyAnswers) {
+        const classDoc = className
+          ? await ctx.db
+              .query('classes')
+              .withIndex('by_classMetaGameSystem_className', (q) =>
+                q.eq('class.meta.gameSystem', 'avatar-legends').eq('class.className', className),
+              )
+              .unique()
+          : null;
+        const classInfo =
+          classDoc?.class && typeof classDoc.class === 'object'
+            ? (classDoc.class as Record<string, unknown>)
+            : null;
+        const questions = Array.isArray(classInfo?.historyQuestions)
+          ? (classInfo.historyQuestions.filter(
+              (question): question is string => typeof question === 'string',
+            ) as string[])
+          : [];
+        const nextAnswers: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(historyAnswers)) {
+          const numericIndex = Number(key);
+          const question = Number.isInteger(numericIndex) ? questions[numericIndex] : undefined;
+          nextAnswers[question ?? key] = value;
+        }
+        if (JSON.stringify(nextAnswers) !== JSON.stringify(historyAnswers)) {
+          nextInner.historyAnswers = nextAnswers;
+          touched = true;
+        }
+      }
+
+      const stateVersion = typeof state.schemaVersion === 'number' ? state.schemaVersion : 0;
+      const rowVersion = typeof row.schemaVersion === 'number' ? row.schemaVersion : 0;
+      if (!touched && stateVersion >= 5 && rowVersion >= 5) continue;
+
+      await ctx.db.patch(row._id, {
+        schemaVersion: Math.max(rowVersion, 5),
+        characterState: { ...state, schemaVersion: 5, character: nextInner },
+        updatedAt: Date.now(),
+      });
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
+  },
+});
+
+/**
  * One-shot migration: strip the legacy `summary` and root-level
  * `statusEffects` fields from every character document, plus the
  * duplicated `statusEffects` that used to sit alongside `character`
