@@ -274,7 +274,7 @@ type Technique = {
  */
 type CharacterState = {
   name: string;
-  className: string; // e.g. "THE SUCCESSOR"
+  className: string; // e.g. "The Successor"; rendered uppercase in the sheet UI.
   pronouns: string;
   /** Plain numeric age stored on the character record. Rendered as
    *  "Age <number>" in the UI for readability. */
@@ -303,7 +303,7 @@ type CharacterState = {
  *  from a single mutable source. */
 const defaultCharacter: CharacterState = {
   name: 'Qi Gong',
-  className: 'THE SUCCESSOR',
+  className: 'The Successor',
   pronouns: 'He / Him',
   age: 32,
   origin: 'Jasmine Island',
@@ -2045,7 +2045,7 @@ function CharacterPane() {
                 letterSpacing: '0.16em',
               }}
             >
-              {character.className}
+              {character.className.toUpperCase()}
             </Typography>
             <MoveDiamond color={accent} size={9} />
             <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />

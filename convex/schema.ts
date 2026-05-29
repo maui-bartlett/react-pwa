@@ -37,6 +37,12 @@ export default defineSchema({
     .index('by_ownerUserId', ['ownerUserId'])
     .index('by_ownerUserId_metaGameSystem', ['ownerUserId', 'meta.gameSystem']),
 
+  classes: defineTable({
+    class: v.any(),
+  })
+    .index('by_classMetaGameSystem', ['class.meta.gameSystem'])
+    .index('by_classMetaGameSystem_className', ['class.meta.gameSystem', 'class.className']),
+
   campaigns: defineTable({
     ownerUserId: v.id('userProfiles'),
     meta: v.optional(

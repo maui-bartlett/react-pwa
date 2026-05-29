@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as campaigns from "../campaigns.js";
 import type * as characters from "../characters.js";
+import type * as classes from "../classes.js";
 import type * as http from "../http.js";
 import type * as invites from "../invites.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   campaigns: typeof campaigns;
   characters: typeof characters;
+  classes: typeof classes;
   http: typeof http;
   invites: typeof invites;
   "lib/auth": typeof lib_auth;

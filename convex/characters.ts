@@ -10,6 +10,58 @@ import {
 } from './lib/auth';
 import { isActiveForProfile, withGameSystemMeta } from './lib/fabulaMeta';
 
+const TITLE_SMALL_WORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'as',
+  'at',
+  'but',
+  'by',
+  'for',
+  'from',
+  'in',
+  'into',
+  'like',
+  'of',
+  'on',
+  'or',
+  'the',
+  'to',
+  'with',
+]);
+
+function titleCaseWord(word: string, index: number, words: string[]) {
+  const lower = word.toLowerCase();
+  const isEdgeWord = index === 0 || index === words.length - 1;
+  if (!isEdgeWord && TITLE_SMALL_WORDS.has(lower)) return lower;
+  if (lower === 'i') return 'I';
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function titleCaseSegment(segment: string) {
+  const words = segment.split(/(\s+)/);
+  const wordOnly = words.filter((part) => !/^\s+$/.test(part) && part.length > 0);
+  let wordIndex = 0;
+
+  return words
+    .map((part) => {
+      if (/^\s+$/.test(part) || part.length === 0) return part;
+      const titled = titleCaseWord(part, wordIndex, wordOnly);
+      wordIndex += 1;
+      return titled;
+    })
+    .join('');
+}
+
+function titleCaseLabel(label: string) {
+  return label
+    .trim()
+    .split(/(-)/)
+    .map((part) => (part === '-' ? part : titleCaseSegment(part)))
+    .join('');
+}
+
 export const listMine = query({
   args: { gameSystem: v.string(), includeArchived: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
@@ -543,6 +595,42 @@ export const migrateLegacyMetaType = internalMutation({
               : undefined,
       };
       await ctx.db.patch(row._id, { meta: nextMeta });
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
+  },
+});
+
+/**
+ * One-shot migration: Avatar Legends stores playbook/class names in
+ * title case while the sheet renders them as all caps. Safe to re-run.
+ */
+export const normalizeAvatarLegendsClassNames = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      if (row.meta?.gameSystem !== 'avatar-legends') continue;
+      const state =
+        row.characterState && typeof row.characterState === 'object'
+          ? (row.characterState as Record<string, unknown>)
+          : null;
+      const inner =
+        state?.character && typeof state.character === 'object'
+          ? (state.character as Record<string, unknown>)
+          : null;
+      if (!state || !inner || typeof inner.className !== 'string') continue;
+      const nextClassName = titleCaseLabel(inner.className);
+      if (nextClassName === inner.className) continue;
+
+      await ctx.db.patch(row._id, {
+        characterState: {
+          ...state,
+          character: { ...inner, className: nextClassName },
+        },
+        updatedAt: Date.now(),
+      });
       migrated += 1;
     }
     return { scanned: rows.length, migrated };
