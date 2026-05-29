@@ -47,6 +47,14 @@ type TabConfig = {
   renderIcon?: (props: { color: string; size: number }) => React.ReactNode;
 };
 
+type PrimaryTraining =
+  | 'Waterbending'
+  | 'Earthbending'
+  | 'Firebending'
+  | 'Airbending'
+  | 'Weapons'
+  | 'Technology';
+
 // Theme-aware palette. The values below are mutable `let`s; the
 // AvatarLegends component reassigns them at the start of every render based
 // on the global light/dark theme mode so every helper component picks up
@@ -168,9 +176,153 @@ let passionRed = lightAvPalette.passionRed;
 let attackRed = lightAvPalette.attackRed;
 let accent = lightAvPalette.accent;
 let bookAccent = lightAvPalette.bookAccent;
+let uiPrimary = '#4a7fa8';
+let uiPrimaryDark = '#6fa9d6';
 
-function applyAvatarPalette(isDarkMode: boolean) {
-  const next = isDarkMode ? darkAvPalette : lightAvPalette;
+type TrainingPaletteOverrides = {
+  dark: Partial<AvPaletteShape>;
+  light: Partial<AvPaletteShape>;
+};
+
+const trainingPaletteOverrides: Record<PrimaryTraining, TrainingPaletteOverrides> = {
+  Waterbending: { dark: {}, light: {} },
+  Earthbending: {
+    light: {
+      parchment: '#e6efe1',
+      parchmentLight: '#f4f8f1',
+      parchmentDeep: '#ceddc6',
+      washDeep: '#7ca05e',
+      ink: '#2f5a34',
+      deepInk: '#132016',
+      brown: '#3f5c3f',
+      brownSoft: '#5d7759',
+      border: '#b5c9ab',
+      accent: '#a9c894',
+    },
+    dark: {
+      parchment: '#0d160e',
+      parchmentLight: '#172317',
+      parchmentDeep: '#071008',
+      washDeep: '#8ea279',
+      ink: '#f0f5eb',
+      deepInk: '#132016',
+      brown: '#e8f0df',
+      brownSoft: '#c8d4bf',
+      border: '#31432f',
+      accent: '#93ac7d',
+    },
+  },
+  Firebending: {
+    light: {
+      parchment: '#f0e3df',
+      parchmentLight: '#fbf3f0',
+      parchmentDeep: '#dfcbc5',
+      washDeep: '#b76a5e',
+      ink: '#69332e',
+      deepInk: '#241312',
+      brown: '#6c4640',
+      brownSoft: '#895f58',
+      border: '#cfb1aa',
+      accent: '#d4988f',
+    },
+    dark: {
+      parchment: '#190d0c',
+      parchmentLight: '#261714',
+      parchmentDeep: '#100706',
+      washDeep: '#aa7168',
+      ink: '#f8eeec',
+      deepInk: '#241312',
+      brown: '#f0dfdc',
+      brownSoft: '#d8c0bb',
+      border: '#4b2f2b',
+      accent: '#bf756c',
+    },
+  },
+  Airbending: {
+    light: {
+      parchment: '#efeada',
+      parchmentLight: '#fbf8ed',
+      parchmentDeep: '#ded5b7',
+      washDeep: '#c5aa4f',
+      ink: '#5f5329',
+      deepInk: '#211c10',
+      brown: '#62583a',
+      brownSoft: '#7d714d',
+      border: '#cec39b',
+      accent: '#d5bd60',
+    },
+    dark: {
+      parchment: '#171309',
+      parchmentLight: '#241e10',
+      parchmentDeep: '#0e0b05',
+      washDeep: '#b9a25a',
+      ink: '#f7f1df',
+      deepInk: '#211c10',
+      brown: '#eee6cd',
+      brownSoft: '#d3c8a7',
+      border: '#443b20',
+      accent: '#d0b85b',
+    },
+  },
+  Weapons: {
+    light: {
+      parchment: '#e3e8ee',
+      parchmentLight: '#f3f6f9',
+      parchmentDeep: '#cbd3dc',
+      washDeep: '#66717d',
+      ink: '#28313d',
+      deepInk: '#0b1018',
+      brown: '#3f4b58',
+      brownSoft: '#606b78',
+      border: '#b2bdc8',
+      accent: '#a4afbb',
+    },
+    dark: {
+      parchment: '#0b0f14',
+      parchmentLight: '#151a21',
+      parchmentDeep: '#05080c',
+      washDeep: '#7e8791',
+      ink: '#f0f3f6',
+      deepInk: '#0b1018',
+      brown: '#e2e7ed',
+      brownSoft: '#c4ccd5',
+      border: '#2e3640',
+      accent: '#8d98a5',
+    },
+  },
+  Technology: {
+    light: {
+      parchment: '#ebe3f0',
+      parchmentLight: '#f8f3fb',
+      parchmentDeep: '#d8cbe0',
+      washDeep: '#8c6aa0',
+      ink: '#563565',
+      deepInk: '#201327',
+      brown: '#5c4766',
+      brownSoft: '#785f84',
+      border: '#c5b2cf',
+      accent: '#b793c8',
+    },
+    dark: {
+      parchment: '#150d1a',
+      parchmentLight: '#211528',
+      parchmentDeep: '#0d0710',
+      washDeep: '#9b81aa',
+      ink: '#f4edf7',
+      deepInk: '#201327',
+      brown: '#eadff0',
+      brownSoft: '#d0c0d9',
+      border: '#3f2d49',
+      accent: '#a888bb',
+    },
+  },
+};
+
+function applyAvatarPalette(isDarkMode: boolean, primaryTraining: PrimaryTraining) {
+  const base = isDarkMode ? darkAvPalette : lightAvPalette;
+  const overrides =
+    trainingPaletteOverrides[primaryTraining]?.[isDarkMode ? 'dark' : 'light'] ?? {};
+  const next = { ...base, ...overrides };
   parchment = next.parchment;
   parchmentLight = next.parchmentLight;
   parchmentDeep = next.parchmentDeep;
@@ -185,6 +337,30 @@ function applyAvatarPalette(isDarkMode: boolean) {
   attackRed = next.attackRed;
   accent = next.accent;
   bookAccent = next.bookAccent;
+  uiPrimary =
+    primaryTraining === 'Earthbending'
+      ? elementFilterFrames.earth
+      : primaryTraining === 'Firebending'
+        ? fire
+        : primaryTraining === 'Airbending'
+          ? elementFilterFrames.air
+          : primaryTraining === 'Weapons'
+            ? '#4a5563'
+            : primaryTraining === 'Technology'
+              ? tech
+              : water;
+  uiPrimaryDark =
+    primaryTraining === 'Earthbending'
+      ? darkStatEarth
+      : primaryTraining === 'Firebending'
+        ? darkAvPalette.passionRed
+        : primaryTraining === 'Airbending'
+          ? '#d0b85b'
+          : primaryTraining === 'Weapons'
+            ? '#8d98a5'
+            : primaryTraining === 'Technology'
+              ? '#a888bb'
+              : darkStatWater;
 }
 
 // Constant near-white used for chrome surfaces that always sit on a dark
@@ -227,7 +403,8 @@ const primaryTrainingThemes: Record<
     chromeFill: string;
     headerBorder: string;
     footerBorder: string;
-    brushBorder?: boolean;
+    pageBg: { dark: string; light: string };
+    brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear';
   }
 > = {
   Waterbending: {
@@ -240,7 +417,8 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #173755 100%)',
     headerBorder: water,
     footerBorder: water,
-    brushBorder: true,
+    pageBg: { dark: darkPageBg, light: lightPageBg },
+    brushBorder: 'wavy',
   },
   Earthbending: {
     bodyWash: `
@@ -251,6 +429,11 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #24351f 100%)',
     headerBorder: elementFilterFrames.earth,
     footerBorder: '#92a66a',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #071008 0%, #132016 50%, #071008 100%)',
+      light: 'linear-gradient(140deg, #1a351f 0%, #244b28 50%, #1a351f 100%)',
+    },
+    brushBorder: 'dry',
   },
   Firebending: {
     bodyWash: `
@@ -261,6 +444,11 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #4a1f1b 100%)',
     headerBorder: fire,
     footerBorder: '#c35a42',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #100706 0%, #241312 50%, #100706 100%)',
+      light: 'linear-gradient(140deg, #4c1d1a 0%, #682a24 50%, #4c1d1a 100%)',
+    },
+    brushBorder: 'flame',
   },
   Airbending: {
     bodyWash: `
@@ -271,6 +459,11 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #544821 100%)',
     headerBorder: elementFilterFrames.air,
     footerBorder: '#e0c75f',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #0e0b05 0%, #211c10 50%, #0e0b05 100%)',
+      light: 'linear-gradient(140deg, #4c421e 0%, #66582a 50%, #4c421e 100%)',
+    },
+    brushBorder: 'wind',
   },
   Weapons: {
     bodyWash: `
@@ -281,6 +474,11 @@ const primaryTrainingThemes: Record<
     chromeFill: `linear-gradient(180deg, #111a24 0%, ${elementFilterFrames.martial} 100%)`,
     headerBorder: '#4a5563',
     footerBorder: '#5c6674',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #05080c 0%, #0b1018 50%, #05080c 100%)',
+      light: 'linear-gradient(140deg, #202936 0%, #303b49 50%, #202936 100%)',
+    },
+    brushBorder: 'blade',
   },
   Technology: {
     bodyWash: `
@@ -291,6 +489,11 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #3c294c 100%)',
     headerBorder: tech,
     footerBorder: '#9977aa',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #0d0710 0%, #201327 50%, #0d0710 100%)',
+      light: 'linear-gradient(140deg, #3d254b 0%, #573466 50%, #3d254b 100%)',
+    },
+    brushBorder: 'gear',
   },
 };
 const darkConditionGold = '#b98535';
@@ -329,13 +532,6 @@ const tabs: TabConfig[] = [
 type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
-type PrimaryTraining =
-  | 'Waterbending'
-  | 'Earthbending'
-  | 'Firebending'
-  | 'Airbending'
-  | 'Weapons'
-  | 'Technology';
 
 // UI-only atoms (no character data; just remember which sub-tab is
 // active when the user navigates away and comes back).
@@ -850,7 +1046,7 @@ const movesByCategory: Record<'basic' | 'balance', MoveEntry[]> = {
 function techniqueCategoryColor(category: TechniqueCategory, isDarkMode: boolean): string {
   if (category === 'Advance & Attack') return isDarkMode ? passionRed : attackRed;
   if (category === 'Defend & Maneuver') return isDarkMode ? darkStatEarth : earth;
-  return isDarkMode ? darkStatWater : water;
+  return isDarkMode ? uiPrimaryDark : uiPrimary;
 }
 
 function techniqueElementVisual(type: TechniqueElement): {
@@ -871,10 +1067,8 @@ function techniqueElementVisual(type: TechniqueElement): {
 }
 
 /**
- * Painted brush-stroke band — a straight dark navy band with a painted
- * (not wavy) edge, suggesting a flat brush dragged across the page. The
- * far edge is built from a solid rectangle plus a few thin streaks that
- * fade out to mimic dry brush bristles.
+ * Painted chrome band. Trainings can opt into themed SVG border motifs
+ * at the inner edge while sharing the same header/footer layout.
  */
 function WatercolorBand({
   bottom = false,
@@ -890,14 +1084,25 @@ function WatercolorBand({
    *  light-mode top header passes a whiter gradient. */
   fill?: string;
   borderColor?: string;
-  brushBorder?: boolean;
+  brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear' | false;
 }) {
-  // Solid painted block only — no bristle streaks. `solidEdge` defines the
-  // depth of the painted band; outside that, the parchment shows through.
   const solidEdge = height - 18;
   const bandFill = fill ?? deepInk;
   const edgePosition = bottom ? { top: 0 } : { bottom: 0 };
   const brushColor = borderColor ?? deepInk;
+  const brushHighlight = borderColor ? alpha(borderColor, 0.55) : alpha(deepInk, 0.55);
+  const wavyPath = bottom
+    ? `M0,${height} L430,${height} L430,28 Q400,8 360,18 Q320,30 280,14 Q240,0 200,18 Q160,34 120,16 Q80,0 40,22 Q15,32 0,18 Z`
+    : `M0,0 L430,0 L430,${height - 30} Q400,${height - 8} 360,${height - 18} Q320,${height - 30} 280,${height - 12} Q240,${height + 4} 200,${height - 18} Q160,${height - 34} 120,${height - 14} Q80,${height + 2} 40,${height - 22} Q15,${height - 32} 0,${height - 16} Z`;
+  const wavyPathLight = bottom
+    ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
+    : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
+  const flamePath = bottom
+    ? `M0,${height} L430,${height} L430,24 L407,16 L394,34 L368,12 L354,31 L327,9 L313,36 L286,13 L271,32 L242,6 L226,34 L199,11 L181,35 L154,8 L139,32 L110,12 L94,36 L67,15 L49,31 L25,13 L10,28 L0,18 Z`
+    : `M0,0 L430,0 L430,${height - 24} L407,${height - 16} L394,${height - 34} L368,${height - 12} L354,${height - 31} L327,${height - 9} L313,${height - 36} L286,${height - 13} L271,${height - 32} L242,${height - 6} L226,${height - 34} L199,${height - 11} L181,${height - 35} L154,${height - 8} L139,${height - 32} L110,${height - 12} L94,${height - 36} L67,${height - 15} L49,${height - 31} L25,${height - 13} L10,${height - 28} L0,${height - 18} Z`;
+  const windY = bottom ? height - solidEdge - 8 : solidEdge + 4;
+  const bladeY = bottom ? height - solidEdge - 12 : solidEdge + 8;
+  const gearY = bottom ? height - solidEdge - 8 : solidEdge + 6;
 
   return (
     <Box
@@ -927,14 +1132,14 @@ function WatercolorBand({
         preserveAspectRatio="none"
         sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
       >
-        {brushBorder ? (
+        {brushBorder === 'dry' ? (
           <>
             <rect
               x={0}
               y={bottom ? height - solidEdge - 3 : solidEdge}
               width={430}
               height={3}
-              fill={alpha(brushColor, 0.55)}
+              fill={brushHighlight}
             />
             {[
               { x: 14, w: 70, opacity: 0.55 },
@@ -968,6 +1173,104 @@ function WatercolorBand({
                 fill={alpha(brushColor, streak.opacity)}
               />
             ))}
+          </>
+        ) : null}
+        {brushBorder === 'wavy' ? (
+          <>
+            <path d={wavyPath} fill={alpha(brushColor, 0.82)} />
+            <path d={wavyPathLight} fill={alpha(brushColor, 0.36)} />
+          </>
+        ) : null}
+        {brushBorder === 'flame' ? (
+          <>
+            <path d={flamePath} fill={alpha(brushColor, 0.78)} />
+            <path
+              d={flamePath}
+              fill={alpha('#f0a448', 0.24)}
+              transform={`translate(0 ${bottom ? -6 : 6}) scale(1 0.78)`}
+            />
+          </>
+        ) : null}
+        {brushBorder === 'wind' ? (
+          <>
+            {[0, 92, 184, 276].map((x, index) => (
+              <path
+                key={`wind-${index}`}
+                d={`M${x},${windY} C${x + 28},${windY - (bottom ? 10 : -10)} ${x + 54},${windY + (bottom ? 10 : -10)} ${x + 84},${windY} S${x + 142},${windY} ${x + 170},${windY - (bottom ? 6 : -6)}`}
+                fill="none"
+                stroke={alpha(brushColor, index % 2 === 0 ? 0.72 : 0.48)}
+                strokeWidth={index % 2 === 0 ? 3 : 2}
+                strokeLinecap="round"
+              />
+            ))}
+            <path
+              d={`M0,${bottom ? height - solidEdge - 2 : solidEdge + 2} C70,${windY} 130,${windY - (bottom ? 9 : -9)} 205,${windY} S350,${windY + (bottom ? 8 : -8)} 430,${windY - (bottom ? 2 : -2)}`}
+              fill="none"
+              stroke={alpha(brushColor, 0.28)}
+              strokeWidth={5}
+              strokeLinecap="round"
+            />
+          </>
+        ) : null}
+        {brushBorder === 'blade' ? (
+          <>
+            {Array.from({ length: 9 }).map((_, index) => {
+              const x = index * 54 - 18;
+              return (
+                <path
+                  key={`blade-${index}`}
+                  d={
+                    bottom
+                      ? `M${x},${bladeY + 12} L${x + 48},${bladeY - 2} L${x + 76},${bladeY + 9} L${x + 22},${bladeY + 19} Z`
+                      : `M${x},${bladeY - 12} L${x + 48},${bladeY + 2} L${x + 76},${bladeY - 9} L${x + 22},${bladeY - 19} Z`
+                  }
+                  fill={alpha(brushColor, index % 2 === 0 ? 0.68 : 0.42)}
+                />
+              );
+            })}
+            <rect
+              x={0}
+              y={bottom ? bladeY + 10 : bladeY - 12}
+              width={430}
+              height={2}
+              fill={alpha('#ffffff', 0.18)}
+            />
+          </>
+        ) : null}
+        {brushBorder === 'gear' ? (
+          <>
+            <rect
+              x={0}
+              y={bottom ? gearY + 6 : gearY - 8}
+              width={430}
+              height={2.5}
+              fill={alpha(brushColor, 0.58)}
+            />
+            {Array.from({ length: 11 }).map((_, index) => {
+              const x = index * 42 + 8;
+              return (
+                <Box
+                  key={`gear-${index}`}
+                  component="g"
+                  transform={`translate(${x} ${gearY}) rotate(${index * 18})`}
+                >
+                  {Array.from({ length: 8 }).map((__, tooth) => (
+                    <rect
+                      key={tooth}
+                      x={-2}
+                      y={-13}
+                      width={4}
+                      height={6}
+                      rx={1}
+                      fill={alpha(brushColor, 0.54)}
+                      transform={`rotate(${tooth * 45})`}
+                    />
+                  ))}
+                  <circle r={9} fill="none" stroke={alpha(brushColor, 0.6)} strokeWidth={2} />
+                  <circle r={3} fill={alpha(brushColor, 0.5)} />
+                </Box>
+              );
+            })}
           </>
         ) : null}
       </Box>
@@ -1284,9 +1587,9 @@ function BalanceTrack() {
 function StatsPanel() {
   const { isDarkMode } = useThemeMode();
   const rows: Array<[string, string]> = [
-    ['Creativity', isDarkMode ? darkStatWater : water],
+    ['Creativity', isDarkMode ? uiPrimaryDark : uiPrimary],
     ['Focus', isDarkMode ? darkStatEarth : earth],
-    ['Harmony', isDarkMode ? darkStatWater : water],
+    ['Harmony', isDarkMode ? uiPrimaryDark : uiPrimary],
     ['Passion', passionRed],
   ];
   const [stats, setStats] = useAtom(statsAtom);
@@ -1339,8 +1642,7 @@ function StatsPanel() {
                   // gets water-blue, Passion gets the warm red).
                   border: `1.5px solid ${color}`,
                   borderRadius: '50%',
-                  // Deep blue ink reads on white in both themes.
-                  color: lightAvPalette.ink,
+                  color: isDarkMode ? deepInk : ink,
                   // Handwritten font where the "1" is clearly distinct
                   // from "I" — the IM Fell serif previously used had a
                   // capital-I-shaped 1. Larger size to read clearly in
@@ -1440,6 +1742,9 @@ function PrimaryTrainingSelect() {
         onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
           const next = event.target.value as PrimaryTraining;
           setCharacter((prev) => ({ ...prev, primaryTraining: next }));
+          window.dispatchEvent(
+            new CustomEvent('avatar-legends-primary-training-change', { detail: next }),
+          );
         }}
         sx={{
           width: '100%',
@@ -3105,7 +3410,7 @@ function CombatPane() {
                     key={label}
                     label={label}
                     active={Boolean(activeStatuses[label])}
-                    activeColor={water}
+                    activeColor={isDarkMode ? uiPrimaryDark : uiPrimary}
                     onToggle={() => toggleStatus(label)}
                   />
                 ))}
@@ -4067,22 +4372,19 @@ function AvatarLegends() {
   // correct theme palette on its next render. Done at the start of
   // render, before children read those colors during their own render.
   const { isDarkMode } = useThemeMode();
-  applyAvatarPalette(isDarkMode);
-  const pageBg = isDarkMode ? darkPageBg : lightPageBg;
-  // White cornflower gradient applied to the active-tab title bar in
-  // light mode (transferred from the app header per the user spec).
-  // Black title text reads against that gradient. In dark mode the
-  // title bar stays on the parchment with `ink` text.
-  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha('#dbe5f0', 0.9)} 100%)`;
-  const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
-  const tabTitleColor = isDarkMode ? ink : '#000000';
-  // Read the active character so the brush-stroke header heading shows
-  // their name on every non-Character tab.
   const character = useAtomValue(characterStateAtom);
   const trainingTheme =
     primaryTrainingThemes[character.primaryTraining] ??
     primaryTrainingThemes[defaultCharacter.primaryTraining];
-
+  applyAvatarPalette(isDarkMode, character.primaryTraining);
+  const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
+  // White cornflower gradient applied to the active-tab title bar in
+  // light mode (transferred from the app header per the user spec).
+  // Black title text reads against that gradient. In dark mode the
+  // title bar stays on the parchment with `ink` text.
+  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha(accent, 0.32)} 100%)`;
+  const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
+  const tabTitleColor = isDarkMode ? ink : '#000000';
   return (
     <>
       {/* Render-less mount that keeps the characterStateAtom in lockstep
