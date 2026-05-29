@@ -1005,7 +1005,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                         height: 40,
                         borderRadius: '8px',
                         border: `1px solid ${fabUTokens.color.danger}`,
-                        color: fabUTokens.color.danger,
+                        color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.danger,
                         textTransform: 'none',
                         fontWeight: 800,
                       }}
