@@ -1462,10 +1462,7 @@ function WatercolorBand({
                   brushColor,
                   0.95,
                 )} 78%)`
-              : `linear-gradient(180deg, ${alpha(brushColor, 0.95)} 0%, ${alpha(
-                  '#f4b45f',
-                  0.92,
-                )} 100%)`,
+              : `linear-gradient(180deg, ${brushColor} 0%, ${alpha('#f4b45f', 0.92)} 100%)`,
             transform: bottom ? 'scaleY(-1)' : 'none',
             transformOrigin: 'center',
             translate: borderOffsetY ? `0 ${borderOffsetY}px` : undefined,
@@ -4651,16 +4648,16 @@ function AvatarLegends() {
     character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.footerBorder;
   const trainingHeaderFill =
     character.primaryTraining === 'Firebending'
-      ? 'linear-gradient(180deg, #4a1f1b 0%, #c35a42 48%, #c35a42 100%)'
+      ? 'linear-gradient(180deg, #2a100e 0%, #4f1d19 22%, #7d2f29 38%, #a8413a 54%, #a8413a 100%)'
       : trainingTheme.chromeFill;
   const trainingFooterFill =
     character.primaryTraining === 'Firebending'
-      ? 'linear-gradient(180deg, #f4b45f 0%, #c35a42 42%, #c35a42 100%)'
+      ? 'linear-gradient(180deg, #9f372f 0%, #6f2a24 52%, #2a100e 100%)'
       : trainingTheme.chromeFill;
   const shouldMirrorHeader =
     character.primaryTraining === 'Waterbending' || character.primaryTraining === 'Airbending';
   const trainingBandZIndex = character.primaryTraining === 'Weapons' ? 0 : 2;
-  const headerBorderOffsetY = character.primaryTraining === 'Technology' ? -20 : 0;
+  const headerBorderOffsetY = character.primaryTraining === 'Technology' ? -10 : 0;
   const footerBorderOffsetY = character.primaryTraining === 'Technology' ? 15 : 0;
   const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
   // White cornflower gradient applied to the active-tab title bar in
