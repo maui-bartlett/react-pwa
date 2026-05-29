@@ -47,6 +47,14 @@ type TabConfig = {
   renderIcon?: (props: { color: string; size: number }) => React.ReactNode;
 };
 
+type PrimaryTraining =
+  | 'Waterbending'
+  | 'Earthbending'
+  | 'Firebending'
+  | 'Airbending'
+  | 'Weapons'
+  | 'Technology';
+
 // Theme-aware palette. The values below are mutable `let`s; the
 // AvatarLegends component reassigns them at the start of every render based
 // on the global light/dark theme mode so every helper component picks up
@@ -168,9 +176,153 @@ let passionRed = lightAvPalette.passionRed;
 let attackRed = lightAvPalette.attackRed;
 let accent = lightAvPalette.accent;
 let bookAccent = lightAvPalette.bookAccent;
+let uiPrimary = '#4a7fa8';
+let uiPrimaryDark = '#6fa9d6';
 
-function applyAvatarPalette(isDarkMode: boolean) {
-  const next = isDarkMode ? darkAvPalette : lightAvPalette;
+type TrainingPaletteOverrides = {
+  dark: Partial<AvPaletteShape>;
+  light: Partial<AvPaletteShape>;
+};
+
+const trainingPaletteOverrides: Record<PrimaryTraining, TrainingPaletteOverrides> = {
+  Waterbending: { dark: {}, light: {} },
+  Earthbending: {
+    light: {
+      parchment: '#e6efe1',
+      parchmentLight: '#f4f8f1',
+      parchmentDeep: '#ceddc6',
+      washDeep: '#7ca05e',
+      ink: '#2f5a34',
+      deepInk: '#132016',
+      brown: '#3f5c3f',
+      brownSoft: '#5d7759',
+      border: '#b5c9ab',
+      accent: '#a9c894',
+    },
+    dark: {
+      parchment: '#0d160e',
+      parchmentLight: '#172317',
+      parchmentDeep: '#071008',
+      washDeep: '#8ea279',
+      ink: '#f0f5eb',
+      deepInk: '#132016',
+      brown: '#e8f0df',
+      brownSoft: '#c8d4bf',
+      border: '#31432f',
+      accent: '#93ac7d',
+    },
+  },
+  Firebending: {
+    light: {
+      parchment: '#f0e3df',
+      parchmentLight: '#fbf3f0',
+      parchmentDeep: '#dfcbc5',
+      washDeep: '#b76a5e',
+      ink: '#69332e',
+      deepInk: '#241312',
+      brown: '#6c4640',
+      brownSoft: '#895f58',
+      border: '#cfb1aa',
+      accent: '#d4988f',
+    },
+    dark: {
+      parchment: '#190d0c',
+      parchmentLight: '#261714',
+      parchmentDeep: '#100706',
+      washDeep: '#aa7168',
+      ink: '#f8eeec',
+      deepInk: '#241312',
+      brown: '#f0dfdc',
+      brownSoft: '#d8c0bb',
+      border: '#4b2f2b',
+      accent: '#bf756c',
+    },
+  },
+  Airbending: {
+    light: {
+      parchment: '#efeada',
+      parchmentLight: '#fbf8ed',
+      parchmentDeep: '#ded5b7',
+      washDeep: '#c5aa4f',
+      ink: '#5f5329',
+      deepInk: '#211c10',
+      brown: '#62583a',
+      brownSoft: '#7d714d',
+      border: '#cec39b',
+      accent: '#d5bd60',
+    },
+    dark: {
+      parchment: '#171309',
+      parchmentLight: '#241e10',
+      parchmentDeep: '#0e0b05',
+      washDeep: '#b9a25a',
+      ink: '#f7f1df',
+      deepInk: '#211c10',
+      brown: '#eee6cd',
+      brownSoft: '#d3c8a7',
+      border: '#443b20',
+      accent: '#d0b85b',
+    },
+  },
+  Weapons: {
+    light: {
+      parchment: '#e3e8ee',
+      parchmentLight: '#f3f6f9',
+      parchmentDeep: '#cbd3dc',
+      washDeep: '#66717d',
+      ink: '#28313d',
+      deepInk: '#0b1018',
+      brown: '#3f4b58',
+      brownSoft: '#606b78',
+      border: '#b2bdc8',
+      accent: '#a4afbb',
+    },
+    dark: {
+      parchment: '#0b0f14',
+      parchmentLight: '#151a21',
+      parchmentDeep: '#05080c',
+      washDeep: '#7e8791',
+      ink: '#f0f3f6',
+      deepInk: '#0b1018',
+      brown: '#e2e7ed',
+      brownSoft: '#c4ccd5',
+      border: '#2e3640',
+      accent: '#8d98a5',
+    },
+  },
+  Technology: {
+    light: {
+      parchment: '#ebe3f0',
+      parchmentLight: '#f8f3fb',
+      parchmentDeep: '#d8cbe0',
+      washDeep: '#8c6aa0',
+      ink: '#563565',
+      deepInk: '#201327',
+      brown: '#5c4766',
+      brownSoft: '#785f84',
+      border: '#c5b2cf',
+      accent: '#b793c8',
+    },
+    dark: {
+      parchment: '#150d1a',
+      parchmentLight: '#211528',
+      parchmentDeep: '#0d0710',
+      washDeep: '#9b81aa',
+      ink: '#f4edf7',
+      deepInk: '#201327',
+      brown: '#eadff0',
+      brownSoft: '#d0c0d9',
+      border: '#3f2d49',
+      accent: '#a888bb',
+    },
+  },
+};
+
+function applyAvatarPalette(isDarkMode: boolean, primaryTraining: PrimaryTraining) {
+  const base = isDarkMode ? darkAvPalette : lightAvPalette;
+  const overrides =
+    trainingPaletteOverrides[primaryTraining]?.[isDarkMode ? 'dark' : 'light'] ?? {};
+  const next = { ...base, ...overrides };
   parchment = next.parchment;
   parchmentLight = next.parchmentLight;
   parchmentDeep = next.parchmentDeep;
@@ -185,6 +337,30 @@ function applyAvatarPalette(isDarkMode: boolean) {
   attackRed = next.attackRed;
   accent = next.accent;
   bookAccent = next.bookAccent;
+  uiPrimary =
+    primaryTraining === 'Earthbending'
+      ? elementFilterFrames.earth
+      : primaryTraining === 'Firebending'
+        ? fire
+        : primaryTraining === 'Airbending'
+          ? elementFilterFrames.air
+          : primaryTraining === 'Weapons'
+            ? '#4a5563'
+            : primaryTraining === 'Technology'
+              ? tech
+              : water;
+  uiPrimaryDark =
+    primaryTraining === 'Earthbending'
+      ? darkStatEarth
+      : primaryTraining === 'Firebending'
+        ? darkAvPalette.passionRed
+        : primaryTraining === 'Airbending'
+          ? '#d0b85b'
+          : primaryTraining === 'Weapons'
+            ? '#8d98a5'
+            : primaryTraining === 'Technology'
+              ? '#a888bb'
+              : darkStatWater;
 }
 
 // Constant near-white used for chrome surfaces that always sit on a dark
@@ -227,6 +403,7 @@ const primaryTrainingThemes: Record<
     chromeFill: string;
     headerBorder: string;
     footerBorder: string;
+    pageBg: { dark: string; light: string };
     brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear';
   }
 > = {
@@ -240,6 +417,7 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #173755 100%)',
     headerBorder: water,
     footerBorder: water,
+    pageBg: { dark: darkPageBg, light: lightPageBg },
     brushBorder: 'wavy',
   },
   Earthbending: {
@@ -251,6 +429,10 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #24351f 100%)',
     headerBorder: elementFilterFrames.earth,
     footerBorder: '#92a66a',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #071008 0%, #132016 50%, #071008 100%)',
+      light: 'linear-gradient(140deg, #1a351f 0%, #244b28 50%, #1a351f 100%)',
+    },
     brushBorder: 'dry',
   },
   Firebending: {
@@ -262,6 +444,10 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #4a1f1b 100%)',
     headerBorder: fire,
     footerBorder: '#c35a42',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #100706 0%, #241312 50%, #100706 100%)',
+      light: 'linear-gradient(140deg, #4c1d1a 0%, #682a24 50%, #4c1d1a 100%)',
+    },
     brushBorder: 'flame',
   },
   Airbending: {
@@ -273,6 +459,10 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #544821 100%)',
     headerBorder: elementFilterFrames.air,
     footerBorder: '#e0c75f',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #0e0b05 0%, #211c10 50%, #0e0b05 100%)',
+      light: 'linear-gradient(140deg, #4c421e 0%, #66582a 50%, #4c421e 100%)',
+    },
     brushBorder: 'wind',
   },
   Weapons: {
@@ -284,6 +474,10 @@ const primaryTrainingThemes: Record<
     chromeFill: `linear-gradient(180deg, #111a24 0%, ${elementFilterFrames.martial} 100%)`,
     headerBorder: '#4a5563',
     footerBorder: '#5c6674',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #05080c 0%, #0b1018 50%, #05080c 100%)',
+      light: 'linear-gradient(140deg, #202936 0%, #303b49 50%, #202936 100%)',
+    },
     brushBorder: 'blade',
   },
   Technology: {
@@ -295,6 +489,10 @@ const primaryTrainingThemes: Record<
     chromeFill: 'linear-gradient(180deg, #111a24 0%, #3c294c 100%)',
     headerBorder: tech,
     footerBorder: '#9977aa',
+    pageBg: {
+      dark: 'linear-gradient(140deg, #0d0710 0%, #201327 50%, #0d0710 100%)',
+      light: 'linear-gradient(140deg, #3d254b 0%, #573466 50%, #3d254b 100%)',
+    },
     brushBorder: 'gear',
   },
 };
@@ -334,13 +532,6 @@ const tabs: TabConfig[] = [
 type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
-type PrimaryTraining =
-  | 'Waterbending'
-  | 'Earthbending'
-  | 'Firebending'
-  | 'Airbending'
-  | 'Weapons'
-  | 'Technology';
 
 // UI-only atoms (no character data; just remember which sub-tab is
 // active when the user navigates away and comes back).
@@ -855,7 +1046,7 @@ const movesByCategory: Record<'basic' | 'balance', MoveEntry[]> = {
 function techniqueCategoryColor(category: TechniqueCategory, isDarkMode: boolean): string {
   if (category === 'Advance & Attack') return isDarkMode ? passionRed : attackRed;
   if (category === 'Defend & Maneuver') return isDarkMode ? darkStatEarth : earth;
-  return isDarkMode ? darkStatWater : water;
+  return isDarkMode ? uiPrimaryDark : uiPrimary;
 }
 
 function techniqueElementVisual(type: TechniqueElement): {
@@ -907,11 +1098,11 @@ function WatercolorBand({
     ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
     : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
   const flamePath = bottom
-    ? `M0,${height} L430,${height} L430,22 C404,12 398,33 378,18 C356,3 350,31 326,16 C302,0 294,34 270,17 C244,0 236,31 214,15 C190,-1 178,32 154,16 C128,0 119,34 95,18 C70,2 58,31 36,18 C18,8 8,28 0,18 Z`
-    : `M0,0 L430,0 L430,${height - 22} C404,${height - 12} 398,${height - 33} 378,${height - 18} C356,${height - 3} 350,${height - 31} 326,${height - 16} C302,${height} 294,${height - 34} 270,${height - 17} C244,${height} 236,${height - 31} 214,${height - 15} C190,${height + 1} 178,${height - 32} 154,${height - 16} C128,${height} 119,${height - 34} 95,${height - 18} C70,${height - 2} 58,${height - 31} 36,${height - 18} C18,${height - 8} 8,${height - 28} 0,${height - 18} Z`;
-  const windY = bottom ? height - solidEdge - 10 : solidEdge + 10;
+    ? `M0,${height} L430,${height} L430,24 L407,16 L394,34 L368,12 L354,31 L327,9 L313,36 L286,13 L271,32 L242,6 L226,34 L199,11 L181,35 L154,8 L139,32 L110,12 L94,36 L67,15 L49,31 L25,13 L10,28 L0,18 Z`
+    : `M0,0 L430,0 L430,${height - 24} L407,${height - 16} L394,${height - 34} L368,${height - 12} L354,${height - 31} L327,${height - 9} L313,${height - 36} L286,${height - 13} L271,${height - 32} L242,${height - 6} L226,${height - 34} L199,${height - 11} L181,${height - 35} L154,${height - 8} L139,${height - 32} L110,${height - 12} L94,${height - 36} L67,${height - 15} L49,${height - 31} L25,${height - 13} L10,${height - 28} L0,${height - 18} Z`;
+  const windY = bottom ? height - solidEdge - 8 : solidEdge + 4;
   const bladeY = bottom ? height - solidEdge - 12 : solidEdge + 8;
-  const gearY = bottom ? height - solidEdge - 12 : solidEdge + 12;
+  const gearY = bottom ? height - solidEdge - 8 : solidEdge + 6;
 
   return (
     <Box
@@ -987,7 +1178,7 @@ function WatercolorBand({
         {brushBorder === 'wavy' ? (
           <>
             <path d={wavyPath} fill={alpha(brushColor, 0.82)} />
-            <path d={wavyPathLight} fill={alpha('#8bb8d4', 0.36)} />
+            <path d={wavyPathLight} fill={alpha(brushColor, 0.36)} />
           </>
         ) : null}
         {brushBorder === 'flame' ? (
@@ -1396,9 +1587,9 @@ function BalanceTrack() {
 function StatsPanel() {
   const { isDarkMode } = useThemeMode();
   const rows: Array<[string, string]> = [
-    ['Creativity', isDarkMode ? darkStatWater : water],
+    ['Creativity', isDarkMode ? uiPrimaryDark : uiPrimary],
     ['Focus', isDarkMode ? darkStatEarth : earth],
-    ['Harmony', isDarkMode ? darkStatWater : water],
+    ['Harmony', isDarkMode ? uiPrimaryDark : uiPrimary],
     ['Passion', passionRed],
   ];
   const [stats, setStats] = useAtom(statsAtom);
@@ -1451,8 +1642,7 @@ function StatsPanel() {
                   // gets water-blue, Passion gets the warm red).
                   border: `1.5px solid ${color}`,
                   borderRadius: '50%',
-                  // Deep blue ink reads on white in both themes.
-                  color: lightAvPalette.ink,
+                  color: isDarkMode ? deepInk : ink,
                   // Handwritten font where the "1" is clearly distinct
                   // from "I" — the IM Fell serif previously used had a
                   // capital-I-shaped 1. Larger size to read clearly in
@@ -1552,6 +1742,9 @@ function PrimaryTrainingSelect() {
         onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
           const next = event.target.value as PrimaryTraining;
           setCharacter((prev) => ({ ...prev, primaryTraining: next }));
+          window.dispatchEvent(
+            new CustomEvent('avatar-legends-primary-training-change', { detail: next }),
+          );
         }}
         sx={{
           width: '100%',
@@ -3217,7 +3410,7 @@ function CombatPane() {
                     key={label}
                     label={label}
                     active={Boolean(activeStatuses[label])}
-                    activeColor={water}
+                    activeColor={isDarkMode ? uiPrimaryDark : uiPrimary}
                     onToggle={() => toggleStatus(label)}
                   />
                 ))}
@@ -4179,22 +4372,19 @@ function AvatarLegends() {
   // correct theme palette on its next render. Done at the start of
   // render, before children read those colors during their own render.
   const { isDarkMode } = useThemeMode();
-  applyAvatarPalette(isDarkMode);
-  const pageBg = isDarkMode ? darkPageBg : lightPageBg;
-  // White cornflower gradient applied to the active-tab title bar in
-  // light mode (transferred from the app header per the user spec).
-  // Black title text reads against that gradient. In dark mode the
-  // title bar stays on the parchment with `ink` text.
-  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha('#dbe5f0', 0.9)} 100%)`;
-  const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
-  const tabTitleColor = isDarkMode ? ink : '#000000';
-  // Read the active character so the brush-stroke header heading shows
-  // their name on every non-Character tab.
   const character = useAtomValue(characterStateAtom);
   const trainingTheme =
     primaryTrainingThemes[character.primaryTraining] ??
     primaryTrainingThemes[defaultCharacter.primaryTraining];
-
+  applyAvatarPalette(isDarkMode, character.primaryTraining);
+  const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
+  // White cornflower gradient applied to the active-tab title bar in
+  // light mode (transferred from the app header per the user spec).
+  // Black title text reads against that gradient. In dark mode the
+  // title bar stays on the parchment with `ink` text.
+  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha(accent, 0.32)} 100%)`;
+  const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
+  const tabTitleColor = isDarkMode ? ink : '#000000';
   return (
     <>
       {/* Render-less mount that keeps the characterStateAtom in lockstep

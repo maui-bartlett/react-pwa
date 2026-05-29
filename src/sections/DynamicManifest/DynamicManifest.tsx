@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
 /**
@@ -30,12 +30,46 @@ const manifestBase = {
   ],
 };
 
+type AvatarTraining =
+  | 'Waterbending'
+  | 'Earthbending'
+  | 'Firebending'
+  | 'Airbending'
+  | 'Weapons'
+  | 'Technology';
+
+const avatarTrainingChrome: Record<AvatarTraining, string> = {
+  Waterbending: '#173755',
+  Earthbending: '#24351f',
+  Firebending: '#4a1f1b',
+  Airbending: '#544821',
+  Weapons: '#0b1018',
+  Technology: '#3c294c',
+};
+
+function getStoredAvatarTraining(): AvatarTraining {
+  try {
+    const raw = window.localStorage.getItem('avatar-legends-character');
+    if (!raw) return 'Waterbending';
+    const parsed = JSON.parse(raw) as { primaryTraining?: unknown };
+    const candidate = parsed.primaryTraining;
+    return typeof candidate === 'string' && candidate in avatarTrainingChrome
+      ? (candidate as AvatarTraining)
+      : 'Waterbending';
+  } catch {
+    return 'Waterbending';
+  }
+}
+
 /**
  * Map a pathname to the background color the PWA manifest should
  * advertise while the user is on that route. The home route (`/`) sits
  * on the Avatar Legends page, so it gets the AL header chrome too.
  */
-function backgroundColorForRoute(pathname: string): string {
+function backgroundColorForRoute(
+  pathname: string,
+  avatarTraining = getStoredAvatarTraining(),
+): string {
   if (pathname === '/fab-u' || pathname.startsWith('/fab-u/')) {
     // FabU page header / brand green.
     return '#315c4d';
@@ -45,8 +79,7 @@ function backgroundColorForRoute(pathname: string): string {
     pathname === '/avatar-legends' ||
     pathname.startsWith('/avatar-legends/')
   ) {
-    // Avatar Legends header chrome (deepInk).
-    return '#111a24';
+    return avatarTrainingChrome[avatarTraining];
   }
   return manifestBase.background_color;
 }
@@ -63,10 +96,13 @@ function backgroundColorForRoute(pathname: string): string {
 function DynamicManifest() {
   const { pathname } = useLocation();
   const previousUrlRef = useRef<string | null>(null);
+  const [avatarTraining, setAvatarTraining] = useState<AvatarTraining>(() =>
+    getStoredAvatarTraining(),
+  );
 
   useEffect(() => {
-    const background = backgroundColorForRoute(pathname);
-    const next = { ...manifestBase, background_color: background };
+    const background = backgroundColorForRoute(pathname, avatarTraining);
+    const next = { ...manifestBase, background_color: background, theme_color: background };
     const blob = new Blob([JSON.stringify(next)], {
       type: 'application/manifest+json',
     });
@@ -103,7 +139,24 @@ function DynamicManifest() {
     const previousUrl = previousUrlRef.current;
     previousUrlRef.current = url;
     if (previousUrl) URL.revokeObjectURL(previousUrl);
-  }, [pathname]);
+  }, [pathname, avatarTraining]);
+
+  useEffect(() => {
+    const refresh = (event?: Event) => {
+      const candidate = (event as CustomEvent<unknown> | undefined)?.detail;
+      setAvatarTraining(
+        typeof candidate === 'string' && candidate in avatarTrainingChrome
+          ? (candidate as AvatarTraining)
+          : getStoredAvatarTraining(),
+      );
+    };
+    window.addEventListener('avatar-legends-primary-training-change', refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener('avatar-legends-primary-training-change', refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
 
   // Revoke the final blob URL on unmount.
   useEffect(() => {
