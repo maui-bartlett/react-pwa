@@ -474,7 +474,7 @@ const primaryTrainingThemes: Record<
     `,
     chromeColor: '#173755',
     chromeFill: 'linear-gradient(180deg, #173755 0%, #10283e 100%)',
-    headerBorder: '#173755',
+    headerBorder: water,
     footerBorder: water,
     pageBg: { dark: '#173755', light: '#173755' },
     brushBorder: 'wavy',
@@ -487,8 +487,8 @@ const primaryTrainingThemes: Record<
     `,
     chromeColor: '#24351f',
     chromeFill: 'linear-gradient(180deg, #24351f 0%, #182615 100%)',
-    headerBorder: '#24351f',
-    footerBorder: '#24351f',
+    headerBorder: '#182615',
+    footerBorder: '#182615',
     pageBg: { dark: '#24351f', light: '#24351f' },
     brushBorder: 'dry',
   },
@@ -1140,6 +1140,12 @@ function WatercolorBand({
   const edgePosition = bottom ? { top: 0 } : { bottom: 0 };
   const brushColor = borderColor ?? deepInk;
   const brushHighlight = borderColor ? alpha(borderColor, 0.55) : alpha(deepInk, 0.55);
+  const isWaterWave = brushBorder === 'wavy' && brushColor === water;
+  const isEarthDryBrush = brushBorder === 'dry' && brushColor === '#182615';
+  const waveFillId = bottom ? 'water-wave-fill-bottom' : 'water-wave-fill-top';
+  const waveLightFillId = bottom ? 'water-wave-light-fill-bottom' : 'water-wave-light-fill-top';
+  const waveFill = isWaterWave ? `url(#${waveFillId})` : alpha(brushColor, 0.82);
+  const waveLightFill = isWaterWave ? `url(#${waveLightFillId})` : alpha(brushColor, 0.36);
   const wavyPath = bottom
     ? `M0,${height} L430,${height} L430,28 Q400,8 360,18 Q320,30 280,14 Q240,0 200,18 Q160,34 120,16 Q80,0 40,22 Q15,32 0,18 Z`
     : `M0,0 L430,0 L430,${height - 30} Q400,${height - 8} 360,${height - 18} Q320,${height - 30} 280,${height - 12} Q240,${height + 4} 200,${height - 18} Q160,${height - 34} 120,${height - 14} Q80,${height + 2} 40,${height - 22} Q15,${height - 32} 0,${height - 16} Z`;
@@ -1183,11 +1189,37 @@ function WatercolorBand({
         preserveAspectRatio="none"
         sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
       >
+        {isWaterWave ? (
+          <defs>
+            <linearGradient
+              id={waveFillId}
+              x1="0"
+              y1={bottom ? 0 : height - 46}
+              x2="0"
+              y2={bottom ? 46 : height}
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stopColor={bottom ? brushColor : '#173755'} stopOpacity={0.82} />
+              <stop offset="100%" stopColor={bottom ? '#173755' : brushColor} stopOpacity={0.82} />
+            </linearGradient>
+            <linearGradient
+              id={waveLightFillId}
+              x1="0"
+              y1={bottom ? 0 : height - 46}
+              x2="0"
+              y2={bottom ? 46 : height}
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stopColor={bottom ? brushColor : '#173755'} stopOpacity={0.36} />
+              <stop offset="100%" stopColor={bottom ? '#173755' : brushColor} stopOpacity={0.36} />
+            </linearGradient>
+          </defs>
+        ) : null}
         {brushBorder === 'dry' ? (
           <>
             <rect
               x={0}
-              y={bottom ? height - solidEdge - 3 : solidEdge}
+              y={bottom ? height - solidEdge - 3 : isEarthDryBrush ? solidEdge - 8 : solidEdge}
               width={430}
               height={3}
               fill={brushHighlight}
@@ -1202,7 +1234,7 @@ function WatercolorBand({
               <rect
                 key={`streak-${index}`}
                 x={streak.x}
-                y={bottom ? height - solidEdge - 9 : solidEdge + 6}
+                y={bottom ? height - solidEdge - 9 : solidEdge + (isEarthDryBrush ? -2 : 6)}
                 width={streak.w}
                 height={1.5}
                 fill={alpha(brushColor, streak.opacity)}
@@ -1218,7 +1250,7 @@ function WatercolorBand({
               <rect
                 key={`far-streak-${index}`}
                 x={streak.x}
-                y={bottom ? height - solidEdge - 14 : solidEdge + 11}
+                y={bottom ? height - solidEdge - 14 : solidEdge + (isEarthDryBrush ? 3 : 11)}
                 width={streak.w}
                 height={1}
                 fill={alpha(brushColor, streak.opacity)}
@@ -1228,8 +1260,8 @@ function WatercolorBand({
         ) : null}
         {brushBorder === 'wavy' ? (
           <>
-            <path d={wavyPath} fill={alpha(brushColor, 0.82)} />
-            <path d={wavyPathLight} fill={alpha(brushColor, 0.36)} />
+            <path d={wavyPath} fill={waveFill} />
+            <path d={wavyPathLight} fill={waveLightFill} />
           </>
         ) : null}
         {brushBorder === 'wind' ? (
@@ -1344,10 +1376,15 @@ function WatercolorBand({
             right: 0,
             ...edgePosition,
             height: 48,
-            background: `linear-gradient(180deg, ${alpha('#f4b45f', 0.92)} 0%, ${alpha(
-              brushColor,
-              0.95,
-            )} 78%)`,
+            background: bottom
+              ? `linear-gradient(180deg, ${alpha('#f4b45f', 0.92)} 0%, ${alpha(
+                  brushColor,
+                  0.95,
+                )} 78%)`
+              : `linear-gradient(180deg, ${alpha(brushColor, 0.95)} 0%, ${alpha(
+                  '#f4b45f',
+                  0.92,
+                )} 100%)`,
             transform: bottom ? 'scaleY(-1)' : 'none',
             transformOrigin: 'center',
             WebkitMaskImage: `url(${fireBorderMask})`,
@@ -1862,7 +1899,7 @@ function PrimaryTrainingSelect() {
         }}
         sx={{
           width: '100%',
-          minHeight: 39,
+          minHeight: 36,
           borderRadius: '4px',
           border: `1px solid ${alpha(accent, 0.72)}`,
           bgcolor: alpha(parchmentLight, 0.72),
