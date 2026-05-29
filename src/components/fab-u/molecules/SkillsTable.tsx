@@ -53,6 +53,7 @@ type EditingSkillState = {
 
 type SwipeableSkillRowProps = {
   row: SkillRow;
+  isStriped: boolean;
   isOpen: boolean;
   onToggle: () => void;
   isEditing: boolean;
@@ -71,6 +72,7 @@ type SwipeableSkillRowProps = {
 
 function SwipeableSkillRow({
   row,
+  isStriped,
   isOpen,
   onToggle,
   isEditing,
@@ -89,6 +91,7 @@ function SwipeableSkillRow({
   const fabUTokens = useFabUTokens();
   const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
   const editColor = fabUTokens.isDark ? '#3d7060' : '#4d8070';
+  const rowBg = isStriped ? fabUTokens.color.surfaceMuted : fabUTokens.color.pillSurface;
 
   // Row swipe state
   const [snapX, setSnapX] = useState(0);
@@ -303,7 +306,7 @@ function SwipeableSkillRow({
               px: 1.2,
               py: 0.7,
               minHeight: 46,
-              bgcolor: fabUTokens.color.pillSurface,
+              bgcolor: isOpen ? fabUTokens.color.brand : rowBg,
               zIndex: 1,
               gap: 0.5,
             }}
@@ -382,7 +385,7 @@ function SwipeableSkillRow({
               alignItems: 'center',
               px: 1.2,
               height: 46,
-              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.pillSurface,
+              bgcolor: rowBg,
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
@@ -395,9 +398,7 @@ function SwipeableSkillRow({
               cursor: 'pointer',
               touchAction: 'pan-y',
               userSelect: 'none',
-              '&:hover': {
-                bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
-              },
+              '&:hover': { bgcolor: isOpen ? fabUTokens.color.brand : rowBg },
             }}
           >
             {/* Skill name with chevron */}
@@ -784,7 +785,7 @@ function SkillsTable({
           </Box>
 
           {/* Data rows */}
-          {rows.map((row) => {
+          {rows.map((row, index) => {
             const level = parseInt(row.level ?? '0', 10);
             const maxLevel = row.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
             const availableForSkill = Math.min(
@@ -797,6 +798,7 @@ function SkillsTable({
               <SwipeableSkillRow
                 key={row.name}
                 row={row}
+                isStriped={index % 2 === 0}
                 isOpen={expandedRow === row.name}
                 onToggle={() => toggleRow(row.name)}
                 isEditing={isEditing}

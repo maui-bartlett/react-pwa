@@ -58,6 +58,7 @@ type SpellsTableProps = {
 
 type SwipeableSpellRowProps = {
   row: SpellRow;
+  isStriped: boolean;
   isOpen: boolean;
   onToggle: () => void;
   onCastSpell?: (spellName: string, mpCost: string) => void;
@@ -73,6 +74,7 @@ type SwipeableSpellRowProps = {
 
 function SwipeableSpellRow({
   row,
+  isStriped,
   isOpen,
   onToggle,
   onCastSpell,
@@ -88,6 +90,7 @@ function SwipeableSpellRow({
   const fabUTokens = useFabUTokens();
   const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
   const editColor = '#4d8070';
+  const rowBg = isStriped ? fabUTokens.color.surfaceMuted : fabUTokens.color.pillSurface;
 
   // Row swipe state
   const [snapX, setSnapX] = useState(0);
@@ -303,7 +306,7 @@ function SwipeableSpellRow({
               px: 1.2,
               py: 0.7,
               height: 46,
-              bgcolor: fabUTokens.color.pillSurface,
+              bgcolor: isOpen ? fabUTokens.color.brand : rowBg,
               zIndex: 1,
             }}
           >
@@ -430,7 +433,7 @@ function SwipeableSpellRow({
               alignItems: 'center',
               px: 1.2,
               height: 46,
-              bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.pillSurface,
+              bgcolor: rowBg,
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,
@@ -443,9 +446,7 @@ function SwipeableSpellRow({
               cursor: 'pointer',
               touchAction: 'pan-y',
               userSelect: 'none',
-              '&:hover': {
-                bgcolor: isOpen ? fabUTokens.color.brand : fabUTokens.color.surfaceMuted,
-              },
+              '&:hover': { bgcolor: isOpen ? fabUTokens.color.brand : rowBg },
             }}
           >
             <Box
@@ -865,12 +866,13 @@ function SpellsTable({
         </Box>
 
         {/* Spell rows */}
-        {rows.map((row) => {
+        {rows.map((row, index) => {
           const isRowEditing = editingSpell?.originalName === row.name;
           return (
             <Fragment key={row.name}>
               <SwipeableSpellRow
                 row={row}
+                isStriped={index % 2 === 0}
                 isOpen={expandedRow === row.name}
                 onToggle={() => toggleRow(row.name)}
                 onCastSpell={onCastSpell}
