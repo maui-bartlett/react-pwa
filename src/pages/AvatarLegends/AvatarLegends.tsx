@@ -16,6 +16,8 @@ import { atomWithStorage } from 'jotai/utils';
 import { Backpack, HandFist, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
+import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
+import type { FabUTokens } from '@/components/fab-u/tokens';
 import AccountSettings from '@/sections/AccountSettings';
 import { createCharacterHistory } from '@/state/createCharacterHistory';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
@@ -25,7 +27,6 @@ import { useThemeMode } from '@/theme/hooks';
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
 import elementEarth from './assets/earthbending-symbol.png';
-import flameMask from './assets/fire-flame-mask.png';
 import elementFire from './assets/firebending-symbol.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
@@ -148,6 +149,66 @@ const darkAvPalette: AvPaletteShape = {
   // in light mode).
   bookAccent: '#c8a460',
 };
+
+function blendHex(hex: string, target: string, amount: number) {
+  const normalize = (value: string) => value.replace('#', '');
+  const sourceHex = normalize(hex);
+  const targetHex = normalize(target);
+  const source = [0, 2, 4].map((index) => parseInt(sourceHex.slice(index, index + 2), 16));
+  const destination = [0, 2, 4].map((index) => parseInt(targetHex.slice(index, index + 2), 16));
+  const blended = source.map((channel, index) =>
+    Math.round(channel + (destination[index] - channel) * amount),
+  );
+  return `#${blended.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function createAvatarAccountTokens(
+  isDarkMode: boolean,
+  trainingTheme: { chromeColor: string },
+): FabUTokens {
+  const base = isDarkMode ? avatarDarkTokens : avatarLightTokens;
+  const chromeColor = trainingTheme.chromeColor;
+  const modalSurface = isDarkMode
+    ? blendHex(chromeColor, '#000000', 0.42)
+    : blendHex(chromeColor, '#ffffff', 0.88);
+  const liftedSurface = isDarkMode
+    ? blendHex(chromeColor, '#000000', 0.28)
+    : blendHex(chromeColor, '#ffffff', 0.94);
+  const borderColor = isDarkMode
+    ? blendHex(chromeColor, '#ffffff', 0.26)
+    : blendHex(chromeColor, '#ffffff', 0.62);
+  const actionHover = isDarkMode
+    ? blendHex(chromeColor, '#ffffff', 0.13)
+    : blendHex(chromeColor, '#000000', 0.12);
+
+  return {
+    ...base,
+    color: {
+      ...base.color,
+      page: chromeColor,
+      canvas: chromeColor,
+      surface: modalSurface,
+      surfaceCard: liftedSurface,
+      pillSurface: liftedSurface,
+      surfaceMuted: isDarkMode
+        ? blendHex(chromeColor, '#000000', 0.18)
+        : blendHex(chromeColor, '#ffffff', 0.82),
+      border: borderColor,
+      brand: chromeColor,
+      brandStrong: actionHover,
+      brandSoft: isDarkMode
+        ? blendHex(chromeColor, '#000000', 0.22)
+        : blendHex(chromeColor, '#ffffff', 0.78),
+      labelBg: chromeColor,
+      fp: isDarkMode ? uiPrimaryDark : uiPrimary,
+      mp: isDarkMode ? uiPrimaryDark : uiPrimary,
+    },
+    shadow: {
+      soft: isDarkMode ? '0 4px 14px rgba(0, 0, 0, 0.55)' : base.shadow.soft,
+      card: isDarkMode ? '0 4px 14px rgba(0, 0, 0, 0.5)' : base.shadow.card,
+    },
+  };
+}
 
 // Mutable swappable colors — re-assigned by AvatarLegends before its
 // children render. Components keep referencing these as if they were
@@ -1028,12 +1089,12 @@ const movesByCategory: Record<'basic' | 'balance', MoveEntry[]> = {
 };
 
 // Eyebrow color per category: red for attack, green for defend, blue for
-// evade. Returned at call time so the `attackRed` reference picks up the
-// active theme (matches the Fatigue diamond color in dark mode).
+// evade. These are semantic labels, so they intentionally stay pinned to
+// the Waterbending palette instead of following primaryTraining chrome.
 function techniqueCategoryColor(category: TechniqueCategory, isDarkMode: boolean): string {
   if (category === 'Advance & Attack') return isDarkMode ? passionRed : attackRed;
   if (category === 'Defend & Maneuver') return isDarkMode ? darkStatEarth : earth;
-  return isDarkMode ? uiPrimaryDark : uiPrimary;
+  return isDarkMode ? darkStatWater : water;
 }
 
 function techniqueElementVisual(type: TechniqueElement): {
@@ -1084,7 +1145,14 @@ function WatercolorBand({
   const wavyPathLight = bottom
     ? `M0,${height} L430,${height} L430,42 Q395,22 355,30 Q315,42 275,28 Q235,16 195,32 Q155,46 115,30 Q75,16 35,34 Q12,42 0,32 Z`
     : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
-  const windY = bottom ? height - solidEdge - 8 : solidEdge + 4;
+  const flameOuterPath = bottom
+    ? `M0,0 L430,0 L430,22 C412,18 408,43 391,52 C382,30 363,17 347,6 C352,31 331,41 323,60 C318,39 302,25 285,13 C294,40 270,49 264,69 C251,39 228,31 211,6 C219,35 199,44 189,62 C184,37 164,30 151,14 C154,37 135,51 124,68 C119,43 99,28 82,7 C91,38 62,43 54,66 C47,41 27,29 9,16 C14,35 4,43 0,54 Z`
+    : `M0,${height} L430,${height} L430,${height - 22} C412,${height - 18} 408,${height - 43} 391,${height - 52} C382,${height - 30} 363,${height - 17} 347,${height - 6} C352,${height - 31} 331,${height - 41} 323,${height - 60} C318,${height - 39} 302,${height - 25} 285,${height - 13} C294,${height - 40} 270,${height - 49} 264,${height - 69} C251,${height - 39} 228,${height - 31} 211,${height - 6} C219,${height - 35} 199,${height - 44} 189,${height - 62} C184,${height - 37} 164,${height - 30} 151,${height - 14} C154,${height - 37} 135,${height - 51} 124,${height - 68} C119,${height - 43} 99,${height - 28} 82,${height - 7} C91,${height - 38} 62,${height - 43} 54,${height - 66} C47,${height - 41} 27,${height - 29} 9,${height - 16} C14,${height - 35} 4,${height - 43} 0,${height - 54} Z`;
+  const flameInnerPath = bottom
+    ? `M31,0 C47,16 42,31 31,45 C58,34 77,21 72,0 Z M116,0 C133,20 125,36 112,51 C144,36 165,20 156,0 Z M200,0 C219,20 211,39 196,55 C228,39 247,22 239,0 Z M292,0 C309,18 301,35 288,50 C319,35 337,19 330,0 Z M374,0 C392,17 386,31 374,45 C400,35 417,19 411,0 Z`
+    : `M31,${height} C47,${height - 16} 42,${height - 31} 31,${height - 45} C58,${height - 34} 77,${height - 21} 72,${height} Z M116,${height} C133,${height - 20} 125,${height - 36} 112,${height - 51} C144,${height - 36} 165,${height - 20} 156,${height} Z M200,${height} C219,${height - 20} 211,${height - 39} 196,${height - 55} C228,${height - 39} 247,${height - 22} 239,${height} Z M292,${height} C309,${height - 18} 301,${height - 35} 288,${height - 50} C319,${height - 35} 337,${height - 19} 330,${height} Z M374,${height} C392,${height - 17} 386,${height - 31} 374,${height - 45} C400,${height - 35} 417,${height - 19} 411,${height} Z`;
+  const windY = bottom ? height - solidEdge - 6 : solidEdge + 2;
+  const windDirection = bottom ? -1 : 1;
   const bladeY = bottom ? height - solidEdge - 12 : solidEdge + 8;
   const gearY = bottom ? height - solidEdge - 8 : solidEdge + 6;
 
@@ -1165,23 +1233,49 @@ function WatercolorBand({
             <path d={wavyPathLight} fill={alpha(brushColor, 0.36)} />
           </>
         ) : null}
+        {brushBorder === 'flame' ? (
+          <>
+            <path d={flameOuterPath} fill={alpha(brushColor, 0.92)} />
+            <path d={flameOuterPath} fill={alpha('#df4d22', 0.34)} transform="translate(0 4)" />
+            <path d={flameInnerPath} fill={alpha('#f4b45f', 0.72)} />
+            <path
+              d={flameInnerPath}
+              fill={alpha('#fff1a6', 0.34)}
+              transform={`translate(0 ${bottom ? -4 : 4}) scale(1 0.74)`}
+            />
+          </>
+        ) : null}
         {brushBorder === 'wind' ? (
           <>
-            {[0, 92, 184, 276].map((x, index) => (
+            {[-8, -2, 4].map((offset, index) => (
               <path
-                key={`wind-${index}`}
-                d={`M${x},${windY} C${x + 28},${windY - (bottom ? 10 : -10)} ${x + 54},${windY + (bottom ? 10 : -10)} ${x + 84},${windY} S${x + 142},${windY} ${x + 170},${windY - (bottom ? 6 : -6)}`}
+                key={`wind-stream-${index}`}
+                d={`M-12,${windY + offset * windDirection} C52,${windY - (10 - offset) * windDirection} 100,${windY + (9 + offset) * windDirection} 156,${windY + (2 + offset) * windDirection} S270,${windY - (18 - offset) * windDirection} 440,${windY - (12 - offset) * windDirection}`}
                 fill="none"
-                stroke={alpha(brushColor, index % 2 === 0 ? 0.72 : 0.48)}
-                strokeWidth={index % 2 === 0 ? 3 : 2}
+                stroke={alpha(brushColor, index === 1 ? 0.78 : 0.48)}
+                strokeWidth={index === 1 ? 2.6 : 1.8}
                 strokeLinecap="round"
               />
             ))}
             <path
-              d={`M0,${bottom ? height - solidEdge - 2 : solidEdge + 2} C70,${windY} 130,${windY - (bottom ? 9 : -9)} 205,${windY} S350,${windY + (bottom ? 8 : -8)} 430,${windY - (bottom ? 2 : -2)}`}
+              d={`M104,${windY - 11 * windDirection} C132,${windY - 34 * windDirection} 178,${windY - 24 * windDirection} 174,${windY + 4 * windDirection} C171,${windY + 24 * windDirection} 135,${windY + 23 * windDirection} 140,${windY + 2 * windDirection} C144,${windY - 14 * windDirection} 172,${windY - 10 * windDirection} 164,${windY + 4 * windDirection}`}
               fill="none"
-              stroke={alpha(brushColor, 0.28)}
-              strokeWidth={5}
+              stroke={alpha(brushColor, 0.55)}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M288,${windY - 16 * windDirection} C330,${windY - 31 * windDirection} 386,${windY - 22 * windDirection} 430,${windY - 10 * windDirection} C446,${windY - 4 * windDirection} 448,${windY + 18 * windDirection} 430,${windY + 18 * windDirection} C412,${windY + 18 * windDirection} 414,${windY - 5 * windDirection} 431,${windY - 2 * windDirection}`}
+              fill="none"
+              stroke={alpha(brushColor, 0.64)}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+            />
+            <path
+              d={`M222,${windY + 2 * windDirection} C247,${windY + 20 * windDirection} 288,${windY + 10 * windDirection} 304,${windY + 30 * windDirection} C315,${windY + 45 * windDirection} 287,${windY + 55 * windDirection} 281,${windY + 36 * windDirection} C277,${windY + 22 * windDirection} 298,${windY + 20 * windDirection} 296,${windY + 34 * windDirection}`}
+              fill="none"
+              stroke={alpha(brushColor, 0.42)}
+              strokeWidth={1.8}
               strokeLinecap="round"
             />
           </>
@@ -1248,32 +1342,6 @@ function WatercolorBand({
           </>
         ) : null}
       </Box>
-      {brushBorder === 'flame' ? (
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            ...edgePosition,
-            height: 44,
-            background: `linear-gradient(180deg, ${alpha('#f4b45f', 0.95)} 0%, ${alpha(
-              brushColor,
-              0.95,
-            )} 72%)`,
-            opacity: 0.96,
-            transform: bottom ? 'scaleY(-1)' : 'none',
-            transformOrigin: 'center',
-            WebkitMaskImage: `url(${flameMask})`,
-            maskImage: `url(${flameMask})`,
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskSize: '100% 100%',
-            maskSize: '100% 100%',
-            WebkitMaskPosition: bottom ? 'center top' : 'center bottom',
-            maskPosition: bottom ? 'center top' : 'center bottom',
-          }}
-        />
-      ) : null}
       {borderColor ? (
         <Box
           aria-hidden
@@ -1587,9 +1655,9 @@ function BalanceTrack() {
 function StatsPanel() {
   const { isDarkMode } = useThemeMode();
   const rows: Array<[string, string]> = [
-    ['Creativity', isDarkMode ? uiPrimaryDark : uiPrimary],
+    ['Creativity', isDarkMode ? darkStatWater : water],
     ['Focus', isDarkMode ? darkStatEarth : earth],
-    ['Harmony', isDarkMode ? uiPrimaryDark : uiPrimary],
+    ['Harmony', isDarkMode ? darkStatWater : water],
     ['Passion', passionRed],
   ];
   const [stats, setStats] = useAtom(statsAtom);
@@ -4377,6 +4445,10 @@ function AvatarLegends() {
     primaryTrainingThemes[character.primaryTraining] ??
     primaryTrainingThemes[defaultCharacter.primaryTraining];
   applyAvatarPalette(isDarkMode, character.primaryTraining);
+  const accountTokens = useMemo(
+    () => createAvatarAccountTokens(isDarkMode, trainingTheme),
+    [isDarkMode, trainingTheme],
+  );
   const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
   // White cornflower gradient applied to the active-tab title bar in
   // light mode (transferred from the app header per the user spec).
@@ -4551,7 +4623,7 @@ function AvatarLegends() {
                   </Typography>
                 </Stack>
               )}
-              <AccountSettings gameSystem="avatar-legends" />
+              <AccountSettings gameSystem="avatar-legends" tokensOverride={accountTokens} />
             </Box>
 
             {/* Active-tab title bar. In light mode this band carries the

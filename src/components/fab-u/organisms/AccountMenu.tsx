@@ -81,9 +81,6 @@ const authModes: Array<{ label: string; value: AuthMode }> = [
   { label: 'Sign in', value: 'signIn' },
   { label: 'Create', value: 'signUp' },
 ];
-const AVATAR_DARK_MODAL_BG = '#0c131c';
-const AVATAR_DARK_ACTION_BG = '#111a24';
-const AVATAR_DARK_ACTION_HOVER_BG = '#192535';
 
 function GoogleLogo() {
   return (
@@ -361,12 +358,10 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     return 'Settings';
   }, [isPending, user?.email, user?.name]);
   const isAvatarDark = gameSystem === 'avatar-legends' && themeMode === 'dark';
-  const accountModalBg = isAvatarDark ? AVATAR_DARK_MODAL_BG : fabUTokens.color.surface;
-  const accountActionBg = isAvatarDark ? AVATAR_DARK_ACTION_BG : fabUTokens.color.brand;
-  const accountActionHoverBg = isAvatarDark
-    ? AVATAR_DARK_ACTION_HOVER_BG
-    : fabUTokens.color.brandStrong;
-  const accountBackdropBg = isAvatarDark ? AVATAR_DARK_ACTION_BG : accountActionBg;
+  const accountModalBg = fabUTokens.color.surface;
+  const accountActionBg = fabUTokens.color.brand;
+  const accountActionHoverBg = fabUTokens.color.brandStrong;
+  const accountBackdropBg = accountActionBg;
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
