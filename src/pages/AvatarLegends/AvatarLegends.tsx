@@ -212,6 +212,87 @@ const elementFilterFrames: Record<Exclude<TechniqueElementFilter, 'all' | 'basic
   martial: '#0b1018',
   tech,
 };
+const primaryTrainingOptions: PrimaryTraining[] = [
+  'Waterbending',
+  'Earthbending',
+  'Firebending',
+  'Airbending',
+  'Weapons',
+  'Technology',
+];
+const primaryTrainingThemes: Record<
+  PrimaryTraining,
+  {
+    bodyWash: string;
+    chromeFill: string;
+    headerBorder: string;
+    footerBorder: string;
+    brushBorder?: boolean;
+  }
+> = {
+  Waterbending: {
+    bodyWash: `
+      radial-gradient(circle at 30% 25%, ${alpha(water, 0.42)} 0%, transparent 70%),
+      radial-gradient(circle at 75% 70%, ${alpha('#8bb8d4', 0.38)} 0%, transparent 65%),
+      radial-gradient(circle at 50% 50%, ${alpha('#9fc2d7', 0.25)} 0%, transparent 50%),
+      linear-gradient(135deg, rgba(230, 236, 245, 0.45), rgba(220, 227, 238, 0.4))
+    `,
+    chromeFill: 'linear-gradient(180deg, #111a24 0%, #173755 100%)',
+    headerBorder: water,
+    footerBorder: water,
+    brushBorder: true,
+  },
+  Earthbending: {
+    bodyWash: `
+      radial-gradient(circle at 28% 20%, ${alpha(elementFilterFrames.earth, 0.38)} 0%, transparent 68%),
+      radial-gradient(circle at 78% 72%, ${alpha('#9cab70', 0.32)} 0%, transparent 64%),
+      linear-gradient(135deg, rgba(232, 238, 225, 0.46), rgba(218, 229, 211, 0.4))
+    `,
+    chromeFill: 'linear-gradient(180deg, #111a24 0%, #24351f 100%)',
+    headerBorder: elementFilterFrames.earth,
+    footerBorder: '#92a66a',
+  },
+  Firebending: {
+    bodyWash: `
+      radial-gradient(circle at 28% 20%, ${alpha(fire, 0.32)} 0%, transparent 68%),
+      radial-gradient(circle at 78% 72%, ${alpha('#d07a42', 0.26)} 0%, transparent 64%),
+      linear-gradient(135deg, rgba(241, 228, 221, 0.48), rgba(232, 217, 211, 0.38))
+    `,
+    chromeFill: 'linear-gradient(180deg, #111a24 0%, #4a1f1b 100%)',
+    headerBorder: fire,
+    footerBorder: '#c35a42',
+  },
+  Airbending: {
+    bodyWash: `
+      radial-gradient(circle at 28% 20%, ${alpha(elementFilterFrames.air, 0.42)} 0%, transparent 68%),
+      radial-gradient(circle at 78% 72%, ${alpha('#e2cc68', 0.28)} 0%, transparent 64%),
+      linear-gradient(135deg, rgba(243, 239, 220, 0.5), rgba(231, 232, 213, 0.4))
+    `,
+    chromeFill: 'linear-gradient(180deg, #111a24 0%, #544821 100%)',
+    headerBorder: elementFilterFrames.air,
+    footerBorder: '#e0c75f',
+  },
+  Weapons: {
+    bodyWash: `
+      radial-gradient(circle at 28% 20%, ${alpha('#2a3542', 0.36)} 0%, transparent 68%),
+      radial-gradient(circle at 78% 72%, ${alpha('#515c69', 0.3)} 0%, transparent 64%),
+      linear-gradient(135deg, rgba(224, 229, 234, 0.42), rgba(210, 217, 224, 0.36))
+    `,
+    chromeFill: `linear-gradient(180deg, #111a24 0%, ${elementFilterFrames.martial} 100%)`,
+    headerBorder: '#4a5563',
+    footerBorder: '#5c6674',
+  },
+  Technology: {
+    bodyWash: `
+      radial-gradient(circle at 28% 20%, ${alpha(tech, 0.36)} 0%, transparent 68%),
+      radial-gradient(circle at 78% 72%, ${alpha('#9a79ad', 0.28)} 0%, transparent 64%),
+      linear-gradient(135deg, rgba(235, 225, 240, 0.44), rgba(222, 215, 232, 0.38))
+    `,
+    chromeFill: 'linear-gradient(180deg, #111a24 0%, #3c294c 100%)',
+    headerBorder: tech,
+    footerBorder: '#9977aa',
+  },
+};
 const darkConditionGold = '#b98535';
 const darkNegativeRed = '#5f1717';
 
@@ -248,6 +329,13 @@ const tabs: TabConfig[] = [
 type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
+type PrimaryTraining =
+  | 'Waterbending'
+  | 'Earthbending'
+  | 'Firebending'
+  | 'Airbending'
+  | 'Weapons'
+  | 'Technology';
 
 // UI-only atoms (no character data; just remember which sub-tab is
 // active when the user navigates away and comes back).
@@ -286,6 +374,7 @@ type Technique = {
 type CharacterState = {
   name: string;
   className: string; // e.g. "The Successor"; rendered uppercase in the sheet UI.
+  primaryTraining: PrimaryTraining;
   pronouns: string;
   /** Plain numeric age stored on the character record. Rendered as
    *  "Age <number>" in the UI for readability. */
@@ -315,6 +404,7 @@ type CharacterState = {
 const defaultCharacter: CharacterState = {
   name: 'Qi Gong',
   className: 'The Successor',
+  primaryTraining: 'Waterbending',
   pronouns: 'He / Him',
   age: 32,
   origin: 'Jasmine Island',
@@ -442,9 +532,10 @@ const characterStateAtom = atomWithStorage<CharacterState>(
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
  *  shape of the AL `CharacterState` changes in a breaking way.
  *  v2: `age` is `number`, technique key is `type` (was `element`).
- *  v3 (current): Technique.category renamed to approach, title→name, body→description.
- *               JournalEntry title→name, body→description. */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 3;
+ *  v3: Technique.category renamed to approach, title→name, body→description.
+ *      JournalEntry title→name, body→description.
+ *  v4 (current): add primaryTraining for training-themed app chrome. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 4;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -539,11 +630,17 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
 
   const inventory = migrateJournalEntries(innerCandidate.inventory) ?? defaultCharacter.inventory;
   const notes = migrateJournalEntries(innerCandidate.notes) ?? defaultCharacter.notes;
+  const primaryTraining =
+    typeof innerCandidate.primaryTraining === 'string' &&
+    primaryTrainingOptions.includes(innerCandidate.primaryTraining as PrimaryTraining)
+      ? (innerCandidate.primaryTraining as PrimaryTraining)
+      : defaultCharacter.primaryTraining;
 
   return {
     ...defaultCharacter,
     ...(innerCandidate as Partial<CharacterState>),
     age,
+    primaryTraining,
     techniques,
     inventory,
     notes,
@@ -783,6 +880,8 @@ function WatercolorBand({
   bottom = false,
   height = 96,
   fill,
+  borderColor,
+  brushBorder = false,
 }: {
   bottom?: boolean;
   height?: number;
@@ -790,11 +889,14 @@ function WatercolorBand({
    *  fill used for the bottom nav and the dark-mode top band; the
    *  light-mode top header passes a whiter gradient. */
   fill?: string;
+  borderColor?: string;
+  brushBorder?: boolean;
 }) {
   // Solid painted block only — no bristle streaks. `solidEdge` defines the
   // depth of the painted band; outside that, the parchment shows through.
   const solidEdge = height - 18;
   const bandFill = fill ?? deepInk;
+  const edgePosition = bottom ? { top: 0 } : { bottom: 0 };
 
   return (
     <Box
@@ -820,8 +922,27 @@ function WatercolorBand({
           background: bandFill,
         }}
       />
-      {/* No sheen: the faint white pill that used to sit at the inner
-          edge read as a thin gray line above the header on mobile. */}
+      {borderColor ? (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            ...edgePosition,
+            height: brushBorder ? 18 : 2,
+            background: brushBorder
+              ? `linear-gradient(90deg, transparent 0%, ${alpha(borderColor, 0.9)} 10%, ${alpha(borderColor, 0.72)} 42%, ${alpha('#ffffff', 0.2)} 50%, ${alpha(borderColor, 0.72)} 58%, ${alpha(borderColor, 0.9)} 90%, transparent 100%)`
+              : borderColor,
+            opacity: brushBorder ? 0.92 : 1,
+            clipPath: brushBorder
+              ? bottom
+                ? 'polygon(0 42%, 8% 22%, 18% 48%, 31% 28%, 45% 52%, 58% 26%, 73% 45%, 88% 24%, 100% 46%, 100% 100%, 0 100%)'
+                : 'polygon(0 0, 100% 0, 100% 54%, 89% 76%, 74% 55%, 58% 78%, 44% 51%, 30% 73%, 16% 47%, 7% 76%, 0 58%)'
+              : 'none',
+          }}
+        />
+      ) : null}
     </Box>
   );
 }
@@ -1247,6 +1368,67 @@ function BackgroundCheckRow({ label }: { label: string }) {
       >
         {label}
       </Typography>
+    </Stack>
+  );
+}
+
+function PrimaryTrainingSelect() {
+  const [character, setCharacter] = useAtom(characterStateAtom);
+  const currentTraining = primaryTrainingOptions.includes(character.primaryTraining)
+    ? character.primaryTraining
+    : defaultCharacter.primaryTraining;
+  return (
+    <Stack spacing={0.45} sx={{ width: 'min(100%, 220px)', pt: 0.1 }}>
+      <Typography
+        sx={{
+          color: alpha(brown, 0.76),
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.58rem',
+          fontWeight: 900,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          textAlign: 'center',
+        }}
+      >
+        Primary Training
+      </Typography>
+      <Box
+        component="select"
+        value={currentTraining}
+        aria-label="Primary training"
+        onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+          const next = event.target.value as PrimaryTraining;
+          setCharacter((prev) => ({ ...prev, primaryTraining: next }));
+        }}
+        sx={{
+          width: '100%',
+          minHeight: 34,
+          borderRadius: '4px',
+          border: `1px solid ${alpha(accent, 0.72)}`,
+          bgcolor: alpha(parchmentLight, 0.72),
+          color: ink,
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.74rem',
+          fontWeight: 900,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          textAlign: 'center',
+          textAlignLast: 'center',
+          px: 1,
+          outline: 'none',
+          cursor: 'pointer',
+          '&:focus': {
+            borderColor: accent,
+            boxShadow: `0 0 0 2px ${alpha(accent, 0.25)}`,
+          },
+        }}
+      >
+        {primaryTrainingOptions.map((training) => (
+          <option key={training} value={training}>
+            {training}
+          </option>
+        ))}
+      </Box>
     </Stack>
   );
 }
@@ -2110,6 +2292,7 @@ function CharacterPane() {
               </Stack>
             ))}
           </Stack>
+          <PrimaryTrainingSelect />
         </Stack>
       </Panel>
 
@@ -3855,6 +4038,9 @@ function AvatarLegends() {
   // Read the active character so the brush-stroke header heading shows
   // their name on every non-Character tab.
   const character = useAtomValue(characterStateAtom);
+  const trainingTheme =
+    primaryTrainingThemes[character.primaryTraining] ??
+    primaryTrainingThemes[defaultCharacter.primaryTraining];
 
   return (
     <>
@@ -3926,23 +4112,26 @@ function AvatarLegends() {
               inset: 0,
               pointerEvents: 'none',
               zIndex: 0,
-              background: `
-              radial-gradient(circle at 30% 25%, rgba(112, 139, 176, 0.42) 0%, transparent 70%),
-              radial-gradient(circle at 75% 70%, rgba(143, 164, 195, 0.38) 0%, transparent 65%),
-              radial-gradient(circle at 50% 50%, rgba(155, 172, 194, 0.25) 0%, transparent 50%),
-              linear-gradient(135deg, rgba(230, 236, 245, 0.45), rgba(220, 227, 238, 0.4))
-            `,
+              background: trainingTheme.bodyWash,
               mixBlendMode: 'multiply',
               filter: 'contrast(0.9) brightness(1.02)',
             }}
           />
 
           {/* Top header band — deep cover-art navy in both modes. */}
-          <WatercolorBand height={92} />
-          {/* No bottom band: the absolute-positioned nav below has its own
-            deep-navy backgroundColor, and any band rendered behind it
-            would just produce an extra dark strip above the nav that
-            scrolling content would visibly pass through. */}
+          <WatercolorBand
+            height={92}
+            fill={trainingTheme.chromeFill}
+            borderColor={trainingTheme.headerBorder}
+            brushBorder={trainingTheme.brushBorder}
+          />
+          <WatercolorBand
+            bottom
+            height={86}
+            fill={trainingTheme.chromeFill}
+            borderColor={trainingTheme.footerBorder}
+            brushBorder={trainingTheme.brushBorder}
+          />
 
           {/* Page corner ornaments — near-white in both modes, sitting on
             the deep-navy header. */}
@@ -4107,10 +4296,10 @@ function AvatarLegends() {
                 left: 0,
                 right: 0,
                 zIndex: 10,
-                // Solid backdrop matching the brush-stroke navy so body
-                // content scrolling behind the nav is fully occluded; the
-                // brush stroke continues to show below the nav.
-                backgroundColor: deepInk,
+                // Solid backdrop matching the active training chrome so body
+                // content scrolling behind the nav is fully occluded.
+                background: trainingTheme.chromeFill,
+                borderTop: `2px solid ${trainingTheme.footerBorder}`,
               }}
             >
               {/* 15px pull-in on each side (~30px total) trims the visible
