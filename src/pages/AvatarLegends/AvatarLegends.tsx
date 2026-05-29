@@ -847,10 +847,27 @@ const movesByCategory: Record<'basic' | 'balance', MoveEntry[]> = {
 // Eyebrow color per category: red for attack, green for defend, blue for
 // evade. Returned at call time so the `attackRed` reference picks up the
 // active theme (matches the Fatigue diamond color in dark mode).
-function techniqueCategoryColor(category: TechniqueCategory): string {
-  if (category === 'Advance & Attack') return attackRed;
-  if (category === 'Defend & Maneuver') return earth;
-  return water;
+function techniqueCategoryColor(category: TechniqueCategory, isDarkMode: boolean): string {
+  if (category === 'Advance & Attack') return isDarkMode ? passionRed : attackRed;
+  if (category === 'Defend & Maneuver') return isDarkMode ? darkStatEarth : earth;
+  return isDarkMode ? darkStatWater : water;
+}
+
+function techniqueElementVisual(type: TechniqueElement): {
+  color: string;
+  frameColor?: string;
+  src: string;
+} {
+  if (type === 'earth')
+    return { color: earth, frameColor: elementFilterFrames.earth, src: elementEarth };
+  if (type === 'fire')
+    return { color: fire, frameColor: elementFilterFrames.fire, src: elementFire };
+  if (type === 'air') return { color: air, frameColor: elementFilterFrames.air, src: elementAir };
+  if (type === 'martial')
+    return { color: martial, frameColor: elementFilterFrames.martial, src: elementMartial };
+  if (type === 'tech')
+    return { color: tech, frameColor: elementFilterFrames.tech, src: elementTech };
+  return { color: water, frameColor: elementFilterFrames.water, src: elementWater };
 }
 
 /**
@@ -2600,6 +2617,7 @@ function TechniqueAccordion({
   description,
   src,
   techColor,
+  frameColor,
   isBasic = false,
 }: {
   approach: TechniqueCategory;
@@ -2608,14 +2626,16 @@ function TechniqueAccordion({
   description: string;
   src: string;
   techColor: string;
+  frameColor?: string;
   /**
    * Basic techniques render the SquareInSquare icon (matching the Basic
    * filter selector) instead of the element image badge.
    */
   isBasic?: boolean;
 }) {
+  const { isDarkMode } = useThemeMode();
   const [open, setOpen] = useState(false);
-  const categoryColor = techniqueCategoryColor(approach);
+  const categoryColor = techniqueCategoryColor(approach, isDarkMode);
   return (
     <Panel>
       <Stack spacing={0.5}>
@@ -2657,7 +2677,13 @@ function TechniqueAccordion({
               <SquareInSquare color={techColor} size={22} />
             </Box>
           ) : (
-            <ElementMark color={techColor} src={src} size={36} height={34} />
+            <ElementMark
+              color={techColor}
+              frameColor={isDarkMode ? undefined : frameColor}
+              src={src}
+              size={36}
+              height={34}
+            />
           )}
           <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
             {/* Approach eyebrow — color keyed to the technique's approach. */}
@@ -2977,6 +3003,7 @@ function CombatPane() {
             />
             {visibleTechniques.map((tech) => {
               const isBasic = tech.type === 'basic';
+              const visual = techniqueElementVisual(tech.type);
               return (
                 <TechniqueAccordion
                   key={tech.name}
@@ -2986,8 +3013,9 @@ function CombatPane() {
                   description={tech.description}
                   isBasic={isBasic}
                   // src is only used when isBasic=false (image badge path).
-                  src={elementWater}
-                  techColor={isBasic ? ink : water}
+                  src={visual.src}
+                  techColor={isBasic ? ink : visual.color}
+                  frameColor={visual.frameColor}
                 />
               );
             })}
