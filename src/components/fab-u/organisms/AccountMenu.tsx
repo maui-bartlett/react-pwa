@@ -81,8 +81,9 @@ const authModes: Array<{ label: string; value: AuthMode }> = [
   { label: 'Sign in', value: 'signIn' },
   { label: 'Create', value: 'signUp' },
 ];
-const AVATAR_DARK_ACTION_BG = '#0c131c';
-const AVATAR_DARK_ACTION_HOVER_BG = '#161e29';
+const AVATAR_DARK_MODAL_BG = '#0c131c';
+const AVATAR_DARK_ACTION_BG = '#111a24';
+const AVATAR_DARK_ACTION_HOVER_BG = '#192535';
 
 function GoogleLogo() {
   return (
@@ -360,10 +361,12 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     return 'Settings';
   }, [isPending, user?.email, user?.name]);
   const isAvatarDark = gameSystem === 'avatar-legends' && themeMode === 'dark';
+  const accountModalBg = isAvatarDark ? AVATAR_DARK_MODAL_BG : fabUTokens.color.surface;
   const accountActionBg = isAvatarDark ? AVATAR_DARK_ACTION_BG : fabUTokens.color.brand;
   const accountActionHoverBg = isAvatarDark
     ? AVATAR_DARK_ACTION_HOVER_BG
     : fabUTokens.color.brandStrong;
+  const accountBackdropBg = isAvatarDark ? AVATAR_DARK_ACTION_BG : accountActionBg;
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -511,7 +514,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
             width: 'min(360px, calc(100vw - 24px))',
             borderRadius: '12px',
             border: `1px solid ${isAvatarDark ? '#ffffff' : fabUTokens.color.border}`,
-            bgcolor: fabUTokens.color.surface,
+            bgcolor: accountModalBg,
             color: fabUTokens.color.textPrimary,
             backgroundImage: 'none',
             boxShadow: fabUTokens.shadow.soft,
@@ -525,7 +528,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
         // status bar color in two perceptible steps.
         slotProps={{
           backdrop: {
-            sx: { backgroundColor: accountActionBg, opacity: 0.92 },
+            sx: { backgroundColor: accountBackdropBg, opacity: 0.92 },
           },
         }}
       >
