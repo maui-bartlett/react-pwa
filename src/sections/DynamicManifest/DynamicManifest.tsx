@@ -17,7 +17,7 @@ const manifestBase = {
   background_color: '#173755',
   display: 'standalone',
   orientation: 'portrait',
-  pwa_version: '2026.05.29.14',
+  pwa_version: '2026.05.29.15',
   icons: [
     { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
     { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

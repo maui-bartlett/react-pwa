@@ -4648,8 +4648,10 @@ function AvatarLegends() {
     character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.footerBorder;
   const trainingHeaderFill =
     character.primaryTraining === 'Firebending'
-      ? 'linear-gradient(180deg, #2a100e 0%, #4f1d19 22%, #7d2f29 38%, #a8413a 54%, #a8413a 100%)'
-      : trainingTheme.chromeFill;
+      ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, #6f2a24 34%, #a53f38 60%, #a53f38 68%, ${parchment} 100%)`
+      : character.primaryTraining === 'Waterbending'
+        ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, ${parchment} 100%)`
+        : trainingTheme.chromeFill;
   const trainingFooterFill =
     character.primaryTraining === 'Firebending'
       ? 'linear-gradient(180deg, #9f372f 0%, #6f2a24 52%, #2a100e 100%)'
