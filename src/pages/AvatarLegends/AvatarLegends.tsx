@@ -1229,7 +1229,7 @@ function WatercolorBand({
           left: 0,
           right: 0,
           [bottom ? 'bottom' : 'top']: 0,
-          height: solidEdge,
+          height: showEdgeLine ? solidEdge : height,
           background: bandFill,
         }}
       />
@@ -4650,7 +4650,7 @@ function AvatarLegends() {
     character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.footerBorder;
   const trainingHeaderFill =
     character.primaryTraining === 'Firebending'
-      ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, #6f2a24 34%, #a53f38 60%, #a53f38 68%, ${parchment} 100%)`
+      ? 'linear-gradient(180deg, #2a100e 0%, #4f1d19 22%, #7d2f29 38%, #a8413a 54%, #a8413a 100%)'
       : character.primaryTraining === 'Waterbending'
         ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, ${parchment} 100%)`
         : trainingTheme.chromeFill;
@@ -4667,12 +4667,10 @@ function AvatarLegends() {
   const headerBorderOffsetY = character.primaryTraining === 'Technology' ? -10 : 0;
   const footerBorderOffsetY = character.primaryTraining === 'Technology' ? 15 : 0;
   const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
-  // White cornflower gradient applied to the active-tab title bar in
-  // light mode (transferred from the app header per the user spec).
-  // Black title text reads against that gradient. In dark mode the
-  // title bar stays on the parchment with `ink` text.
-  const whiteCornflowerGradient = `linear-gradient(180deg, #ffffff 0%, ${alpha(accent, 0.32)} 100%)`;
-  const tabTitleBg = isDarkMode ? 'transparent' : whiteCornflowerGradient;
+  // Light-mode active-tab title bar keeps the earlier white wash, flipped
+  // so the top meets the header-bottom color and the white settles below.
+  const titleBarGradient = `linear-gradient(180deg, ${parchment} 0%, ${parchment} 18%, #ffffff 100%)`;
+  const tabTitleBg = isDarkMode ? 'transparent' : titleBarGradient;
   const tabTitleColor = isDarkMode ? ink : '#000000';
   return (
     <>
@@ -4856,8 +4854,9 @@ function AvatarLegends() {
             <Box
               sx={{
                 px: 1.4,
-                pt: 1.1,
-                pb: 0.5,
+                pt: 2.55,
+                pb: 0.2,
+                minHeight: 64,
                 background: tabTitleBg,
                 position: 'relative',
                 zIndex: 1,
