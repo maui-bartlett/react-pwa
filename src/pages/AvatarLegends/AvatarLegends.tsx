@@ -1167,6 +1167,7 @@ function WatercolorBand({
   brushBorder = false,
   borderOffsetY = 0,
   mirrorX = false,
+  showEdgeLine = true,
   zIndex = 2,
 }: {
   bottom?: boolean;
@@ -1179,6 +1180,7 @@ function WatercolorBand({
   brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear' | false;
   borderOffsetY?: number;
   mirrorX?: boolean;
+  showEdgeLine?: boolean;
   zIndex?: number;
 }) {
   const solidEdge = height - 18;
@@ -1477,7 +1479,7 @@ function WatercolorBand({
           }}
         />
       ) : null}
-      {borderColor ? (
+      {borderColor && showEdgeLine ? (
         <Box
           aria-hidden
           sx={{
@@ -4658,6 +4660,9 @@ function AvatarLegends() {
       : trainingTheme.chromeFill;
   const shouldMirrorHeader =
     character.primaryTraining === 'Waterbending' || character.primaryTraining === 'Airbending';
+  const shouldHideHeaderEdgeLine = (
+    ['Waterbending', 'Firebending', 'Weapons', 'Technology'] as PrimaryTraining[]
+  ).includes(character.primaryTraining);
   const trainingBandZIndex = character.primaryTraining === 'Weapons' ? 0 : 2;
   const headerBorderOffsetY = character.primaryTraining === 'Technology' ? -10 : 0;
   const footerBorderOffsetY = character.primaryTraining === 'Technology' ? 15 : 0;
@@ -4753,6 +4758,7 @@ function AvatarLegends() {
             brushBorder={trainingTheme.brushBorder}
             borderOffsetY={headerBorderOffsetY}
             mirrorX={shouldMirrorHeader}
+            showEdgeLine={!shouldHideHeaderEdgeLine}
             zIndex={trainingBandZIndex}
           />
           <WatercolorBand
