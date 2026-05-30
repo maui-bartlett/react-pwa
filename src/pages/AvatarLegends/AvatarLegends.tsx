@@ -1166,7 +1166,9 @@ function WatercolorBand({
   borderColor,
   brushBorder = false,
   borderOffsetY = 0,
+  extendFillToEdge = false,
   mirrorX = false,
+  overflowVisible = false,
   showEdgeLine = true,
   zIndex = 2,
 }: {
@@ -1179,7 +1181,9 @@ function WatercolorBand({
   borderColor?: string;
   brushBorder?: 'dry' | 'wavy' | 'flame' | 'wind' | 'blade' | 'gear' | false;
   borderOffsetY?: number;
+  extendFillToEdge?: boolean;
   mirrorX?: boolean;
+  overflowVisible?: boolean;
   showEdgeLine?: boolean;
   zIndex?: number;
 }) {
@@ -1201,9 +1205,11 @@ function WatercolorBand({
     : `M0,0 L430,0 L430,${height - 42} Q395,${height - 22} 355,${height - 30} Q315,${height - 42} 275,${height - 28} Q235,${height - 16} 195,${height - 32} Q155,${height - 46} 115,${height - 30} Q75,${height - 16} 35,${height - 34} Q12,${height - 42} 0,${height - 32} Z`;
   const windY = bottom ? height - solidEdge - 6 : solidEdge + 2;
   const windDirection = bottom ? -1 : 1;
+  const windSwirlOffsetX = bottom ? 0 : mirrorX ? -60 : 60;
+  const windMiddleSwirlOffsetX = bottom ? 0 : mirrorX ? -10 : 10;
   const windLowerSwirl = bottom
-    ? { cx: 353, cy: windY + 18 * windDirection, r: 18, clockwise: false }
-    : { cx: 384, cy: windY - 22, r: 18, clockwise: false };
+    ? { cx: 353 + windSwirlOffsetX, cy: windY + 18 * windDirection, r: 18, clockwise: false }
+    : { cx: 384, cy: windY - 2, r: 18, clockwise: false };
   const windSwirl = (cx: number, cy: number, r: number, clockwise = true) =>
     clockwise
       ? `M${cx + r},${cy} C${cx + r},${cy - r * 0.95} ${cx - r * 0.86},${cy - r * 1.05} ${cx - r},${cy} C${cx - r * 1.1},${cy + r * 0.9} ${cx + r * 0.62},${cy + r * 0.92} ${cx + r * 0.46},${cy + r * 0.1} C${cx + r * 0.36},${cy - r * 0.4} ${cx - r * 0.34},${cy - r * 0.3} ${cx - r * 0.22},${cy + r * 0.08}`
@@ -1219,6 +1225,7 @@ function WatercolorBand({
         right: 0,
         [bottom ? 'bottom' : 'top']: 0,
         height,
+        overflow: overflowVisible ? 'visible' : 'hidden',
         pointerEvents: 'none',
         zIndex,
       }}
@@ -1229,7 +1236,7 @@ function WatercolorBand({
           left: 0,
           right: 0,
           [bottom ? 'bottom' : 'top']: 0,
-          height: showEdgeLine ? solidEdge : height,
+          height: extendFillToEdge ? height : solidEdge,
           background: bandFill,
         }}
       />
@@ -1243,6 +1250,7 @@ function WatercolorBand({
           width: '100%',
           height: '100%',
           display: 'block',
+          overflow: overflowVisible ? 'visible' : 'hidden',
           transform: `${mirrorX ? 'scaleX(-1)' : ''} ${
             borderOffsetY ? `translateY(${borderOffsetY}px)` : ''
           }`.trim(),
@@ -1362,7 +1370,12 @@ function WatercolorBand({
               />
             ))}
             <path
-              d={windSwirl(182, windY - 18 * windDirection, 23, true)}
+              d={windSwirl(
+                182 + windSwirlOffsetX,
+                windY - 18 * windDirection + (bottom ? 0 : 20),
+                23,
+                true,
+              )}
               fill="none"
               stroke={alpha(brushColor, 0.62)}
               strokeWidth={1.8}
@@ -1381,7 +1394,12 @@ function WatercolorBand({
               strokeLinecap="round"
             />
             <path
-              d={windSwirl(307, windY - 26 * windDirection, 12, true)}
+              d={windSwirl(
+                307 + windSwirlOffsetX + windMiddleSwirlOffsetX,
+                windY - 26 * windDirection,
+                12,
+                true,
+              )}
               fill="none"
               stroke={alpha(brushColor, 0.5)}
               strokeWidth={1.45}
@@ -4650,7 +4668,7 @@ function AvatarLegends() {
     character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.footerBorder;
   const trainingHeaderFill =
     character.primaryTraining === 'Firebending'
-      ? 'linear-gradient(180deg, #2a100e 0%, #4f1d19 22%, #7d2f29 38%, #a8413a 54%, #a8413a 100%)'
+      ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, #6f2a24 34%, #a53f38 60%, #a53f38 68%, ${parchment} 100%)`
       : character.primaryTraining === 'Waterbending'
         ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, ${parchment} 100%)`
         : trainingTheme.chromeFill;
@@ -4663,7 +4681,14 @@ function AvatarLegends() {
   const shouldHideHeaderEdgeLine = (
     ['Waterbending', 'Firebending', 'Weapons', 'Technology'] as PrimaryTraining[]
   ).includes(character.primaryTraining);
-  const trainingBandZIndex = character.primaryTraining === 'Weapons' ? 0 : 2;
+  const shouldExtendHeaderFill =
+    shouldHideHeaderEdgeLine && character.primaryTraining !== 'Firebending';
+  const trainingBandZIndex =
+    character.primaryTraining === 'Weapons'
+      ? 0
+      : character.primaryTraining === 'Airbending'
+        ? 3
+        : 2;
   const headerBorderOffsetY = character.primaryTraining === 'Technology' ? -10 : 0;
   const footerBorderOffsetY = character.primaryTraining === 'Technology' ? 15 : 0;
   const pageBg = isDarkMode ? trainingTheme.pageBg.dark : trainingTheme.pageBg.light;
@@ -4755,7 +4780,9 @@ function AvatarLegends() {
             borderColor={trainingHeaderBorder}
             brushBorder={trainingTheme.brushBorder}
             borderOffsetY={headerBorderOffsetY}
+            extendFillToEdge={shouldExtendHeaderFill}
             mirrorX={shouldMirrorHeader}
+            overflowVisible={character.primaryTraining === 'Airbending'}
             showEdgeLine={!shouldHideHeaderEdgeLine}
             zIndex={trainingBandZIndex}
           />
@@ -4853,6 +4880,7 @@ function AvatarLegends() {
               stays on the parchment surface. */}
             <Box
               sx={{
+                mt: '-2px',
                 px: 1.4,
                 pt: 2.55,
                 pb: 0.2,
