@@ -1441,28 +1441,92 @@ function WatercolorBand({
               height={2.5}
               fill={alpha(brushColor, 0.58)}
             />
-            {Array.from({ length: 11 }).map((_, index) => {
-              const x = index * 42 + 8;
+            {[
+              {
+                x: 28,
+                y: bottom ? gearY - 2 : gearY + 2,
+                scale: 1.22,
+                opacity: 0.48,
+                rotation: 10,
+              },
+              {
+                x: 82,
+                y: bottom ? gearY + 8 : gearY - 4,
+                scale: 1.08,
+                opacity: 0.42,
+                rotation: 34,
+              },
+              {
+                x: 256,
+                y: bottom ? gearY - 8 : gearY + 6,
+                scale: 2.15,
+                opacity: 0.56,
+                rotation: 18,
+              },
+              {
+                x: 218,
+                y: bottom ? gearY + 33 : gearY - 25,
+                scale: 1.18,
+                opacity: 0.5,
+                rotation: 42,
+              },
+              {
+                x: 311,
+                y: bottom ? gearY + 15 : gearY - 3,
+                scale: 1.61,
+                opacity: 0.62,
+                rotation: -5,
+              },
+              {
+                x: 358,
+                y: bottom ? gearY - 3 : gearY + 5,
+                scale: 0.88,
+                opacity: 0.52,
+                rotation: 28,
+              },
+              {
+                x: 406,
+                y: bottom ? gearY + 8 : gearY - 2,
+                scale: 0.6,
+                opacity: 0.44,
+                rotation: 46,
+              },
+            ].map((gear, index) => {
               return (
                 <Box
                   key={`gear-${index}`}
                   component="g"
-                  transform={`translate(${x} ${gearY}) rotate(${index * 18})`}
+                  transform={`translate(${gear.x} ${gear.y}) scale(${gear.scale * 0.5}) rotate(${gear.rotation})`}
                 >
-                  {Array.from({ length: 8 }).map((__, tooth) => (
-                    <rect
-                      key={tooth}
-                      x={-2}
-                      y={-13}
-                      width={4}
-                      height={6}
-                      rx={1}
-                      fill={alpha(brushColor, 0.54)}
-                      transform={`rotate(${tooth * 45})`}
+                  <Box component="g" transform="translate(0 -10)">
+                    <path
+                      d="M-4.8,-19.2 C-7.1,-19.2 -8.8,-17.6 -8.8,-15.5 L-8.8,-12.9 C-11.1,-12.2 -13.1,-11.3 -15.1,-10 L-17.1,-11.9 C-18.7,-13.4 -21.1,-13.3 -22.6,-11.8 L-25.6,-8.8 C-27.1,-7.2 -27.1,-4.7 -25.5,-3.2 L-23.7,-1.4 C-24.5,0.8 -24.9,3 -25.1,5.4 L-27.8,5.4 C-30,5.4 -31.6,7 -31.6,9.2 L-31.6,13.5 C-31.6,15.6 -30,17.2 -27.8,17.2 L-25,17.2 C-24.3,19.4 -23.3,21.5 -22,23.3 L-23.9,25.3 C-25.4,26.9 -25.4,29.3 -23.8,30.9 L-20.7,33.8 C-19.2,35.3 -16.8,35.2 -15.2,33.7 L-13.3,31.7 C-11.3,32.6 -9.2,33.2 -6.9,33.5 L-6.9,36.2 C-6.9,38.4 -5.2,40 -3.1,40 L1.2,40 C3.3,40 5,38.4 5,36.2 L5,33.4 C7.2,32.8 9.3,31.9 11.3,30.6 L13.3,32.5 C14.9,34 17.3,33.9 18.8,32.4 L21.8,29.3 C23.3,27.8 23.3,25.4 21.7,23.8 L19.8,21.9 C20.7,19.9 21.3,17.8 21.6,15.5 L24.3,15.5 C26.5,15.5 28.1,13.9 28.1,11.7 L28.1,7.4 C28.1,5.3 26.5,3.7 24.3,3.7 L21.6,3.7 C21.1,1.4 20.3,-0.8 19.1,-2.8 L21.1,-4.8 C22.6,-6.3 22.6,-8.8 21.1,-10.3 L18,-13.3 C16.5,-14.8 14.1,-14.8 12.5,-13.2 L10.5,-11.2 C8.5,-12.2 6.3,-12.9 4,-13.2 L4,-15.5 C4,-17.6 2.3,-19.2 0.2,-19.2 Z"
+                      fill="none"
+                      stroke={alpha(brushColor, gear.opacity + 0.08)}
+                      strokeWidth={1.55}
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
                     />
-                  ))}
-                  <circle r={9} fill="none" stroke={alpha(brushColor, 0.6)} strokeWidth={2} />
-                  <circle r={3} fill={alpha(brushColor, 0.5)} />
+                    {index === 2 ? (
+                      <path
+                        d="M-0.8,3.7 C3.1,0.4 9.6,0.8 12.7,5.2 C17.4,11.8 13.3,21.1 5.1,22.4 C-5.3,24.1 -14.2,15.3 -12.9,4.8 C-11.4,-7.4 2.2,-14.9 13.1,-9.4 C26.2,-2.8 30.4,14.7 21.5,27 C11.4,41 -9.6,41.8 -21.4,29 C-34.7,14.6 -31,-9.2 -13.5,-18.4 C3.3,-27.2 25.5,-20.6 36.8,-4.5"
+                        fill="none"
+                        stroke={alpha('#ffffff', 0.94)}
+                        strokeWidth={2.15}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        transform="translate(-0.8 4.5) scale(0.5)"
+                      />
+                    ) : (
+                      <path
+                        d="M9.4,10 C9.4,3.9 1.5,0.4 -4,4.5 C-10.8,9.6 -8.2,19.6 0.2,19.6 C6.2,19.6 10.2,15.3 8.8,10.9 C7.7,7.5 2.9,6.9 0.6,9.4"
+                        fill="none"
+                        stroke={alpha(brushColor, gear.opacity)}
+                        strokeWidth={1.6}
+                        strokeLinecap="round"
+                      />
+                    )}
+                  </Box>
                 </Box>
               );
             })}
@@ -4663,15 +4727,25 @@ function AvatarLegends() {
     [isDarkMode, trainingTheme],
   );
   const trainingHeaderBorder =
-    character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.headerBorder;
+    character.primaryTraining === 'Earthbending'
+      ? '#9a7a2f'
+      : character.primaryTraining === 'Technology' && !isDarkMode
+        ? '#3f214d'
+        : trainingTheme.headerBorder;
   const trainingFooterBorder =
-    character.primaryTraining === 'Earthbending' ? '#9a7a2f' : trainingTheme.footerBorder;
+    character.primaryTraining === 'Earthbending'
+      ? '#9a7a2f'
+      : character.primaryTraining === 'Technology' && !isDarkMode
+        ? '#3f214d'
+        : trainingTheme.footerBorder;
   const trainingHeaderFill =
     character.primaryTraining === 'Firebending'
       ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, #6f2a24 34%, #a53f38 60%, #a53f38 68%, ${parchment} 100%)`
       : character.primaryTraining === 'Waterbending'
         ? `linear-gradient(180deg, ${trainingTheme.pageBg.dark} 0%, ${parchment} 100%)`
-        : trainingTheme.chromeFill;
+        : character.primaryTraining === 'Technology'
+          ? `linear-gradient(180deg, #3c294c 0%, #3c294c 36%, ${parchment} 100%)`
+          : trainingTheme.chromeFill;
   const trainingFooterFill =
     character.primaryTraining === 'Firebending'
       ? 'linear-gradient(180deg, #9f372f 0%, #6f2a24 52%, #2a100e 100%)'
@@ -4782,7 +4856,10 @@ function AvatarLegends() {
             borderOffsetY={headerBorderOffsetY}
             extendFillToEdge={shouldExtendHeaderFill}
             mirrorX={shouldMirrorHeader}
-            overflowVisible={character.primaryTraining === 'Airbending'}
+            overflowVisible={
+              character.primaryTraining === 'Airbending' ||
+              character.primaryTraining === 'Technology'
+            }
             showEdgeLine={!shouldHideHeaderEdgeLine}
             zIndex={trainingBandZIndex}
           />

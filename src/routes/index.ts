@@ -9,10 +9,14 @@ import { Routes } from './types';
 
 const routes: Routes = [
   {
-    component: asyncComponentLoader(() => import('@/pages/AvatarLegends')),
+    component: asyncComponentLoader(() => import('@/pages/Home')),
     path: '/',
-    title: 'Avatar Legends',
-    icon: PublicIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/Home')),
+    path: '/home',
+    title: 'Home',
+    icon: HomeIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/AvatarLegends')),

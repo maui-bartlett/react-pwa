@@ -5,9 +5,8 @@ import { useLocation } from 'react-router';
  * Mirrors the static `manifest.json` at the project root. Kept inline so
  * the runtime override can read from it without a JSON import (the
  * project's tsconfig.app only includes `src/`). Keep these fields in
- * sync with the on-disk `manifest.json` — every field except
- * `background_color` and `theme_color` is copied verbatim; those colors
- * are set dynamically per route below.
+ * sync with the on-disk `manifest.json` — most fields are copied
+ * verbatim; route-specific colors and icons are set dynamically below.
  */
 const manifestBase = {
   name: 'React PWA',
@@ -17,7 +16,7 @@ const manifestBase = {
   background_color: '#173755',
   display: 'standalone',
   orientation: 'portrait',
-  pwa_version: '2026.05.30.2',
+  pwa_version: '2026.05.31.1',
   icons: [
     { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
     { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
@@ -29,6 +28,17 @@ const manifestBase = {
     },
   ],
 };
+
+const avatarLegendsIcons = [
+  { src: 'avatar-legends-pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+  { src: 'avatar-legends-pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+  {
+    src: 'avatar-legends-pwa-512x512.png',
+    sizes: '512x512',
+    type: 'image/png',
+    purpose: 'any maskable',
+  },
+];
 
 type AvatarTraining =
   | 'Waterbending'
@@ -63,8 +73,7 @@ function getStoredAvatarTraining(): AvatarTraining {
 
 /**
  * Map a pathname to the background color the PWA manifest should
- * advertise while the user is on that route. The home route (`/`) sits
- * on the Avatar Legends page, so it gets the AL header chrome too.
+ * advertise while the user is on that route.
  */
 function backgroundColorForRoute(
   pathname: string,
@@ -74,14 +83,20 @@ function backgroundColorForRoute(
     // FabU page header / brand green.
     return '#315c4d';
   }
-  if (
-    pathname === '/' ||
-    pathname === '/avatar-legends' ||
-    pathname.startsWith('/avatar-legends/')
-  ) {
+  if (pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/')) {
     return avatarTrainingChrome[avatarTraining];
   }
+  if (pathname === '/' || pathname === '/home' || pathname.startsWith('/home/')) {
+    return '#182237';
+  }
   return manifestBase.background_color;
+}
+
+function iconsForRoute(pathname: string) {
+  if (pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/')) {
+    return avatarLegendsIcons;
+  }
+  return manifestBase.icons;
 }
 
 /**
@@ -102,7 +117,12 @@ function DynamicManifest() {
 
   useEffect(() => {
     const background = backgroundColorForRoute(pathname, avatarTraining);
-    const next = { ...manifestBase, background_color: background, theme_color: background };
+    const next = {
+      ...manifestBase,
+      background_color: background,
+      theme_color: background,
+      icons: iconsForRoute(pathname),
+    };
     const blob = new Blob([JSON.stringify(next)], {
       type: 'application/manifest+json',
     });
