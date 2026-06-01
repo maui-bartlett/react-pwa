@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
+import avatarLegendsIcon192 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-192x192.png';
+import avatarLegendsIcon512 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-512x512.png';
+
 /**
  * Mirrors the static `manifest.json` at the project root. Kept inline so
  * the runtime override can read from it without a JSON import (the
@@ -28,17 +31,6 @@ const manifestBase = {
     },
   ],
 };
-
-const avatarLegendsIcons = [
-  { src: 'avatar-legends-pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-  { src: 'avatar-legends-pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-  {
-    src: 'avatar-legends-pwa-512x512.png',
-    sizes: '512x512',
-    type: 'image/png',
-    purpose: 'any maskable',
-  },
-];
 
 type AvatarTraining =
   | 'Waterbending'
@@ -71,6 +63,29 @@ function getStoredAvatarTraining(): AvatarTraining {
   }
 }
 
+const defaultIconHref = '/favicon.svg';
+const defaultAppleTouchIconHref = '/apple-touch-icon.png';
+
+function isAvatarLegendsRoute(pathname: string): boolean {
+  return pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/');
+}
+
+function iconsForRoute(pathname: string) {
+  if (isAvatarLegendsRoute(pathname)) {
+    return [
+      { src: avatarLegendsIcon192, sizes: '192x192', type: 'image/png' },
+      { src: avatarLegendsIcon512, sizes: '512x512', type: 'image/png' },
+      {
+        src: avatarLegendsIcon512,
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any maskable',
+      },
+    ];
+  }
+  return manifestBase.icons;
+}
+
 /**
  * Map a pathname to the background color the PWA manifest should
  * advertise while the user is on that route.
@@ -90,13 +105,6 @@ function backgroundColorForRoute(
     return '#182237';
   }
   return manifestBase.background_color;
-}
-
-function iconsForRoute(pathname: string) {
-  if (pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/')) {
-    return avatarLegendsIcons;
-  }
-  return manifestBase.icons;
 }
 
 /**
@@ -153,6 +161,27 @@ function DynamicManifest() {
       document.head.appendChild(themeMeta);
     }
     themeMeta.setAttribute('content', background);
+
+    const faviconHref = isAvatarLegendsRoute(pathname) ? avatarLegendsIcon192 : defaultIconHref;
+    let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!favicon) {
+      favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      document.head.appendChild(favicon);
+    }
+    favicon.setAttribute('href', faviconHref);
+    favicon.setAttribute('type', isAvatarLegendsRoute(pathname) ? 'image/png' : 'image/svg+xml');
+
+    let appleTouchIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
+    if (!appleTouchIcon) {
+      appleTouchIcon = document.createElement('link');
+      appleTouchIcon.rel = 'apple-touch-icon';
+      document.head.appendChild(appleTouchIcon);
+    }
+    appleTouchIcon.setAttribute(
+      'href',
+      isAvatarLegendsRoute(pathname) ? avatarLegendsIcon512 : defaultAppleTouchIconHref,
+    );
 
     // Revoke the previous URL after the new one is wired up so the
     // manifest link never points at a freed object.

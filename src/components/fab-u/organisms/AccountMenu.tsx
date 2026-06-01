@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -65,6 +65,11 @@ type AccountMenuProps = {
   localCharacterName?: string;
   onToggleTheme: () => void;
   themeMode: 'dark' | 'light';
+  createCharacterPayload?: (context: { avatarClass?: unknown }) => {
+    schemaVersion: number;
+    characterState: unknown;
+  };
+  selectCharacterEventName?: string;
 };
 
 type AuthResult = {
@@ -81,6 +86,11 @@ const authModes: Array<{ label: string; value: AuthMode }> = [
   { label: 'Sign in', value: 'signIn' },
   { label: 'Create', value: 'signUp' },
 ];
+
+// Keep the email/password auth UI parked behind a flag for now. The
+// handlers/state stay in this component so restoring the option later is
+// just a matter of flipping this back on.
+const showEmailPasswordAuth = false;
 
 function GoogleLogo() {
   return (
@@ -242,7 +252,13 @@ function AuthField({
   );
 }
 
-function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMenuProps) {
+function AccountMenu({
+  localCharacterName,
+  onToggleTheme,
+  themeMode,
+  createCharacterPayload,
+  selectCharacterEventName = FAB_U_SELECT_CHARACTER_EVENT,
+}: AccountMenuProps) {
   const fabUTokens = useFabUTokens();
   const { data: session, isPending, refetch } = authClient.useSession();
   const convexAuth = useConvexAuth();
@@ -254,6 +270,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newAvatarClassName, setNewAvatarClassName] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -274,6 +291,10 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
       ? { gameSystem, includeArchived: false }
       : 'skip',
   );
+  const avatarClasses = useQuery(
+    api.classes.listAvatarLegendsClasses,
+    open && screen === 'characters' && gameSystem === 'avatar-legends' ? {} : 'skip',
+  ) as Array<{ class?: { className?: string } }> | undefined;
   const renameCharacter = useMutation(api.characters.renameCharacter);
   const updateCampaign = useMutation(api.campaigns.update);
   const archiveCharacter = useMutation(api.characters.archive);
@@ -350,6 +371,13 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
     () => campaigns?.filter((item) => item !== null) ?? [],
     [campaigns],
   );
+
+  useEffect(() => {
+    if (gameSystem !== 'avatar-legends') return;
+    if (newAvatarClassName) return;
+    const firstClassName = avatarClasses?.[0]?.class?.className;
+    if (firstClassName) setNewAvatarClassName(firstClassName);
+  }, [avatarClasses, gameSystem, newAvatarClassName]);
 
   const accountLabel = useMemo(() => {
     if (isPending) return 'Checking account';
@@ -428,6 +456,21 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
 
   async function addCharacter() {
     if (!canLoadCharacters) return;
+    const selectedAvatarClass =
+      gameSystem === 'avatar-legends'
+        ? avatarClasses?.find((item) => item.class?.className === newAvatarClassName)?.class ??
+          avatarClasses?.[0]?.class
+        : undefined;
+    const payload = createCharacterPayload?.({ avatarClass: selectedAvatarClass });
+    if (payload) {
+      const characterId = await createCharacter({
+        gameSystem,
+        schemaVersion: payload.schemaVersion,
+        characterState: payload.characterState,
+      });
+      await selectCharacter(characterId);
+      return;
+    }
     const nextCharacter = createDefaultCharacter();
     const characterId = await createCharacter({
       gameSystem,
@@ -440,7 +483,7 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
   async function selectCharacter(characterId: Id<'characters'>) {
     await setActiveCharacter({ characterId });
     window.dispatchEvent(
-      new CustomEvent(FAB_U_SELECT_CHARACTER_EVENT, {
+      new CustomEvent(selectCharacterEventName, {
         detail: { characterId },
       }),
     );
@@ -619,20 +662,48 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                     </Stack>
                   </Box>
                 ) : (
-                  <Button
-                    onClick={() => void addCharacter()}
-                    startIcon={<Plus size={17} />}
-                    sx={{
-                      minHeight: 54,
-                      borderRadius: '9px',
-                      border: `1px dashed ${fabUTokens.color.border}`,
-                      color: fabUTokens.color.textPrimary,
-                      textTransform: 'none',
-                      fontWeight: 800,
-                    }}
-                  >
-                    Add character
-                  </Button>
+                  <Stack spacing={0.7}>
+                    {gameSystem === 'avatar-legends' ? (
+                      <InputBase
+                        component="select"
+                        value={newAvatarClassName}
+                        onChange={(event) => setNewAvatarClassName(event.target.value)}
+                        sx={{
+                          minHeight: 42,
+                          borderRadius: '8px',
+                          border: `1px solid ${fabUTokens.color.border}`,
+                          bgcolor: fabUTokens.color.pillSurface,
+                          color: fabUTokens.color.textPrimary,
+                          px: 1.2,
+                          fontSize: '0.84rem',
+                          fontWeight: 800,
+                        }}
+                      >
+                        {(avatarClasses ?? []).map((item) =>
+                          item.class?.className ? (
+                            <option key={item.class.className} value={item.class.className}>
+                              {item.class.className}
+                            </option>
+                          ) : null,
+                        )}
+                      </InputBase>
+                    ) : null}
+                    <Button
+                      onClick={() => void addCharacter()}
+                      disabled={gameSystem === 'avatar-legends' && avatarClasses === undefined}
+                      startIcon={<Plus size={17} />}
+                      sx={{
+                        minHeight: 54,
+                        borderRadius: '9px',
+                        border: `1px dashed ${fabUTokens.color.border}`,
+                        color: fabUTokens.color.textPrimary,
+                        textTransform: 'none',
+                        fontWeight: 800,
+                      }}
+                    >
+                      Add character
+                    </Button>
+                  </Stack>
                 )}
                 {user && characters === undefined ? (
                   <Typography sx={{ color: fabUTokens.color.textSecondary, fontSize: '0.82rem' }}>
@@ -1047,97 +1118,101 @@ function AccountMenu({ localCharacterName, onToggleTheme, themeMode }: AccountMe
                       Campaigns
                     </Button>
 
-                    <Stack
-                      direction="row"
-                      gap={0.5}
-                      sx={{
-                        p: 0.35,
-                        borderRadius: '9px',
-                        bgcolor: fabUTokens.color.surfaceMuted,
-                        border: `1px solid ${fabUTokens.color.border}`,
-                      }}
-                    >
-                      {authModes.map((authMode) => {
-                        const selected = mode === authMode.value;
+                    {showEmailPasswordAuth ? (
+                      <>
+                        <Stack
+                          direction="row"
+                          gap={0.5}
+                          sx={{
+                            p: 0.35,
+                            borderRadius: '9px',
+                            bgcolor: fabUTokens.color.surfaceMuted,
+                            border: `1px solid ${fabUTokens.color.border}`,
+                          }}
+                        >
+                          {authModes.map((authMode) => {
+                            const selected = mode === authMode.value;
 
-                        return (
+                            return (
+                              <Button
+                                key={authMode.value}
+                                data-pw={`auth-mode-${authMode.value}`}
+                                onClick={() => {
+                                  setMode(authMode.value);
+                                  setError(null);
+                                  setStatus(null);
+                                }}
+                                sx={{
+                                  flex: 1,
+                                  minWidth: 0,
+                                  minHeight: 32,
+                                  borderRadius: '7px',
+                                  bgcolor: selected ? accountActionBg : 'transparent',
+                                  color: selected ? '#ffffff' : fabUTokens.color.textSecondary,
+                                  boxShadow: selected ? fabUTokens.shadow.card : 'none',
+                                  textTransform: 'none',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  '&:hover': {
+                                    bgcolor: selected
+                                      ? accountActionHoverBg
+                                      : alpha(accountActionBg, 0.08),
+                                  },
+                                }}
+                              >
+                                {authMode.label}
+                              </Button>
+                            );
+                          })}
+                        </Stack>
+
+                        <Stack component="form" spacing={1.05} onSubmit={submitAuth}>
+                          {mode === 'signUp' ? (
+                            <AuthField
+                              label="Name"
+                              value={name}
+                              autoComplete="name"
+                              onChange={setName}
+                            />
+                          ) : null}
+                          <AuthField
+                            label="Email"
+                            type="email"
+                            value={email}
+                            autoComplete="email"
+                            onChange={setEmail}
+                          />
+                          <AuthField
+                            label="Password"
+                            type="password"
+                            value={password}
+                            autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                            onChange={setPassword}
+                          />
                           <Button
-                            key={authMode.value}
-                            data-pw={`auth-mode-${authMode.value}`}
-                            onClick={() => {
-                              setMode(authMode.value);
-                              setError(null);
-                              setStatus(null);
-                            }}
+                            data-pw="auth-submit"
+                            type="submit"
+                            disabled={submitting || !email || !password}
+                            startIcon={<KeyRound size={16} />}
                             sx={{
-                              flex: 1,
-                              minWidth: 0,
-                              minHeight: 32,
-                              borderRadius: '7px',
-                              bgcolor: selected ? accountActionBg : 'transparent',
-                              color: selected ? '#ffffff' : fabUTokens.color.textSecondary,
-                              boxShadow: selected ? fabUTokens.shadow.card : 'none',
+                              height: 40,
+                              borderRadius: '8px',
+                              bgcolor: fabUTokens.color.brand,
+                              color: '#ffffff',
                               textTransform: 'none',
-                              fontSize: '0.72rem',
                               fontWeight: 800,
-                              '&:hover': {
-                                bgcolor: selected
-                                  ? accountActionHoverBg
-                                  : alpha(accountActionBg, 0.08),
+                              '&:hover': { bgcolor: fabUTokens.color.brandStrong },
+                              '&.Mui-disabled': {
+                                bgcolor: alpha(fabUTokens.color.brand, 0.45),
+                                color: alpha('#ffffff', 0.7),
                               },
                             }}
                           >
-                            {authMode.label}
+                            {mode === 'signIn' ? 'Sign in' : 'Create account'}
                           </Button>
-                        );
-                      })}
-                    </Stack>
-
-                    <Stack component="form" spacing={1.05} onSubmit={submitAuth}>
-                      {mode === 'signUp' ? (
-                        <AuthField
-                          label="Name"
-                          value={name}
-                          autoComplete="name"
-                          onChange={setName}
-                        />
-                      ) : null}
-                      <AuthField
-                        label="Email"
-                        type="email"
-                        value={email}
-                        autoComplete="email"
-                        onChange={setEmail}
-                      />
-                      <AuthField
-                        label="Password"
-                        type="password"
-                        value={password}
-                        autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
-                        onChange={setPassword}
-                      />
-                      <Button
-                        data-pw="auth-submit"
-                        type="submit"
-                        disabled={submitting || !email || !password}
-                        startIcon={<KeyRound size={16} />}
-                        sx={{
-                          height: 40,
-                          borderRadius: '8px',
-                          bgcolor: fabUTokens.color.brand,
-                          color: '#ffffff',
-                          textTransform: 'none',
-                          fontWeight: 800,
-                          '&:hover': { bgcolor: fabUTokens.color.brandStrong },
-                          '&.Mui-disabled': {
-                            bgcolor: alpha(fabUTokens.color.brand, 0.45),
-                            color: alpha('#ffffff', 0.7),
-                          },
-                        }}
-                      >
-                        {mode === 'signIn' ? 'Sign in' : 'Create account'}
-                      </Button>
-                    </Stack>
+                        </Stack>
+                      </>
+                    ) : null}
 
                     <Stack direction="row" gap={0.7}>
                       {oauthProviders.map(({ provider, label, icon }) => (

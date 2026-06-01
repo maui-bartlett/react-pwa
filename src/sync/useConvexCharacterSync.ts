@@ -47,6 +47,8 @@ type CharacterSyncOptions<TCharacter> = {
   selectCharacterEventName: string;
   /** Optional: human-readable label used in error logs. */
   describeCharacter?: (character: TCharacter) => string;
+  /** Optional: game-specific starter for the first remote row. */
+  createInitialCharacter?: () => TCharacter;
 };
 
 type PendingCharacterSync<TCharacter> = {
@@ -117,6 +119,7 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
     pendingSyncKeyPrefix,
     selectCharacterEventName,
     describeCharacter,
+    createInitialCharacter,
   } = options;
 
   const { data: session } = authClient.useSession();
@@ -205,22 +208,24 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
     if (!canSync || characters === undefined || creatingRef.current) return;
 
     if (characters.length === 0) {
+      const initialCharacter = createInitialCharacter?.() ?? character;
       creatingRef.current = true;
       void createFromLocalImport({
         gameSystem,
         schemaVersion,
-        characterState: serialize(character),
+        characterState: serialize(initialCharacter),
       })
         .then((createdId) => {
           setCharacterId(createdId);
-          lastSyncedJsonRef.current = JSON.stringify(character);
+          applyRemote(initialCharacter);
+          lastSyncedJsonRef.current = JSON.stringify(initialCharacter);
           readyToPersistRef.current = true;
         })
         .catch((error) => {
           console.error('[sync] failed to create Convex character from local state', {
             error,
             gameSystem,
-            characterName: describe(character),
+            characterName: describe(initialCharacter),
             canSync,
           });
         })
@@ -241,6 +246,8 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
     characterId,
     characters,
     createFromLocalImport,
+    createInitialCharacter,
+    applyRemote,
     describe,
     gameSystem,
     schemaVersion,

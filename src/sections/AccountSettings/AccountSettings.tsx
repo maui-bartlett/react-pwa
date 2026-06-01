@@ -26,6 +26,13 @@ type AccountSettingsProps = {
   localCharacterName?: string;
   /** Optional palette override for game surfaces with dynamic theme colors. */
   tokensOverride?: FabUTokens;
+  /** Optional game-specific creator for new character rows. */
+  createCharacterPayload?: (context: { avatarClass?: unknown }) => {
+    schemaVersion: number;
+    characterState: unknown;
+  };
+  /** App-specific event fired after selecting a character. */
+  selectCharacterEventName?: string;
 };
 
 /**
@@ -35,7 +42,13 @@ type AccountSettingsProps = {
  *   3. a FabUTokensContext.Provider scoped to this dialog so the menu
  *      inherits the right palette (green for FabU, blue for Avatar Legends)
  */
-function AccountSettings({ gameSystem, localCharacterName, tokensOverride }: AccountSettingsProps) {
+function AccountSettings({
+  gameSystem,
+  localCharacterName,
+  tokensOverride,
+  createCharacterPayload,
+  selectCharacterEventName,
+}: AccountSettingsProps) {
   const setGameSystem = useSetAtom(gameSystemAtom);
   const { isDarkMode, toggle } = useThemeMode();
 
@@ -61,6 +74,8 @@ function AccountSettings({ gameSystem, localCharacterName, tokensOverride }: Acc
         localCharacterName={localCharacterName}
         themeMode={isDarkMode ? 'dark' : 'light'}
         onToggleTheme={toggle}
+        createCharacterPayload={createCharacterPayload}
+        selectCharacterEventName={selectCharacterEventName}
       />
     </FabUTokensContext.Provider>
   );

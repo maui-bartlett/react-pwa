@@ -14,7 +14,7 @@ import { alpha } from '@mui/material/styles';
 import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import { Backpack, HandFist, Pencil, Trash2 } from 'lucide-react';
+import { Backpack, HandFist, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
@@ -610,6 +610,8 @@ type Technique = {
   name: string;
   summary: string;
   description: string;
+  custom?: boolean;
+  classTechnique?: boolean;
 };
 
 /**
@@ -644,127 +646,70 @@ type CharacterState = {
 };
 
 type AvatarClassData = {
+  className?: unknown;
   classTrait?: { name?: unknown; text?: unknown };
+  classMoves?: unknown;
+  startingStats?: unknown;
+  advancedTechnique?: unknown;
+  growthQuestion?: unknown;
   historyQuestions?: unknown;
+  momentOfBalance?: unknown;
 };
 
-/** Starter values — match what the sheet previously rendered as static
- *  content so the UI shows the same data on first load while now reading
- *  from a single mutable source. */
+const defaultBasicTechniques: Technique[] = [
+  {
+    type: 'basic',
+    approach: 'Advance & Attack',
+    level: 'learned',
+    name: 'Smash',
+    summary: 'Drive a heavy blow through your target to bypass their guard.',
+    description:
+      'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
+  },
+  {
+    type: 'basic',
+    approach: 'Defend & Maneuver',
+    level: 'learned',
+    name: 'Pounce',
+    summary: 'Close the gap on a target with sudden speed.',
+    description:
+      "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
+  },
+];
+
+/** Starter values for an empty local sheet. Signed-in "new character" flows
+ *  use `createRandomAvatarLegendsCharacter` below so they do not clone Qi
+ *  Gong's specific biography into new Convex rows. */
 const defaultCharacter: CharacterState = {
-  name: 'Qi Gong',
+  name: 'New Hero',
   className: 'The Successor',
   primaryTraining: 'Waterbending',
-  pronouns: 'He / Him',
-  age: 32,
-  origin: 'Jasmine Island',
-  stats: { Creativity: 2, Focus: 2, Harmony: 1, Passion: 1 },
+  pronouns: 'They / Them',
+  age: 16,
+  origin: 'Republic City',
+  stats: { Creativity: 1, Focus: 1, Harmony: -1, Passion: 0 },
   balance: 0,
   conditions: {},
   statuses: {},
-  // Fatigue marks fill from the right toward the left by default — two
-  // marks pre-filled on the right side of the tracker on first load.
-  fatigue: [false, false, false, true, true],
+  fatigue: [false, false, false, false, false],
   tempFatigue: [],
   backgrounds: { Urban: true, Privileged: true },
   historyAnswers: {},
-  connections: [
-    {
-      name: 'Boink',
-      role: 'Black wooly pig',
-      note: 'My loyal companion and constant source of joy. He roots around for snacks and keeps me grounded.',
-    },
-    {
-      name: 'Qi Wei',
-      role: 'Female ancestor',
-      note: 'A brilliant and respected leader in our lineage. I strive to carry on her wisdom and honor.',
-    },
-  ],
-  classMoves: [
-    { title: 'Way of the Future', body: 'Class move details TBD.' },
-    { title: 'Black Koala-Sheep', body: 'Class move details TBD.' },
-    { title: 'A Life of Regret', body: 'Class move details TBD.' },
-    { title: 'Walk This Way', body: 'Class move details TBD.' },
-    { title: 'Worldly Knowledge', body: 'Class move details TBD.' },
-  ],
-  techniques: [
-    {
-      type: 'water',
-      approach: 'Advance & Attack',
-      level: 'mastered',
-      name: 'Stream the Water',
-      summary: 'Push a jet stream from a significant source to inflict fatigue.',
-      description:
-        'Mark fatigue and push a jet of water from a significant source toward a foe within reach. Until they break free, the target is held in place by the stream and cannot disengage. Each exchange they remain in the stream, they suffer additional fatigue. The stream ends when you stop concentrating, when the foe overcomes it, or when the source runs dry.',
-    },
-    {
-      type: 'water',
-      approach: 'Defend & Maneuver',
-      level: 'learned',
-      name: 'Flow as Water',
-      summary: 'Use a jet of water to move quickly and shift position.',
-      description:
-        'Mark fatigue and ride a jet of water to a new position within reach. If you are engaging with a foe, you may disengage from them, and they are Impaired until the end of the exchange. You may bring one willing ally with you if there is a clear path of water between you.',
-    },
-    {
-      type: 'water',
-      approach: 'Evade & Observe',
-      level: 'mastered',
-      name: 'Refresh',
-      summary: 'Clear conditions and keep an ally steady under pressure.',
-      description:
-        'Mark fatigue and apply water to revitalize and close wounds on a willing ally in reach who is also evading or observing. Clear one condition from them, or clear 2 points of fatigue. You can also use this on yourself, but only once per exchange.',
-    },
-    {
-      type: 'water',
-      approach: 'Advance & Attack',
-      level: 'learned',
-      name: 'Water Jab',
-      summary: 'Surround your fist in water and strike from unexpected angles.',
-      description:
-        'Mark fatigue and surround your fist in water, then use the force of the stream to enhance your punch. Inflict 3 fatigue on a foe within reach. Your foe may choose to become Impaired to reduce the fatigue they suffer by 2.',
-    },
-    {
-      type: 'basic',
-      approach: 'Advance & Attack',
-      level: 'learned',
-      name: 'Smash',
-      summary: 'Drive a heavy blow through your target to bypass their guard.',
-      description:
-        'Mark fatigue and bring your full weight down on a foe within reach. Inflict 2 fatigue on the target. If the target is using a defensive stance or terrain advantage, ignore it for this strike.',
-    },
-    {
-      type: 'basic',
-      approach: 'Defend & Maneuver',
-      level: 'learned',
-      name: 'Pounce',
-      summary: 'Close the gap on a target with sudden speed.',
-      description:
-        "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
-    },
-  ],
+  connections: [],
+  classMoves: [],
+  techniques: defaultBasicTechniques,
   inventory: [
     {
       type: 'Item',
-      name: 'Messenger Bag',
-      description: 'Carried since leaving home. Inside are notes, tools, and a few keepsakes.',
+      name: 'Travel Pack',
+      description: 'A practical pack with a few personal keepsakes and room for supplies.',
     },
   ],
   notes: [
     {
       type: 'Note',
-      name: "Rad's Notebook",
-      description: 'A worn notebook filled with themes about bending and identity.',
-    },
-    {
-      type: 'Important NPC',
-      name: 'Professor Zei',
-      description: "Head of Bending Theory at UoE. Believes in Rad's potential.",
-    },
-    {
-      type: 'Location',
-      name: 'The University of Elements',
-      description: 'A neutral sanctuary where benders from all nations study in peace.',
+      name: 'First Session Notes',
+      description: 'Add campaign notes, important people, and discoveries here.',
     },
   ],
 };
@@ -781,6 +726,174 @@ const defaultHistoryQuestions = [
   'What did you leave behind when you took up this calling?',
   'What lesson from your past still guides you?',
 ];
+
+const randomNames = [
+  'Ren',
+  'Mira',
+  'Tao',
+  'Sena',
+  'Kori',
+  'Jun',
+  'Anika',
+  'Bo',
+  'Lian',
+  'Mei',
+];
+const randomOrigins = [
+  'Republic City',
+  'Whale Tail Island',
+  'Gaoling',
+  'The Southern Water Tribe',
+  'Ba Sing Se',
+  'A small Earth Kingdom village',
+  'A Fire Nation harbor town',
+  'An Air Nomad sanctuary',
+];
+const randomPronouns = ['They / Them', 'She / Her', 'He / Him', 'She / They', 'He / They'];
+
+function pickRandom<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)] ?? items[0];
+}
+
+function coerceClassName(classData: AvatarClassData | null | undefined, fallback = 'The Successor') {
+  return typeof classData?.className === 'string' && classData.className.trim()
+    ? classData.className
+    : fallback;
+}
+
+function coerceStartingStats(classData: AvatarClassData | null | undefined) {
+  const raw =
+    classData?.startingStats && typeof classData.startingStats === 'object'
+      ? (classData.startingStats as Record<string, unknown>)
+      : {};
+  return {
+    Creativity: typeof raw.Creativity === 'number' ? raw.Creativity : defaultCharacter.stats.Creativity,
+    Focus: typeof raw.Focus === 'number' ? raw.Focus : defaultCharacter.stats.Focus,
+    Harmony: typeof raw.Harmony === 'number' ? raw.Harmony : defaultCharacter.stats.Harmony,
+    Passion: typeof raw.Passion === 'number' ? raw.Passion : defaultCharacter.stats.Passion,
+  };
+}
+
+function coerceClassMoves(classData: AvatarClassData | null | undefined): MoveEntry[] {
+  return Array.isArray(classData?.classMoves)
+    ? classData.classMoves
+        .map((move) => {
+          if (!move || typeof move !== 'object' || Array.isArray(move)) return null;
+          const entry = move as Record<string, unknown>;
+          const title = typeof entry.name === 'string' ? entry.name : '';
+          const body = typeof entry.text === 'string' ? entry.text : '';
+          if (!title || !body) return null;
+          return { title, body };
+        })
+        .filter((move): move is MoveEntry => Boolean(move))
+    : [];
+}
+
+function trainingToTechniqueType(training: PrimaryTraining): TechniqueElement {
+  if (training === 'Earthbending') return 'earth';
+  if (training === 'Firebending') return 'fire';
+  if (training === 'Airbending') return 'air';
+  if (training === 'Weapons') return 'martial';
+  if (training === 'Technology') return 'tech';
+  return 'water';
+}
+
+function coerceApproach(value: unknown): TechniqueCategory {
+  return value === 'Defend & Maneuver' || value === 'Evade & Observe' || value === 'Advance & Attack'
+    ? value
+    : 'Advance & Attack';
+}
+
+function summarizeTechnique(text: string) {
+  const firstSentence = text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim();
+  return firstSentence && firstSentence.length <= 150
+    ? firstSentence
+    : `${text.slice(0, 118).trim()}${text.length > 118 ? '...' : ''}`;
+}
+
+function coerceAdvancedTechnique(
+  classData: AvatarClassData | null | undefined,
+  primaryTraining: PrimaryTraining,
+): Technique | null {
+  const raw =
+    classData?.advancedTechnique && typeof classData.advancedTechnique === 'object'
+      ? (classData.advancedTechnique as Record<string, unknown>)
+      : null;
+  if (!raw) return null;
+  const name = typeof raw.techniqueName === 'string' ? raw.techniqueName : '';
+  const description = typeof raw.text === 'string' ? raw.text : '';
+  if (!name || !description) return null;
+  return {
+    type: trainingToTechniqueType(primaryTraining),
+    approach: coerceApproach(raw.approach),
+    level: 'learned',
+    name,
+    summary: summarizeTechnique(description),
+    description,
+    classTechnique: true,
+  };
+}
+
+function applyClassDataToCharacter(
+  character: CharacterState,
+  classData: AvatarClassData | null | undefined,
+) {
+  const className = coerceClassName(classData, character.className);
+  const classMoves = coerceClassMoves(classData);
+  const customMoves = character.classMoves.filter((move) => move.custom);
+  const customOrBasicTechniques = character.techniques.filter(
+    (technique) => technique.custom || technique.type === 'basic' || !technique.classTechnique,
+  );
+  const advancedTechnique = coerceAdvancedTechnique(classData, character.primaryTraining);
+  return {
+    ...character,
+    className,
+    stats: coerceStartingStats(classData),
+    classMoves: [...classMoves, ...customMoves],
+    techniques: advancedTechnique
+      ? [
+          ...customOrBasicTechniques.filter(
+            (technique) => technique.name !== advancedTechnique.name || technique.custom,
+          ),
+          advancedTechnique,
+        ]
+      : customOrBasicTechniques,
+  };
+}
+
+function createRandomAvatarLegendsCharacter(classData?: AvatarClassData | null): CharacterState {
+  const primaryTraining = pickRandom(primaryTrainingOptions);
+  const generic: CharacterState = {
+    ...defaultCharacter,
+    name: pickRandom(randomNames),
+    pronouns: pickRandom(randomPronouns),
+    age: 14 + Math.floor(Math.random() * 8),
+    origin: pickRandom(randomOrigins),
+    primaryTraining,
+    backgrounds: {
+      [pickRandom(['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'])]: true,
+      [pickRandom(['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'])]: true,
+    },
+    conditions: {},
+    statuses: {},
+    fatigue: [false, false, false, false, false],
+    tempFatigue: [],
+    historyAnswers: {},
+    connections: [],
+    techniques: defaultBasicTechniques,
+    inventory: defaultCharacter.inventory,
+    notes: defaultCharacter.notes,
+  };
+  return applyClassDataToCharacter(generic, classData);
+}
+
+function createRandomAvatarLegendsBackendPayload(classData?: AvatarClassData | null) {
+  const character = createRandomAvatarLegendsCharacter(classData);
+  return {
+    schemaVersion: AVATAR_LEGENDS_SCHEMA_VERSION,
+    characterState: serializeAvatarLegendsCharacter(character),
+  };
+}
 
 /** Single source of truth for the active character. Every editable
  *  surface reads from / writes to this atom (often via a derived slice). */
@@ -968,6 +1081,7 @@ function ConvexCharacterSyncMount() {
     pendingSyncKeyPrefix: AVATAR_LEGENDS_PENDING_SYNC_KEY,
     selectCharacterEventName: AVATAR_LEGENDS_SELECT_CHARACTER_EVENT,
     describeCharacter: describeAvatarLegendsCharacter,
+    createInitialCharacter: createRandomAvatarLegendsCharacter,
   });
 
   // Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z = redo. Skip if focus is in
@@ -1033,6 +1147,7 @@ type MoveEntry = {
   bullets?: string[];
   /** Optional trailing paragraph that follows the bullet list. */
   trailing?: string;
+  custom?: boolean;
 };
 
 // Rulebook moves shared across every character — Basic + Balance are
@@ -1191,10 +1306,18 @@ function WatercolorBand({
   const bandFill = fill ?? deepInk;
   const edgePosition = bottom ? { top: 0 } : { bottom: 0 };
   const brushColor = borderColor ?? deepInk;
+  const gearOutlineColor =
+    brushBorder === 'gear' && brushColor === '#3f214d' ? '#4b2b5a' : brushColor;
   const brushHighlight = borderColor ? alpha(borderColor, 0.55) : alpha(deepInk, 0.55);
   const isWaterWave = brushBorder === 'wavy' && brushColor === water;
   const waveFillId = bottom ? 'water-wave-fill-bottom' : 'water-wave-fill-top';
   const waveLightFillId = bottom ? 'water-wave-light-fill-bottom' : 'water-wave-light-fill-top';
+  const technologyRightGearStrokeId = bottom
+    ? 'technology-right-gear-stroke-bottom'
+    : 'technology-right-gear-stroke-top';
+  const technologyLargeGearStrokeId = bottom
+    ? 'technology-large-gear-stroke-bottom'
+    : 'technology-large-gear-stroke-top';
   const waveFill = isWaterWave ? `url(#${waveFillId})` : alpha(brushColor, 0.82);
   const waveLightFill = isWaterWave ? `url(#${waveLightFillId})` : alpha(brushColor, 0.36);
   const wavyPath = bottom
@@ -1280,6 +1403,20 @@ function WatercolorBand({
             >
               <stop offset="0%" stopColor={bottom ? brushColor : '#173755'} stopOpacity={0.36} />
               <stop offset="100%" stopColor={bottom ? '#173755' : brushColor} stopOpacity={0.36} />
+            </linearGradient>
+          </defs>
+        ) : null}
+        {brushBorder === 'gear' ? (
+          <defs>
+            <linearGradient id={technologyRightGearStrokeId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={brushColor === '#3f214d' ? '#ffffff' : '#16091f'} />
+              {brushColor === '#3f214d' ? <stop offset="52%" stopColor="#24102f" /> : null}
+              <stop offset="100%" stopColor={brushColor === '#3f214d' ? '#18151b' : '#ffffff'} />
+            </linearGradient>
+            <linearGradient id={technologyLargeGearStrokeId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="52%" stopColor="#3c294c" />
+              <stop offset="100%" stopColor="#21072e" />
             </linearGradient>
           </defs>
         ) : null}
@@ -1434,13 +1571,15 @@ function WatercolorBand({
         ) : null}
         {brushBorder === 'gear' ? (
           <>
-            <rect
-              x={0}
-              y={bottom ? gearY + 6 : gearY - 8}
-              width={430}
-              height={2.5}
-              fill={alpha(brushColor, 0.58)}
-            />
+            {bottom ? (
+              <rect
+                x={0}
+                y={gearY + 6}
+                width={430}
+                height={2.5}
+                fill={alpha(brushColor, 0.58)}
+              />
+            ) : null}
             {[
               {
                 x: 28,
@@ -1502,28 +1641,67 @@ function WatercolorBand({
                     <path
                       d="M-4.8,-19.2 C-7.1,-19.2 -8.8,-17.6 -8.8,-15.5 L-8.8,-12.9 C-11.1,-12.2 -13.1,-11.3 -15.1,-10 L-17.1,-11.9 C-18.7,-13.4 -21.1,-13.3 -22.6,-11.8 L-25.6,-8.8 C-27.1,-7.2 -27.1,-4.7 -25.5,-3.2 L-23.7,-1.4 C-24.5,0.8 -24.9,3 -25.1,5.4 L-27.8,5.4 C-30,5.4 -31.6,7 -31.6,9.2 L-31.6,13.5 C-31.6,15.6 -30,17.2 -27.8,17.2 L-25,17.2 C-24.3,19.4 -23.3,21.5 -22,23.3 L-23.9,25.3 C-25.4,26.9 -25.4,29.3 -23.8,30.9 L-20.7,33.8 C-19.2,35.3 -16.8,35.2 -15.2,33.7 L-13.3,31.7 C-11.3,32.6 -9.2,33.2 -6.9,33.5 L-6.9,36.2 C-6.9,38.4 -5.2,40 -3.1,40 L1.2,40 C3.3,40 5,38.4 5,36.2 L5,33.4 C7.2,32.8 9.3,31.9 11.3,30.6 L13.3,32.5 C14.9,34 17.3,33.9 18.8,32.4 L21.8,29.3 C23.3,27.8 23.3,25.4 21.7,23.8 L19.8,21.9 C20.7,19.9 21.3,17.8 21.6,15.5 L24.3,15.5 C26.5,15.5 28.1,13.9 28.1,11.7 L28.1,7.4 C28.1,5.3 26.5,3.7 24.3,3.7 L21.6,3.7 C21.1,1.4 20.3,-0.8 19.1,-2.8 L21.1,-4.8 C22.6,-6.3 22.6,-8.8 21.1,-10.3 L18,-13.3 C16.5,-14.8 14.1,-14.8 12.5,-13.2 L10.5,-11.2 C8.5,-12.2 6.3,-12.9 4,-13.2 L4,-15.5 C4,-17.6 2.3,-19.2 0.2,-19.2 Z"
                       fill="none"
-                      stroke={alpha(brushColor, gear.opacity + 0.08)}
+                      stroke={
+                        index === 4
+                          ? brushColor === '#3f214d'
+                            ? `url(#${technologyRightGearStrokeId})`
+                            : '#ffffff'
+                          : brushColor === '#3f214d' && index === 2
+                            ? `url(#${technologyLargeGearStrokeId})`
+                          : alpha(
+                              brushColor === '#3f214d' && index === 2
+                                ? '#24102f'
+                                : brushColor === '#3f214d' && index === 3
+                                  ? '#ffffff'
+                                  : brushColor !== '#3f214d' && index === 2
+                                    ? '#c79aee'
+                                    : gearOutlineColor,
+                              gear.opacity + 0.08,
+                            )
+                      }
+                      strokeOpacity={
+                        index === 4
+                          ? gear.opacity + 0.08
+                          : undefined
+                      }
                       strokeWidth={1.55}
                       strokeLinejoin="round"
                       strokeLinecap="round"
                     />
                     {index === 2 ? (
                       <path
-                        d="M-0.8,3.7 C3.1,0.4 9.6,0.8 12.7,5.2 C17.4,11.8 13.3,21.1 5.1,22.4 C-5.3,24.1 -14.2,15.3 -12.9,4.8 C-11.4,-7.4 2.2,-14.9 13.1,-9.4 C26.2,-2.8 30.4,14.7 21.5,27 C11.4,41 -9.6,41.8 -21.4,29 C-34.7,14.6 -31,-9.2 -13.5,-18.4 C3.3,-27.2 25.5,-20.6 36.8,-4.5"
+                        d="M1.8,10 C2,10.7 1.9,11.4 1.5,12.2 C0.8,12.8 -0.1,13.3 -1.2,13.3 C-2.4,13 -3.5,12.2 -4.3,11.1 C-4.7,9.7 -4.6,8.1 -4,6.5 C-2.8,5.2 -1.2,4.3 0.7,3.9 C2.7,4.2 4.6,5.1 6.2,6.7 C7.2,8.8 7.5,11.1 7,13.6 C5.7,15.8 3.7,17.6 1.2,18.7 C-1.7,18.9 -4.5,18.2 -7.1,16.5 C-9.1,14 -10.2,11 -10.2,7.7 C-9.2,4.4 -7.2,1.6 -4.2,-0.5 C-0.7,-1.6 3.1,-1.5 6.7,-0.2 C9.8,2.3 12.1,5.7 13.1,9.7 C12.8,13.9 11.1,18 8.2,21.3"
                         fill="none"
-                        stroke={alpha('#ffffff', 0.94)}
+                        stroke={
+                          brushColor === '#3f214d'
+                            ? alpha('#16091f', 0.96)
+                            : alpha('#d8a6ff', 0.96)
+                        }
                         strokeWidth={2.15}
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        transform="translate(-0.8 4.5) scale(0.5)"
+                        transform="translate(-2.2 -0.8) translate(1.5 0) scale(-1.08 1.08) translate(-1.5 0)"
                       />
                     ) : (
                       <path
-                        d="M9.4,10 C9.4,3.9 1.5,0.4 -4,4.5 C-10.8,9.6 -8.2,19.6 0.2,19.6 C6.2,19.6 10.2,15.3 8.8,10.9 C7.7,7.5 2.9,6.9 0.6,9.4"
+                        d="M1.8,10 C2,10.7 1.9,11.4 1.5,12.2 C0.8,12.8 -0.1,13.3 -1.2,13.3 C-2.4,13 -3.5,12.2 -4.3,11.1 C-4.7,9.7 -4.6,8.1 -4,6.5 C-2.8,5.2 -1.2,4.3 0.7,3.9 C2.7,4.2 4.6,5.1 6.2,6.7 C7.2,8.8 7.5,11.1 7,13.6 C5.7,15.8 3.7,17.6 1.2,18.7 C-1.7,18.9 -4.5,18.2 -7.1,16.5 C-9.1,14 -10.2,11 -10.2,7.7 C-9.2,4.4 -7.2,1.6 -4.2,-0.5 C-0.7,-1.6 3.1,-1.5 6.7,-0.2 C9.8,2.3 12.1,5.7 13.1,9.7 C12.8,13.9 11.1,18 8.2,21.3"
                         fill="none"
-                        stroke={alpha(brushColor, gear.opacity)}
+                        stroke={
+                          index === 3
+                            ? alpha('#f0edf2', 0.92)
+                            : index === 4
+                              ? brushColor === '#3f214d'
+                                ? '#ffffff'
+                                : '#ddd5e4'
+                              : alpha(brushColor, gear.opacity)
+                        }
+                        strokeOpacity={index === 4 ? gear.opacity : undefined}
                         strokeWidth={1.6}
                         strokeLinecap="round"
+                        strokeLinejoin="round"
+                        transform={
+                          index === 3 ? 'translate(-0.4 -1) rotate(90 0 10)' : 'translate(-1.4 0)'
+                        }
                       />
                     )}
                   </Box>
@@ -2055,7 +2233,15 @@ function PrimaryTrainingSelect() {
         aria-label="Primary training"
         onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
           const next = event.target.value as PrimaryTraining;
-          setCharacter((prev) => ({ ...prev, primaryTraining: next }));
+          setCharacter((prev) => ({
+            ...prev,
+            primaryTraining: next,
+            techniques: prev.techniques.map((technique) =>
+              technique.classTechnique
+                ? { ...technique, type: trainingToTechniqueType(next) }
+                : technique,
+            ),
+          }));
           window.dispatchEvent(
             new CustomEvent('avatar-legends-primary-training-change', { detail: next }),
           );
@@ -2097,6 +2283,51 @@ function PrimaryTrainingSelect() {
           </option>
         ))}
       </Box>
+    </Stack>
+  );
+}
+
+function CharacterEditField({
+  label,
+  value,
+  type = 'text',
+  onChange,
+}: {
+  label: string;
+  value: string | number;
+  type?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Stack spacing={0.35}>
+      <Typography
+        sx={{
+          color: alpha(brown, 0.76),
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.56rem',
+          fontWeight: 900,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Typography>
+      <InputBase
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        sx={{
+          minHeight: 34,
+          borderRadius: '4px',
+          border: `1px solid ${alpha(accent, 0.72)}`,
+          bgcolor: alpha(parchmentLight, 0.72),
+          color: ink,
+          px: 1,
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontSize: '0.86rem',
+          '& input': { p: 0 },
+        }}
+      />
     </Stack>
   );
 }
@@ -2907,10 +3138,21 @@ function resolveAvatarHistoryQuestions(classData: AvatarClassData | null | undef
 }
 
 function CharacterPane() {
-  const character = useAtomValue(characterStateAtom);
+  const [character, setCharacter] = useAtom(characterStateAtom);
+  const [editingIdentity, setEditingIdentity] = useState(false);
+  const [identityDraft, setIdentityDraft] = useState({
+    name: character.name,
+    pronouns: character.pronouns,
+    age: String(character.age),
+    origin: character.origin,
+    className: character.className,
+  });
   const avatarClass = useQuery(api.classes.getAvatarLegendsClassByName, {
     className: character.className,
   }) as AvatarClassData | null | undefined;
+  const avatarClasses = useQuery(api.classes.listAvatarLegendsClasses) as
+    | Array<{ class?: AvatarClassData }>
+    | undefined;
   const classTrait = resolveAvatarClassTrait(avatarClass);
   const historyQuestions = resolveAvatarHistoryQuestions(avatarClass);
   // Age is now a plain number on the character record; render as
@@ -2920,6 +3162,57 @@ function CharacterPane() {
       ? `Age ${character.age}`
       : '';
   const facts = [character.pronouns, ageLabel, character.origin].filter(Boolean);
+  const classOptions =
+    avatarClasses
+      ?.map((item) => item.class)
+      .filter((item): item is AvatarClassData => Boolean(item))
+      .filter((item) => typeof item.className === 'string')
+      .sort((a, b) => String(a.className).localeCompare(String(b.className))) ?? [];
+
+  useEffect(() => {
+    if (!avatarClass) return;
+    const hasClassMoves = character.classMoves.some((move) => !move.custom);
+    const hasClassTechnique = character.techniques.some((technique) => technique.classTechnique);
+    if (hasClassMoves && hasClassTechnique) return;
+    setCharacter((prev) => {
+      const hydrated = applyClassDataToCharacter(prev, avatarClass);
+      return {
+        ...prev,
+        classMoves: hasClassMoves ? prev.classMoves : hydrated.classMoves,
+        techniques: hasClassTechnique ? prev.techniques : hydrated.techniques,
+      };
+    });
+  }, [avatarClass, character.classMoves, character.techniques, setCharacter]);
+
+  function beginIdentityEdit() {
+    setIdentityDraft({
+      name: character.name,
+      pronouns: character.pronouns,
+      age: String(character.age),
+      origin: character.origin,
+      className: character.className,
+    });
+    setEditingIdentity(true);
+  }
+
+  function saveIdentityEdit() {
+    const selectedClass = classOptions.find((item) => item.className === identityDraft.className);
+    const age = Number.parseInt(identityDraft.age, 10);
+    setCharacter((prev) => {
+      const next = {
+        ...prev,
+        name: identityDraft.name.trim() || prev.name,
+        pronouns: identityDraft.pronouns.trim() || prev.pronouns,
+        age: Number.isFinite(age) ? Math.max(1, Math.min(120, age)) : prev.age,
+        origin: identityDraft.origin.trim() || prev.origin,
+      };
+      return selectedClass
+        ? applyClassDataToCharacter(next, selectedClass)
+        : { ...next, className: identityDraft.className };
+    });
+    setEditingIdentity(false);
+  }
+
   return (
     <Stack spacing={1.1}>
       {/* The main Character card is the only `major` (double-line) panel
@@ -2928,18 +3221,139 @@ function CharacterPane() {
         {/* Image-free header: large serif name centered, with a flourish
             underline of the playbook and the character's facts below. */}
         <Stack alignItems="center" spacing={0.55} sx={{ py: 0.8, px: 0.6 }}>
-          <Typography
-            sx={{
-              color: ink,
-              fontFamily: '"IM Fell English", Georgia, serif',
-              fontSize: '1.85rem',
-              fontWeight: 700,
-              lineHeight: 1,
-              textAlign: 'center',
-            }}
-          >
-            {character.name}
-          </Typography>
+          {editingIdentity ? (
+            <Stack spacing={0.8} sx={{ width: '100%' }}>
+              <CharacterEditField
+                label="Name"
+                value={identityDraft.name}
+                onChange={(value) => setIdentityDraft((prev) => ({ ...prev, name: value }))}
+              />
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 72px', gap: 0.8 }}>
+                <CharacterEditField
+                  label="Pronouns"
+                  value={identityDraft.pronouns}
+                  onChange={(value) =>
+                    setIdentityDraft((prev) => ({ ...prev, pronouns: value }))
+                  }
+                />
+                <CharacterEditField
+                  label="Age"
+                  type="number"
+                  value={identityDraft.age}
+                  onChange={(value) => setIdentityDraft((prev) => ({ ...prev, age: value }))}
+                />
+              </Box>
+              <CharacterEditField
+                label="Origin"
+                value={identityDraft.origin}
+                onChange={(value) => setIdentityDraft((prev) => ({ ...prev, origin: value }))}
+              />
+              <Stack spacing={0.35}>
+                <Typography
+                  sx={{
+                    color: alpha(brown, 0.76),
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.56rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Class
+                </Typography>
+                <Box
+                  component="select"
+                  value={identityDraft.className}
+                  onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                    setIdentityDraft((prev) => ({ ...prev, className: event.target.value }))
+                  }
+                  sx={{
+                    minHeight: 36,
+                    borderRadius: '4px',
+                    border: `1px solid ${alpha(accent, 0.72)}`,
+                    bgcolor: alpha(parchmentLight, 0.72),
+                    color: ink,
+                    px: 1,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.74rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {classOptions.length === 0 ? (
+                    <option value={identityDraft.className}>{identityDraft.className}</option>
+                  ) : null}
+                  {classOptions.map((item) => (
+                    <option key={String(item.className)} value={String(item.className)}>
+                      {String(item.className)}
+                    </option>
+                  ))}
+                </Box>
+              </Stack>
+              <Stack direction="row" gap={1}>
+                <Button
+                  onClick={() => setEditingIdentity(false)}
+                  sx={{
+                    flex: 1,
+                    border: `1px solid ${border}`,
+                    color: brown,
+                    textTransform: 'none',
+                    fontWeight: 800,
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={saveIdentityEdit}
+                  variant="contained"
+                  sx={{
+                    flex: 1,
+                    bgcolor: deepInk,
+                    color: chromeText,
+                    textTransform: 'none',
+                    fontWeight: 800,
+                    '&:hover': { bgcolor: deepInk },
+                  }}
+                >
+                  Save
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <>
+              <Stack direction="row" alignItems="center" gap={0.8}>
+                <Typography
+                  sx={{
+                    color: ink,
+                    fontFamily: '"IM Fell English", Georgia, serif',
+                    fontSize: '1.85rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    textAlign: 'center',
+                  }}
+                >
+                  {character.name}
+                </Typography>
+                <Button
+                  onClick={beginIdentityEdit}
+                  startIcon={<Pencil size={14} />}
+                  sx={{
+                    minWidth: 0,
+                    minHeight: 28,
+                    px: 0.9,
+                    borderRadius: '4px',
+                    color: brown,
+                    border: `1px solid ${alpha(border, 0.75)}`,
+                    textTransform: 'none',
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    '& .MuiButton-startIcon': { mr: 0.4 },
+                  }}
+                >
+                  Edit
+                </Button>
+              </Stack>
           <Stack direction="row" alignItems="center" gap={0.7}>
             <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
             <MoveDiamond color={accent} size={9} />
@@ -2987,6 +3401,8 @@ function CharacterPane() {
             ))}
           </Stack>
           <PrimaryTrainingSelect />
+            </>
+          )}
         </Stack>
       </Panel>
 
@@ -3047,6 +3463,22 @@ function CharacterPane() {
 
       <Panel>
         <ClassTraitAccordion title={classTrait.title}>{classTrait.body}</ClassTraitAccordion>
+      </Panel>
+
+      <Panel>
+        <ClassTraitAccordion title="Moment of Balance">
+          {typeof avatarClass?.momentOfBalance === 'string'
+            ? avatarClass.momentOfBalance
+            : 'Your moment of balance will appear here once class data is available.'}
+        </ClassTraitAccordion>
+      </Panel>
+
+      <Panel>
+        <ClassTraitAccordion title="Growth">
+          {typeof avatarClass?.growthQuestion === 'string'
+            ? avatarClass.growthQuestion
+            : 'Your class growth question will appear here once class data is available.'}
+        </ClassTraitAccordion>
       </Panel>
 
       <Panel>
@@ -3142,8 +3574,27 @@ function FilterTabs({
  * title + disclosure carat. Expanded: appends the full move body text,
  * optional bullets list, and optional trailing paragraph.
  */
-function MoveAccordion({ entry }: { entry: MoveEntry }) {
+function MoveAccordion({
+  entry,
+  onUpdate,
+  onDelete,
+}: {
+  entry: MoveEntry;
+  onUpdate?: (entry: MoveEntry) => void;
+  onDelete?: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(entry.title);
+  const [draftBody, setDraftBody] = useState(entry.body);
+
+  function saveEdit() {
+    const title = draftTitle.trim();
+    if (!title) return;
+    onUpdate?.({ ...entry, title, body: draftBody.trim() || entry.body, custom: true });
+    setEditing(false);
+  }
+
   return (
     // Moves cards use the plain rectangular Panel variant — no notches.
     <Panel noNotch>
@@ -3171,20 +3622,40 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
           {/* Moves diamond uses the muted-gold bookAccent so it reads
               as the rulebook chapter-heading color in both themes. */}
           <MoveDiamond color={bookAccent} size={18} />
-          <Typography
-            sx={{
-              flex: 1,
-              color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.92rem',
-              fontWeight: 900,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              lineHeight: 1.1,
-            }}
-          >
-            {entry.title}
-          </Typography>
+          {editing ? (
+            <InputBase
+              value={draftTitle}
+              autoFocus
+              onClick={(event) => event.stopPropagation()}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              sx={{
+                flex: 1,
+                color: ink,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.92rem',
+                fontWeight: 900,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                lineHeight: 1.1,
+                '& input': { p: 0 },
+              }}
+            />
+          ) : (
+            <Typography
+              sx={{
+                flex: 1,
+                color: ink,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.92rem',
+                fontWeight: 900,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                lineHeight: 1.1,
+              }}
+            >
+              {entry.title}
+            </Typography>
+          )}
           <Box
             sx={{
               transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -3206,19 +3677,38 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
                 background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.6)} 12%, ${alpha(accent, 0.6)} 88%, transparent 100%)`,
               }}
             />
-            <Typography
-              sx={{
-                color: brown,
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.86rem',
-                lineHeight: 1.5,
-                pt: 2,
-                px: 2,
-                pb: 2,
-              }}
-            >
-              {entry.body}
-            </Typography>
+            {editing ? (
+              <InputBase
+                value={draftBody}
+                multiline
+                minRows={4}
+                onChange={(event) => setDraftBody(event.target.value)}
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.86rem',
+                  lineHeight: 1.5,
+                  pt: 2,
+                  px: 2,
+                  pb: 2,
+                  '& textarea': { p: 0 },
+                }}
+              />
+            ) : (
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.86rem',
+                  lineHeight: 1.5,
+                  pt: 2,
+                  px: 2,
+                  pb: 2,
+                }}
+              >
+                {entry.body}
+              </Typography>
+            )}
             {entry.bullets ? (
               <Box component="ul" sx={{ m: 0, pl: 2.2 }}>
                 {entry.bullets.map((bullet) => (
@@ -3258,6 +3748,48 @@ function MoveAccordion({ entry }: { entry: MoveEntry }) {
             ) : null}
           </>
         ) : null}
+        {entry.custom ? (
+          <Stack direction="row" gap={1} justifyContent="flex-end">
+            {editing ? (
+              <>
+                <Button
+                  onClick={() => setEditing(false)}
+                  sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={saveEdit}
+                  sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => {
+                    setDraftTitle(entry.title);
+                    setDraftBody(entry.body);
+                    setOpen(true);
+                    setEditing(true);
+                  }}
+                  startIcon={<Pencil size={14} />}
+                  sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={onDelete}
+                  startIcon={<Trash2 size={14} />}
+                  sx={{ color: passionRed, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Delete
+                </Button>
+              </>
+            )}
+          </Stack>
+        ) : null}
       </Stack>
     </Panel>
   );
@@ -3268,7 +3800,7 @@ function MovesPane() {
   // Basic + Balance lists come from the rulebook constants; class
   // moves come from the active character record so each character
   // can carry their own class-specific moves.
-  const character = useAtomValue(characterStateAtom);
+  const [character, setCharacter] = useAtom(characterStateAtom);
   const visibleMoves: MoveEntry[] =
     subTab === 0
       ? movesByCategory.basic
@@ -3283,8 +3815,53 @@ function MovesPane() {
         onChange={setSubTab}
       />
       {visibleMoves.map((entry) => (
-        <MoveAccordion key={entry.title} entry={entry} />
+        <MoveAccordion
+          key={entry.title}
+          entry={entry}
+          onUpdate={
+            entry.custom
+              ? (next) =>
+                  setCharacter((prev) => ({
+                    ...prev,
+                    classMoves: prev.classMoves.map((move) => (move === entry ? next : move)),
+                  }))
+              : undefined
+          }
+          onDelete={
+            entry.custom
+              ? () =>
+                  setCharacter((prev) => ({
+                    ...prev,
+                    classMoves: prev.classMoves.filter((move) => move !== entry),
+                  }))
+              : undefined
+          }
+        />
       ))}
+      {subTab === 2 ? (
+        <Button
+          onClick={() =>
+            setCharacter((prev) => ({
+              ...prev,
+              classMoves: [
+                ...prev.classMoves,
+                { title: 'Custom Move', body: 'Describe this custom move.', custom: true },
+              ],
+            }))
+          }
+          startIcon={<Plus size={16} />}
+          sx={{
+            minHeight: 46,
+            borderRadius: '4px',
+            border: `1px dashed ${alpha(border, 0.85)}`,
+            color: ink,
+            textTransform: 'none',
+            fontWeight: 800,
+          }}
+        >
+          Add custom move
+        </Button>
+      ) : null}
     </Stack>
   );
 }
@@ -3303,6 +3880,9 @@ function TechniqueAccordion({
   techColor,
   frameColor,
   isBasic = false,
+  custom = false,
+  onUpdate,
+  onDelete,
 }: {
   approach: TechniqueCategory;
   name: string;
@@ -3316,10 +3896,26 @@ function TechniqueAccordion({
    * filter selector) instead of the element image badge.
    */
   isBasic?: boolean;
+  custom?: boolean;
+  onUpdate?: (next: Pick<Technique, 'approach' | 'name' | 'summary' | 'description'>) => void;
+  onDelete?: () => void;
 }) {
   const { isDarkMode } = useThemeMode();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({ approach, name, summary, description });
   const categoryColor = techniqueCategoryColor(approach, isDarkMode);
+  function saveEdit() {
+    const nextName = draft.name.trim();
+    if (!nextName) return;
+    onUpdate?.({
+      approach: draft.approach,
+      name: nextName,
+      summary: draft.summary.trim(),
+      description: draft.description.trim(),
+    });
+    setEditing(false);
+  }
   return (
     <Panel>
       <Stack spacing={0.5}>
@@ -3371,42 +3967,107 @@ function TechniqueAccordion({
           )}
           <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
             {/* Approach eyebrow — color keyed to the technique's approach. */}
-            <Typography
-              sx={{
-                color: categoryColor,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.58rem',
-                fontWeight: 900,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                lineHeight: 1,
-              }}
-            >
-              {approach}
-            </Typography>
-            <Typography
-              sx={{
-                color: ink,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.92rem',
-                fontWeight: 900,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                lineHeight: 1.1,
-              }}
-            >
-              {name}
-            </Typography>
-            <Typography
-              sx={{
-                color: brown,
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.82rem',
-                lineHeight: 1.5,
-              }}
-            >
-              {summary}
-            </Typography>
+            {editing ? (
+              <>
+                <Box
+                  component="select"
+                  value={draft.approach}
+                  onClick={(event: React.MouseEvent<HTMLSelectElement>) => event.stopPropagation()}
+                  onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      approach: event.target.value as TechniqueCategory,
+                    }))
+                  }
+                  sx={{
+                    width: '100%',
+                    minHeight: 26,
+                    border: `1px solid ${alpha(border, 0.75)}`,
+                    bgcolor: alpha(parchmentLight, 0.72),
+                    color: categoryColor,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.58rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  {(['Advance & Attack', 'Defend & Maneuver', 'Evade & Observe'] as const).map(
+                    (option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ),
+                  )}
+                </Box>
+                <InputBase
+                  value={draft.name}
+                  onClick={(event) => event.stopPropagation()}
+                  onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
+                  sx={{
+                    color: ink,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.92rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    '& input': { p: 0 },
+                  }}
+                />
+                <InputBase
+                  value={draft.summary}
+                  onClick={(event) => event.stopPropagation()}
+                  onChange={(event) =>
+                    setDraft((prev) => ({ ...prev, summary: event.target.value }))
+                  }
+                  sx={{
+                    color: brown,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.82rem',
+                    lineHeight: 1.5,
+                    '& input': { p: 0 },
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <Typography
+                  sx={{
+                    color: categoryColor,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.58rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1,
+                  }}
+                >
+                  {approach}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: ink,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.92rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {name}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: brown,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.82rem',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {summary}
+                </Typography>
+              </>
+            )}
           </Stack>
           <Stack alignItems="center" spacing={0.25} sx={{ pt: '2px' }}>
             <Typography
@@ -3456,20 +4117,82 @@ function TechniqueAccordion({
                 background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.6)} 12%, ${alpha(accent, 0.6)} 88%, transparent 100%)`,
               }}
             />
-            <Typography
-              sx={{
-                color: brown,
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.86rem',
-                lineHeight: 1.5,
-                pt: 2,
-                px: 2,
-                pb: 2,
-              }}
-            >
-              {description}
-            </Typography>
+            {editing ? (
+              <InputBase
+                value={draft.description}
+                multiline
+                minRows={4}
+                onChange={(event) =>
+                  setDraft((prev) => ({ ...prev, description: event.target.value }))
+                }
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.86rem',
+                  lineHeight: 1.5,
+                  pt: 2,
+                  px: 2,
+                  pb: 2,
+                  '& textarea': { p: 0 },
+                }}
+              />
+            ) : (
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.86rem',
+                  lineHeight: 1.5,
+                  pt: 2,
+                  px: 2,
+                  pb: 2,
+                }}
+              >
+                {description}
+              </Typography>
+            )}
           </>
+        ) : null}
+        {custom ? (
+          <Stack direction="row" gap={1} justifyContent="flex-end">
+            {editing ? (
+              <>
+                <Button
+                  onClick={() => setEditing(false)}
+                  sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={saveEdit}
+                  sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => {
+                    setDraft({ approach, name, summary, description });
+                    setOpen(true);
+                    setEditing(true);
+                  }}
+                  startIcon={<Pencil size={14} />}
+                  sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={onDelete}
+                  startIcon={<Trash2 size={14} />}
+                  sx={{ color: passionRed, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Delete
+                </Button>
+              </>
+            )}
+          </Stack>
         ) : null}
       </Stack>
     </Panel>
@@ -3702,6 +4425,27 @@ function CombatPane() {
                   name={tech.name}
                   summary={tech.summary}
                   description={tech.description}
+                  custom={tech.custom}
+                  onUpdate={
+                    tech.custom
+                      ? (next) =>
+                          setCharacterState((prev) => ({
+                            ...prev,
+                            techniques: prev.techniques.map((item) =>
+                              item === tech ? { ...item, ...next, custom: true } : item,
+                            ),
+                          }))
+                      : undefined
+                  }
+                  onDelete={
+                    tech.custom
+                      ? () =>
+                          setCharacterState((prev) => ({
+                            ...prev,
+                            techniques: prev.techniques.filter((item) => item !== tech),
+                          }))
+                      : undefined
+                  }
                   isBasic={isBasic}
                   // src is only used when isBasic=false (image badge path).
                   src={visual.src}
@@ -3729,6 +4473,42 @@ function CombatPane() {
                 </Typography>
               </Panel>
             ) : null}
+            <Button
+              onClick={() =>
+                setCharacterState((prev) => {
+                  const nextType =
+                    elementFilter !== 'all' && elementFilter !== 'basic'
+                      ? elementFilter
+                      : trainingToTechniqueType(prev.primaryTraining);
+                  return {
+                    ...prev,
+                    techniques: [
+                      ...prev.techniques,
+                      {
+                        type: nextType,
+                        approach: 'Advance & Attack',
+                        level: 'learned',
+                        name: 'Custom Technique',
+                        summary: 'Add a short technique summary.',
+                        description: 'Describe how this custom technique works.',
+                        custom: true,
+                      },
+                    ],
+                  };
+                })
+              }
+              startIcon={<Plus size={16} />}
+              sx={{
+                minHeight: 46,
+                borderRadius: '4px',
+                border: `1px dashed ${alpha(border, 0.85)}`,
+                color: ink,
+                textTransform: 'none',
+                fontWeight: 800,
+              }}
+            >
+              Add custom technique
+            </Button>
           </>
         ) : null}
 
@@ -4948,7 +5728,14 @@ function AvatarLegends() {
                   </Typography>
                 </Stack>
               )}
-              <AccountSettings gameSystem="avatar-legends" tokensOverride={accountTokens} />
+              <AccountSettings
+                gameSystem="avatar-legends"
+                tokensOverride={accountTokens}
+                createCharacterPayload={({ avatarClass }) =>
+                  createRandomAvatarLegendsBackendPayload(avatarClass as AvatarClassData | null)
+                }
+                selectCharacterEventName={AVATAR_LEGENDS_SELECT_CHARACTER_EVENT}
+              />
             </Box>
 
             {/* Active-tab title bar. In light mode this band carries the
