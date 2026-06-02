@@ -385,7 +385,7 @@ function SwipeableSkillRow({
               alignItems: 'center',
               px: 1.2,
               height: 46,
-              bgcolor: rowBg,
+              bgcolor: isOpen ? fabUTokens.color.brand : rowBg,
               boxShadow: `6px 0 12px rgba(0,0,0,${(swipeFraction * 0.28).toFixed(3)})`,
               position: 'relative',
               zIndex: 1,

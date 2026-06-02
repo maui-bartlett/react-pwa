@@ -35,7 +35,7 @@ import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
-import elementMartial from './assets/weapons-symbol.png';
+import elementWeapons from './assets/weapons-symbol.png';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -398,11 +398,11 @@ function applyAvatarPalette(isDarkMode: boolean, primaryTraining: PrimaryTrainin
   bookAccent = next.bookAccent;
   uiPrimary =
     primaryTraining === 'Earthbending'
-      ? elementFilterFrames.earth
+      ? elementFilterFrames.earthbending
       : primaryTraining === 'Firebending'
         ? fire
         : primaryTraining === 'Airbending'
-          ? elementFilterFrames.air
+          ? elementFilterFrames.airbending
           : primaryTraining === 'Weapons'
             ? '#4a5563'
             : primaryTraining === 'Technology'
@@ -435,17 +435,19 @@ const water = '#4a7fa8';
 const earth = '#7d8c5a';
 const fire = '#a8413a';
 const air = '#a3bbc4';
-const martial = '#3d3d4a';
+const weapons = '#3d3d4a';
 const tech = '#7a5d8a';
 const darkStatWater = '#6fa9d6';
 const darkStatEarth = '#a3ba72';
 const elementFilterFrames: Record<Exclude<TechniqueElementFilter, 'all' | 'basic'>, string> = {
-  water,
-  earth: '#6f8f4e',
-  fire,
-  air: '#d4b74b',
-  martial: '#0b1018',
-  tech,
+  waterbending: water,
+  earthbending: '#6f8f4e',
+  firebending: fire,
+  airbending: '#d4b74b',
+  weapons: '#0b1018',
+  technology: tech,
+  universal: '#173755',
+  group: '#5b5368',
 };
 const primaryTrainingOptions: PrimaryTraining[] = [
   'Waterbending',
@@ -483,7 +485,7 @@ const primaryTrainingThemes: Record<
   },
   Earthbending: {
     bodyWash: `
-      radial-gradient(circle at 28% 20%, ${alpha(elementFilterFrames.earth, 0.38)} 0%, transparent 68%),
+      radial-gradient(circle at 28% 20%, ${alpha(elementFilterFrames.earthbending, 0.38)} 0%, transparent 68%),
       radial-gradient(circle at 78% 72%, ${alpha('#9cab70', 0.32)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(232, 238, 225, 0.46), rgba(218, 229, 211, 0.4))
     `,
@@ -509,13 +511,13 @@ const primaryTrainingThemes: Record<
   },
   Airbending: {
     bodyWash: `
-      radial-gradient(circle at 28% 20%, ${alpha(elementFilterFrames.air, 0.42)} 0%, transparent 68%),
+      radial-gradient(circle at 28% 20%, ${alpha(elementFilterFrames.airbending, 0.42)} 0%, transparent 68%),
       radial-gradient(circle at 78% 72%, ${alpha('#e2cc68', 0.28)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(243, 239, 220, 0.5), rgba(231, 232, 213, 0.4))
     `,
     chromeColor: '#544821',
     chromeFill: 'linear-gradient(180deg, #544821 0%, #332b13 100%)',
-    headerBorder: elementFilterFrames.air,
+    headerBorder: elementFilterFrames.airbending,
     footerBorder: '#e0c75f',
     pageBg: { dark: '#544821', light: '#544821' },
     brushBorder: 'wind',
@@ -526,11 +528,11 @@ const primaryTrainingThemes: Record<
       radial-gradient(circle at 78% 72%, ${alpha('#515c69', 0.3)} 0%, transparent 64%),
       linear-gradient(135deg, rgba(224, 229, 234, 0.42), rgba(210, 217, 224, 0.36))
     `,
-    chromeColor: elementFilterFrames.martial,
-    chromeFill: `linear-gradient(180deg, ${elementFilterFrames.martial} 0%, #030507 100%)`,
+    chromeColor: elementFilterFrames.weapons,
+    chromeFill: `linear-gradient(180deg, ${elementFilterFrames.weapons} 0%, #030507 100%)`,
     headerBorder: '#4a5563',
     footerBorder: '#5c6674',
-    pageBg: { dark: elementFilterFrames.martial, light: elementFilterFrames.martial },
+    pageBg: { dark: elementFilterFrames.weapons, light: elementFilterFrames.weapons },
     brushBorder: 'blade',
   },
   Technology: {
@@ -580,7 +582,16 @@ const tabs: TabConfig[] = [
 
 // Technique vocabulary (rulebook-wide). Used by the technique list on
 // characterStateAtom + by the element/level filter atoms below.
-type TechniqueElement = 'water' | 'earth' | 'fire' | 'air' | 'martial' | 'tech' | 'basic';
+type TechniqueElement =
+  | 'waterbending'
+  | 'earthbending'
+  | 'firebending'
+  | 'airbending'
+  | 'weapons'
+  | 'technology'
+  | 'universal'
+  | 'group'
+  | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
 
@@ -601,7 +612,8 @@ const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 type Connection = { id?: string; name: string; role: string; note: string };
 type JournalEntry = { type: string; name: string; description: string };
 type Technique = {
-  /** Elemental category (water / earth / fire / air / martial / tech /
+  /** Elemental category (waterbending / earthbending / firebending /
+   *  airbending / weapons / technology / universal / group /
    *  basic). Renamed from `element` -> `type` to keep the AL technique
    *  vocabulary aligned with the rulebook layout. */
   type: TechniqueElement;
@@ -613,6 +625,10 @@ type Technique = {
   id?: string;
   custom?: boolean;
   classTechnique?: boolean;
+};
+type CanonTechnique = Omit<Technique, 'level' | 'id' | 'custom' | 'classTechnique'> & {
+  rare?: boolean;
+  tags?: string[];
 };
 type BalanceState = {
   left: Record<string, number>;
@@ -683,6 +699,43 @@ const defaultBasicTechniques: Technique[] = [
   },
 ];
 const defaultBalancePrinciples = ['Tradition', 'Progress'] as const;
+
+function normalizeTechniqueType(value: unknown): TechniqueElement {
+  if (value === 'water' || value === 'waterbending') return 'waterbending';
+  if (value === 'earth' || value === 'earthbending') return 'earthbending';
+  if (value === 'fire' || value === 'firebending') return 'firebending';
+  if (value === 'air' || value === 'airbending') return 'airbending';
+  if (value === 'martial' || value === 'weapons') return 'weapons';
+  if (value === 'tech' || value === 'technology') return 'technology';
+  if (value === 'universal') return 'universal';
+  if (value === 'group') return 'group';
+  return 'basic';
+}
+
+function coerceCanonTechnique(value: unknown): CanonTechnique | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (
+    typeof candidate.approach !== 'string' ||
+    typeof candidate.name !== 'string' ||
+    typeof candidate.summary !== 'string' ||
+    typeof candidate.description !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    type: normalizeTechniqueType(candidate.type),
+    approach: coerceApproach(candidate.approach),
+    name: candidate.name,
+    summary: candidate.summary,
+    description: candidate.description,
+    rare: typeof candidate.rare === 'boolean' ? candidate.rare : undefined,
+    tags: Array.isArray(candidate.tags)
+      ? candidate.tags.filter((tag): tag is string => typeof tag === 'string')
+      : undefined,
+  };
+}
 
 function createBalanceState(
   leftPrinciple: string = defaultBalancePrinciples[0],
@@ -855,12 +908,12 @@ function coerceClassMoves(classData: AvatarClassData | null | undefined): MoveEn
 }
 
 function trainingToTechniqueType(training: PrimaryTraining): TechniqueElement {
-  if (training === 'Earthbending') return 'earth';
-  if (training === 'Firebending') return 'fire';
-  if (training === 'Airbending') return 'air';
-  if (training === 'Weapons') return 'martial';
-  if (training === 'Technology') return 'tech';
-  return 'water';
+  if (training === 'Earthbending') return 'earthbending';
+  if (training === 'Firebending') return 'firebending';
+  if (training === 'Airbending') return 'airbending';
+  if (training === 'Weapons') return 'weapons';
+  if (training === 'Technology') return 'technology';
+  return 'waterbending';
 }
 
 function coerceApproach(value: unknown): TechniqueCategory {
@@ -1033,9 +1086,9 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
         const legacyElement = (tech as { element?: unknown }).element;
         const nextType =
           typeof tech.type === 'string'
-            ? (tech.type as TechniqueElement)
+            ? normalizeTechniqueType(tech.type)
             : typeof legacyElement === 'string'
-              ? (legacyElement as TechniqueElement)
+              ? normalizeTechniqueType(legacyElement)
               : 'basic';
         // Migrate v2→v3: rename category→approach, title→name, body→description
         const nextName =
@@ -1336,16 +1389,21 @@ function techniqueElementVisual(type: TechniqueElement): {
   frameColor?: string;
   src: string;
 } {
-  if (type === 'earth')
-    return { color: earth, frameColor: elementFilterFrames.earth, src: elementEarth };
-  if (type === 'fire')
-    return { color: fire, frameColor: elementFilterFrames.fire, src: elementFire };
-  if (type === 'air') return { color: air, frameColor: elementFilterFrames.air, src: elementAir };
-  if (type === 'martial')
-    return { color: martial, frameColor: elementFilterFrames.martial, src: elementMartial };
-  if (type === 'tech')
-    return { color: tech, frameColor: elementFilterFrames.tech, src: elementTech };
-  return { color: water, frameColor: elementFilterFrames.water, src: elementWater };
+  if (type === 'earthbending')
+    return { color: earth, frameColor: elementFilterFrames.earthbending, src: elementEarth };
+  if (type === 'firebending')
+    return { color: fire, frameColor: elementFilterFrames.firebending, src: elementFire };
+  if (type === 'airbending')
+    return { color: air, frameColor: elementFilterFrames.airbending, src: elementAir };
+  if (type === 'weapons')
+    return { color: weapons, frameColor: elementFilterFrames.weapons, src: elementWeapons };
+  if (type === 'technology')
+    return { color: tech, frameColor: elementFilterFrames.technology, src: elementTech };
+  if (type === 'universal')
+    return { color: ink, frameColor: elementFilterFrames.universal, src: elementWater };
+  if (type === 'group')
+    return { color: brown, frameColor: elementFilterFrames.group, src: elementWeapons };
+  return { color: water, frameColor: elementFilterFrames.waterbending, src: elementWater };
 }
 
 function getMarkedFatigueCount(text: string) {
@@ -3275,6 +3333,171 @@ function AddListCard({ label, onClick }: { label: string; onClick: () => void })
   );
 }
 
+function TechniqueAddCard({
+  typeOptions,
+  selectedKind,
+  selectedType,
+  selectedTechniqueName,
+  canonTechniques,
+  canonLoading,
+  onSelectKind,
+  onSelectType,
+  onSelectTechniqueName,
+  onAddCanon,
+  onCancel,
+}: {
+  typeOptions: Array<{ key: TechniqueElement; label: string }>;
+  selectedKind: 'custom' | 'canon' | null;
+  selectedType: TechniqueElement | '';
+  selectedTechniqueName: string;
+  canonTechniques: CanonTechnique[];
+  canonLoading: boolean;
+  onSelectKind: (kind: 'custom' | 'canon') => void;
+  onSelectType: (type: TechniqueElement | '') => void;
+  onSelectTechniqueName: (name: string) => void;
+  onAddCanon: () => void;
+  onCancel: () => void;
+}) {
+  const selectSx = {
+    minHeight: 40,
+    borderRadius: '4px',
+    border: `1px solid ${alpha(accent, 0.72)}`,
+    bgcolor: alpha(parchmentLight, 0.72),
+    color: ink,
+    px: 1,
+    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+    fontSize: '0.76rem',
+    fontWeight: 900,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+  };
+
+  return (
+    <Panel ornament={false}>
+      <Stack spacing={1.2}>
+        <Typography
+          sx={{
+            color: ink,
+            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+            fontSize: '0.82rem',
+            fontWeight: 900,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Add Technique
+        </Typography>
+        <Stack direction="row" gap={1}>
+          {(['custom', 'canon'] as const).map((kind) => {
+            const active = selectedKind === kind;
+            return (
+              <Button
+                key={kind}
+                onClick={() => onSelectKind(kind)}
+                sx={{
+                  flex: 1,
+                  border: `1px solid ${active ? ink : alpha(accent, 0.62)}`,
+                  bgcolor: active ? ink : alpha(parchmentLight, 0.46),
+                  color: active ? parchment : ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.74rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.1em',
+                  py: 1,
+                  textTransform: 'uppercase',
+                  '&:hover': {
+                    bgcolor: active ? ink : alpha(accent, 0.16),
+                  },
+                }}
+              >
+                {kind === 'custom' ? 'Custom' : 'Canon'}
+              </Button>
+            );
+          })}
+        </Stack>
+
+        {selectedKind === 'canon' ? (
+          <Stack spacing={1}>
+            <Box
+              component="select"
+              value={selectedType}
+              onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                onSelectType(event.target.value ? normalizeTechniqueType(event.target.value) : '')
+              }
+              sx={selectSx}
+            >
+              <option value="">Choose technique type</option>
+              {typeOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </Box>
+
+            {selectedType ? (
+              <Box
+                component="select"
+                value={selectedTechniqueName}
+                disabled={canonLoading || canonTechniques.length === 0}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
+                  onSelectTechniqueName(event.target.value)
+                }
+                sx={selectSx}
+              >
+                <option value="">
+                  {canonLoading
+                    ? 'Loading techniques...'
+                    : canonTechniques.length === 0
+                      ? 'No techniques available'
+                      : 'Choose technique'}
+                </option>
+                {canonTechniques.map((technique) => (
+                  <option key={technique.name} value={technique.name}>
+                    {technique.name}
+                  </option>
+                ))}
+              </Box>
+            ) : null}
+
+            <Stack direction="row" gap={1}>
+              <Button
+                onClick={onCancel}
+                sx={{
+                  flex: 1,
+                  border: `1px solid ${border}`,
+                  color: brown,
+                  fontWeight: 800,
+                  textTransform: 'none',
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!selectedType || !selectedTechniqueName}
+                onClick={onAddCanon}
+                sx={{
+                  flex: 1,
+                  bgcolor: ink,
+                  color: parchment,
+                  fontWeight: 900,
+                  textTransform: 'none',
+                  '&:disabled': {
+                    bgcolor: alpha(ink, 0.22),
+                    color: alpha(ink, 0.46),
+                  },
+                  '&:hover': { bgcolor: deepInk },
+                }}
+              >
+                Add
+              </Button>
+            </Stack>
+          </Stack>
+        ) : null}
+      </Stack>
+    </Panel>
+  );
+}
+
 function resolveAvatarClassTrait(classData: AvatarClassData | null | undefined) {
   const title =
     typeof classData?.classTrait?.name === 'string'
@@ -4415,12 +4638,14 @@ function CombatPane() {
   }> = [
     { key: 'all', label: 'All', color: ink, src: null },
     { key: 'basic', label: 'Basic', color: ink, src: null },
-    { key: 'water', label: 'Water', color: water, src: elementWater },
-    { key: 'earth', label: 'Earth', color: earth, src: elementEarth },
-    { key: 'fire', label: 'Fire', color: fire, src: elementFire },
-    { key: 'air', label: 'Air', color: air, src: elementAir },
-    { key: 'martial', label: 'Weapons', color: martial, src: elementMartial },
-    { key: 'tech', label: 'Tech', color: tech, src: elementTech },
+    { key: 'universal', label: 'Universal', color: ink, src: null },
+    { key: 'group', label: 'Group', color: brown, src: null },
+    { key: 'waterbending', label: 'Water', color: water, src: elementWater },
+    { key: 'earthbending', label: 'Earth', color: earth, src: elementEarth },
+    { key: 'firebending', label: 'Fire', color: fire, src: elementFire },
+    { key: 'airbending', label: 'Air', color: air, src: elementAir },
+    { key: 'weapons', label: 'Weapons', color: weapons, src: elementWeapons },
+    { key: 'technology', label: 'Tech', color: tech, src: elementTech },
   ];
   const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
   const negativeStatuses = ['Doomed', 'Impaired', 'Trapped', 'Stunned'];
@@ -4430,6 +4655,14 @@ function CombatPane() {
   const [subTab, setSubTab] = useAtom(combatSubTabAtom);
   const [techFilter, setTechFilter] = useAtom(techniqueFilterAtom);
   const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
+  const [addTechniqueOpen, setAddTechniqueOpen] = useState(false);
+  const [addTechniqueKind, setAddTechniqueKind] = useState<'custom' | 'canon' | null>(null);
+  const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElement | ''>('');
+  const [canonTechniqueName, setCanonTechniqueName] = useState('');
+  const canonGameSystem = useQuery(
+    api.gameSystems.getById,
+    addTechniqueKind === 'canon' && canonTechniqueType ? { id: 'avatar-legends' } : 'skip',
+  );
   // Techniques live on the character record (characterStateAtom) so
   // each character carries their own set of known techniques.
   const character = useAtomValue(characterStateAtom);
@@ -4448,6 +4681,78 @@ function CombatPane() {
   const fatigue = useAtomValue(fatigueAtom);
   const tempFatigue = useAtomValue(tempFatigueAtom);
   const [, setCharacterState] = useAtom(characterStateAtom);
+  const techniqueTypeOptions = useMemo<Array<{ key: TechniqueElement; label: string }>>(
+    () => [
+      { key: 'basic', label: 'Basic' },
+      { key: 'universal', label: 'Universal' },
+      { key: 'group', label: 'Group' },
+      { key: 'waterbending', label: 'Waterbending' },
+      { key: 'earthbending', label: 'Earthbending' },
+      { key: 'firebending', label: 'Firebending' },
+      { key: 'airbending', label: 'Airbending' },
+      { key: 'weapons', label: 'Weapons' },
+      { key: 'technology', label: 'Technology' },
+    ],
+    [],
+  );
+  const canonTechniques = useMemo(() => {
+    const rawTechniques =
+      canonGameSystem && Array.isArray((canonGameSystem as { techniques?: unknown }).techniques)
+        ? ((canonGameSystem as unknown as { techniques: unknown[] }).techniques ?? [])
+        : [];
+    return rawTechniques
+      .map(coerceCanonTechnique)
+      .filter((technique): technique is CanonTechnique => Boolean(technique))
+      .filter((technique) => technique.type === canonTechniqueType)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [canonGameSystem, canonTechniqueType]);
+  const resetAddTechniqueFlow = () => {
+    setAddTechniqueOpen(false);
+    setAddTechniqueKind(null);
+    setCanonTechniqueType('');
+    setCanonTechniqueName('');
+  };
+  const addCustomTechnique = () => {
+    setCharacterState((prev) => {
+      const nextType =
+        elementFilter !== 'all' && elementFilter !== 'basic'
+          ? elementFilter
+          : trainingToTechniqueType(prev.primaryTraining);
+      return {
+        ...prev,
+        techniques: [
+          ...prev.techniques,
+          {
+            id: createLocalId('technique'),
+            type: nextType,
+            approach: 'Advance & Attack',
+            level: 'learned',
+            name: 'Custom Technique',
+            summary: 'Add a short technique summary.',
+            description: 'Describe how this custom technique works.',
+            custom: true,
+          },
+        ],
+      };
+    });
+    resetAddTechniqueFlow();
+  };
+  const addCanonTechnique = () => {
+    const selected = canonTechniques.find((technique) => technique.name === canonTechniqueName);
+    if (!selected) return;
+    setCharacterState((prev) => ({
+      ...prev,
+      techniques: [
+        ...prev.techniques,
+        {
+          ...selected,
+          id: createLocalId('technique'),
+          level: 'learned',
+        },
+      ],
+    }));
+    resetAddTechniqueFlow();
+  };
   const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
     setCharacterState((prev) => ({ ...prev, fatigue: base, tempFatigue: temp }));
   };
@@ -4678,33 +4983,31 @@ function CombatPane() {
                 </Typography>
               </Panel>
             ) : null}
-            <AddListCard
-              label="Add custom technique"
-              onClick={() =>
-                setCharacterState((prev) => {
-                  const nextType =
-                    elementFilter !== 'all' && elementFilter !== 'basic'
-                      ? elementFilter
-                      : trainingToTechniqueType(prev.primaryTraining);
-                  return {
-                    ...prev,
-                    techniques: [
-                      ...prev.techniques,
-                      {
-                        id: createLocalId('technique'),
-                        type: nextType,
-                        approach: 'Advance & Attack',
-                        level: 'learned',
-                        name: 'Custom Technique',
-                        summary: 'Add a short technique summary.',
-                        description: 'Describe how this custom technique works.',
-                        custom: true,
-                      },
-                    ],
-                  };
-                })
-              }
-            />
+            {addTechniqueOpen ? (
+              <TechniqueAddCard
+                typeOptions={techniqueTypeOptions}
+                selectedKind={addTechniqueKind}
+                selectedType={canonTechniqueType}
+                selectedTechniqueName={canonTechniqueName}
+                canonTechniques={canonTechniques}
+                canonLoading={addTechniqueKind === 'canon' && Boolean(canonTechniqueType) && !canonGameSystem}
+                onSelectKind={(kind) => {
+                  setAddTechniqueKind(kind);
+                  setCanonTechniqueType('');
+                  setCanonTechniqueName('');
+                  if (kind === 'custom') addCustomTechnique();
+                }}
+                onSelectType={(type) => {
+                  setCanonTechniqueType(type);
+                  setCanonTechniqueName('');
+                }}
+                onSelectTechniqueName={setCanonTechniqueName}
+                onAddCanon={addCanonTechnique}
+                onCancel={resetAddTechniqueFlow}
+              />
+            ) : (
+              <AddListCard label="Technique" onClick={() => setAddTechniqueOpen(true)} />
+            )}
           </>
         ) : null}
 
