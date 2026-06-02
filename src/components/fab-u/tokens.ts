@@ -187,15 +187,15 @@ const avatarLightTokens: FabUTokens = {
 const avatarDarkTokens: FabUTokens = {
   isDark: true,
   color: {
-    // All chrome surfaces unify on the AL header / footer navy
-    // (#111a24) so the profile modal blends with the rest of the AL
-    // dark chrome instead of reading as a separate slate-blue panel.
+    // The primary modal surface stays on the AL header / footer navy,
+    // while card/pill/muted layers keep enough contrast for striping
+    // and lifted controls.
     page: '#111a24',
     canvas: '#111a24',
     surface: '#111a24',
-    surfaceCard: '#111a24',
-    pillSurface: '#111a24',
-    surfaceMuted: '#111a24',
+    surfaceCard: '#141e29',
+    pillSurface: '#172231',
+    surfaceMuted: '#0f1720',
     border: '#2d3947', // subtle slate-blue
     textPrimary: '#eff2f8', // AL ink (near-white)
     textSecondary: '#c3ccd9', // AL brownSoft

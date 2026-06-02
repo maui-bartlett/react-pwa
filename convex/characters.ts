@@ -201,6 +201,7 @@ export const setActiveMine = mutation({
     const target = await requireCharacterOwner(ctx, args.characterId);
     const targetGameSystem = target.meta?.gameSystem;
     if (!targetGameSystem) throw new ConvexError('CHARACTER_MISSING_GAME_SYSTEM');
+    if (target.archivedAt) throw new ConvexError('CANNOT_ACTIVATE_ARCHIVED_CHARACTER');
     const now = Date.now();
 
     // Only clear the active flag on the *same* game system's characters

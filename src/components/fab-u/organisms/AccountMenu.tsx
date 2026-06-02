@@ -9,6 +9,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
+import NativeSelect from '@mui/material/NativeSelect';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -260,7 +261,7 @@ function AccountMenu({
   selectCharacterEventName = FAB_U_SELECT_CHARACTER_EVENT,
 }: AccountMenuProps) {
   const fabUTokens = useFabUTokens();
-  const { data: session, isPending, refetch } = authClient.useSession();
+  const { data: session, refetch } = authClient.useSession();
   const convexAuth = useConvexAuth();
   const authSession = session as AuthSession;
   const user = authSession?.user;
@@ -379,17 +380,16 @@ function AccountMenu({
     if (firstClassName) setNewAvatarClassName(firstClassName);
   }, [avatarClasses, gameSystem, newAvatarClassName]);
 
-  const accountLabel = useMemo(() => {
-    if (isPending) return 'Checking account';
-    if (user?.name) return user.name;
-    if (user?.email) return user.email;
-    return 'Settings';
-  }, [isPending, user?.email, user?.name]);
   const accountModalBg = fabUTokens.color.surface;
   const accountActionBg = fabUTokens.color.brand;
   const accountActionHoverBg = fabUTokens.color.brandStrong;
   const accountBackdropBg = accountActionBg;
   const accountModalBorder = themeMode === 'dark' ? '#ffffff' : '#d8dde3';
+  const accountSectionHeadingSx = {
+    color: fabUTokens.color.textPrimary,
+    fontSize: '1.05rem',
+    fontWeight: 800,
+  };
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -600,7 +600,7 @@ function AccountMenu({
                     ? 'Characters'
                     : screen === 'campaigns'
                       ? 'Campaigns'
-                      : accountLabel}
+                      : 'Profile'}
                 </Typography>
               </Stack>
             </Stack>
@@ -664,10 +664,10 @@ function AccountMenu({
                 ) : (
                   <Stack spacing={0.7}>
                     {gameSystem === 'avatar-legends' ? (
-                      <InputBase
-                        component="select"
+                      <NativeSelect
                         value={newAvatarClassName}
                         onChange={(event) => setNewAvatarClassName(event.target.value)}
+                        disableUnderline
                         sx={{
                           minHeight: 42,
                           borderRadius: '8px',
@@ -677,6 +677,14 @@ function AccountMenu({
                           px: 1.2,
                           fontSize: '0.84rem',
                           fontWeight: 800,
+                          '& select': {
+                            p: 0,
+                            minHeight: 42,
+                          },
+                          '& svg': {
+                            color: fabUTokens.color.textSecondary,
+                            right: 8,
+                          },
                         }}
                       >
                         {(avatarClasses ?? []).map((item) =>
@@ -686,7 +694,7 @@ function AccountMenu({
                             </option>
                           ) : null,
                         )}
-                      </InputBase>
+                      </NativeSelect>
                     ) : null}
                     <Button
                       onClick={() => void addCharacter()}
@@ -1117,6 +1125,8 @@ function AccountMenu({
                     >
                       Campaigns
                     </Button>
+
+                    <Typography sx={accountSectionHeadingSx}>Log In / Cloud Sync</Typography>
 
                     {showEmailPasswordAuth ? (
                       <>

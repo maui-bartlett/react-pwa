@@ -14,7 +14,7 @@ import { alpha } from '@mui/material/styles';
 import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import { Backpack, HandFist, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Backpack, ChevronRight, HandFist, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
@@ -29,6 +29,8 @@ import { api } from '../../../convex/_generated/api';
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
 import elementEarth from './assets/earthbending-symbol.png';
+import balanceCardBase from './assets/balance-card-base.png';
+import balanceCardForeground from './assets/balance-card-foreground.png';
 import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
 import elementTech from './assets/technology-symbol.png';
@@ -598,7 +600,7 @@ type TechniqueElementFilter = TechniqueElement | 'all';
 const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 
 // ---------- Character data shapes ----------
-type Connection = { name: string; role: string; note: string };
+type Connection = { id?: string; name: string; role: string; note: string };
 type JournalEntry = { type: string; name: string; description: string };
 type Technique = {
   /** Elemental category (water / earth / fire / air / martial / tech /
@@ -610,8 +612,13 @@ type Technique = {
   name: string;
   summary: string;
   description: string;
+  id?: string;
   custom?: boolean;
   classTechnique?: boolean;
+};
+type BalanceState = {
+  left: Record<string, number>;
+  right: Record<string, number>;
 };
 
 /**
@@ -630,8 +637,8 @@ type CharacterState = {
   age: number;
   origin: string;
   stats: Record<string, number>;
-  /** -4..4 along the Tradition/Progress balance track. */
-  balance: number;
+  /** Two-principle balance track. One side rises while the other falls. */
+  balance: BalanceState;
   conditions: Record<string, boolean>;
   statuses: Record<string, boolean>;
   fatigue: boolean[];
@@ -649,6 +656,7 @@ type AvatarClassData = {
   className?: unknown;
   classTrait?: { name?: unknown; text?: unknown };
   classMoves?: unknown;
+  opposingPrinciples?: unknown;
   startingStats?: unknown;
   advancedTechnique?: unknown;
   growthQuestion?: unknown;
@@ -676,6 +684,19 @@ const defaultBasicTechniques: Technique[] = [
       "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
   },
 ];
+const defaultBalancePrinciples = ['Tradition', 'Progress'] as const;
+
+function createBalanceState(
+  leftPrinciple = defaultBalancePrinciples[0],
+  rightPrinciple = defaultBalancePrinciples[1],
+  position = 0,
+): BalanceState {
+  const clamped = Math.max(-3, Math.min(3, Math.round(position)));
+  return {
+    left: { [leftPrinciple]: -clamped },
+    right: { [rightPrinciple]: clamped },
+  };
+}
 
 /** Starter values for an empty local sheet. Signed-in "new character" flows
  *  use `createRandomAvatarLegendsCharacter` below so they do not clone Qi
@@ -688,7 +709,7 @@ const defaultCharacter: CharacterState = {
   age: 16,
   origin: 'Republic City',
   stats: { Creativity: 1, Focus: 1, Harmony: -1, Passion: 0 },
-  balance: 0,
+  balance: createBalanceState(),
   conditions: {},
   statuses: {},
   fatigue: [false, false, false, false, false],
@@ -759,6 +780,59 @@ function coerceClassName(classData: AvatarClassData | null | undefined, fallback
   return typeof classData?.className === 'string' && classData.className.trim()
     ? classData.className
     : fallback;
+}
+
+function resolveAvatarPrinciples(
+  classData: AvatarClassData | null | undefined,
+): [string, string] {
+  if (Array.isArray(classData?.opposingPrinciples)) {
+    const principles = classData.opposingPrinciples
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      .map((item) => item.trim());
+    if (principles.length >= 2) return [principles[0], principles[1]];
+  }
+  return [defaultBalancePrinciples[0], defaultBalancePrinciples[1]];
+}
+
+function getBalanceValue(side: Record<string, number>, fallbackPrinciple: string) {
+  const exact = side[fallbackPrinciple];
+  if (typeof exact === 'number' && Number.isFinite(exact)) return exact;
+  const first = Object.values(side).find((value) => typeof value === 'number' && Number.isFinite(value));
+  return first ?? 0;
+}
+
+function getBalancePosition(
+  balance: BalanceState,
+  leftPrinciple: string,
+  rightPrinciple: string,
+) {
+  const rightValue = getBalanceValue(balance.right, rightPrinciple);
+  const leftValue = getBalanceValue(balance.left, leftPrinciple);
+  const position = rightValue || -leftValue;
+  return Math.max(-3, Math.min(3, Math.round(position)));
+}
+
+function normalizeBalanceState(
+  rawBalance: unknown,
+  leftPrinciple = defaultBalancePrinciples[0],
+  rightPrinciple = defaultBalancePrinciples[1],
+): BalanceState {
+  if (typeof rawBalance === 'number' && Number.isFinite(rawBalance)) {
+    return createBalanceState(leftPrinciple, rightPrinciple, rawBalance);
+  }
+  if (rawBalance && typeof rawBalance === 'object') {
+    const candidate = rawBalance as { left?: unknown; right?: unknown };
+    const left =
+      candidate.left && typeof candidate.left === 'object'
+        ? (candidate.left as Record<string, number>)
+        : {};
+    const right =
+      candidate.right && typeof candidate.right === 'object'
+        ? (candidate.right as Record<string, number>)
+        : {};
+    return createBalanceState(leftPrinciple, rightPrinciple, getBalancePosition({ left, right }, leftPrinciple, rightPrinciple));
+  }
+  return createBalanceState(leftPrinciple, rightPrinciple);
 }
 
 function coerceStartingStats(classData: AvatarClassData | null | undefined) {
@@ -845,9 +919,11 @@ function applyClassDataToCharacter(
     (technique) => technique.custom || technique.type === 'basic' || !technique.classTechnique,
   );
   const advancedTechnique = coerceAdvancedTechnique(classData, character.primaryTraining);
+  const [leftPrinciple, rightPrinciple] = resolveAvatarPrinciples(classData);
   return {
     ...character,
     className,
+    balance: normalizeBalanceState(character.balance, leftPrinciple, rightPrinciple),
     stats: coerceStartingStats(classData),
     classMoves: [...classMoves, ...customMoves],
     techniques: advancedTechnique
@@ -908,9 +984,11 @@ const characterStateAtom = atomWithStorage<CharacterState>(
  *  v3: Technique.category renamed to approach, title→name, body→description.
  *      JournalEntry title→name, body→description.
  *  v4: add primaryTraining for training-themed app chrome.
- *  v5 (current): class trait display data comes from the classes table;
- *      history answers are stored on the character by prompt text. */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 5;
+ *  v5: class trait display data comes from the classes table;
+ *      history answers are stored on the character by prompt text.
+ *  v6 (current): balance stores two principle objects instead of
+ *      a single signed number. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 6;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -1032,12 +1110,14 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
   };
   delete rest.classTraitBody;
   delete rest.classTraitTitle;
+  delete rest.balance;
 
   return {
     ...defaultCharacter,
     ...rest,
     age,
     primaryTraining,
+    balance: normalizeBalanceState(innerCandidate.balance),
     historyAnswers,
     techniques,
     inventory,
@@ -1142,6 +1222,7 @@ const inventoryAtom = sliceAtom('inventory');
 // the accordion expands. Some moves also have a bulleted list of
 // options. Basic + Balance bodies are drawn from the rulebook layout.
 type MoveEntry = {
+  id?: string;
   title: string;
   body: string;
   bullets?: string[];
@@ -1149,6 +1230,10 @@ type MoveEntry = {
   trailing?: string;
   custom?: boolean;
 };
+
+function createLocalId(prefix: string) {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 // Rulebook moves shared across every character — Basic + Balance are
 // game-wide moves. Class-specific moves live on the character record
@@ -1268,6 +1353,15 @@ function techniqueElementVisual(type: TechniqueElement): {
   if (type === 'tech')
     return { color: tech, frameColor: elementFilterFrames.tech, src: elementTech };
   return { color: water, frameColor: elementFilterFrames.water, src: elementWater };
+}
+
+function getMarkedFatigueCount(text: string) {
+  const match = text
+    .toLowerCase()
+    .match(/\bmark(?:ing)?\s+(?:(\d+)[-\s])?(?:a\s+)?fatigue\b/);
+  if (!match) return 0;
+  const parsed = match[1] ? Number.parseInt(match[1], 10) : 1;
+  return Number.isFinite(parsed) ? Math.max(1, Math.min(10, parsed)) : 1;
 }
 
 /**
@@ -1828,239 +1922,167 @@ function Checkbox({
   );
 }
 
-/**
- * Balance section content. Renders the TRADITION / PROGRESS labels on
- * either side of a horizontal line; the line carries 8 evenly spaced
- * tick notches (4 left, 4 right of the center point) plus the draggable
- * yin-yang marker which snaps to whichever of the 9 stop positions
- * (index -4..4) the user releases nearest to.
- */
-function BalanceTrack() {
-  const [position, setPosition] = useAtom(balancePositionAtom);
+function BalanceTrack({ classData }: { classData: AvatarClassData | null | undefined }) {
+  const [balance, setBalance] = useAtom(balancePositionAtom);
   const { isDarkMode } = useThemeMode();
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const draggingRef = useRef(false);
+  const [leftPrinciple, rightPrinciple] = resolveAvatarPrinciples(classData);
+  const normalizedBalance = useMemo(
+    () => normalizeBalanceState(balance, leftPrinciple, rightPrinciple),
+    [balance, leftPrinciple, rightPrinciple],
+  );
+  const selectedPosition = getBalancePosition(normalizedBalance, leftPrinciple, rightPrinciple);
+  const positions = [-3, -2, -1, 0, 1, 2, 3];
+  const diamondLeftByPosition: Record<number, number> = {
+    [-3]: 25.5,
+    [-2]: 33.9,
+    [-1]: 42.5,
+    0: 50.7,
+    1: 59.1,
+    2: 67.7,
+    3: 76,
+  };
 
-  // Map an index in [-4, 4] to a percentage left offset along the track.
-  // -4 -> 0%, 0 -> 50%, 4 -> 100%.
-  const toPercent = (idx: number) => ((idx + 4) / 8) * 100;
-
-  // Convert a clientX during a drag into the nearest snap index.
-  function pointerToIndex(clientX: number): number {
-    const el = trackRef.current;
-    if (!el) return position;
-    const rect = el.getBoundingClientRect();
-    if (rect.width === 0) return position;
-    const ratio = (clientX - rect.left) / rect.width;
-    const clamped = Math.max(0, Math.min(1, ratio));
-    return Math.round(clamped * 8) - 4;
+  function setPosition(position: number) {
+    setBalance(createBalanceState(leftPrinciple, rightPrinciple, position));
   }
 
-  // 9 notches total — the leftmost (-4) and rightmost (4) stay unlabeled
-  // per the spec; the inner 7 carry numbers above and below.
-  const notchIndexes: number[] = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-  const numberedIndexes: number[] = [-3, -2, -1, 0, 1, 2, 3];
-  // Top labels: at index -3 -> "+3", center 0 -> "0", index 3 -> "-3".
-  // Bottom labels mirror that — left side is negative, right side is
-  // positive, with 0 at center.
-  const topLabel = (i: number) => (i === 0 ? '0' : i < 0 ? `+${-i}` : `${-i}`);
-  const bottomLabel = (i: number) => (i === 0 ? '0' : i > 0 ? `+${i}` : `${i}`);
-  // Notches are white in dark mode so they read against the deep-navy
-  // surface; otherwise they fall back to the cover-art dark navy.
-  const notchColor = isDarkMode ? '#ffffff' : deepInk;
-  const numberStyle = {
-    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-    fontSize: '0.55rem',
-    fontWeight: 900,
-    color: ink,
-    letterSpacing: '0.02em',
-    lineHeight: 1,
-  } as const;
+  useEffect(() => {
+    if (JSON.stringify(balance) !== JSON.stringify(normalizedBalance)) {
+      setBalance(normalizedBalance);
+    }
+  }, [balance, normalizedBalance, setBalance]);
 
   return (
-    <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 3.2, mb: 2.6 }}>
+    <Box
+      sx={{
+        position: 'relative',
+        mx: -0.2,
+        mt: 0.8,
+        mb: 0.2,
+        borderRadius: '4px',
+        overflow: 'hidden',
+        boxShadow: `0 1px 4px ${alpha(deepInk, 0.16)}`,
+      }}
+    >
+      <Box
+        component="img"
+        src={balanceCardBase}
+        alt=""
+        sx={{
+          display: 'block',
+          width: '100%',
+          aspectRatio: '1290 / 907',
+          objectFit: 'cover',
+          opacity: isDarkMode ? 0.1 : 1,
+        }}
+      />
+      <Box
+        component="img"
+        src={balanceCardForeground}
+        alt=""
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          opacity: isDarkMode ? 0.78 : 1,
+          filter: isDarkMode ? 'brightness(0.86) contrast(1.08)' : 'none',
+          pointerEvents: 'none',
+        }}
+      />
       <Typography
         sx={{
-          color: ink,
-          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.62rem',
+          position: 'absolute',
+          left: '11.7%',
+          top: '50%',
+          transform: 'translate(-50%, -50%) rotate(-90deg)',
+          transformOrigin: 'center',
+          color: '#ffffff',
+          backgroundColor: '#000000',
+          fontFamily:
+            '"Bebas Neue Balance", "Bebas Neue", "Arial Rounded MT Bold", "Avenir Next Condensed Heavy", "Arial Black", system-ui, sans-serif',
+          fontSize: 'clamp(1.24rem, 7.7vw, 2.02rem)',
           fontWeight: 900,
-          letterSpacing: '0.1em',
+          letterSpacing: '0.02em',
+          lineHeight: 1,
+          p: 0,
+          textShadow: '0 1px 1px rgba(0,0,0,0.65)',
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
         }}
       >
-        TRADITION
+        {leftPrinciple}
       </Typography>
-      <Box
-        ref={trackRef}
+      <Typography
         sx={{
-          flex: 1,
-          height: 2,
-          background: `linear-gradient(90deg, ${alpha(washDeep, 0.5)} 0%, ${alpha(deepInk, 0.7)} 50%, ${alpha(washDeep, 0.5)} 100%)`,
-          position: 'relative',
-          borderRadius: '1px',
+          position: 'absolute',
+          right: '12.2%',
+          top: '50%',
+          transform: 'translate(50%, -50%) rotate(90deg)',
+          transformOrigin: 'center',
+          color: '#000000',
+          backgroundColor: '#ffffff',
+          fontFamily:
+            '"Bebas Neue Balance", "Bebas Neue", "Arial Rounded MT Bold", "Avenir Next Condensed Heavy", "Arial Black", system-ui, sans-serif',
+          fontSize: 'clamp(1.24rem, 7.7vw, 2.02rem)',
+          fontWeight: 900,
+          letterSpacing: '0.02em',
+          lineHeight: 1,
+          p: 0,
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
         }}
       >
-        {/* Top label row — sits above the notches, excludes the
-            leftmost / rightmost tick. */}
-        {numberedIndexes.map((idx) => (
+        {rightPrinciple}
+      </Typography>
+      {positions.map((position) => {
+        const selected = position === selectedPosition;
+        return (
           <Box
-            key={`top-${idx}`}
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              top: -22,
-              left: `${toPercent(idx)}%`,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
-              ...numberStyle,
-            }}
-          >
-            {topLabel(idx)}
-          </Box>
-        ))}
-        {/* Tick notches — 9 equally spaced marks along the track. */}
-        {notchIndexes.map((idx) => (
-          <Box
-            key={idx}
+            key={position}
             component="button"
-            aria-label={`Set balance to ${idx}`}
             type="button"
-            onClick={() => setPosition(idx)}
+            aria-label={`Set balance to ${position}`}
+            aria-pressed={selected}
+            onClick={() => setPosition(position)}
             sx={{
               position: 'absolute',
-              top: -13,
-              left: `${toPercent(idx)}%`,
-              width: 22,
-              height: 28,
+              left: `${diamondLeftByPosition[position]}%`,
+              top: '51.2%',
+              width: '5.2%',
+              aspectRatio: '1 / 1',
               p: 0,
-              border: 0,
+              border: 'none',
               background: 'transparent',
-              transform: 'translateX(-50%)',
+              transform: 'translate(-50%, -50%)',
               cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
               '&:focus-visible': {
-                outline: `2px solid ${alpha(deepInk, 0.5)}`,
-                outlineOffset: 2,
-                borderRadius: '6px',
+                outline: `2px solid ${alpha(deepInk, 0.75)}`,
+                outlineOffset: 4,
+              },
+              '&::before': {
+                content: '""',
+                width: '66%',
+                height: '66%',
+                border: `2.4px solid ${selected ? '#ffffff' : '#000000'}`,
+                background: selected ? deepInk : '#ffffff',
+                boxShadow: selected
+                  ? `0 0 0 2px ${alpha('#000000', 0.92)}, 0 0 10px ${alpha('#000000', 0.6)}`
+                  : '0 0 2px rgba(255,255,255,0.5)',
+                transform: 'rotate(45deg)',
+                transition: 'background 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
               },
             }}
-          >
-            <Box
-              aria-hidden
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: '50%',
-                width: 2,
-                height: 12,
-                background: notchColor,
-                transform: 'translateX(-50%)',
-                borderRadius: '1px',
-              }}
-            />
-          </Box>
-        ))}
-        {/* Bottom label row — mirrors the top, with the sign flipped so
-            +i on the right side corresponds to the Progress direction. */}
-        {numberedIndexes.map((idx) => (
-          <Box
-            key={`bottom-${idx}`}
-            aria-hidden
-            sx={{
-              position: 'absolute',
-              top: 14,
-              left: `${toPercent(idx)}%`,
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
-              ...numberStyle,
-            }}
-          >
-            {bottomLabel(idx)}
-          </Box>
-        ))}
-        {/* Draggable yin-yang marker. Pointer events live on the marker
-            itself so the rest of the track stays scrollable on touch
-            devices; setPointerCapture keeps the drag alive even if the
-            finger slides off the small hit area. */}
-        <Box
-          role="slider"
-          aria-label="Balance position"
-          aria-valuemin={-4}
-          aria-valuemax={4}
-          aria-valuenow={position}
-          tabIndex={0}
-          onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
-            draggingRef.current = true;
-            e.currentTarget.setPointerCapture?.(e.pointerId);
-          }}
-          onPointerMove={(e: React.PointerEvent<HTMLDivElement>) => {
-            if (!draggingRef.current) return;
-            const next = pointerToIndex(e.clientX);
-            if (next !== position) setPosition(next);
-          }}
-          onPointerUp={(e: React.PointerEvent<HTMLDivElement>) => {
-            draggingRef.current = false;
-            e.currentTarget.releasePointerCapture?.(e.pointerId);
-          }}
-          onPointerCancel={() => {
-            draggingRef.current = false;
-          }}
-          onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-            if (e.key === 'ArrowLeft') {
-              e.preventDefault();
-              setPosition(Math.max(-4, position - 1));
-            } else if (e.key === 'ArrowRight') {
-              e.preventDefault();
-              setPosition(Math.min(4, position + 1));
-            }
-          }}
-          sx={{
-            position: 'absolute',
-            left: `${toPercent(position)}%`,
-            top: -13,
-            transform: 'translateX(-50%)',
-            width: 28,
-            height: 28,
-            borderRadius: '50%',
-            // Solid white fill in both modes — matches the new Stats circles.
-            background: '#ffffff',
-            border: `2px solid ${deepInk}`,
-            display: 'grid',
-            placeItems: 'center',
-            color: ink,
-            boxShadow: `0 1px 3px ${alpha(deepInk, 0.25)}`,
-            cursor: 'grab',
-            touchAction: 'none',
-            userSelect: 'none',
-            transition: draggingRef.current ? 'none' : 'left 220ms ease',
-            '&:active': { cursor: 'grabbing' },
-            '&:focus-visible': {
-              outline: `2px solid ${alpha(deepInk, 0.6)}`,
-              outlineOffset: 2,
-            },
-          }}
-        >
-          {/* Balance yin-yang uses fixed light-mode colors so the symbol
-              looks identical in light and dark mode. */}
-          <YinYangIcon
-            darkColor={lightAvPalette.deepInk}
-            lightColor={lightAvPalette.parchmentLight}
-            size={20}
-            strokeWidth={1.5}
           />
-        </Box>
-      </Box>
-      <Typography
-        sx={{
-          color: ink,
-          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.62rem',
-          fontWeight: 900,
-          letterSpacing: '0.1em',
-        }}
-      >
-        PROGRESS
-      </Typography>
-    </Stack>
+        );
+      })}
+    </Box>
   );
 }
 
@@ -2091,7 +2113,7 @@ function StatsPanel() {
   }
   const statOptions = [-3, -2, -1, 0, 1, 2, 3];
   return (
-    <Panel>
+    <Panel onClick={() => !editing && setOpen((value) => !value)}>
       <SectionTitle>Stats</SectionTitle>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
         {rows.map(([label, color]) => {
@@ -2350,6 +2372,7 @@ function ConditionButtonShared({ label }: { label: string }) {
       // Unselected label reads in black in light mode (per spec); dark
       // mode keeps the StatusButton default of white text at all times.
       inactiveTextColor="#000000"
+      hexagonal
       onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
     />
   );
@@ -2365,6 +2388,7 @@ function StatusButton({
   active,
   activeColor,
   inactiveTextColor,
+  hexagonal = false,
   onToggle,
 }: {
   label: string;
@@ -2375,6 +2399,7 @@ function StatusButton({
    *  positive / negative Statuses buttons use). Conditions pass black
    *  here so unselected condition labels stay readable on parchment. */
   inactiveTextColor?: string;
+  hexagonal?: boolean;
   onToggle: () => void;
 }) {
   // In dark mode the inactive text would otherwise sit at the activeColor
@@ -2388,6 +2413,47 @@ function StatusButton({
     : active
       ? '#ffffff'
       : (inactiveTextColor ?? activeColor);
+  const hexClipPath = 'polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%)';
+  if (hexagonal) {
+    return (
+      <Box
+        component="button"
+        type="button"
+        onClick={onToggle}
+        aria-pressed={active}
+        sx={{
+          width: '100%',
+          p: '1.5px',
+          border: 'none',
+          background: activeColor,
+          clipPath: hexClipPath,
+          cursor: 'pointer',
+          transition: 'background-color 0.15s ease, color 0.15s ease',
+        }}
+      >
+        <Box
+          component="span"
+          sx={{
+            display: 'block',
+            width: '100%',
+            py: '14px',
+            px: 2.2,
+            boxSizing: 'border-box',
+            clipPath: hexClipPath,
+            background: active ? activeColor : parchmentLight,
+            color: textColor,
+            textAlign: 'center',
+            fontFamily: 'Georgia, serif',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+          }}
+        >
+          {label}
+        </Box>
+      </Box>
+    );
+  }
   return (
     <Box
       component="button"
@@ -2513,7 +2579,7 @@ function CapacityPicker({
 }) {
   const setClamped = (next: number) => onChange(Math.max(0, Math.min(10, next)));
   return (
-    <Stack spacing={0.6}>
+    <Stack spacing={0.6} onClick={() => setOpen((value) => !value)} sx={{ cursor: 'pointer' }}>
       <Typography
         sx={{
           fontSize: '0.74rem',
@@ -2599,48 +2665,57 @@ function HistorySection({ questions }: { questions: string[] }) {
   const [answers, setAnswers] = useAtom(historyAnswersAtom);
   return (
     <Stack spacing={0.6}>
-      <SectionTitle>History</SectionTitle>
       <Box
         component="button"
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
         aria-expanded={open}
         sx={{
-          mt: 0.4,
           display: 'flex',
           alignItems: 'center',
           width: '100%',
           gap: 0.7,
-          p: 0,
+          py: 0,
+          px: 0,
           background: 'none',
           border: 'none',
           cursor: 'pointer',
           color: ink,
           textAlign: 'left',
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.82rem',
-          fontWeight: 900,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
         }}
       >
-        <Box sx={{ flex: 1 }}>
-          {questions.length} question{questions.length === 1 ? '' : 's'}
-        </Box>
+        <MoveDiamond color={accent} size={9} />
+        <Typography
+          component="span"
+          sx={{
+            color: ink,
+            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+            fontSize: '0.82rem',
+            fontWeight: 900,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}
+        >
+          History
+        </Typography>
+        <Box sx={{ flex: 1, height: '1px', bgcolor: alpha(accent, 0.55) }} />
         <Box
+          component={ChevronRight}
+          size={18}
           sx={{
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s ease',
             color: alpha(ink, 0.8),
-            fontSize: '0.95rem',
-            lineHeight: 1,
+            flex: '0 0 auto',
           }}
-        >
-          ›
-        </Box>
+        />
       </Box>
       {open ? (
-        <Stack spacing={1} sx={{ mt: 0.6 }}>
+        <Stack spacing={1} sx={{ mt: 0.8, px: 1.25, pt: 0.6, pb: 0.45 }}>
           {questions.map((question, index) => (
             <Stack key={question} spacing={0.4}>
               <Typography
@@ -2658,6 +2733,7 @@ function HistorySection({ questions }: { questions: string[] }) {
                 component="textarea"
                 rows={2}
                 value={answers[question] ?? answers[index] ?? ''}
+                onClick={(event: React.MouseEvent<HTMLTextAreaElement>) => event.stopPropagation()}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                   setAnswers((prev) => ({ ...prev, [question]: e.target.value }))
                 }
@@ -2704,15 +2780,18 @@ function ClassTraitAccordion({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Stack spacing={0.6}>
+    <Stack spacing={0.6} onClick={() => setOpen((value) => !value)} sx={{ cursor: 'pointer' }}>
       <SectionTitle>Class Trait</SectionTitle>
       <Box
         component="button"
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
         aria-expanded={open}
         sx={{
-          mt: 0.4,
+          mt: 0.7,
           display: 'flex',
           alignItems: 'center',
           width: '100%',
@@ -2723,25 +2802,24 @@ function ClassTraitAccordion({
           cursor: 'pointer',
           color: ink,
           textAlign: 'left',
-          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontFamily: 'Georgia, "Times New Roman", serif',
           fontSize: '0.92rem',
-          fontWeight: 900,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
+          fontWeight: 700,
+          fontStyle: 'italic',
+          letterSpacing: '0.015em',
         }}
       >
-        <Box sx={{ flex: 1 }}>{title}</Box>
+        <Box sx={{ flex: 1, pl: 2.2 }}>{title}</Box>
         <Box
+          component={ChevronRight}
+          size={18}
           sx={{
             transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s ease',
             color: alpha(ink, 0.8),
-            fontSize: '0.95rem',
-            lineHeight: 1,
+            flex: '0 0 auto',
           }}
-        >
-          ›
-        </Box>
+        />
       </Box>
       {open ? (
         <Typography
@@ -2750,6 +2828,57 @@ function ClassTraitAccordion({
             fontFamily: 'Georgia, "Times New Roman", serif',
             fontSize: '0.86rem',
             lineHeight: 1.5,
+            pt: 2,
+            px: 2,
+            pb: 2,
+          }}
+        >
+          {children}
+        </Typography>
+      ) : null}
+    </Stack>
+  );
+}
+
+function CharacterInfoSection({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Stack
+      spacing={open ? 0.6 : 0}
+      onClick={() => setOpen((value) => !value)}
+      sx={{ cursor: 'pointer' }}
+    >
+      <Box sx={{ position: 'relative', pr: 2.2 }}>
+        <SectionTitle>{title}</SectionTitle>
+        <Box
+          component={ChevronRight}
+          size={18}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            top: '50%',
+            transform: open ? 'translateY(-50%) rotate(90deg)' : 'translateY(-50%) rotate(0deg)',
+            transformOrigin: 'center',
+            transition: 'transform 0.2s ease',
+            color: alpha(ink, 0.8),
+          }}
+        />
+      </Box>
+      {open ? (
+        <Typography
+          sx={{
+            color: brown,
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            fontSize: '0.94rem',
+            lineHeight: 1.55,
             pt: 2,
             px: 2,
             pb: 2,
@@ -3001,6 +3130,7 @@ function Panel({
   variant = 'minor',
   ornament,
   noNotch = false,
+  onClick,
 }: {
   children: React.ReactNode;
   compact?: boolean;
@@ -3011,6 +3141,7 @@ function Panel({
   /** When true, render a plain rectangular border (no corner notches and
    *  no border-ring overlay). Used by Moves and Backpack cards. */
   noNotch?: boolean;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }) {
   // Honor the legacy `ornament` prop only when it's explicitly set; the
   // new default is 'minor' so most cards render the single-line border.
@@ -3034,6 +3165,7 @@ function Panel({
     // Plain rectangle — straight border, no clip-path, no notches.
     return (
       <Box
+        onClick={onClick}
         sx={{
           position: 'relative',
           border: `1px solid ${border}`,
@@ -3042,6 +3174,7 @@ function Panel({
           background: parchmentLight,
           boxShadow: cardBoxShadow,
           p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
+          cursor: onClick ? 'pointer' : undefined,
         }}
       >
         {children}
@@ -3055,6 +3188,7 @@ function Panel({
     // by the inner element's clip-path.
     <Box sx={{ filter: cardDropShadowFilter }}>
       <Box
+        onClick={onClick}
         sx={{
           position: 'relative',
           // Outer notched silhouette so the parchment bg ends at the notches.
@@ -3062,6 +3196,7 @@ function Panel({
           // Flat solid card bg — no gradient.
           background: parchmentLight,
           p: compact ? `${contentInset - 2}px` : `${contentInset}px`,
+          cursor: onClick ? 'pointer' : undefined,
         }}
       >
         <PanelBorderRing />
@@ -3113,6 +3248,51 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       </Typography>
       <Box sx={{ flex: 1, height: '1px', bgcolor: alpha(accent, 0.55) }} />
     </Stack>
+  );
+}
+
+function AddListCard({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      sx={{
+        width: '100%',
+        p: 0,
+        border: 'none',
+        background: 'none',
+        cursor: 'pointer',
+        textAlign: 'inherit',
+      }}
+    >
+      <Panel ornament={false}>
+        <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
+          <Typography
+            sx={{
+              color: ink,
+              fontSize: '0.95rem',
+              fontWeight: 900,
+              fontFamily: 'Georgia, serif',
+            }}
+          >
+            +
+          </Typography>
+          <Typography
+            sx={{
+              color: ink,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.78rem',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {label}
+          </Typography>
+        </Stack>
+      </Panel>
+    </Box>
   );
 }
 
@@ -3220,7 +3400,7 @@ function CharacterPane() {
       <Panel variant="major">
         {/* Image-free header: large serif name centered, with a flourish
             underline of the playbook and the character's facts below. */}
-        <Stack alignItems="center" spacing={0.55} sx={{ py: 0.8, px: 0.6 }}>
+        <Stack alignItems="center" spacing={0.55} sx={{ position: 'relative', py: 0.8, px: 0.6 }}>
           {editingIdentity ? (
             <Stack spacing={0.8} sx={{ width: '100%' }}>
               <CharacterEditField
@@ -3322,38 +3502,39 @@ function CharacterPane() {
             </Stack>
           ) : (
             <>
-              <Stack direction="row" alignItems="center" gap={0.8}>
-                <Typography
-                  sx={{
-                    color: ink,
-                    fontFamily: '"IM Fell English", Georgia, serif',
-                    fontSize: '1.85rem',
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    textAlign: 'center',
-                  }}
-                >
-                  {character.name}
-                </Typography>
-                <Button
-                  onClick={beginIdentityEdit}
-                  startIcon={<Pencil size={14} />}
-                  sx={{
-                    minWidth: 0,
-                    minHeight: 28,
-                    px: 0.9,
-                    borderRadius: '4px',
-                    color: brown,
-                    border: `1px solid ${alpha(border, 0.75)}`,
-                    textTransform: 'none',
-                    fontSize: '0.68rem',
-                    fontWeight: 800,
-                    '& .MuiButton-startIcon': { mr: 0.4 },
-                  }}
-                >
-                  Edit
-                </Button>
-              </Stack>
+              <Button
+                onClick={beginIdentityEdit}
+                aria-label="Edit character details"
+                sx={{
+                  position: 'absolute',
+                  top: -2,
+                  right: 0,
+                  minWidth: 0,
+                  minHeight: 30,
+                  px: 0.85,
+                  borderRadius: '4px',
+                  color: brown,
+                  border: `1px solid ${alpha(border, 0.75)}`,
+                  textTransform: 'none',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                }}
+              >
+                <Pencil size={15} />
+              </Button>
+              <Typography
+                sx={{
+                  color: ink,
+                  fontFamily: '"IM Fell English", Georgia, serif',
+                  fontSize: '1.85rem',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  textAlign: 'center',
+                  px: 4.2,
+                }}
+              >
+                {character.name}
+              </Typography>
           <Stack direction="row" alignItems="center" gap={0.7}>
             <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
             <MoveDiamond color={accent} size={9} />
@@ -3406,7 +3587,12 @@ function CharacterPane() {
         </Stack>
       </Panel>
 
-      <Panel>
+      <Panel
+        onClick={() => {
+          if (editingField) return;
+          setOpen((value) => !value);
+        }}
+      >
         <SectionTitle>Background</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
           {['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'].map((item) => (
@@ -3419,7 +3605,7 @@ function CharacterPane() {
 
       <Panel>
         <SectionTitle>Balance</SectionTitle>
-        <BalanceTrack />
+        <BalanceTrack classData={avatarClass} />
       </Panel>
 
       <Panel>
@@ -3466,19 +3652,19 @@ function CharacterPane() {
       </Panel>
 
       <Panel>
-        <ClassTraitAccordion title="Moment of Balance">
+        <CharacterInfoSection title="Moment of Balance">
           {typeof avatarClass?.momentOfBalance === 'string'
             ? avatarClass.momentOfBalance
             : 'Your moment of balance will appear here once class data is available.'}
-        </ClassTraitAccordion>
+        </CharacterInfoSection>
       </Panel>
 
       <Panel>
-        <ClassTraitAccordion title="Growth">
+        <CharacterInfoSection title="Growth">
           {typeof avatarClass?.growthQuestion === 'string'
             ? avatarClass.growthQuestion
             : 'Your class growth question will appear here once class data is available.'}
-        </ClassTraitAccordion>
+        </CharacterInfoSection>
       </Panel>
 
       <Panel>
@@ -3597,12 +3783,15 @@ function MoveAccordion({
 
   return (
     // Moves cards use the plain rectangular Panel variant — no notches.
-    <Panel noNotch>
+    <Panel noNotch onClick={() => !editing && setOpen((value) => !value)}>
       <Stack spacing={0.6}>
         <Box
           component="button"
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setOpen((value) => !value);
+          }}
           aria-expanded={open}
           sx={{
             display: 'flex',
@@ -3753,13 +3942,19 @@ function MoveAccordion({
             {editing ? (
               <>
                 <Button
-                  onClick={() => setEditing(false)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setEditing(false);
+                  }}
                   sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={saveEdit}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    saveEdit();
+                  }}
                   sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
                 >
                   Save
@@ -3768,7 +3963,8 @@ function MoveAccordion({
             ) : (
               <>
                 <Button
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setDraftTitle(entry.title);
                     setDraftBody(entry.body);
                     setOpen(true);
@@ -3780,7 +3976,10 @@ function MoveAccordion({
                   Edit
                 </Button>
                 <Button
-                  onClick={onDelete}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete?.();
+                  }}
                   startIcon={<Trash2 size={14} />}
                   sx={{ color: passionRed, textTransform: 'none', fontWeight: 800 }}
                 >
@@ -3814,9 +4013,9 @@ function MovesPane() {
         activeIndex={subTab}
         onChange={setSubTab}
       />
-      {visibleMoves.map((entry) => (
+      {visibleMoves.map((entry, index) => (
         <MoveAccordion
-          key={entry.title}
+          key={entry.id ?? `${subTab}-${entry.custom ? 'custom' : 'move'}-${entry.title}-${index}`}
           entry={entry}
           onUpdate={
             entry.custom
@@ -3839,28 +4038,23 @@ function MovesPane() {
         />
       ))}
       {subTab === 2 ? (
-        <Button
+        <AddListCard
+          label="Add custom move"
           onClick={() =>
             setCharacter((prev) => ({
               ...prev,
               classMoves: [
                 ...prev.classMoves,
-                { title: 'Custom Move', body: 'Describe this custom move.', custom: true },
+                {
+                  id: createLocalId('move'),
+                  title: 'Custom Move',
+                  body: 'Describe this custom move.',
+                  custom: true,
+                },
               ],
             }))
           }
-          startIcon={<Plus size={16} />}
-          sx={{
-            minHeight: 46,
-            borderRadius: '4px',
-            border: `1px dashed ${alpha(border, 0.85)}`,
-            color: ink,
-            textTransform: 'none',
-            fontWeight: 800,
-          }}
-        >
-          Add custom move
-        </Button>
+        />
       ) : null}
     </Stack>
   );
@@ -3905,6 +4099,8 @@ function TechniqueAccordion({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ approach, name, summary, description });
   const categoryColor = techniqueCategoryColor(approach, isDarkMode);
+  const fatigueAccentColor = bookAccent;
+  const markedFatigueCount = getMarkedFatigueCount(description);
   function saveEdit() {
     const nextName = draft.name.trim();
     if (!nextName) return;
@@ -3922,16 +4118,25 @@ function TechniqueAccordion({
         <Box
           component="button"
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setOpen((value) => !value);
+          }}
           aria-expanded={open}
           sx={{
+            position: 'relative',
             display: 'flex',
             // Center vertically so the element badge aligns with the
             // middle of the title / summary text block.
             alignItems: 'center',
             width: '100%',
+            height: open ? 'auto' : 92,
+            minHeight: open ? 92 : undefined,
             gap: 0.9,
-            p: 0,
+            pt: 0.75,
+            pr: 3.2,
+            pb: 0.5,
+            pl: 0,
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -3965,7 +4170,7 @@ function TechniqueAccordion({
               height={34}
             />
           )}
-          <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
+          <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0, pr: 1.25 }}>
             {/* Approach eyebrow — color keyed to the technique's approach. */}
             {editing ? (
               <>
@@ -4062,6 +4267,15 @@ function TechniqueAccordion({
                     fontFamily: 'Georgia, "Times New Roman", serif',
                     fontSize: '0.82rem',
                     lineHeight: 1.5,
+                    pb: 0.45,
+                    ...(open
+                      ? {}
+                      : {
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 3,
+                          overflow: 'hidden',
+                        }),
                   }}
                 >
                   {summary}
@@ -4069,45 +4283,56 @@ function TechniqueAccordion({
               </>
             )}
           </Stack>
-          <Stack alignItems="center" spacing={0.25} sx={{ pt: '2px' }}>
-            <Typography
+          {markedFatigueCount > 0 ? (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.45}
               sx={{
-                color: techColor,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.58rem',
-                fontWeight: 900,
-                letterSpacing: '0.08em',
+                position: 'absolute',
+                top: 8,
+                right: 4,
+                px: 0.15,
               }}
             >
-              FATIGUE
-            </Typography>
-            <Stack direction="row" gap={0.3}>
-              {[0, 1].map((i) => (
-                <Box
-                  key={i}
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    border: `1px solid ${techColor}`,
-                    bgcolor: i === 0 ? techColor : 'transparent',
-                  }}
-                />
-              ))}
+              <Stack direction="row" gap={0.25} alignItems="center">
+                {Array.from({ length: markedFatigueCount }).map((_, i) => (
+                  <FatigueDiamond
+                    key={i}
+                    filled
+                    color={fatigueAccentColor}
+                    size={8}
+                  />
+                ))}
+              </Stack>
+              <Typography
+                sx={{
+                  color: fatigueAccentColor,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.58rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.08em',
+                  lineHeight: 1,
+                }}
+              >
+                FATIGUE
+              </Typography>
             </Stack>
-            <Box
-              sx={{
-                transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease',
-                color: alpha(ink, 0.8),
-                fontSize: '0.95rem',
-                lineHeight: 1,
-                mt: 0.3,
-              }}
-            >
-              ›
-            </Box>
-          </Stack>
+          ) : null}
+          <Box
+            component={ChevronRight}
+            size={18}
+            sx={{
+              position: 'absolute',
+              right: 4,
+              top: '50%',
+              transform: open ? 'translateY(-50%) rotate(90deg)' : 'translateY(-50%) rotate(0deg)',
+              transformOrigin: 'center',
+              transition: 'transform 0.2s ease',
+              color: alpha(ink, 0.8),
+              flex: '0 0 auto',
+            }}
+          />
         </Box>
         {open ? (
           <>
@@ -4158,13 +4383,19 @@ function TechniqueAccordion({
             {editing ? (
               <>
                 <Button
-                  onClick={() => setEditing(false)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setEditing(false);
+                  }}
                   sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={saveEdit}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    saveEdit();
+                  }}
                   sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
                 >
                   Save
@@ -4173,7 +4404,8 @@ function TechniqueAccordion({
             ) : (
               <>
                 <Button
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setDraft({ approach, name, summary, description });
                     setOpen(true);
                     setEditing(true);
@@ -4184,7 +4416,10 @@ function TechniqueAccordion({
                   Edit
                 </Button>
                 <Button
-                  onClick={onDelete}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete?.();
+                  }}
                   startIcon={<Trash2 size={14} />}
                   sx={{ color: passionRed, textTransform: 'none', fontWeight: 800 }}
                 >
@@ -4415,12 +4650,15 @@ function CombatPane() {
               activeIndex={techFilter}
               onChange={setTechFilter}
             />
-            {visibleTechniques.map((tech) => {
+            {visibleTechniques.map((tech, index) => {
               const isBasic = tech.type === 'basic';
               const visual = techniqueElementVisual(tech.type);
               return (
                 <TechniqueAccordion
-                  key={tech.name}
+                  key={
+                    tech.id ??
+                    `${tech.custom ? 'custom' : tech.classTechnique ? 'class' : 'tech'}-${tech.type}-${tech.level}-${tech.name}-${index}`
+                  }
                   approach={tech.approach}
                   name={tech.name}
                   summary={tech.summary}
@@ -4473,7 +4711,8 @@ function CombatPane() {
                 </Typography>
               </Panel>
             ) : null}
-            <Button
+            <AddListCard
+              label="Add custom technique"
               onClick={() =>
                 setCharacterState((prev) => {
                   const nextType =
@@ -4485,6 +4724,7 @@ function CombatPane() {
                     techniques: [
                       ...prev.techniques,
                       {
+                        id: createLocalId('technique'),
                         type: nextType,
                         approach: 'Advance & Attack',
                         level: 'learned',
@@ -4497,18 +4737,7 @@ function CombatPane() {
                   };
                 })
               }
-              startIcon={<Plus size={16} />}
-              sx={{
-                minHeight: 46,
-                borderRadius: '4px',
-                border: `1px dashed ${alpha(border, 0.85)}`,
-                color: ink,
-                textTransform: 'none',
-                fontWeight: 800,
-              }}
-            >
-              Add custom technique
-            </Button>
+            />
           </>
         ) : null}
 
@@ -4593,6 +4822,8 @@ function CombatPane() {
                       label={label}
                       active={Boolean(activeConditions[label])}
                       activeColor={conditionColor}
+                      inactiveTextColor="#000000"
+                      hexagonal
                       onToggle={() => toggleCondition(label)}
                     />
                   </Box>
@@ -4654,15 +4885,222 @@ function ConnectionsSection() {
   const influenceLabelColor = bookAccent;
   const influenceDotsColor = bookAccent;
   // Connections come from the active character record.
-  const connections = useAtomValue(characterStateAtom).connections;
+  const [character, setCharacter] = useAtom(characterStateAtom);
+  const [pendingConnectionDelete, setPendingConnectionDelete] = useState<number | null>(null);
+  const connections = character.connections;
+  const addConnection = () =>
+    setCharacter((prev) => ({
+      ...prev,
+      connections: [
+        ...prev.connections,
+        {
+          id: createLocalId('connection'),
+          name: 'New Connection',
+          role: 'Role',
+          note: 'Add connection notes.',
+        },
+      ],
+    }));
   return (
     <Stack spacing={1}>
       <SectionTitle>Connections</SectionTitle>
-      {connections.map(({ name, role, note }, index) => (
-        <Panel key={name}>
-          <Stack spacing={0.45}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Stack spacing={0.2} sx={{ flex: 1, minWidth: 0 }}>
+      {connections.map(({ id, name, role, note }, index) => (
+        <ConnectionAccordion
+          key={id ?? `${name}-${role}-${index}`}
+          name={name}
+          role={role}
+          note={note}
+          influence={4 - index}
+          influenceLabelColor={influenceLabelColor}
+          influenceDotsColor={influenceDotsColor}
+          onUpdate={(next) =>
+            setCharacter((prev) => ({
+              ...prev,
+              connections: prev.connections.map((connection, i) =>
+                i === index ? { ...connection, ...next } : connection,
+              ),
+            }))
+          }
+          onRequestDelete={() => setPendingConnectionDelete(index)}
+        />
+      ))}
+      <AddListCard label="Add Connection" onClick={addConnection} />
+      <AvatarLegendsConfirmDialog
+        open={pendingConnectionDelete !== null}
+        onCancel={() => setPendingConnectionDelete(null)}
+        onConfirm={() => {
+          if (pendingConnectionDelete === null) return;
+          setCharacter((prev) => ({
+            ...prev,
+            connections: prev.connections.filter((_, index) => index !== pendingConnectionDelete),
+          }));
+          setPendingConnectionDelete(null);
+        }}
+      />
+    </Stack>
+  );
+}
+
+function ConnectionAccordion({
+  name,
+  role,
+  note,
+  influence,
+  influenceLabelColor,
+  influenceDotsColor,
+  onUpdate,
+  onRequestDelete,
+}: {
+  name: string;
+  role: string;
+  note: string;
+  influence: number;
+  influenceLabelColor: string;
+  influenceDotsColor: string;
+  onUpdate: (next: { name?: string; role?: string; note?: string }) => void;
+  onRequestDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [editingField, setEditingField] = useState<'main' | 'note' | null>(null);
+  const [draftName, setDraftName] = useState(name);
+  const [draftRole, setDraftRole] = useState(role);
+  const [draftNote, setDraftNote] = useState(note);
+
+  function commitEdit() {
+    if (editingField === 'main') {
+      const nextName = draftName.trim();
+      const nextRole = draftRole.trim();
+      if (nextName || nextRole) {
+        onUpdate({
+          name: nextName || name,
+          role: nextRole || role,
+        });
+      }
+    } else if (editingField === 'note') {
+      onUpdate({ note: draftNote.trim() });
+    }
+    setEditingField(null);
+  }
+
+  function cancelEdit() {
+    if (editingField === 'main') {
+      setDraftName(name);
+      setDraftRole(role);
+    } else if (editingField === 'note') {
+      setDraftNote(note);
+    }
+    setEditingField(null);
+  }
+
+  const mainSwipeActions = [
+    {
+      icon: <Trash2 size={18} />,
+      color: '#7a2424',
+      ariaLabel: 'Delete connection',
+      closeOnClick: false,
+      onClick: onRequestDelete,
+    },
+    {
+      icon: <Pencil size={18} />,
+      color: bookAccent,
+      ariaLabel: 'Edit connection',
+      onClick: () => {
+        setDraftName(name);
+        setDraftRole(role);
+        setEditingField('main');
+      },
+    },
+  ];
+  const noteSwipeActions = [
+    {
+      icon: <Pencil size={18} />,
+      color: bookAccent,
+      ariaLabel: 'Edit connection description',
+      onClick: () => {
+        setDraftNote(note);
+        setEditingField('note');
+      },
+    },
+  ];
+
+  return (
+    <SwipeableCard actions={mainSwipeActions}>
+      <Panel>
+        <Stack spacing={0.7} sx={{ px: 0.45, py: 0.35 }}>
+          <Box
+            component="button"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (editingField) return;
+              setOpen((value) => !value);
+            }}
+            aria-expanded={open}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '1fr auto auto',
+              alignItems: 'center',
+              width: '100%',
+              columnGap: 0.8,
+              py: 0.25,
+              px: 0.2,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+          <Stack spacing={0.2} sx={{ minWidth: 0 }}>
+            {editingField === 'main' ? (
+              <Box
+                onBlur={(event) => {
+                  const nextFocus = event.relatedTarget;
+                  if (nextFocus instanceof Node && event.currentTarget.contains(nextFocus)) return;
+                  commitEdit();
+                }}
+              >
+                <InputBase
+                  value={draftName}
+                  autoFocus
+                  onClick={(event) => event.stopPropagation()}
+                  onChange={(event) => setDraftName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') commitEdit();
+                    if (event.key === 'Escape') cancelEdit();
+                  }}
+                  sx={{
+                    width: '100%',
+                    color: ink,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '1rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.05,
+                    '& input': { p: 0 },
+                  }}
+                />
+                <InputBase
+                  value={draftRole}
+                  onClick={(event) => event.stopPropagation()}
+                  onChange={(event) => setDraftRole(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') commitEdit();
+                    if (event.key === 'Escape') cancelEdit();
+                  }}
+                  sx={{
+                    width: '100%',
+                    color: brownSoft,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    fontStyle: 'italic',
+                    '& input': { p: 0 },
+                  }}
+                />
+              </Box>
+            ) : (
+              <>
                 <Typography
                   sx={{
                     color: ink,
@@ -4687,73 +5125,99 @@ function ConnectionsSection() {
                 >
                   {role}
                 </Typography>
-              </Stack>
-              {/* No more heart icon — Influence label + dots stand on
-                  their own. */}
-              <Stack alignItems="flex-end" spacing={0.2}>
-                <Typography
-                  sx={{
-                    color: influenceLabelColor,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.54rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.12em',
-                  }}
-                >
-                  INFLUENCE
-                </Typography>
-                <StatDots value={4 - index} color={influenceDotsColor} />
-              </Stack>
-            </Stack>
+              </>
+            )}
+          </Stack>
+          <Stack alignItems="flex-end" spacing={0.2} sx={{ pr: 1.1 }}>
+            <Typography
+              sx={{
+                color: influenceLabelColor,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.54rem',
+                fontWeight: 900,
+                letterSpacing: '0.12em',
+              }}
+            >
+              INFLUENCE
+            </Typography>
+            <StatDots value={influence} color={influenceDotsColor} />
+          </Stack>
+          <Box
+            component={ChevronRight}
+            size={18}
+            sx={{
+              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease',
+              color: alpha(ink, 0.8),
+              display: 'flex',
+              alignItems: 'center',
+              flex: '0 0 auto',
+            }}
+          />
+        </Box>
+        {open ? (
+          <>
             <Box
               sx={{
                 height: '1px',
                 background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
               }}
             />
-            <Typography
-              sx={{
-                color: brown,
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.86rem',
-                lineHeight: 1.5,
-                pt: 2,
-                px: 2,
-                pb: 2,
-              }}
-            >
-              {note}
-            </Typography>
-          </Stack>
-        </Panel>
-      ))}
-      <Panel ornament={false}>
-        <Stack direction="row" justifyContent="center" alignItems="center" gap={0.6}>
-          <Typography
-            sx={{
-              color: ink,
-              fontSize: '0.95rem',
-              fontWeight: 900,
-              fontFamily: 'Georgia, serif',
-            }}
-          >
-            +
-          </Typography>
-          <Typography
-            sx={{
-              color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.78rem',
-              fontWeight: 900,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Add Connection
-          </Typography>
+            <SwipeableCard actions={noteSwipeActions} borderRadius="4px">
+              <Box
+                sx={{
+                  border: `1px solid ${alpha(border, 0.6)}`,
+                  borderRadius: '4px',
+                  bgcolor: alpha(parchmentLight, 0.72),
+                }}
+              >
+                {editingField === 'note' ? (
+                  <InputBase
+                    value={draftNote}
+                    autoFocus
+                    multiline
+                    maxRows={6}
+                    onChange={(event) => setDraftNote(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && event.ctrlKey) commitEdit();
+                      if (event.key === 'Escape') cancelEdit();
+                    }}
+                    onBlur={commitEdit}
+                    sx={{
+                      width: '100%',
+                      color: brown,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                      pt: 2.2,
+                      px: 2.3,
+                      pb: 2.2,
+                      boxSizing: 'border-box',
+                      '& textarea': { p: 0 },
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    sx={{
+                      color: brown,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                      pt: 2.2,
+                      px: 2.3,
+                      pb: 2.2,
+                    }}
+                  >
+                    {note}
+                  </Typography>
+                )}
+              </Box>
+            </SwipeableCard>
+          </>
+        ) : null}
         </Stack>
       </Panel>
-    </Stack>
+    </SwipeableCard>
   );
 }
 
@@ -4830,12 +5294,19 @@ function BackpackCard({
 
   return (
     <SwipeableCard actions={swipeActions}>
-      <Panel noNotch>
+      <Panel
+        noNotch
+        onClick={() => {
+          if (editingField) return;
+          setOpen((value) => !value);
+        }}
+      >
         <Stack spacing={0.5}>
           <Box
             component="button"
             type="button"
-            onClick={() => {
+            onClick={(event) => {
+              event.stopPropagation();
               if (editingField) return;
               setOpen((value) => !value);
             }}
@@ -4872,6 +5343,7 @@ function BackpackCard({
                 <InputBase
                   value={draftName}
                   autoFocus
+                  onClick={(event) => event.stopPropagation()}
                   onChange={(e) => setDraftName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') commitEdit();
@@ -4985,8 +5457,7 @@ function BackpackCard({
 /**
  * Swipeable fatigue card with modal editor for base and temp capacities.
  * Base fatigue tracks mandatory damage; temp fatigue tracks additional
- * boxes from conditions or abilities. Temp diamonds use the same diamond
- * shape as base fatigue and render in the Avatar accent blue.
+ * boxes from conditions or abilities.
  */
 function FatigueCard({
   baseFatigue,
@@ -5002,7 +5473,8 @@ function FatigueCard({
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [draftBaseCapacity, setDraftBaseCapacity] = useState(baseFatigue.length);
   const [draftTempCapacity, setDraftTempCapacity] = useState(tempFatigue.length);
-  const tempFatigueColor = isDarkMode ? darkConditionGold : bookAccent;
+  const baseFatigueColor = bookAccent;
+  const tempFatigueColor = accent;
 
   function openEditor() {
     setDraftBaseCapacity(baseFatigue.length);
@@ -5083,6 +5555,7 @@ function FatigueCard({
                   <FatigueDiamond
                     key={`base-${index}`}
                     filled={baseFatigue[index]}
+                    color={baseFatigueColor}
                     size={28}
                     ariaLabel={`Toggle base fatigue ${index + 1}`}
                     onToggle={() => toggleBaseFatigue(index)}
@@ -5730,6 +6203,7 @@ function AvatarLegends() {
               )}
               <AccountSettings
                 gameSystem="avatar-legends"
+                localCharacterName={character.name}
                 tokensOverride={accountTokens}
                 createCharacterPayload={({ avatarClass }) =>
                   createRandomAvatarLegendsBackendPayload(avatarClass as AvatarClassData | null)
@@ -5747,8 +6221,8 @@ function AvatarLegends() {
                 mt: '-2px',
                 px: 1.4,
                 pt: 2.55,
-                pb: 0.2,
-                minHeight: 64,
+                pb: 0,
+                minHeight: 58,
                 background: tabTitleBg,
                 position: 'relative',
                 zIndex: 1,
@@ -5788,6 +6262,13 @@ function AvatarLegends() {
               sx={{
                 flex: 1,
                 overflowY: 'auto',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                  width: 0,
+                  height: 0,
+                },
                 px: 1.25,
                 pt: 2.5,
                 // Reserve room at the bottom so the last bit of content

@@ -19,7 +19,7 @@ const manifestBase = {
   background_color: '#173755',
   display: 'standalone',
   orientation: 'portrait',
-  pwa_version: '2026.05.31.1',
+  pwa_version: '2026.06.01.1',
   icons: [
     { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
     { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
@@ -66,24 +66,28 @@ function getStoredAvatarTraining(): AvatarTraining {
 const defaultIconHref = '/favicon.svg';
 const defaultAppleTouchIconHref = '/apple-touch-icon.png';
 
+function absoluteManifestUrl(src: string) {
+  return new URL(src, window.location.origin).toString();
+}
+
 function isAvatarLegendsRoute(pathname: string): boolean {
   return pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/');
 }
 
 function iconsForRoute(pathname: string) {
-  if (isAvatarLegendsRoute(pathname)) {
-    return [
-      { src: avatarLegendsIcon192, sizes: '192x192', type: 'image/png' },
-      { src: avatarLegendsIcon512, sizes: '512x512', type: 'image/png' },
-      {
-        src: avatarLegendsIcon512,
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any maskable',
-      },
-    ];
-  }
-  return manifestBase.icons;
+  const icons = isAvatarLegendsRoute(pathname)
+    ? [
+        { src: avatarLegendsIcon192, sizes: '192x192', type: 'image/png' },
+        { src: avatarLegendsIcon512, sizes: '512x512', type: 'image/png' },
+        {
+          src: avatarLegendsIcon512,
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+      ]
+    : manifestBase.icons;
+  return icons.map((icon) => ({ ...icon, src: absoluteManifestUrl(icon.src) }));
 }
 
 /**

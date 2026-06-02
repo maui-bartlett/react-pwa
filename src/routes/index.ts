@@ -33,7 +33,7 @@ const routes: Routes = [
   {
     component: asyncComponentLoader(() => import('@/pages/FabU')),
     path: '/fab-u',
-    title: 'Fab-u',
+    title: 'Fab U',
     icon: AutoAwesomeIcon,
   },
   {
