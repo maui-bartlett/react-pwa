@@ -14,7 +14,7 @@ import { alpha } from '@mui/material/styles';
 import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import { Backpack, ChevronRight, HandFist, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Backpack, ChevronRight, HandFist, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
@@ -28,9 +28,9 @@ import { api } from '../../../convex/_generated/api';
 // White training symbols extracted from the Avatar Legends training reference pages.
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
-import elementEarth from './assets/earthbending-symbol.png';
 import balanceCardBase from './assets/balance-card-base.png';
 import balanceCardForeground from './assets/balance-card-foreground.png';
+import elementEarth from './assets/earthbending-symbol.png';
 import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
 import elementTech from './assets/technology-symbol.png';
@@ -221,7 +221,6 @@ function createAvatarAccountTokens(
 let parchment = lightAvPalette.parchment;
 let parchmentLight = lightAvPalette.parchmentLight;
 let parchmentDeep = lightAvPalette.parchmentDeep;
-let washDeep = lightAvPalette.washDeep;
 let ink = lightAvPalette.ink;
 let deepInk = lightAvPalette.deepInk;
 let brown = lightAvPalette.brown;
@@ -387,7 +386,6 @@ function applyAvatarPalette(isDarkMode: boolean, primaryTraining: PrimaryTrainin
   parchment = next.parchment;
   parchmentLight = next.parchmentLight;
   parchmentDeep = next.parchmentDeep;
-  washDeep = next.washDeep;
   ink = next.ink;
   deepInk = next.deepInk;
   brown = next.brown;
@@ -687,8 +685,8 @@ const defaultBasicTechniques: Technique[] = [
 const defaultBalancePrinciples = ['Tradition', 'Progress'] as const;
 
 function createBalanceState(
-  leftPrinciple = defaultBalancePrinciples[0],
-  rightPrinciple = defaultBalancePrinciples[1],
+  leftPrinciple: string = defaultBalancePrinciples[0],
+  rightPrinciple: string = defaultBalancePrinciples[1],
   position = 0,
 ): BalanceState {
   const clamped = Math.max(-3, Math.min(3, Math.round(position)));
@@ -748,18 +746,7 @@ const defaultHistoryQuestions = [
   'What lesson from your past still guides you?',
 ];
 
-const randomNames = [
-  'Ren',
-  'Mira',
-  'Tao',
-  'Sena',
-  'Kori',
-  'Jun',
-  'Anika',
-  'Bo',
-  'Lian',
-  'Mei',
-];
+const randomNames = ['Ren', 'Mira', 'Tao', 'Sena', 'Kori', 'Jun', 'Anika', 'Bo', 'Lian', 'Mei'];
 const randomOrigins = [
   'Republic City',
   'Whale Tail Island',
@@ -776,15 +763,16 @@ function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)] ?? items[0];
 }
 
-function coerceClassName(classData: AvatarClassData | null | undefined, fallback = 'The Successor') {
+function coerceClassName(
+  classData: AvatarClassData | null | undefined,
+  fallback = 'The Successor',
+) {
   return typeof classData?.className === 'string' && classData.className.trim()
     ? classData.className
     : fallback;
 }
 
-function resolveAvatarPrinciples(
-  classData: AvatarClassData | null | undefined,
-): [string, string] {
+function resolveAvatarPrinciples(classData: AvatarClassData | null | undefined): [string, string] {
   if (Array.isArray(classData?.opposingPrinciples)) {
     const principles = classData.opposingPrinciples
       .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
@@ -797,15 +785,13 @@ function resolveAvatarPrinciples(
 function getBalanceValue(side: Record<string, number>, fallbackPrinciple: string) {
   const exact = side[fallbackPrinciple];
   if (typeof exact === 'number' && Number.isFinite(exact)) return exact;
-  const first = Object.values(side).find((value) => typeof value === 'number' && Number.isFinite(value));
+  const first = Object.values(side).find(
+    (value) => typeof value === 'number' && Number.isFinite(value),
+  );
   return first ?? 0;
 }
 
-function getBalancePosition(
-  balance: BalanceState,
-  leftPrinciple: string,
-  rightPrinciple: string,
-) {
+function getBalancePosition(balance: BalanceState, leftPrinciple: string, rightPrinciple: string) {
   const rightValue = getBalanceValue(balance.right, rightPrinciple);
   const leftValue = getBalanceValue(balance.left, leftPrinciple);
   const position = rightValue || -leftValue;
@@ -814,8 +800,8 @@ function getBalancePosition(
 
 function normalizeBalanceState(
   rawBalance: unknown,
-  leftPrinciple = defaultBalancePrinciples[0],
-  rightPrinciple = defaultBalancePrinciples[1],
+  leftPrinciple: string = defaultBalancePrinciples[0],
+  rightPrinciple: string = defaultBalancePrinciples[1],
 ): BalanceState {
   if (typeof rawBalance === 'number' && Number.isFinite(rawBalance)) {
     return createBalanceState(leftPrinciple, rightPrinciple, rawBalance);
@@ -830,7 +816,11 @@ function normalizeBalanceState(
       candidate.right && typeof candidate.right === 'object'
         ? (candidate.right as Record<string, number>)
         : {};
-    return createBalanceState(leftPrinciple, rightPrinciple, getBalancePosition({ left, right }, leftPrinciple, rightPrinciple));
+    return createBalanceState(
+      leftPrinciple,
+      rightPrinciple,
+      getBalancePosition({ left, right }, leftPrinciple, rightPrinciple),
+    );
   }
   return createBalanceState(leftPrinciple, rightPrinciple);
 }
@@ -841,7 +831,8 @@ function coerceStartingStats(classData: AvatarClassData | null | undefined) {
       ? (classData.startingStats as Record<string, unknown>)
       : {};
   return {
-    Creativity: typeof raw.Creativity === 'number' ? raw.Creativity : defaultCharacter.stats.Creativity,
+    Creativity:
+      typeof raw.Creativity === 'number' ? raw.Creativity : defaultCharacter.stats.Creativity,
     Focus: typeof raw.Focus === 'number' ? raw.Focus : defaultCharacter.stats.Focus,
     Harmony: typeof raw.Harmony === 'number' ? raw.Harmony : defaultCharacter.stats.Harmony,
     Passion: typeof raw.Passion === 'number' ? raw.Passion : defaultCharacter.stats.Passion,
@@ -873,7 +864,9 @@ function trainingToTechniqueType(training: PrimaryTraining): TechniqueElement {
 }
 
 function coerceApproach(value: unknown): TechniqueCategory {
-  return value === 'Defend & Maneuver' || value === 'Evade & Observe' || value === 'Advance & Attack'
+  return value === 'Defend & Maneuver' ||
+    value === 'Evade & Observe' ||
+    value === 'Advance & Attack'
     ? value
     : 'Advance & Attack';
 }
@@ -1356,9 +1349,7 @@ function techniqueElementVisual(type: TechniqueElement): {
 }
 
 function getMarkedFatigueCount(text: string) {
-  const match = text
-    .toLowerCase()
-    .match(/\bmark(?:ing)?\s+(?:(\d+)[-\s])?(?:a\s+)?fatigue\b/);
+  const match = text.toLowerCase().match(/\bmark(?:ing)?\s+(?:(\d+)[-\s])?(?:a\s+)?fatigue\b/);
   if (!match) return 0;
   const parsed = match[1] ? Number.parseInt(match[1], 10) : 1;
   return Number.isFinite(parsed) ? Math.max(1, Math.min(10, parsed)) : 1;
@@ -1666,13 +1657,7 @@ function WatercolorBand({
         {brushBorder === 'gear' ? (
           <>
             {bottom ? (
-              <rect
-                x={0}
-                y={gearY + 6}
-                width={430}
-                height={2.5}
-                fill={alpha(brushColor, 0.58)}
-              />
+              <rect x={0} y={gearY + 6} width={430} height={2.5} fill={alpha(brushColor, 0.58)} />
             ) : null}
             {[
               {
@@ -1742,22 +1727,18 @@ function WatercolorBand({
                             : '#ffffff'
                           : brushColor === '#3f214d' && index === 2
                             ? `url(#${technologyLargeGearStrokeId})`
-                          : alpha(
-                              brushColor === '#3f214d' && index === 2
-                                ? '#24102f'
-                                : brushColor === '#3f214d' && index === 3
-                                  ? '#ffffff'
-                                  : brushColor !== '#3f214d' && index === 2
-                                    ? '#c79aee'
-                                    : gearOutlineColor,
-                              gear.opacity + 0.08,
-                            )
+                            : alpha(
+                                brushColor === '#3f214d' && index === 2
+                                  ? '#24102f'
+                                  : brushColor === '#3f214d' && index === 3
+                                    ? '#ffffff'
+                                    : brushColor !== '#3f214d' && index === 2
+                                      ? '#c79aee'
+                                      : gearOutlineColor,
+                                gear.opacity + 0.08,
+                              )
                       }
-                      strokeOpacity={
-                        index === 4
-                          ? gear.opacity + 0.08
-                          : undefined
-                      }
+                      strokeOpacity={index === 4 ? gear.opacity + 0.08 : undefined}
                       strokeWidth={1.55}
                       strokeLinejoin="round"
                       strokeLinecap="round"
@@ -1767,9 +1748,7 @@ function WatercolorBand({
                         d="M1.8,10 C2,10.7 1.9,11.4 1.5,12.2 C0.8,12.8 -0.1,13.3 -1.2,13.3 C-2.4,13 -3.5,12.2 -4.3,11.1 C-4.7,9.7 -4.6,8.1 -4,6.5 C-2.8,5.2 -1.2,4.3 0.7,3.9 C2.7,4.2 4.6,5.1 6.2,6.7 C7.2,8.8 7.5,11.1 7,13.6 C5.7,15.8 3.7,17.6 1.2,18.7 C-1.7,18.9 -4.5,18.2 -7.1,16.5 C-9.1,14 -10.2,11 -10.2,7.7 C-9.2,4.4 -7.2,1.6 -4.2,-0.5 C-0.7,-1.6 3.1,-1.5 6.7,-0.2 C9.8,2.3 12.1,5.7 13.1,9.7 C12.8,13.9 11.1,18 8.2,21.3"
                         fill="none"
                         stroke={
-                          brushColor === '#3f214d'
-                            ? alpha('#16091f', 0.96)
-                            : alpha('#d8a6ff', 0.96)
+                          brushColor === '#3f214d' ? alpha('#16091f', 0.96) : alpha('#d8a6ff', 0.96)
                         }
                         strokeWidth={2.15}
                         strokeLinecap="round"
@@ -2113,7 +2092,7 @@ function StatsPanel() {
   }
   const statOptions = [-3, -2, -1, 0, 1, 2, 3];
   return (
-    <Panel onClick={() => !editing && setOpen((value) => !value)}>
+    <Panel>
       <SectionTitle>Stats</SectionTitle>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
         {rows.map(([label, color]) => {
@@ -2579,7 +2558,7 @@ function CapacityPicker({
 }) {
   const setClamped = (next: number) => onChange(Math.max(0, Math.min(10, next)));
   return (
-    <Stack spacing={0.6} onClick={() => setOpen((value) => !value)} sx={{ cursor: 'pointer' }}>
+    <Stack spacing={0.6}>
       <Typography
         sx={{
           fontSize: '0.74rem',
@@ -3412,9 +3391,7 @@ function CharacterPane() {
                 <CharacterEditField
                   label="Pronouns"
                   value={identityDraft.pronouns}
-                  onChange={(value) =>
-                    setIdentityDraft((prev) => ({ ...prev, pronouns: value }))
-                  }
+                  onChange={(value) => setIdentityDraft((prev) => ({ ...prev, pronouns: value }))}
                 />
                 <CharacterEditField
                   label="Age"
@@ -3535,64 +3512,59 @@ function CharacterPane() {
               >
                 {character.name}
               </Typography>
-          <Stack direction="row" alignItems="center" gap={0.7}>
-            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
-            <MoveDiamond color={accent} size={9} />
-            <Typography
-              sx={{
-                // bookAccent is the muted-gold rulebook chapter color in
-                // both themes.
-                color: bookAccent,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.72rem',
-                fontWeight: 900,
-                letterSpacing: '0.16em',
-              }}
-            >
-              {character.className.toUpperCase()}
-            </Typography>
-            <MoveDiamond color={accent} size={9} />
-            <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
-          </Stack>
-          <Stack direction="row" gap={0.6} flexWrap="wrap" justifyContent="center">
-            {facts.map((item, i) => (
-              <Stack key={item} direction="row" alignItems="center" gap={0.6}>
-                {i > 0 ? (
-                  <Box
-                    sx={{
-                      width: 3,
-                      height: 3,
-                      borderRadius: '50%',
-                      bgcolor: alpha(brown, 0.5),
-                    }}
-                  />
-                ) : null}
+              <Stack direction="row" alignItems="center" gap={0.7}>
+                <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
+                <MoveDiamond color={accent} size={9} />
                 <Typography
                   sx={{
-                    color: brown,
-                    fontFamily: 'Georgia, serif',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    fontStyle: 'italic',
+                    // bookAccent is the muted-gold rulebook chapter color in
+                    // both themes.
+                    color: bookAccent,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.72rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.16em',
                   }}
                 >
-                  {item}
+                  {character.className.toUpperCase()}
                 </Typography>
+                <MoveDiamond color={accent} size={9} />
+                <Box sx={{ width: 28, height: '1px', bgcolor: alpha(accent, 0.7) }} />
               </Stack>
-            ))}
-          </Stack>
-          <PrimaryTrainingSelect />
+              <Stack direction="row" gap={0.6} flexWrap="wrap" justifyContent="center">
+                {facts.map((item, i) => (
+                  <Stack key={item} direction="row" alignItems="center" gap={0.6}>
+                    {i > 0 ? (
+                      <Box
+                        sx={{
+                          width: 3,
+                          height: 3,
+                          borderRadius: '50%',
+                          bgcolor: alpha(brown, 0.5),
+                        }}
+                      />
+                    ) : null}
+                    <Typography
+                      sx={{
+                        color: brown,
+                        fontFamily: 'Georgia, serif',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      {item}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+              <PrimaryTrainingSelect />
             </>
           )}
         </Stack>
       </Panel>
 
-      <Panel
-        onClick={() => {
-          if (editingField) return;
-          setOpen((value) => !value);
-        }}
-      >
+      <Panel>
         <SectionTitle>Background</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 0.7, mt: 0.9 }}>
           {['Urban', 'Privileged', 'Monastic', 'Outlaw', 'Military', 'Wilderness'].map((item) => (
@@ -4297,12 +4269,7 @@ function TechniqueAccordion({
             >
               <Stack direction="row" gap={0.25} alignItems="center">
                 {Array.from({ length: markedFatigueCount }).map((_, i) => (
-                  <FatigueDiamond
-                    key={i}
-                    filled
-                    color={fatigueAccentColor}
-                    size={8}
-                  />
+                  <FatigueDiamond key={i} filled color={fatigueAccentColor} size={8} />
                 ))}
               </Stack>
               <Typography
@@ -5050,171 +5017,172 @@ function ConnectionAccordion({
               textAlign: 'left',
             }}
           >
-          <Stack spacing={0.2} sx={{ minWidth: 0 }}>
-            {editingField === 'main' ? (
-              <Box
-                onBlur={(event) => {
-                  const nextFocus = event.relatedTarget;
-                  if (nextFocus instanceof Node && event.currentTarget.contains(nextFocus)) return;
-                  commitEdit();
-                }}
-              >
-                <InputBase
-                  value={draftName}
-                  autoFocus
-                  onClick={(event) => event.stopPropagation()}
-                  onChange={(event) => setDraftName(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') commitEdit();
-                    if (event.key === 'Escape') cancelEdit();
-                  }}
-                  sx={{
-                    width: '100%',
-                    color: ink,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '1rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    lineHeight: 1.05,
-                    '& input': { p: 0 },
-                  }}
-                />
-                <InputBase
-                  value={draftRole}
-                  onClick={(event) => event.stopPropagation()}
-                  onChange={(event) => setDraftRole(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') commitEdit();
-                    if (event.key === 'Escape') cancelEdit();
-                  }}
-                  sx={{
-                    width: '100%',
-                    color: brownSoft,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    fontStyle: 'italic',
-                    '& input': { p: 0 },
-                  }}
-                />
-              </Box>
-            ) : (
-              <>
-                <Typography
-                  sx={{
-                    color: ink,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '1rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    lineHeight: 1.05,
+            <Stack spacing={0.2} sx={{ minWidth: 0 }}>
+              {editingField === 'main' ? (
+                <Box
+                  onBlur={(event) => {
+                    const nextFocus = event.relatedTarget;
+                    if (nextFocus instanceof Node && event.currentTarget.contains(nextFocus))
+                      return;
+                    commitEdit();
                   }}
                 >
-                  {name}
-                </Typography>
-                <Typography
-                  sx={{
-                    color: brownSoft,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    fontStyle: 'italic',
-                  }}
-                >
-                  {role}
-                </Typography>
-              </>
-            )}
-          </Stack>
-          <Stack alignItems="flex-end" spacing={0.2} sx={{ pr: 1.1 }}>
-            <Typography
-              sx={{
-                color: influenceLabelColor,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.54rem',
-                fontWeight: 900,
-                letterSpacing: '0.12em',
-              }}
-            >
-              INFLUENCE
-            </Typography>
-            <StatDots value={influence} color={influenceDotsColor} />
-          </Stack>
-          <Box
-            component={ChevronRight}
-            size={18}
-            sx={{
-              transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease',
-              color: alpha(ink, 0.8),
-              display: 'flex',
-              alignItems: 'center',
-              flex: '0 0 auto',
-            }}
-          />
-        </Box>
-        {open ? (
-          <>
-            <Box
-              sx={{
-                height: '1px',
-                background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
-              }}
-            />
-            <SwipeableCard actions={noteSwipeActions} borderRadius="4px">
-              <Box
-                sx={{
-                  border: `1px solid ${alpha(border, 0.6)}`,
-                  borderRadius: '4px',
-                  bgcolor: alpha(parchmentLight, 0.72),
-                }}
-              >
-                {editingField === 'note' ? (
                   <InputBase
-                    value={draftNote}
+                    value={draftName}
                     autoFocus
-                    multiline
-                    maxRows={6}
-                    onChange={(event) => setDraftNote(event.target.value)}
+                    onClick={(event) => event.stopPropagation()}
+                    onChange={(event) => setDraftName(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key === 'Enter' && event.ctrlKey) commitEdit();
+                      if (event.key === 'Enter') commitEdit();
                       if (event.key === 'Escape') cancelEdit();
                     }}
-                    onBlur={commitEdit}
                     sx={{
                       width: '100%',
-                      color: brown,
-                      fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.86rem',
-                      lineHeight: 1.5,
-                      pt: 2.2,
-                      px: 2.3,
-                      pb: 2.2,
-                      boxSizing: 'border-box',
-                      '& textarea': { p: 0 },
+                      color: ink,
+                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: '1rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1.05,
+                      '& input': { p: 0 },
                     }}
                   />
-                ) : (
+                  <InputBase
+                    value={draftRole}
+                    onClick={(event) => event.stopPropagation()}
+                    onChange={(event) => setDraftRole(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') commitEdit();
+                      if (event.key === 'Escape') cancelEdit();
+                    }}
+                    sx={{
+                      width: '100%',
+                      color: brownSoft,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      fontStyle: 'italic',
+                      '& input': { p: 0 },
+                    }}
+                  />
+                </Box>
+              ) : (
+                <>
                   <Typography
                     sx={{
-                      color: brown,
-                      fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.86rem',
-                      lineHeight: 1.5,
-                      pt: 2.2,
-                      px: 2.3,
-                      pb: 2.2,
+                      color: ink,
+                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: '1rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1.05,
                     }}
                   >
-                    {note}
+                    {name}
                   </Typography>
-                )}
-              </Box>
-            </SwipeableCard>
-          </>
-        ) : null}
+                  <Typography
+                    sx={{
+                      color: brownSoft,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    {role}
+                  </Typography>
+                </>
+              )}
+            </Stack>
+            <Stack alignItems="flex-end" spacing={0.2} sx={{ pr: 1.1 }}>
+              <Typography
+                sx={{
+                  color: influenceLabelColor,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.54rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.12em',
+                }}
+              >
+                INFLUENCE
+              </Typography>
+              <StatDots value={influence} color={influenceDotsColor} />
+            </Stack>
+            <Box
+              component={ChevronRight}
+              size={18}
+              sx={{
+                transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+                color: alpha(ink, 0.8),
+                display: 'flex',
+                alignItems: 'center',
+                flex: '0 0 auto',
+              }}
+            />
+          </Box>
+          {open ? (
+            <>
+              <Box
+                sx={{
+                  height: '1px',
+                  background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.65)} 12%, ${alpha(accent, 0.65)} 88%, transparent 100%)`,
+                }}
+              />
+              <SwipeableCard actions={noteSwipeActions} borderRadius="4px">
+                <Box
+                  sx={{
+                    border: `1px solid ${alpha(border, 0.6)}`,
+                    borderRadius: '4px',
+                    bgcolor: alpha(parchmentLight, 0.72),
+                  }}
+                >
+                  {editingField === 'note' ? (
+                    <InputBase
+                      value={draftNote}
+                      autoFocus
+                      multiline
+                      maxRows={6}
+                      onChange={(event) => setDraftNote(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' && event.ctrlKey) commitEdit();
+                        if (event.key === 'Escape') cancelEdit();
+                      }}
+                      onBlur={commitEdit}
+                      sx={{
+                        width: '100%',
+                        color: brown,
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                        pt: 2.2,
+                        px: 2.3,
+                        pb: 2.2,
+                        boxSizing: 'border-box',
+                        '& textarea': { p: 0 },
+                      }}
+                    />
+                  ) : (
+                    <Typography
+                      sx={{
+                        color: brown,
+                        fontFamily: 'Georgia, "Times New Roman", serif',
+                        fontSize: '0.86rem',
+                        lineHeight: 1.5,
+                        pt: 2.2,
+                        px: 2.3,
+                        pb: 2.2,
+                      }}
+                    >
+                      {note}
+                    </Typography>
+                  )}
+                </Box>
+              </SwipeableCard>
+            </>
+          ) : null}
         </Stack>
       </Panel>
     </SwipeableCard>

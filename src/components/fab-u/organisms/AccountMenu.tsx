@@ -458,8 +458,8 @@ function AccountMenu({
     if (!canLoadCharacters) return;
     const selectedAvatarClass =
       gameSystem === 'avatar-legends'
-        ? avatarClasses?.find((item) => item.class?.className === newAvatarClassName)?.class ??
-          avatarClasses?.[0]?.class
+        ? (avatarClasses?.find((item) => item.class?.className === newAvatarClassName)?.class ??
+          avatarClasses?.[0]?.class)
         : undefined;
     const payload = createCharacterPayload?.({ avatarClass: selectedAvatarClass });
     if (payload) {
