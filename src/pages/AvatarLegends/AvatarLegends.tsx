@@ -4990,7 +4990,9 @@ function CombatPane() {
                 selectedType={canonTechniqueType}
                 selectedTechniqueName={canonTechniqueName}
                 canonTechniques={canonTechniques}
-                canonLoading={addTechniqueKind === 'canon' && Boolean(canonTechniqueType) && !canonGameSystem}
+                canonLoading={
+                  addTechniqueKind === 'canon' && Boolean(canonTechniqueType) && !canonGameSystem
+                }
                 onSelectKind={(kind) => {
                   setAddTechniqueKind(kind);
                   setCanonTechniqueType('');
