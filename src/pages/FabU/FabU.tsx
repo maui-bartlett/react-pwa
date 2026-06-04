@@ -59,14 +59,16 @@ import {
   useFabUTokens,
 } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
+import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
-import { useIndexedDbCharacterPersistence } from '@/state/useIndexedDbCharacterPersistence';
+import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import {
+  type Character,
   MAX_CHARACTER_LEVEL,
   activeCombatTabState,
   activeTabState,
@@ -89,22 +91,9 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
 
-function FabULocalCharacterPersistence() {
-  useIndexedDbCharacterPersistence({
-    atom: characterState,
-    key: 'fab-u-character',
-    initialValue: initialFabUCharacter,
-    migrate: migrateFabULocalCharacter,
-    afterWrite() {
-      try {
-        window.localStorage.removeItem('fab-u-status-effects');
-      } catch {
-        // Legacy cleanup is best effort when browser storage is unavailable.
-      }
-    },
-  });
-
-  return null;
+function describeFabULocalCharacter(character: Character) {
+  const fullName = [character.name.firstName, character.name.lastName].filter(Boolean).join(' ');
+  return fullName || character.name.nickName || 'Fab U Character';
 }
 
 const screenMeta: Record<
@@ -624,6 +613,15 @@ function FabU() {
   const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSubTabScroll, setPendingCombatSubTabScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
+  const localCharacters = useLocalCharacterSlots({
+    atom: characterState,
+    gameSystem: 'fabula-ultima',
+    legacyKey: 'fab-u-character',
+    initialValue: initialFabUCharacter,
+    createCharacter: createRandomFabUCharacter,
+    describeCharacter: describeFabULocalCharacter,
+    migrate: migrateFabULocalCharacter,
+  });
   const statusEffects = character.statusEffects;
   const handleToggleEffect = (id: string) => {
     setCharacter((c) => ({
@@ -2385,6 +2383,7 @@ function FabU() {
       <AccountSettings
         gameSystem="fabula-ultima"
         localCharacterName={`${character.name.firstName} "${character.name.nickName}" ${character.name.lastName}`}
+        localCharacters={localCharacters}
       />
     );
 
@@ -2441,7 +2440,6 @@ function FabU() {
   return (
     <FabUThemeProvider>
       <>
-        <FabULocalCharacterPersistence />
         <ConvexCharacterSyncBoundary character={character} history={characterHistory} />
         <meta name="title" content="Fab-u Preview" />
         <Stack

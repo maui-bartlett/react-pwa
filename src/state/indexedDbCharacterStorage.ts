@@ -151,5 +151,10 @@ async function readIndexedDbCharacter<T>(key: string, initialValue: T): Promise<
   }
 }
 
-export { createIndexedDbCharacterStorage, readIndexedDbCharacter, readJsonLocalStorage };
+export {
+  createIndexedDbCharacterStorage,
+  readIndexedDbCharacter,
+  readIndexedDbValue,
+  readJsonLocalStorage,
+};
 export { removeIndexedDbValue, writeIndexedDbValue };

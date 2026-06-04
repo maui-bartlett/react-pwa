@@ -11,6 +11,7 @@ import {
   darkFabUTokens,
   fabUTokens,
 } from '@/components/fab-u/tokens';
+import type { UseLocalCharacterSlotsResult } from '@/state/useLocalCharacterSlots';
 import { useThemeMode } from '@/theme/hooks';
 
 import { GameSystem, gameSystemAtom } from './atoms';
@@ -24,6 +25,8 @@ type AccountSettingsProps = {
   gameSystem: GameSystem;
   /** Optional locally-active character name. */
   localCharacterName?: string;
+  /** Signed-out local character slots for this game system. */
+  localCharacters?: UseLocalCharacterSlotsResult;
   /** Optional palette override for game surfaces with dynamic theme colors. */
   tokensOverride?: FabUTokens;
   /** Optional game-specific creator for new character rows. */
@@ -45,6 +48,7 @@ type AccountSettingsProps = {
 function AccountSettings({
   gameSystem,
   localCharacterName,
+  localCharacters,
   tokensOverride,
   createCharacterPayload,
   selectCharacterEventName,
@@ -72,6 +76,7 @@ function AccountSettings({
     <FabUTokensContext.Provider value={tokens}>
       <AccountMenu
         localCharacterName={localCharacterName}
+        localCharacters={localCharacters}
         themeMode={isDarkMode ? 'dark' : 'light'}
         onToggleTheme={toggle}
         createCharacterPayload={createCharacterPayload}

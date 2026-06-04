@@ -21,7 +21,7 @@ import type { FabUTokens } from '@/components/fab-u/tokens';
 import AccountSettings from '@/sections/AccountSettings';
 import { createCharacterHistory } from '@/state/createCharacterHistory';
 import { readJsonLocalStorage } from '@/state/indexedDbCharacterStorage';
-import { useIndexedDbCharacterPersistence } from '@/state/useIndexedDbCharacterPersistence';
+import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 import { useThemeMode } from '@/theme/hooks';
 
@@ -1185,17 +1185,6 @@ function migrateAvatarLegendsLocalCharacter(
 ): CharacterState {
   const stored = readJsonLocalStorage(key);
   return stored === null ? initialValue : deserializeAvatarLegendsCharacter(stored);
-}
-
-function AvatarLegendsLocalCharacterPersistence() {
-  useIndexedDbCharacterPersistence({
-    atom: characterStateAtom,
-    key: 'avatar-legends-character',
-    initialValue: defaultCharacter,
-    migrate: migrateAvatarLegendsLocalCharacter,
-  });
-
-  return null;
 }
 
 /** Mounts the generic Convex character sync hook against the AL
@@ -6416,6 +6405,15 @@ function AvatarLegends() {
   // render, before children read those colors during their own render.
   const { isDarkMode } = useThemeMode();
   const character = useAtomValue(characterStateAtom);
+  const localCharacters = useLocalCharacterSlots({
+    atom: characterStateAtom,
+    gameSystem: AVATAR_LEGENDS_GAME_SYSTEM,
+    legacyKey: 'avatar-legends-character',
+    initialValue: defaultCharacter,
+    createCharacter: createRandomAvatarLegendsCharacter,
+    describeCharacter: describeAvatarLegendsCharacter,
+    migrate: migrateAvatarLegendsLocalCharacter,
+  });
   const trainingTheme =
     primaryTrainingThemes[character.primaryTraining] ??
     primaryTrainingThemes[defaultCharacter.primaryTraining];
@@ -6482,7 +6480,6 @@ function AvatarLegends() {
           console.warn('Avatar Legends Convex sync is unavailable; continuing locally.', error);
         }}
       >
-        <AvatarLegendsLocalCharacterPersistence />
         <ConvexCharacterSyncMount />
       </ErrorBoundary>
       <Box
@@ -6650,6 +6647,7 @@ function AvatarLegends() {
               <AccountSettings
                 gameSystem="avatar-legends"
                 localCharacterName={character.name}
+                localCharacters={localCharacters}
                 tokensOverride={accountTokens}
                 createCharacterPayload={({ avatarClass }) =>
                   createRandomAvatarLegendsBackendPayload(avatarClass as AvatarClassData | null)

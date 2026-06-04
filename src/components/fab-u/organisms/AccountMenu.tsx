@@ -45,6 +45,7 @@ import {
 import { authClient } from '@/lib/auth-client';
 import { FAB_U_SELECT_CHARACTER_EVENT } from '@/pages/FabU/useConvexCharacterSync';
 import { gameSystemAtom } from '@/sections/AccountSettings/atoms';
+import type { UseLocalCharacterSlotsResult } from '@/state/useLocalCharacterSlots';
 
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -67,6 +68,7 @@ type AccountMenuProps = {
   // inside the FabU page). UIs without a character (e.g. avatar-legends) can
   // omit this and the menu will render without the local-character row.
   localCharacterName?: string;
+  localCharacters?: UseLocalCharacterSlotsResult;
   onToggleTheme: () => void;
   themeMode: 'dark' | 'light';
   createCharacterPayload?: (context: { avatarClass?: unknown }) => {
@@ -258,6 +260,7 @@ function AuthField({
 
 function AccountMenu({
   localCharacterName,
+  localCharacters,
   onToggleTheme,
   themeMode,
   createCharacterPayload,
@@ -458,6 +461,10 @@ function AccountMenu({
   }
 
   async function addCharacter() {
+    if (!user) {
+      localCharacters?.addCharacter();
+      return;
+    }
     if (!canLoadCharacters) return;
     const selectedAvatarClass =
       gameSystem === 'avatar-legends'
@@ -638,32 +645,109 @@ function AccountMenu({
             {screen === 'characters' ? (
               <Stack spacing={1.1}>
                 {!user ? (
-                  <Box
-                    sx={{
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      borderRadius: '9px',
-                      bgcolor: fabUTokens.color.surfaceMuted,
-                      px: 1.2,
-                      py: 0.95,
-                    }}
-                  >
-                    <Stack spacing={0.25}>
+                  <Stack spacing={0.7}>
+                    <Button
+                      onClick={() => void addCharacter()}
+                      disabled={!localCharacters?.canAdd}
+                      startIcon={<Plus size={17} />}
+                      sx={{
+                        minHeight: 54,
+                        borderRadius: '9px',
+                        border: `1px dashed ${fabUTokens.color.border}`,
+                        color: fabUTokens.color.textPrimary,
+                        textTransform: 'none',
+                        fontWeight: 800,
+                      }}
+                    >
+                      Add character
+                    </Button>
+                    <Typography
+                      sx={{
+                        color: fabUTokens.color.textSecondary,
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                      }}
+                    >
+                      {localCharacters
+                        ? `${localCharacters.characters.length}/${localCharacters.limit} local characters`
+                        : 'Local character'}
+                    </Typography>
+                    {(localCharacters?.characters.length
+                      ? localCharacters.characters
+                      : localCharacterName
+                        ? [{ id: 'current', name: localCharacterName, active: true }]
+                        : []
+                    ).map((character) => (
+                      <SwipeableCard
+                        key={character.id}
+                        actions={
+                          localCharacters && localCharacters.characters.length > 1
+                            ? [
+                                {
+                                  icon: <Trash2 size={18} />,
+                                  color: fabUTokens.color.danger,
+                                  ariaLabel: 'Delete local character',
+                                  onClick: () => localCharacters.deleteCharacter(character.id),
+                                },
+                              ]
+                            : []
+                        }
+                      >
+                        <Button
+                          onClick={() => localCharacters?.selectCharacter(character.id)}
+                          disabled={!localCharacters}
+                          sx={{
+                            width: '100%',
+                            justifyContent: 'flex-start',
+                            textAlign: 'left',
+                            textTransform: 'none',
+                            minHeight: 54,
+                            border: `1px solid ${
+                              character.active
+                                ? fabUTokens.color.highlight
+                                : fabUTokens.color.border
+                            }`,
+                            borderRadius: '9px',
+                            bgcolor: character.active
+                              ? fabUTokens.color.pillSurface
+                              : fabUTokens.color.surfaceMuted,
+                            px: 1.2,
+                            py: 0.95,
+                            color: fabUTokens.color.textPrimary,
+                            '&:hover': { bgcolor: fabUTokens.color.pillSurface },
+                          }}
+                        >
+                          <Stack spacing={0.25}>
+                            <Typography
+                              sx={{
+                                color: fabUTokens.color.textSecondary,
+                                fontSize: '0.62rem',
+                                fontWeight: 800,
+                                letterSpacing: '0.06em',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {character.active ? 'Active Local Character' : 'Local Character'}
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                              {character.name}
+                            </Typography>
+                          </Stack>
+                        </Button>
+                      </SwipeableCard>
+                    ))}
+                    {localCharacters && !localCharacters.canAdd ? (
                       <Typography
                         sx={{
                           color: fabUTokens.color.textSecondary,
-                          fontSize: '0.62rem',
-                          fontWeight: 800,
-                          letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
                         }}
                       >
-                        Local Character
+                        Local character limit reached for this app.
                       </Typography>
-                      <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
-                        {localCharacterName}
-                      </Typography>
-                    </Stack>
-                  </Box>
+                    ) : null}
+                  </Stack>
                 ) : (
                   <Stack spacing={0.7}>
                     {gameSystem === 'avatar-legends' ? (
