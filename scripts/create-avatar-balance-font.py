@@ -101,6 +101,24 @@ def rename_font(font: TTFont) -> None:
         )
 
 
+def draw_reference_n(pen: TTGlyphPen) -> None:
+    # Reference-style N: thick legs with a broad diagonal that rises into
+    # the upper right leg, leaving a small but readable top notch after
+    # the whole glyph is flipped for the rotated balance labels.
+    rounded_rect(pen, 38, 0, 142, 700, 8)
+    rounded_rect(pen, 250, 0, 360, 700, 8)
+    pen.moveTo((126, 0))
+    pen.lineTo((238, 0))
+    pen.lineTo((350, 650))
+    pen.lineTo((250, 650))
+    pen.closePath()
+
+
+def draw_flipped_reference_n(pen: TTGlyphPen) -> None:
+    flipped_pen = TransformPen(pen, (1, 0, 0, -1, 0, 700))
+    draw_reference_n(flipped_pen)
+
+
 def main() -> None:
     font = TTFont(SOURCE)
     rename_font(font)
@@ -124,21 +142,7 @@ def main() -> None:
             c.__setitem__(36, (c[36][0] + 4, c[36][1])),
         ),
     )
-    replace_with_pen_glyph(
-        font,
-        "N",
-        lambda pen: (
-            # Reference-style N: thick legs with a broad diagonal that rises
-            # into the upper right leg, so the top notch is tiny and high.
-            rounded_rect(pen, 38, 0, 142, 700, 8),
-            rounded_rect(pen, 250, 0, 360, 700, 8),
-            pen.moveTo((126, 0)),
-            pen.lineTo((238, 0)),
-            pen.lineTo((350, 700)),
-            pen.lineTo((250, 700)),
-            pen.closePath(),
-        ),
-    )
+    replace_with_pen_glyph(font, "N", draw_flipped_reference_n)
     replace_with_pen_glyph(
         font,
         "C",

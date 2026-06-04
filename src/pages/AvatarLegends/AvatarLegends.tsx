@@ -2040,10 +2040,14 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           backgroundColor: '#000000',
           fontFamily:
             '"Bebas Neue Balance", "Bebas Neue", "Arial Rounded MT Bold", "Avenir Next Condensed Heavy", "Arial Black", system-ui, sans-serif',
-          fontSize: 'clamp(1.24rem, 7.7vw, 2.02rem)',
+          fontSize: 'clamp(1.3rem, 8vw, 2.1rem)',
           fontWeight: 900,
           letterSpacing: '0.02em',
           lineHeight: 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '1.08em',
           p: 0,
           textShadow: '0 1px 1px rgba(0,0,0,0.65)',
           textTransform: 'uppercase',
@@ -2064,10 +2068,14 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           backgroundColor: '#ffffff',
           fontFamily:
             '"Bebas Neue Balance", "Bebas Neue", "Arial Rounded MT Bold", "Avenir Next Condensed Heavy", "Arial Black", system-ui, sans-serif',
-          fontSize: 'clamp(1.24rem, 7.7vw, 2.02rem)',
+          fontSize: 'clamp(1.3rem, 8vw, 2.1rem)',
           fontWeight: 900,
           letterSpacing: '0.02em',
           lineHeight: 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '1.08em',
           p: 0,
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
@@ -2701,7 +2709,14 @@ function HistorySection({ questions }: { questions: string[] }) {
   // tab navigation and (later) full character saves.
   const [answers, setAnswers] = useAtom(historyAnswersAtom);
   return (
-    <Stack spacing={0.6}>
+    <Stack
+      spacing={0.6}
+      sx={{
+        py: open ? 0 : 0.65,
+        minHeight: open ? 'auto' : 44,
+        justifyContent: 'center',
+      }}
+    >
       <Box
         component="button"
         type="button"
@@ -2865,7 +2880,7 @@ function ClassTraitAccordion({
             fontFamily: 'Georgia, "Times New Roman", serif',
             fontSize: '0.86rem',
             lineHeight: 1.5,
-            pt: 2,
+            pt: 1.05,
             px: 2,
             pb: 2,
           }}
@@ -2891,7 +2906,12 @@ function CharacterInfoSection({
     <Stack
       spacing={open ? 0.6 : 0}
       onClick={() => setOpen((value) => !value)}
-      sx={{ cursor: 'pointer' }}
+      sx={{
+        cursor: 'pointer',
+        py: open ? 0 : 0.65,
+        minHeight: open ? 'auto' : 44,
+        justifyContent: 'center',
+      }}
     >
       <Box sx={{ position: 'relative', pr: 2.2 }}>
         <SectionTitle>{title}</SectionTitle>
@@ -3123,6 +3143,137 @@ function ElementMark({
   );
 }
 
+function getTechniqueElementFilters(): Array<{
+  key: TechniqueElementFilter;
+  label: string;
+  color: string;
+  src: string | null;
+}> {
+  return [
+    { key: 'all', label: 'All', color: ink, src: null },
+    { key: 'basic', label: 'Basic', color: ink, src: null },
+    { key: 'universal', label: 'Universal', color: ink, src: null },
+    { key: 'group', label: 'Group', color: brown, src: null },
+    { key: 'waterbending', label: 'Water', color: water, src: elementWater },
+    { key: 'earthbending', label: 'Earth', color: earth, src: elementEarth },
+    { key: 'firebending', label: 'Fire', color: fire, src: elementFire },
+    { key: 'airbending', label: 'Air', color: air, src: elementAir },
+    { key: 'weapons', label: 'Weapons', color: weapons, src: elementWeapons },
+    { key: 'technology', label: 'Tech', color: tech, src: elementTech },
+  ];
+}
+
+function TechniqueElementFilterRow({
+  value,
+  onChange,
+}: {
+  value: TechniqueElementFilter;
+  onChange: (next: TechniqueElementFilter) => void;
+}) {
+  const { isDarkMode } = useThemeMode();
+  return (
+    <Box
+      sx={{
+        background: isDarkMode ? deepInk : '#ffffff',
+        border: `1px solid ${alpha(accent, 0.42)}`,
+        borderRadius: '4px',
+        p: '8px 10px',
+        boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 1.6,
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        {getTechniqueElementFilters().map((entry) => {
+          const isActive = value === entry.key;
+          const frameColor =
+            entry.key === 'all' || entry.key === 'basic' ? deepInk : elementFilterFrames[entry.key];
+          return (
+            <Stack
+              key={entry.key}
+              component="button"
+              type="button"
+              onClick={() => onChange(entry.key)}
+              aria-pressed={isActive}
+              alignItems="center"
+              spacing={0.4}
+              sx={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                p: 0,
+                flex: '0 0 auto',
+                opacity: isActive ? 1 : 0.55,
+                transition: 'opacity 0.15s ease',
+              }}
+            >
+              {entry.key === 'all' || entry.key === 'basic' ? (
+                <Box
+                  sx={{
+                    width: 34,
+                    height: 32,
+                    borderRadius: '3px',
+                    border: `1px solid ${alpha(frameColor, 0.62)}`,
+                    background: frameColor,
+                    display: 'grid',
+                    placeItems: 'center',
+                    flex: '0 0 auto',
+                    boxShadow: `0 0 0 2px ${alpha(isDarkMode ? parchmentLight : '#ffffff', 0.85)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
+                  }}
+                >
+                  {entry.key === 'all' ? (
+                    <Typography
+                      sx={{
+                        color: chromeText,
+                        fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                        fontSize: '0.62rem',
+                        fontWeight: 900,
+                        letterSpacing: '0.04em',
+                        lineHeight: 1,
+                      }}
+                    >
+                      ALL
+                    </Typography>
+                  ) : (
+                    <SquareInSquare color={chromeText} size={20} />
+                  )}
+                </Box>
+              ) : (
+                <ElementMark
+                  color={chromeText}
+                  label={entry.label.slice(0, 1)}
+                  src={entry.src ?? undefined}
+                  frameColor={frameColor}
+                  size={34}
+                  height={32}
+                />
+              )}
+              <Typography
+                sx={{
+                  color: isDarkMode ? chromeText : deepInk,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.58rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {entry.label}
+              </Typography>
+            </Stack>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+}
+
 // Octagonal "card with notched corners" shape — the body of every Panel
 // has corners cut at this depth. Small enough that the notches feel
 // like a subtle accent rather than a heavy frame.
@@ -3334,44 +3485,14 @@ function AddListCard({ label, onClick }: { label: string; onClick: () => void })
 }
 
 function TechniqueAddCard({
-  typeOptions,
   selectedKind,
-  selectedType,
-  selectedTechniqueName,
-  canonTechniques,
-  canonLoading,
   onSelectKind,
-  onSelectType,
-  onSelectTechniqueName,
-  onAddCanon,
   onCancel,
 }: {
-  typeOptions: Array<{ key: TechniqueElement; label: string }>;
   selectedKind: 'custom' | 'canon' | null;
-  selectedType: TechniqueElement | '';
-  selectedTechniqueName: string;
-  canonTechniques: CanonTechnique[];
-  canonLoading: boolean;
   onSelectKind: (kind: 'custom' | 'canon') => void;
-  onSelectType: (type: TechniqueElement | '') => void;
-  onSelectTechniqueName: (name: string) => void;
-  onAddCanon: () => void;
   onCancel: () => void;
 }) {
-  const selectSx = {
-    minHeight: 40,
-    borderRadius: '4px',
-    border: `1px solid ${alpha(accent, 0.72)}`,
-    bgcolor: alpha(parchmentLight, 0.72),
-    color: ink,
-    px: 1,
-    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-    fontSize: '0.76rem',
-    fontWeight: 900,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-  };
-
   return (
     <Panel ornament={false}>
       <Stack spacing={1.2}>
@@ -3415,86 +3536,259 @@ function TechniqueAddCard({
             );
           })}
         </Stack>
-
-        {selectedKind === 'canon' ? (
-          <Stack spacing={1}>
-            <Box
-              component="select"
-              value={selectedType}
-              onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-                onSelectType(event.target.value ? normalizeTechniqueType(event.target.value) : '')
-              }
-              sx={selectSx}
-            >
-              <option value="">Choose technique type</option>
-              {typeOptions.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </Box>
-
-            {selectedType ? (
-              <Box
-                component="select"
-                value={selectedTechniqueName}
-                disabled={canonLoading || canonTechniques.length === 0}
-                onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
-                  onSelectTechniqueName(event.target.value)
-                }
-                sx={selectSx}
-              >
-                <option value="">
-                  {canonLoading
-                    ? 'Loading techniques...'
-                    : canonTechniques.length === 0
-                      ? 'No techniques available'
-                      : 'Choose technique'}
-                </option>
-                {canonTechniques.map((technique) => (
-                  <option key={technique.name} value={technique.name}>
-                    {technique.name}
-                  </option>
-                ))}
-              </Box>
-            ) : null}
-
-            <Stack direction="row" gap={1}>
-              <Button
-                onClick={onCancel}
-                sx={{
-                  flex: 1,
-                  border: `1px solid ${border}`,
-                  color: brown,
-                  fontWeight: 800,
-                  textTransform: 'none',
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={!selectedType || !selectedTechniqueName}
-                onClick={onAddCanon}
-                sx={{
-                  flex: 1,
-                  bgcolor: ink,
-                  color: parchment,
-                  fontWeight: 900,
-                  textTransform: 'none',
-                  '&:disabled': {
-                    bgcolor: alpha(ink, 0.22),
-                    color: alpha(ink, 0.46),
-                  },
-                  '&:hover': { bgcolor: deepInk },
-                }}
-              >
-                Add
-              </Button>
-            </Stack>
-          </Stack>
-        ) : null}
+        <Button
+          onClick={onCancel}
+          sx={{
+            alignSelf: 'stretch',
+            border: `1px solid ${border}`,
+            color: brown,
+            fontWeight: 800,
+            textTransform: 'none',
+          }}
+        >
+          Cancel
+        </Button>
       </Stack>
     </Panel>
+  );
+}
+
+function CanonTechniquePickerDialog({
+  open,
+  filter,
+  selectedTechniqueName,
+  techniques,
+  loading,
+  onFilterChange,
+  onSelectTechniqueName,
+  onAdd,
+  onClose,
+}: {
+  open: boolean;
+  filter: TechniqueElementFilter;
+  selectedTechniqueName: string;
+  techniques: CanonTechnique[];
+  loading: boolean;
+  onFilterChange: (filter: TechniqueElementFilter) => void;
+  onSelectTechniqueName: (name: string) => void;
+  onAdd: () => void;
+  onClose: () => void;
+}) {
+  const filteredTechniques = useMemo(
+    () => techniques.filter((technique) => filter === 'all' || technique.type === filter),
+    [filter, techniques],
+  );
+  const selectedTechnique = filteredTechniques.find(
+    (technique) => technique.name === selectedTechniqueName,
+  );
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      PaperProps={{
+        sx: {
+          bgcolor: parchment,
+          color: ink,
+          border: `1px solid ${border}`,
+          borderRadius: '6px',
+          boxShadow: `0 18px 42px ${alpha(deepInk, 0.42)}`,
+          m: 1.5,
+          overflow: 'hidden',
+        },
+      }}
+    >
+      <Stack sx={{ maxHeight: 'min(78vh, 720px)' }}>
+        <Stack spacing={1.2} sx={{ p: 1.4, pb: 1 }}>
+          <Typography
+            sx={{
+              color: ink,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.9rem',
+              fontWeight: 900,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Choose Canon Technique
+          </Typography>
+          <TechniqueElementFilterRow
+            value={filter}
+            onChange={(next) => {
+              onFilterChange(next);
+              onSelectTechniqueName('');
+            }}
+          />
+        </Stack>
+
+        <Stack
+          spacing={0.75}
+          sx={{
+            px: 1.4,
+            pb: 1,
+            overflowY: 'auto',
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+          }}
+        >
+          {loading ? (
+            <Panel ornament={false}>
+              <Typography
+                sx={{
+                  color: brownSoft,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.9rem',
+                  fontStyle: 'italic',
+                  textAlign: 'center',
+                }}
+              >
+                Loading canon techniques...
+              </Typography>
+            </Panel>
+          ) : filteredTechniques.length === 0 ? (
+            <Panel ornament={false}>
+              <Typography
+                sx={{
+                  color: brownSoft,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.9rem',
+                  fontStyle: 'italic',
+                  textAlign: 'center',
+                }}
+              >
+                No techniques of that type.
+              </Typography>
+            </Panel>
+          ) : (
+            filteredTechniques.map((technique) => {
+              const selected = technique.name === selectedTechniqueName;
+              const visual = techniqueElementVisual(technique.type);
+              return (
+                <Box
+                  key={`${technique.type}-${technique.name}`}
+                  component="button"
+                  type="button"
+                  onClick={() => onSelectTechniqueName(technique.name)}
+                  sx={{
+                    width: '100%',
+                    p: 0,
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <Panel ornament={false}>
+                    <Stack direction="row" alignItems="flex-start" spacing={1}>
+                      <ElementMark
+                        color={chromeText}
+                        label={technique.name.slice(0, 1)}
+                        src={visual.src}
+                        frameColor={visual.frameColor}
+                        size={34}
+                        height={32}
+                      />
+                      <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography
+                          sx={{
+                            color: ink,
+                            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                            fontSize: '0.82rem',
+                            fontWeight: 900,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {technique.name}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: techniqueCategoryColor(technique.approach, false),
+                            fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                            fontSize: '0.62rem',
+                            fontWeight: 900,
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {technique.approach}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: brown,
+                            fontFamily: 'Georgia, "Times New Roman", serif',
+                            fontSize: '0.82rem',
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {technique.summary}
+                        </Typography>
+                      </Stack>
+                      <Box
+                        sx={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          border: `2px solid ${selected ? ink : alpha(border, 0.8)}`,
+                          bgcolor: selected ? ink : 'transparent',
+                          boxShadow: selected ? `inset 0 0 0 4px ${parchmentLight}` : 'none',
+                          flex: '0 0 auto',
+                          mt: 0.2,
+                        }}
+                      />
+                    </Stack>
+                  </Panel>
+                </Box>
+              );
+            })
+          )}
+        </Stack>
+
+        <Stack
+          direction="row"
+          gap={1}
+          sx={{
+            p: 1.4,
+            pt: 1,
+            borderTop: `1px solid ${alpha(border, 0.72)}`,
+            bgcolor: alpha(parchmentLight, 0.72),
+          }}
+        >
+          <Button
+            onClick={onClose}
+            sx={{
+              flex: 1,
+              border: `1px solid ${border}`,
+              color: brown,
+              fontWeight: 800,
+              textTransform: 'none',
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            disabled={!selectedTechnique}
+            onClick={onAdd}
+            sx={{
+              flex: 1,
+              bgcolor: ink,
+              color: parchment,
+              fontWeight: 900,
+              textTransform: 'none',
+              '&:disabled': {
+                bgcolor: alpha(ink, 0.22),
+                color: alpha(ink, 0.46),
+              },
+              '&:hover': { bgcolor: deepInk },
+            }}
+          >
+            Add
+          </Button>
+        </Stack>
+      </Stack>
+    </Dialog>
   );
 }
 
@@ -4626,27 +4920,6 @@ function TechniqueAccordion({
 
 function CombatPane() {
   const { isDarkMode } = useThemeMode();
-  // Element filter row entries: [filter key, label, color, image src or null].
-  // 'All' is the leftmost selector and shows every technique card. 'Basic'
-  // is rendered with the local SquareInSquare SVG (filled square inside a
-  // square outline) since there's no asset image for it.
-  const elementFilters: Array<{
-    key: TechniqueElementFilter;
-    label: string;
-    color: string;
-    src: string | null;
-  }> = [
-    { key: 'all', label: 'All', color: ink, src: null },
-    { key: 'basic', label: 'Basic', color: ink, src: null },
-    { key: 'universal', label: 'Universal', color: ink, src: null },
-    { key: 'group', label: 'Group', color: brown, src: null },
-    { key: 'waterbending', label: 'Water', color: water, src: elementWater },
-    { key: 'earthbending', label: 'Earth', color: earth, src: elementEarth },
-    { key: 'firebending', label: 'Fire', color: fire, src: elementFire },
-    { key: 'airbending', label: 'Air', color: air, src: elementAir },
-    { key: 'weapons', label: 'Weapons', color: weapons, src: elementWeapons },
-    { key: 'technology', label: 'Tech', color: tech, src: elementTech },
-  ];
   const positiveStatuses = ['Empowered', 'Favored', 'Inspired', 'Prepared'];
   const negativeStatuses = ['Doomed', 'Impaired', 'Trapped', 'Stunned'];
   const conditions = ['Afraid', 'Angry', 'Guilty', 'Insecure', 'Troubled'];
@@ -4657,11 +4930,11 @@ function CombatPane() {
   const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
   const [addTechniqueOpen, setAddTechniqueOpen] = useState(false);
   const [addTechniqueKind, setAddTechniqueKind] = useState<'custom' | 'canon' | null>(null);
-  const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElement | ''>('');
+  const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElementFilter>('all');
   const [canonTechniqueName, setCanonTechniqueName] = useState('');
   const canonGameSystem = useQuery(
     api.gameSystems.getById,
-    addTechniqueKind === 'canon' && canonTechniqueType ? { id: 'avatar-legends' } : 'skip',
+    addTechniqueOpen ? { id: 'avatar-legends' } : 'skip',
   );
   // Techniques live on the character record (characterStateAtom) so
   // each character carries their own set of known techniques.
@@ -4681,21 +4954,7 @@ function CombatPane() {
   const fatigue = useAtomValue(fatigueAtom);
   const tempFatigue = useAtomValue(tempFatigueAtom);
   const [, setCharacterState] = useAtom(characterStateAtom);
-  const techniqueTypeOptions = useMemo<Array<{ key: TechniqueElement; label: string }>>(
-    () => [
-      { key: 'basic', label: 'Basic' },
-      { key: 'universal', label: 'Universal' },
-      { key: 'group', label: 'Group' },
-      { key: 'waterbending', label: 'Waterbending' },
-      { key: 'earthbending', label: 'Earthbending' },
-      { key: 'firebending', label: 'Firebending' },
-      { key: 'airbending', label: 'Airbending' },
-      { key: 'weapons', label: 'Weapons' },
-      { key: 'technology', label: 'Technology' },
-    ],
-    [],
-  );
-  const canonTechniques = useMemo(() => {
+  const canonTechniques = useMemo<CanonTechnique[]>(() => {
     const rawTechniques =
       canonGameSystem && Array.isArray((canonGameSystem as { techniques?: unknown }).techniques)
         ? ((canonGameSystem as unknown as { techniques: unknown[] }).techniques ?? [])
@@ -4703,13 +4962,12 @@ function CombatPane() {
     return rawTechniques
       .map(coerceCanonTechnique)
       .filter((technique): technique is CanonTechnique => Boolean(technique))
-      .filter((technique) => technique.type === canonTechniqueType)
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [canonGameSystem, canonTechniqueType]);
+  }, [canonGameSystem]);
   const resetAddTechniqueFlow = () => {
     setAddTechniqueOpen(false);
     setAddTechniqueKind(null);
-    setCanonTechniqueType('');
+    setCanonTechniqueType('all');
     setCanonTechniqueName('');
   };
   const addCustomTechnique = () => {
@@ -4814,108 +5072,7 @@ function CombatPane() {
           <>
             {/* Element filter row: element-coloured frames keep the extracted
               white symbols readable on a light card. */}
-            <Box
-              sx={{
-                background: isDarkMode ? deepInk : '#ffffff',
-                border: `1px solid ${alpha(accent, 0.42)}`,
-                borderRadius: '4px',
-                p: '8px 10px',
-                boxShadow: `0 2px 6px ${alpha(deepInk, 0.24)}, inset 0 0 0 1px ${alpha(chromeText, 0.06)}`,
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1.6,
-                  overflowX: 'auto',
-                  scrollbarWidth: 'none',
-                  '&::-webkit-scrollbar': { display: 'none' },
-                }}
-              >
-                {elementFilters.map((entry) => {
-                  const isActive = elementFilter === entry.key;
-                  const frameColor =
-                    entry.key === 'all' || entry.key === 'basic'
-                      ? deepInk
-                      : elementFilterFrames[entry.key];
-                  return (
-                    <Stack
-                      key={entry.key}
-                      component="button"
-                      type="button"
-                      onClick={() => setElementFilter(entry.key)}
-                      aria-pressed={isActive}
-                      alignItems="center"
-                      spacing={0.4}
-                      sx={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        p: 0,
-                        flex: '0 0 auto',
-                        opacity: isActive ? 1 : 0.55,
-                        transition: 'opacity 0.15s ease',
-                      }}
-                    >
-                      {entry.key === 'all' || entry.key === 'basic' ? (
-                        <Box
-                          sx={{
-                            width: 34,
-                            height: 32,
-                            borderRadius: '3px',
-                            border: `1px solid ${alpha(frameColor, 0.62)}`,
-                            background: frameColor,
-                            display: 'grid',
-                            placeItems: 'center',
-                            flex: '0 0 auto',
-                            boxShadow: `0 0 0 2px ${alpha(isDarkMode ? parchmentLight : '#ffffff', 0.85)}, 0 1px 3px ${alpha(deepInk, 0.2)}`,
-                          }}
-                        >
-                          {entry.key === 'all' ? (
-                            <Typography
-                              sx={{
-                                color: chromeText,
-                                fontFamily:
-                                  '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                                fontSize: '0.62rem',
-                                fontWeight: 900,
-                                letterSpacing: '0.04em',
-                                lineHeight: 1,
-                              }}
-                            >
-                              ALL
-                            </Typography>
-                          ) : (
-                            <SquareInSquare color={chromeText} size={20} />
-                          )}
-                        </Box>
-                      ) : (
-                        <ElementMark
-                          color={chromeText}
-                          label={entry.label.slice(0, 1)}
-                          src={entry.src ?? undefined}
-                          frameColor={frameColor}
-                          size={34}
-                          height={32}
-                        />
-                      )}
-                      <Typography
-                        sx={{
-                          color: isDarkMode ? chromeText : deepInk,
-                          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                          fontSize: '0.58rem',
-                          fontWeight: 900,
-                          letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {entry.label}
-                      </Typography>
-                    </Stack>
-                  );
-                })}
-              </Box>
-            </Box>
+            <TechniqueElementFilterRow value={elementFilter} onChange={setElementFilter} />
             {/* Secondary filter row — proficiency level for the techniques list. */}
             <FilterTabs
               labels={['All', 'Learned', 'Practiced', 'Mastered']}
@@ -4985,31 +5142,29 @@ function CombatPane() {
             ) : null}
             {addTechniqueOpen ? (
               <TechniqueAddCard
-                typeOptions={techniqueTypeOptions}
                 selectedKind={addTechniqueKind}
-                selectedType={canonTechniqueType}
-                selectedTechniqueName={canonTechniqueName}
-                canonTechniques={canonTechniques}
-                canonLoading={
-                  addTechniqueKind === 'canon' && Boolean(canonTechniqueType) && !canonGameSystem
-                }
                 onSelectKind={(kind) => {
                   setAddTechniqueKind(kind);
-                  setCanonTechniqueType('');
+                  setCanonTechniqueType('all');
                   setCanonTechniqueName('');
                   if (kind === 'custom') addCustomTechnique();
                 }}
-                onSelectType={(type) => {
-                  setCanonTechniqueType(type);
-                  setCanonTechniqueName('');
-                }}
-                onSelectTechniqueName={setCanonTechniqueName}
-                onAddCanon={addCanonTechnique}
                 onCancel={resetAddTechniqueFlow}
               />
             ) : (
               <AddListCard label="Technique" onClick={() => setAddTechniqueOpen(true)} />
             )}
+            <CanonTechniquePickerDialog
+              open={addTechniqueOpen && addTechniqueKind === 'canon'}
+              filter={canonTechniqueType}
+              selectedTechniqueName={canonTechniqueName}
+              techniques={canonTechniques}
+              loading={addTechniqueOpen && !canonGameSystem}
+              onFilterChange={setCanonTechniqueType}
+              onSelectTechniqueName={setCanonTechniqueName}
+              onAdd={addCanonTechnique}
+              onClose={resetAddTechniqueFlow}
+            />
           </>
         ) : null}
 
