@@ -61,11 +61,19 @@ import {
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
+import { useIndexedDbCharacterPersistence } from '@/state/useIndexedDbCharacterPersistence';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
-import { MAX_CHARACTER_LEVEL, activeCombatTabState, activeTabState } from './atoms';
+import {
+  MAX_CHARACTER_LEVEL,
+  activeCombatTabState,
+  activeTabState,
+  characterState,
+  initialFabUCharacter,
+  migrateFabULocalCharacter,
+} from './atoms';
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
 import { useCharacterHistory } from './useCharacterHistory';
@@ -80,6 +88,24 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 
 const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
+
+function FabULocalCharacterPersistence() {
+  useIndexedDbCharacterPersistence({
+    atom: characterState,
+    key: 'fab-u-character',
+    initialValue: initialFabUCharacter,
+    migrate: migrateFabULocalCharacter,
+    afterWrite() {
+      try {
+        window.localStorage.removeItem('fab-u-status-effects');
+      } catch {
+        // Legacy cleanup is best effort when browser storage is unavailable.
+      }
+    },
+  });
+
+  return null;
+}
 
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
@@ -2415,6 +2441,7 @@ function FabU() {
   return (
     <FabUThemeProvider>
       <>
+        <FabULocalCharacterPersistence />
         <ConvexCharacterSyncBoundary character={character} history={characterHistory} />
         <meta name="title" content="Fab-u Preview" />
         <Stack

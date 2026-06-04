@@ -3,6 +3,7 @@ import { useLocation } from 'react-router';
 
 import avatarLegendsIcon192 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-192x192.png';
 import avatarLegendsIcon512 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-512x512.png';
+import { readIndexedDbCharacter } from '../../state/indexedDbCharacterStorage';
 
 /**
  * Mirrors the static `manifest.json` at the project root. Kept inline so
@@ -49,18 +50,18 @@ const avatarTrainingChrome: Record<AvatarTraining, string> = {
   Technology: '#3c294c',
 };
 
-function getStoredAvatarTraining(): AvatarTraining {
-  try {
-    const raw = window.localStorage.getItem('avatar-legends-character');
-    if (!raw) return 'Waterbending';
-    const parsed = JSON.parse(raw) as { primaryTraining?: unknown };
-    const candidate = parsed.primaryTraining;
-    return typeof candidate === 'string' && candidate in avatarTrainingChrome
-      ? (candidate as AvatarTraining)
-      : 'Waterbending';
-  } catch {
-    return 'Waterbending';
-  }
+function toAvatarTraining(candidate: unknown): AvatarTraining {
+  return typeof candidate === 'string' && candidate in avatarTrainingChrome
+    ? (candidate as AvatarTraining)
+    : 'Waterbending';
+}
+
+async function getStoredAvatarTraining(): Promise<AvatarTraining> {
+  const stored = await readIndexedDbCharacter<{ primaryTraining?: unknown }>(
+    'avatar-legends-character',
+    { primaryTraining: 'Waterbending' },
+  );
+  return toAvatarTraining(stored.primaryTraining);
 }
 
 const defaultIconHref = '/favicon.svg';
@@ -96,7 +97,7 @@ function iconsForRoute(pathname: string) {
  */
 function backgroundColorForRoute(
   pathname: string,
-  avatarTraining = getStoredAvatarTraining(),
+  avatarTraining: AvatarTraining = 'Waterbending',
 ): string {
   if (pathname === '/fab-u' || pathname.startsWith('/fab-u/')) {
     // FabU page header / brand green.
@@ -123,9 +124,7 @@ function backgroundColorForRoute(
 function DynamicManifest() {
   const { pathname } = useLocation();
   const previousUrlRef = useRef<string | null>(null);
-  const [avatarTraining, setAvatarTraining] = useState<AvatarTraining>(() =>
-    getStoredAvatarTraining(),
-  );
+  const [avatarTraining, setAvatarTraining] = useState<AvatarTraining>('Waterbending');
 
   useEffect(() => {
     const background = backgroundColorForRoute(pathname, avatarTraining);
@@ -197,12 +196,13 @@ function DynamicManifest() {
   useEffect(() => {
     const refresh = (event?: Event) => {
       const candidate = (event as CustomEvent<unknown> | undefined)?.detail;
-      setAvatarTraining(
-        typeof candidate === 'string' && candidate in avatarTrainingChrome
-          ? (candidate as AvatarTraining)
-          : getStoredAvatarTraining(),
-      );
+      if (typeof candidate === 'string') {
+        setAvatarTraining(toAvatarTraining(candidate));
+        return;
+      }
+      void getStoredAvatarTraining().then(setAvatarTraining);
     };
+    void getStoredAvatarTraining().then(setAvatarTraining);
     window.addEventListener('avatar-legends-primary-training-change', refresh);
     window.addEventListener('storage', refresh);
     return () => {

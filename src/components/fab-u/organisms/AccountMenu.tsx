@@ -34,7 +34,10 @@ import {
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 import ConfirmDeleteModal from '@/components/fab-u/atoms/ConfirmDeleteModal';
-import { CHARACTER_SCHEMA_VERSION, createDefaultCharacter } from '@/domain/fabU/characterDefaults';
+import {
+  CHARACTER_SCHEMA_VERSION,
+  createRandomFabUCharacter,
+} from '@/domain/fabU/characterDefaults';
 import {
   deserializeCharacterFromBackend,
   serializeCharacterForBackend,
@@ -471,7 +474,7 @@ function AccountMenu({
       await selectCharacter(characterId);
       return;
     }
-    const nextCharacter = createDefaultCharacter();
+    const nextCharacter = createRandomFabUCharacter();
     const characterId = await createCharacter({
       gameSystem,
       schemaVersion: CHARACTER_SCHEMA_VERSION,

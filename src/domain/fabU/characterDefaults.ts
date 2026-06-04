@@ -1,4 +1,5 @@
 import type { EquipmentItem } from '@/components/fab-u';
+import { selectableClasses } from '@/pages/FabU/selectableClasses';
 import { skillGroups as defaultSkillGroups } from '@/pages/FabU/skills';
 import { spellGroups as defaultSpellGroups } from '@/pages/FabU/spells';
 
@@ -67,6 +68,187 @@ const EQUIPMENT_DEFAULTS: EquipmentItem[] = [
   },
 ];
 
+const RANDOM_FIRST_NAMES = [
+  'Alba',
+  'Bram',
+  'Ciela',
+  'Dario',
+  'Emina',
+  'Fenn',
+  'Ilyra',
+  'Juno',
+  'Kael',
+  'Liora',
+  'Mira',
+  'Nico',
+  'Orin',
+  'Rhea',
+  'Sable',
+  'Tavi',
+];
+
+const RANDOM_LAST_NAMES = [
+  'Ashvale',
+  'Brightwater',
+  'Duskfall',
+  'Emberlain',
+  'Frostmere',
+  'Goldleaf',
+  'Holloway',
+  'Ironbell',
+  'Moonridge',
+  'Starling',
+  'Stormward',
+  'Vesper',
+];
+
+const RANDOM_NICKNAMES = [
+  'Ace',
+  'Bloom',
+  'Cinder',
+  'Echo',
+  'Lucky',
+  'Nova',
+  'Patch',
+  'Quill',
+  'Scout',
+  'Spark',
+  'Wisp',
+];
+
+const RANDOM_IDENTITIES = [
+  'Airship runaway',
+  'Apprentice cartographer',
+  'Clocktower duelist',
+  'Exiled noble',
+  'Festival prodigy',
+  'Reluctant bodyguard',
+  'Ruin-delving scholar',
+  'Sky-port courier',
+  'Village oathkeeper',
+  'Wandering medic',
+];
+
+const RANDOM_THEMES = [
+  'Ambition',
+  'Belonging',
+  'Discovery',
+  'Duty',
+  'Freedom',
+  'Justice',
+  'Legacy',
+  'Redemption',
+];
+
+const RANDOM_ORIGINS = [
+  'Ad Astya',
+  'Aurelian Coast',
+  'Brasswood',
+  'Cloudbreak Isles',
+  'Efowyn',
+  'Infinita',
+  'Moonlit Principality',
+  'Old Meridian',
+];
+
+const RANDOM_BACKPACK_ITEMS: BackpackItem[] = [
+  { id: 'lucky-charm', title: 'Lucky Charm', subtitle: 'warm to the touch before trouble.' },
+  {
+    id: 'folded-map',
+    title: 'Folded Map',
+    subtitle: 'full of annotations no one remembers adding.',
+  },
+  {
+    id: 'signal-flare',
+    title: 'Signal Flare',
+    subtitle: 'bright enough to be seen through stormclouds.',
+  },
+  {
+    id: 'travel-kettle',
+    title: 'Travel Kettle',
+    subtitle: 'a tiny comfort that has survived every road.',
+  },
+  {
+    id: 'sealed-letter',
+    title: 'Sealed Letter',
+    subtitle: 'addressed in a hand you almost recognize.',
+  },
+];
+
+const RANDOM_WEAPONS: EquipmentItem[] = [
+  { name: 'Traveling Blade', slot: 'Main Hand', description: 'Melee weapon · DEX + MIG · HR + 6' },
+  { name: 'Runic Staff', slot: 'Main Hand', description: 'Arcane weapon · INS + WLP · HR + 6' },
+  { name: 'Clockwork Bow', slot: 'Main Hand', description: 'Ranged weapon · DEX + INS · HR + 6' },
+  {
+    name: 'Brass Knuckles',
+    slot: 'Main Hand',
+    description: 'Brawling weapon · MIG + MIG · HR + 6',
+  },
+];
+
+const RANDOM_OFF_HANDS: EquipmentItem[] = [
+  { name: 'Buckler', slot: 'Off Hand', description: '+1 Defense while raised.' },
+  {
+    name: 'Charm Focus',
+    slot: 'Off Hand',
+    description: 'A small focus for rituals and spellwork.',
+  },
+  {
+    name: 'Utility Knife',
+    slot: 'Off Hand',
+    description: 'Useful for camp chores and desperate plans.',
+  },
+  { name: 'Lantern', slot: 'Off Hand', description: 'Its flame burns blue near magic.' },
+];
+
+const DIE_VALUES = { d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 } as const;
+const ATTRIBUTE_DICE = ['d6', 'd8', 'd10', 'd12'] as const;
+
+function pickRandom<T>(items: readonly T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function shuffle<T>(items: readonly T[]): T[] {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pickTwoDistinct<T>(items: readonly T[]): [T, T] {
+  const [first, second] = shuffle(items);
+  return [first, second];
+}
+
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function createRandomClassEntries(): ClassEntry[] {
+  const selected = shuffle(selectableClasses).slice(0, randomInt(2, 3));
+  return selected.map((entry, index) => ({
+    name: entry.name,
+    level: index === 0 ? randomInt(2, 5) : randomInt(1, 3),
+    subtitle:
+      defaultSkillGroups
+        .find((group) => group.className === entry.name)
+        ?.skills.map((skill) => skill.name)
+        .slice(0, 3)
+        .join(' · ') || 'New talents waiting to be recorded',
+  }));
+}
+
+function createRandomAttributes(): Character['attributes'] {
+  const dice = shuffle(ATTRIBUTE_DICE);
+  return {
+    dex: { die: dice[0], modifier: randomInt(0, 1) },
+    insight: { die: dice[1], modifier: randomInt(0, 1) },
+    might: { die: dice[2], modifier: randomInt(0, 1) },
+    willpower: { die: dice[3], modifier: randomInt(0, 1) },
+  };
+}
+
 function createDefaultCharacter(): Character {
   return {
     name: {
@@ -118,6 +300,61 @@ function createDefaultCharacter(): Character {
   };
 }
 
+function createRandomFabUCharacter(): Character {
+  const classes = createRandomClassEntries();
+  const classNames = new Set(classes.map((entry) => entry.name));
+  const attributes = createRandomAttributes();
+  const level = classes.reduce((sum, entry) => sum + entry.level, 0);
+  const hpBonus = randomInt(0, 6);
+  const mpBonus = randomInt(0, 6);
+  const maxHP = DIE_VALUES[attributes.might.die] * 5 + level + hpBonus;
+  const maxMP = DIE_VALUES[attributes.willpower.die] * 5 + level + mpBonus;
+  const identity = pickTwoDistinct(RANDOM_IDENTITIES);
+
+  return {
+    ...createDefaultCharacter(),
+    name: {
+      firstName: pickRandom(RANDOM_FIRST_NAMES),
+      lastName: pickRandom(RANDOM_LAST_NAMES),
+      nickName: pickRandom(RANDOM_NICKNAMES),
+    },
+    initiative: randomInt(0, 2),
+    defense: randomInt(8, 10),
+    defenseTemp: null,
+    magicDefense: randomInt(8, 10),
+    magicDefenseTemp: null,
+    fabulaPoints: randomInt(3, 5),
+    inventoryPoints: randomInt(6, 10),
+    currentHP: maxHP,
+    hpBonus,
+    currentMP: maxMP,
+    mpBonus,
+    currentXP: randomInt(0, 8),
+    totalXP: 10,
+    level,
+    zenit: randomInt(20, 120),
+    attributes,
+    bonds: [],
+    backstoryPrompts: BACKSTORY_PROMPT_DEFAULTS.map((prompt) => ({ ...prompt, response: '' })),
+    notes: 'A new hero steps onto the road. Their story is ready to be discovered.',
+    classes,
+    skillGroups: clone(defaultSkillGroups).filter((group) => classNames.has(group.className)),
+    spellGroups: clone(defaultSpellGroups).filter((group) => classNames.has(group.className)),
+    equipment: [pickRandom(RANDOM_WEAPONS), pickRandom(RANDOM_OFF_HANDS)].map((item) => ({
+      ...item,
+    })),
+    backpack: shuffle(RANDOM_BACKPACK_ITEMS)
+      .slice(0, 2)
+      .map((item) => ({ ...item })),
+    statusEffects: { ...STATUS_EFFECT_DEFAULTS },
+    traits: {
+      identity,
+      theme: pickRandom(RANDOM_THEMES),
+      origin: pickRandom(RANDOM_ORIGINS),
+    },
+  };
+}
+
 export {
   BACKPACK_DEFAULTS,
   BACKSTORY_PROMPT_DEFAULTS,
@@ -126,4 +363,5 @@ export {
   EQUIPMENT_DEFAULTS,
   STATUS_EFFECT_DEFAULTS,
   createDefaultCharacter,
+  createRandomFabUCharacter,
 };

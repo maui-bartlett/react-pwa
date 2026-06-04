@@ -13,7 +13,6 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 import { Backpack, ChevronRight, HandFist, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
@@ -21,6 +20,8 @@ import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
 import type { FabUTokens } from '@/components/fab-u/tokens';
 import AccountSettings from '@/sections/AccountSettings';
 import { createCharacterHistory } from '@/state/createCharacterHistory';
+import { readJsonLocalStorage } from '@/state/indexedDbCharacterStorage';
+import { useIndexedDbCharacterPersistence } from '@/state/useIndexedDbCharacterPersistence';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 import { useThemeMode } from '@/theme/hooks';
 
@@ -1019,10 +1020,7 @@ function createRandomAvatarLegendsBackendPayload(classData?: AvatarClassData | n
 
 /** Single source of truth for the active character. Every editable
  *  surface reads from / writes to this atom (often via a derived slice). */
-const characterStateAtom = atomWithStorage<CharacterState>(
-  'avatar-legends-character',
-  defaultCharacter,
-);
+const characterStateAtom = atom<CharacterState>(defaultCharacter);
 
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
  *  shape of the AL `CharacterState` changes in a breaking way.
@@ -1180,6 +1178,25 @@ function describeAvatarLegendsCharacter(state: CharacterState) {
  *  machinery FabU uses. Every change to `characterStateAtom` (whether
  *  via a slice atom or a direct write) is captured automatically. */
 const useAvatarLegendsCharacterHistory = createCharacterHistory(characterStateAtom);
+
+function migrateAvatarLegendsLocalCharacter(
+  key: string,
+  initialValue: CharacterState,
+): CharacterState {
+  const stored = readJsonLocalStorage(key);
+  return stored === null ? initialValue : deserializeAvatarLegendsCharacter(stored);
+}
+
+function AvatarLegendsLocalCharacterPersistence() {
+  useIndexedDbCharacterPersistence({
+    atom: characterStateAtom,
+    key: 'avatar-legends-character',
+    initialValue: defaultCharacter,
+    migrate: migrateAvatarLegendsLocalCharacter,
+  });
+
+  return null;
+}
 
 /** Mounts the generic Convex character sync hook against the AL
  *  `characterStateAtom`. Renders nothing — just keeps the local atom
@@ -2010,7 +2027,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           width: '100%',
           aspectRatio: '1290 / 907',
           objectFit: 'cover',
-          opacity: isDarkMode ? 0.1 : 1,
+          opacity: 1,
         }}
       />
       <Box
@@ -2024,7 +2041,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          opacity: isDarkMode ? 0.78 : 1,
+          opacity: 1,
           filter: isDarkMode ? 'brightness(0.86) contrast(1.08)' : 'none',
           pointerEvents: 'none',
         }}
@@ -6465,6 +6482,7 @@ function AvatarLegends() {
           console.warn('Avatar Legends Convex sync is unavailable; continuing locally.', error);
         }}
       >
+        <AvatarLegendsLocalCharacterPersistence />
         <ConvexCharacterSyncMount />
       </ErrorBoundary>
       <Box

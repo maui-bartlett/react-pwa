@@ -103,14 +103,16 @@ def rename_font(font: TTFont) -> None:
 
 def draw_reference_n(pen: TTGlyphPen) -> None:
     # Reference-style N: thick legs with a broad diagonal that rises into
-    # the upper right leg, leaving a small but readable top notch after
-    # the whole glyph is flipped for the rotated balance labels.
+    # the upper right leg. The custom diagonal is drawn pre-flip; after
+    # flipping, it locks into the left leg's top, dips into a deeper
+    # notch, then lands fully into the right leg's bottom.
     rounded_rect(pen, 38, 0, 142, 700, 8)
     rounded_rect(pen, 250, 0, 360, 700, 8)
-    pen.moveTo((126, 0))
-    pen.lineTo((238, 0))
-    pen.lineTo((350, 650))
-    pen.lineTo((250, 650))
+    pen.moveTo((104, 0))
+    pen.lineTo((142, 0))
+    pen.qCurveTo((188, 8), (238, 58))
+    pen.lineTo((360, 700))
+    pen.lineTo((250, 700))
     pen.closePath()
 
 
@@ -175,19 +177,20 @@ def main() -> None:
         font,
         "E",
         lambda pen: (
-            # Reference-style E: a single tall smooth left arc with no
-            # squared corners. The top curve eases in more gradually than
-            # the bottom, like the brush-shaped E in the reference.
-            pen.moveTo((164, 0)),
-            pen.lineTo((164, 700)),
-            pen.lineTo((124, 700)),
-            pen.qCurveTo((70, 700), (44, 612)),
-            pen.qCurveTo((24, 540), (24, 350)),
-            pen.qCurveTo((24, 0), (116, 0)),
+            # Reference-style E: the left side is a continuous bowed
+            # spine. The bars begin inside the spine so their joins vanish
+            # into the arc instead of reading as squared corners.
+            pen.moveTo((170, 0)),
+            pen.lineTo((170, 700)),
+            pen.lineTo((132, 700)),
+            pen.qCurveTo((78, 700), (48, 612)),
+            pen.qCurveTo((26, 546), (24, 350)),
+            pen.qCurveTo((26, 154), (48, 88)),
+            pen.qCurveTo((78, 0), (132, 0)),
             pen.closePath(),
-            rounded_rect(pen, 92, 584, 356, 700, 58),
-            rounded_rect(pen, 92, 320, 292, 458, 58),
-            rounded_rect(pen, 92, 0, 356, 120, 60),
+            rounded_rect(pen, 122, 584, 356, 700, 58),
+            rounded_rect(pen, 124, 320, 292, 458, 58),
+            rounded_rect(pen, 122, 0, 356, 120, 60),
         ),
     )
 
