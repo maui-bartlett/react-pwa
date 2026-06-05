@@ -3948,17 +3948,19 @@ function CharacterPane() {
                     setIdentityDraft((prev) => ({ ...prev, className: event.target.value }))
                   }
                   sx={{
-                    minHeight: 36,
+                    minHeight: 48,
                     borderRadius: '4px',
                     border: `1px solid ${alpha(accent, 0.72)}`,
                     bgcolor: alpha(parchmentLight, 0.72),
                     color: ink,
-                    px: 1,
+                    px: 1.25,
+                    py: 1,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.74rem',
+                    fontSize: '0.82rem',
                     fontWeight: 900,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
+                    cursor: 'pointer',
                   }}
                 >
                   {classOptions.length === 0 ? (
