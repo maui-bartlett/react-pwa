@@ -33,6 +33,7 @@ type SkillsTableProps = {
   subtitle?: string;
   label?: string;
   showTitle?: boolean;
+  skillOptions?: SkillRow[];
   /** When provided, a "+ Skill" button appears if this table's total levels < 10 */
   onAddSkill?: (skill: SkillRow) => void;
   freeSkillLevels?: number;
@@ -606,6 +607,7 @@ function SkillsTable({
   label,
   showTitle = false,
   onAddSkill,
+  skillOptions = [],
   freeSkillLevels = 0,
   onAddSkillLevels,
   classMastered = false,
@@ -633,6 +635,9 @@ function SkillsTable({
   }, 0);
   const headingLabel = `${label ?? title} • ${tableTotal}/10`;
   const showAddSkillButton = !!onAddSkill && tableTotal < 10 && !draftSkill;
+  const availableSkillOptions = skillOptions.filter(
+    (option) => !rows.some((row) => row.name === option.name),
+  );
   const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
   const activeSkillLevel = activeSkill ? parseInt(activeSkill.level ?? '0', 10) : 0;
   const activeSkillMax = activeSkill?.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
@@ -672,10 +677,13 @@ function SkillsTable({
 
   function commitDraftSkill() {
     if (!draftSkill || !onAddSkill) return;
+    const selectedOption = availableSkillOptions.find((option) => option.name === draftSkill.name);
     onAddSkill({
-      name: draftSkill.name.trim() || 'New Skill',
+      name: selectedOption?.name ?? (draftSkill.name.trim() || 'New Skill'),
       level: draftSkill.level || '0',
-      effect: '',
+      maxLevel: selectedOption?.maxLevel,
+      effect: selectedOption?.effect ?? '',
+      description: selectedOption?.description,
     });
     setDraftSkill(null);
   }
@@ -834,25 +842,56 @@ function SkillsTable({
               }}
             >
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <InputBase
-                  autoFocus
-                  value={draftSkill.name}
-                  onChange={(e) => setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))}
-                  placeholder="Skill name"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitDraftSkill();
-                    if (e.key === 'Escape') setDraftSkill(null);
-                  }}
-                  sx={{
-                    color: fabUTokens.color.textPrimary,
-                    width: '100%',
-                    '& input': {
-                      p: 0,
+                {availableSkillOptions.length > 0 ? (
+                  <select
+                    autoFocus
+                    aria-label="Skill name"
+                    value={draftSkill.name}
+                    onChange={(e) => setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitDraftSkill();
+                      if (e.key === 'Escape') setDraftSkill(null);
+                    }}
+                    style={{
+                      width: '100%',
+                      fontSize: '0.74rem',
                       fontWeight: 700,
-                      ...scaledEditableTextStyle(0.74, { stretch: true }),
-                    },
-                  }}
-                />
+                      color: fabUTokens.color.textPrimary,
+                      background: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                      colorScheme: fabUTokens.isDark ? 'dark' : undefined,
+                    }}
+                  >
+                    {availableSkillOptions.map((option) => (
+                      <option key={option.name} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <InputBase
+                    autoFocus
+                    value={draftSkill.name}
+                    onChange={(e) => setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))}
+                    placeholder="Skill name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitDraftSkill();
+                      if (e.key === 'Escape') setDraftSkill(null);
+                    }}
+                    sx={{
+                      color: fabUTokens.color.textPrimary,
+                      width: '100%',
+                      '& input': {
+                        p: 0,
+                        fontWeight: 700,
+                        ...scaledEditableTextStyle(0.74, { stretch: true }),
+                      },
+                    }}
+                  />
+                )}
               </Box>
               <Box sx={{ width: 40, flexShrink: 0 }}>
                 <select
@@ -903,7 +942,9 @@ function SkillsTable({
         {showAddSkillButton ? (
           <Box
             data-pw="add-skill-button"
-            onClick={() => setDraftSkill({ name: '', level: '1' })}
+            onClick={() =>
+              setDraftSkill({ name: availableSkillOptions[0]?.name ?? '', level: '1' })
+            }
             sx={{
               display: 'flex',
               alignItems: 'center',

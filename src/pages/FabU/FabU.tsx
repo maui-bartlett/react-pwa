@@ -15,6 +15,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { useQuery } from 'convex/react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   Backpack,
@@ -58,6 +59,7 @@ import {
   fabUTokens as lightFabUTokens,
   useFabUTokens,
 } from '@/components/fab-u';
+import type { SkillRow, SpellRow } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
@@ -66,6 +68,7 @@ import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
+import { api } from '../../../convex/_generated/api';
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import {
   type Character,
@@ -90,6 +93,82 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 
 const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
+
+type ClassWithSpells = Character['classes'][number] & {
+  spells?: SpellRow[];
+};
+
+type FabulaUltimaSkillInfo = {
+  name?: unknown;
+  maxLevel?: unknown;
+  summary?: unknown;
+  description?: unknown;
+};
+
+type FabulaUltimaSpellInfo = {
+  name?: unknown;
+  mpCost?: unknown;
+  cost?: unknown;
+  target?: unknown;
+  duration?: unknown;
+  effect?: unknown;
+  description?: unknown;
+  summary?: unknown;
+};
+
+type FabulaUltimaClassInfo = {
+  name?: unknown;
+  skillsExpanded?: unknown;
+  spellsExpanded?: unknown;
+  spells?: unknown;
+};
+
+type FabulaUltimaClassDoc = {
+  class?: FabulaUltimaClassInfo;
+};
+
+function getClassSpellRows(character: Character, className: string): SpellRow[] | undefined {
+  const spellGroup = character.spellGroups.find((group) => group.className === className);
+  if (spellGroup) return spellGroup.spells;
+  const classSpells = (
+    character.classes.find((cls) => cls.name === className) as ClassWithSpells | undefined
+  )?.spells;
+  return Array.isArray(classSpells) ? classSpells : undefined;
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+}
+
+function normalizeSpellDuration(value: unknown): SpellRow['duration'] {
+  const duration = readString(value)?.toLowerCase() ?? '';
+  return duration.includes('scene') ? 'Scene' : 'Instant';
+}
+
+function mapFabulaUltimaSkillOption(skill: FabulaUltimaSkillInfo): SkillRow | null {
+  const name = readString(skill.name);
+  if (!name) return null;
+  return {
+    name,
+    level: '1',
+    maxLevel: typeof skill.maxLevel === 'number' ? skill.maxLevel : DEFAULT_SKILL_MAX_LEVEL,
+    effect: readString(skill.summary) ?? readString(skill.description) ?? '',
+    description: readString(skill.description),
+  };
+}
+
+function mapFabulaUltimaSpellOption(spell: FabulaUltimaSpellInfo): SpellRow | null {
+  const name = readString(spell.name);
+  if (!name) return null;
+  return {
+    name,
+    cost: readString(spell.mpCost) ?? readString(spell.cost) ?? '0 MP',
+    target: readString(spell.target) ?? '1',
+    duration: normalizeSpellDuration(spell.duration),
+    effect:
+      readString(spell.effect) ?? readString(spell.description) ?? readString(spell.summary) ?? '',
+  };
+}
 
 function describeFabULocalCharacter(character: Character) {
   const fullName = [character.name.firstName, character.name.lastName].filter(Boolean).join(' ');
@@ -613,6 +692,9 @@ function FabU() {
   const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
   const [pendingCombatSubTabScroll, setPendingCombatSubTabScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
+  const fabulaUltimaClassDocs = useQuery(api.classes.listFabulaUltimaClasses) as
+    | FabulaUltimaClassDoc[]
+    | undefined;
   const localCharacters = useLocalCharacterSlots({
     atom: characterState,
     gameSystem: 'fabula-ultima',
@@ -846,6 +928,42 @@ function FabU() {
   ).length;
   const canAddClass = canAddMoreSkills && unmasteredClassCount < 3;
   const selectedClassNames = new Set(character.classes.map((cls) => cls.name));
+  const convexClassByName = new Map(
+    (fabulaUltimaClassDocs ?? [])
+      .map((doc) => doc.class)
+      .filter((classInfo): classInfo is FabulaUltimaClassInfo => !!classInfo)
+      .map((classInfo) => [readString(classInfo.name), classInfo] as const)
+      .filter((entry): entry is [string, FabulaUltimaClassInfo] => !!entry[0]),
+  );
+  const skillOptionsByClass = new Map(
+    [...convexClassByName.entries()].map(([className, classInfo]) => {
+      const skills = Array.isArray(classInfo.skillsExpanded)
+        ? classInfo.skillsExpanded
+            .map((skill) => mapFabulaUltimaSkillOption(skill as FabulaUltimaSkillInfo))
+            .filter((skill): skill is SkillRow => !!skill)
+        : [];
+      return [className, skills] as const;
+    }),
+  );
+  const spellOptionsByClass = new Map(
+    [...convexClassByName.entries()].map(([className, classInfo]) => {
+      const spells = Array.isArray(classInfo.spellsExpanded)
+        ? classInfo.spellsExpanded
+            .map((spell) => mapFabulaUltimaSpellOption(spell as FabulaUltimaSpellInfo))
+            .filter((spell): spell is SpellRow => !!spell)
+        : [];
+      return [className, spells] as const;
+    }),
+  );
+  const classSkillGroups = character.classes.map((cls) => ({
+    className: cls.name,
+    skills: character.skillGroups.find((group) => group.className === cls.name)?.skills ?? [],
+  }));
+  const classSpellGroups = character.classes.flatMap((cls) => {
+    const spells = getClassSpellRows(character, cls.name);
+    const spellOptions = spellOptionsByClass.get(cls.name) ?? [];
+    return spells || spellOptions.length > 0 ? [{ className: cls.name, spells: spells ?? [] }] : [];
+  });
 
   const navigateToClassSkills = (index: number) => {
     const cls = character.classes[index];
@@ -912,9 +1030,11 @@ function FabU() {
   const handleAddSkill = (className: string, skill: import('@/components/fab-u').SkillRow) =>
     setCharacter((c) => ({
       ...c,
-      skillGroups: c.skillGroups.map((g) =>
-        g.className === className ? { ...g, skills: [...g.skills, skill] } : g,
-      ),
+      skillGroups: c.skillGroups.some((g) => g.className === className)
+        ? c.skillGroups.map((g) =>
+            g.className === className ? { ...g, skills: [...g.skills, skill] } : g,
+          )
+        : [...c.skillGroups, { className, skills: [skill] }],
     }));
 
   const handleDeleteSkill = (
@@ -978,11 +1098,21 @@ function FabU() {
       () =>
         setCharacter((c) => ({
           ...c,
-          spellGroups: c.spellGroups.map((g) =>
-            g.className === className
-              ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
-              : g,
-          ),
+          spellGroups: c.spellGroups.some((g) => g.className === className)
+            ? c.spellGroups.map((g) =>
+                g.className === className
+                  ? { ...g, spells: g.spells.filter((s) => s.name !== spellName) }
+                  : g,
+              )
+            : [
+                ...c.spellGroups,
+                {
+                  className,
+                  spells: (getClassSpellRows(c, className) ?? []).filter(
+                    (s) => s.name !== spellName,
+                  ),
+                },
+              ],
         })),
       onCancel,
       onBeforeConfirm,
@@ -995,11 +1125,21 @@ function FabU() {
   ) =>
     setCharacter((c) => ({
       ...c,
-      spellGroups: c.spellGroups.map((g) =>
-        g.className === className
-          ? { ...g, spells: g.spells.map((s) => (s.name === oldName ? updatedSpell : s)) }
-          : g,
-      ),
+      spellGroups: c.spellGroups.some((g) => g.className === className)
+        ? c.spellGroups.map((g) =>
+            g.className === className
+              ? { ...g, spells: g.spells.map((s) => (s.name === oldName ? updatedSpell : s)) }
+              : g,
+          )
+        : [
+            ...c.spellGroups,
+            {
+              className,
+              spells: (getClassSpellRows(c, className) ?? []).map((s) =>
+                s.name === oldName ? updatedSpell : s,
+              ),
+            },
+          ],
     }));
 
   const getMagicSkillLevel = (className: string): number => {
@@ -1080,19 +1220,40 @@ function FabU() {
   const handleAddSpell = (className: string, spell: import('@/components/fab-u').SpellRow) =>
     setCharacter((c) => ({
       ...c,
-      spellGroups: c.spellGroups.map((g) =>
-        g.className === className ? { ...g, spells: [...g.spells, spell] } : g,
-      ),
+      spellGroups: c.spellGroups.some((g) => g.className === className)
+        ? c.spellGroups.map((g) =>
+            g.className === className ? { ...g, spells: [...g.spells, spell] } : g,
+          )
+        : [
+            ...c.spellGroups,
+            {
+              className,
+              spells: [...(getClassSpellRows(c, className) ?? []), spell],
+            },
+          ],
     }));
 
   const handleUpdateSpellEffect = (className: string, spellName: string, effect: string) =>
     setCharacter((c) => ({
       ...c,
-      spellGroups: c.spellGroups.map((g) =>
-        g.className === className
-          ? { ...g, spells: g.spells.map((s) => (s.name === spellName ? { ...s, effect } : s)) }
-          : g,
-      ),
+      spellGroups: c.spellGroups.some((g) => g.className === className)
+        ? c.spellGroups.map((g) =>
+            g.className === className
+              ? {
+                  ...g,
+                  spells: g.spells.map((s) => (s.name === spellName ? { ...s, effect } : s)),
+                }
+              : g,
+          )
+        : [
+            ...c.spellGroups,
+            {
+              className,
+              spells: (getClassSpellRows(c, className) ?? []).map((s) =>
+                s.name === spellName ? { ...s, effect } : s,
+              ),
+            },
+          ],
     }));
   const handleAddSkillLevels = (className: string, skillName: string, levels: number) => {
     setCharacter((c) => {
@@ -1854,7 +2015,7 @@ function FabU() {
 
         {activeCombatTab === 'skills' ? (
           <Stack data-section="combat-skills" spacing={2.775}>
-            {character.skillGroups.map((group) => {
+            {classSkillGroups.map((group) => {
               const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
               return (
                 <SkillsTable
@@ -1862,6 +2023,7 @@ function FabU() {
                   label={`${group.className} Skills`}
                   title={`${group.className} Skills`}
                   rows={group.skills}
+                  skillOptions={skillOptionsByClass.get(group.className) ?? []}
                   onAddSkill={
                     canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                   }
@@ -1887,12 +2049,13 @@ function FabU() {
 
         {activeCombatTab === 'spells' ? (
           <Stack data-section="combat-spells" spacing={2.775}>
-            {character.spellGroups.map((group) => (
+            {classSpellGroups.map((group) => (
               <SpellsTable
                 key={group.className}
                 label={`${group.className} Spells`}
                 title={`${group.className} Spells`}
                 rows={group.spells}
+                spellOptions={spellOptionsByClass.get(group.className) ?? []}
                 onCastSpell={handleCastSpell}
                 totalMagicLevels={getMagicSkillLevel(group.className)}
                 onAddSpell={(spell) => handleAddSpell(group.className, spell)}
@@ -1940,7 +2103,7 @@ function FabU() {
     return (
       <>
         {renderProgressStrip()}
-        {character.skillGroups.map((group) => {
+        {classSkillGroups.map((group) => {
           const mastered = (skillLevelTotalsByClass[group.className] ?? 0) >= 10;
           return (
             <Box
@@ -1952,6 +2115,7 @@ function FabU() {
                 label={`${group.className} Skills`}
                 title={`${group.className} Skills`}
                 rows={group.skills}
+                skillOptions={skillOptionsByClass.get(group.className) ?? []}
                 onAddSkill={
                   canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                 }
@@ -2113,12 +2277,13 @@ function FabU() {
             },
           ]}
         />
-        {character.spellGroups.map((group) => (
+        {classSpellGroups.map((group) => (
           <SpellsTable
             key={group.className}
             label={`${group.className} Spells`}
             title={`${group.className} Spells`}
             rows={group.spells}
+            spellOptions={spellOptionsByClass.get(group.className) ?? []}
             onCastSpell={handleCastSpell}
             totalMagicLevels={getMagicSkillLevel(group.className)}
             onAddSpell={(spell) => handleAddSpell(group.className, spell)}

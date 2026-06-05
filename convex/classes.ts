@@ -189,6 +189,18 @@ export const listAvatarLegendsClasses = query({
   },
 });
 
+export const listFabulaUltimaClasses = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem', (q) =>
+        q.eq('class.meta.gameSystem', FABULA_ULTIMA_GAME_SYSTEM),
+      )
+      .collect();
+  },
+});
+
 export const getAvatarLegendsClassByName = query({
   args: { className: v.string() },
   handler: async (ctx, args) => {

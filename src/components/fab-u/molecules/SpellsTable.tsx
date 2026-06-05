@@ -47,6 +47,7 @@ type SpellsTableProps = {
   title?: string;
   label?: string;
   showTitle?: boolean;
+  spellOptions?: SpellRow[];
   onCastSpell?: (spellName: string, mpCost: string) => void;
   /** Total levels in the magic skill — enables label format "Name • N/total" and the + Spell button */
   totalMagicLevels?: number;
@@ -691,6 +692,7 @@ function SpellsTable({
   title = 'Prepared spells',
   label,
   showTitle = false,
+  spellOptions = [],
   onCastSpell,
   totalMagicLevels,
   onAddSpell,
@@ -703,7 +705,11 @@ function SpellsTable({
   const [draftSpell, setDraftSpell] = useState<DraftSpell | null>(null);
   const [editingSpell, setEditingSpell] = useState<EditingSpellState | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const nameSelectRef = useRef<HTMLSelectElement>(null);
   const originalSpellDataRef = useRef<SpellRow | null>(null);
+  const availableSpellOptions = spellOptions.filter(
+    (option) => !rows.some((row) => row.name === option.name),
+  );
 
   const displayLabel =
     totalMagicLevels !== undefined
@@ -718,18 +724,25 @@ function SpellsTable({
   };
 
   function startDraft() {
-    setDraftSpell({ name: '', cost: '', target: '', duration: 'Instant' });
-    window.requestAnimationFrame(() => nameInputRef.current?.focus());
+    const selectedOption = availableSpellOptions[0];
+    setDraftSpell({
+      name: selectedOption?.name ?? '',
+      cost: selectedOption?.cost ?? '',
+      target: selectedOption?.target ?? '',
+      duration: selectedOption?.duration ?? 'Instant',
+    });
+    window.requestAnimationFrame(() => (nameSelectRef.current ?? nameInputRef.current)?.focus());
   }
 
   function commitDraftSpell() {
     if (!draftSpell || !onAddSpell) return;
+    const selectedOption = availableSpellOptions.find((option) => option.name === draftSpell.name);
     onAddSpell({
-      name: draftSpell.name.trim() || 'New Spell',
-      cost: draftSpell.cost.trim() || '0 MP',
-      target: draftSpell.target.trim() || '1',
-      duration: draftSpell.duration,
-      effect: '',
+      name: selectedOption?.name ?? (draftSpell.name.trim() || 'New Spell'),
+      cost: selectedOption?.cost ?? (draftSpell.cost.trim() || '0 MP'),
+      target: selectedOption?.target ?? (draftSpell.target.trim() || '1'),
+      duration: selectedOption?.duration ?? draftSpell.duration,
+      effect: selectedOption?.effect ?? '',
     });
     setDraftSpell(null);
   }
@@ -915,14 +928,57 @@ function SpellsTable({
             }}
           >
             <Box sx={{ flex: 2, minWidth: 0 }}>
-              <InputBase
-                inputRef={nameInputRef}
-                value={draftSpell.name}
-                onChange={(e) => setDraftSpell((d) => (d ? { ...d, name: e.target.value } : d))}
-                placeholder="Spell name"
-                onKeyDown={draftKeyDown()}
-                sx={inputSx}
-              />
+              {availableSpellOptions.length > 0 ? (
+                <select
+                  ref={nameSelectRef}
+                  aria-label="Spell name"
+                  value={draftSpell.name}
+                  onChange={(e) => {
+                    const selectedOption = availableSpellOptions.find(
+                      (option) => option.name === e.target.value,
+                    );
+                    setDraftSpell((d) =>
+                      d
+                        ? {
+                            ...d,
+                            name: e.target.value,
+                            cost: selectedOption?.cost ?? d.cost,
+                            target: selectedOption?.target ?? d.target,
+                            duration: selectedOption?.duration ?? d.duration,
+                          }
+                        : d,
+                    );
+                  }}
+                  onKeyDown={draftKeyDown()}
+                  style={{
+                    width: '100%',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    color: fabUTokens.color.textPrimary,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                    colorScheme: fabUTokens.isDark ? 'dark' : undefined,
+                  }}
+                >
+                  {availableSpellOptions.map((option) => (
+                    <option key={option.name} value={option.name}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <InputBase
+                  inputRef={nameInputRef}
+                  value={draftSpell.name}
+                  onChange={(e) => setDraftSpell((d) => (d ? { ...d, name: e.target.value } : d))}
+                  placeholder="Spell name"
+                  onKeyDown={draftKeyDown()}
+                  sx={inputSx}
+                />
+              )}
             </Box>
             <Box sx={{ width: 56, flexShrink: 0 }}>
               <InputBase

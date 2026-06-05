@@ -249,6 +249,41 @@ function createRandomAttributes(): Character['attributes'] {
   };
 }
 
+function createRandomBackstoryPrompts({
+  classes,
+  equipment,
+  identity,
+  name,
+  origin,
+  theme,
+}: {
+  classes: ClassEntry[];
+  equipment: EquipmentItem[];
+  identity: string[];
+  name: Character['name'];
+  origin: string;
+  theme: string;
+}): BackstoryPrompt[] {
+  const firstName = name.firstName || name.nickName || 'this hero';
+  const classNames = classes.map((entry) => entry.name);
+  const signatureClass = classNames[0] ?? 'their calling';
+  const secondClass = classNames[1] ?? signatureClass;
+  const signatureItem = equipment[0]?.name ?? 'their trusted gear';
+  const secondIdentity = identity[1] ?? identity[0] ?? 'wanderer';
+  const candidates = [
+    `What did ${firstName} leave unresolved in ${origin} when they became known as a ${identity[0]}?`,
+    `How does ${firstName}'s drive for ${theme} complicate their training as a ${signatureClass}?`,
+    `Who first trusted ${firstName} with the ${signatureItem}, and what promise came with it?`,
+    `Why does ${firstName} hide their past as a ${secondIdentity} from their companions?`,
+    `What lesson from ${secondClass} keeps pulling ${firstName} away from the easier path?`,
+    `Which rumor about ${name.nickName || firstName} followed them out of ${origin}?`,
+  ];
+
+  return shuffle(candidates)
+    .slice(0, 3)
+    .map((prompt) => ({ prompt, response: '' }));
+}
+
 function createDefaultCharacter(): Character {
   return {
     name: {
@@ -310,14 +345,20 @@ function createRandomFabUCharacter(): Character {
   const maxHP = DIE_VALUES[attributes.might.die] * 5 + level + hpBonus;
   const maxMP = DIE_VALUES[attributes.willpower.die] * 5 + level + mpBonus;
   const identity = pickTwoDistinct(RANDOM_IDENTITIES);
+  const name = {
+    firstName: pickRandom(RANDOM_FIRST_NAMES),
+    lastName: pickRandom(RANDOM_LAST_NAMES),
+    nickName: pickRandom(RANDOM_NICKNAMES),
+  };
+  const theme = pickRandom(RANDOM_THEMES);
+  const origin = pickRandom(RANDOM_ORIGINS);
+  const equipment = [pickRandom(RANDOM_WEAPONS), pickRandom(RANDOM_OFF_HANDS)].map((item) => ({
+    ...item,
+  }));
 
   return {
     ...createDefaultCharacter(),
-    name: {
-      firstName: pickRandom(RANDOM_FIRST_NAMES),
-      lastName: pickRandom(RANDOM_LAST_NAMES),
-      nickName: pickRandom(RANDOM_NICKNAMES),
-    },
+    name,
     initiative: randomInt(0, 2),
     defense: randomInt(8, 10),
     defenseTemp: null,
@@ -335,22 +376,27 @@ function createRandomFabUCharacter(): Character {
     zenit: randomInt(20, 120),
     attributes,
     bonds: [],
-    backstoryPrompts: BACKSTORY_PROMPT_DEFAULTS.map((prompt) => ({ ...prompt, response: '' })),
+    backstoryPrompts: createRandomBackstoryPrompts({
+      classes,
+      equipment,
+      identity,
+      name,
+      origin,
+      theme,
+    }),
     notes: 'A new hero steps onto the road. Their story is ready to be discovered.',
     classes,
     skillGroups: clone(defaultSkillGroups).filter((group) => classNames.has(group.className)),
     spellGroups: clone(defaultSpellGroups).filter((group) => classNames.has(group.className)),
-    equipment: [pickRandom(RANDOM_WEAPONS), pickRandom(RANDOM_OFF_HANDS)].map((item) => ({
-      ...item,
-    })),
+    equipment,
     backpack: shuffle(RANDOM_BACKPACK_ITEMS)
       .slice(0, 2)
       .map((item) => ({ ...item })),
     statusEffects: { ...STATUS_EFFECT_DEFAULTS },
     traits: {
       identity,
-      theme: pickRandom(RANDOM_THEMES),
-      origin: pickRandom(RANDOM_ORIGINS),
+      theme,
+      origin,
     },
   };
 }
