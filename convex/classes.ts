@@ -3,6 +3,7 @@ import { v } from 'convex/values';
 import { internalMutation, query } from './_generated/server';
 
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
+const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
 const TITLE_SMALL_WORDS = new Set([
   'a',
   'an',
@@ -157,6 +158,22 @@ export const replaceAvatarLegendsClasses = internalMutation({
     }
 
     return { deleted: idsToDelete.size, inserted: ids.length };
+  },
+});
+
+export const clearFabulaUltimaClasses = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem', (q) =>
+        q.eq('class.meta.gameSystem', FABULA_ULTIMA_GAME_SYSTEM),
+      )
+      .collect();
+
+    await Promise.all(existing.map((classDoc) => ctx.db.delete(classDoc._id)));
+
+    return { deleted: existing.length };
   },
 });
 
