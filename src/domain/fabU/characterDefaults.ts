@@ -348,7 +348,7 @@ function createRandomFabUCharacter(): Character {
   const name = {
     firstName: pickRandom(RANDOM_FIRST_NAMES),
     lastName: pickRandom(RANDOM_LAST_NAMES),
-    nickName: pickRandom(RANDOM_NICKNAMES),
+    nickName: Math.random() < 0.5 ? pickRandom(RANDOM_NICKNAMES) : undefined,
   };
   const theme = pickRandom(RANDOM_THEMES);
   const origin = pickRandom(RANDOM_ORIGINS);

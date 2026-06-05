@@ -91,19 +91,21 @@ function normalizeEquipment(storedEquipment: unknown): EquipmentItem[] {
  * older persisted characters round-trip cleanly into the new form.
  */
 function normalizeName(parsed: Record<string, unknown>, defaults: CharacterName): CharacterName {
+  const normalizeNickName = (value: unknown) =>
+    typeof value === 'string' ? value.trim() || undefined : undefined;
   const nested = parsed.name;
   if (nested && typeof nested === 'object') {
     const n = nested as Partial<CharacterName>;
     return {
       firstName: typeof n.firstName === 'string' ? n.firstName : defaults.firstName,
       lastName: typeof n.lastName === 'string' ? n.lastName : defaults.lastName,
-      nickName: typeof n.nickName === 'string' ? n.nickName : defaults.nickName,
+      nickName: normalizeNickName(n.nickName),
     };
   }
   return {
     firstName: typeof parsed.firstName === 'string' ? parsed.firstName : defaults.firstName,
     lastName: typeof parsed.lastName === 'string' ? parsed.lastName : defaults.lastName,
-    nickName: typeof parsed.nickName === 'string' ? parsed.nickName : defaults.nickName,
+    nickName: normalizeNickName(parsed.nickName),
   };
 }
 

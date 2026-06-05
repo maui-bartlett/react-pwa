@@ -15,7 +15,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -24,6 +24,11 @@ import { SpellRow } from '../types';
 
 const ACTION_WIDTH = 128;
 const DESC_ACTION_WIDTH = 64;
+const COST_COLUMN_WIDTH = 48;
+const SPELL_COLUMN_FLEX = 1.7;
+const TARGET_COLUMN_WIDTH = 148;
+const TARGET_COLUMN_GAP = 12;
+const DURATION_COLUMN_WIDTH = 74;
 const SNAP_THRESHOLD = 50;
 const DELETE_RED = '#a84e49';
 
@@ -107,6 +112,7 @@ function SwipeableSpellRow({
   const [descDeltaX, setDescDeltaX] = useState(0);
   const [descSwiping, setDescSwiping] = useState(false);
   const descElRef = useRef<HTMLElement | null>(null);
+  const durationSelectRef = useRef<HTMLSelectElement>(null);
 
   // Description inline edit state
   const [editingEffect, setEditingEffect] = useState(false);
@@ -313,15 +319,27 @@ function SwipeableSpellRow({
           >
             <Box
               sx={{
-                flex: 2,
+                flex: SPELL_COLUMN_FLEX,
                 minWidth: 0,
                 overflow: 'hidden',
                 display: 'flex',
                 alignItems: 'center',
+                gap: 0.5,
               }}
             >
-              {/* 24px spacer mirrors the chevron icon + gap in normal display mode */}
-              <Box sx={{ width: 24, flexShrink: 0 }} />
+              <IconButton
+                size="small"
+                aria-label="Save spell changes"
+                onClick={onCommitEdit}
+                sx={{
+                  color: fabUTokens.color.brand,
+                  p: 0,
+                  flexShrink: 0,
+                  '&:hover': { color: fabUTokens.color.brandStrong },
+                }}
+              >
+                <CheckIcon sx={{ fontSize: 18 }} />
+              </IconButton>
               <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                 <InputBase
                   autoFocus
@@ -344,7 +362,7 @@ function SwipeableSpellRow({
                 />
               </Box>
             </Box>
-            <Box sx={{ width: 56, flexShrink: 0 }}>
+            <Box sx={{ width: COST_COLUMN_WIDTH, flexShrink: 0 }}>
               <InputBase
                 value={editDraft.cost}
                 onChange={(e) => onEditDraftChange({ ...editDraft, cost: e.target.value })}
@@ -364,7 +382,7 @@ function SwipeableSpellRow({
                 }}
               />
             </Box>
-            <Box sx={{ width: 48, flexShrink: 0, ml: '6px' }}>
+            <Box sx={{ width: TARGET_COLUMN_WIDTH, flexShrink: 0, ml: `${TARGET_COLUMN_GAP}px` }}>
               <InputBase
                 value={editDraft.target}
                 onChange={(e) => onEditDraftChange({ ...editDraft, target: e.target.value })}
@@ -378,7 +396,7 @@ function SwipeableSpellRow({
                   width: '100%',
                   '& input': {
                     p: 0,
-                    textAlign: 'right',
+                    textAlign: 'left',
                     ...scaledEditableTextStyle(0.74, { stretch: true }),
                   },
                 }}
@@ -386,16 +404,29 @@ function SwipeableSpellRow({
             </Box>
             <Box
               sx={{
-                flex: 1.5,
-                minWidth: 0,
+                width: DURATION_COLUMN_WIDTH,
+                flexShrink: 0,
                 pl: 0,
                 pr: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
+                gap: 0.2,
               }}
             >
+              <IconButton
+                size="small"
+                aria-label="Open duration options"
+                onClick={() => {
+                  durationSelectRef.current?.focus();
+                  durationSelectRef.current?.showPicker?.();
+                }}
+                sx={{ color: fabUTokens.color.textSecondary, p: 0, flexShrink: 0 }}
+              >
+                <KeyboardArrowDownIcon sx={{ fontSize: 15 }} />
+              </IconButton>
               <select
+                ref={durationSelectRef}
                 value={editDraft.duration}
                 onChange={(e) =>
                   onEditDraftChange({
@@ -409,6 +440,9 @@ function SwipeableSpellRow({
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
                   fontFamily: 'inherit',
                   cursor: 'pointer',
                   minWidth: 0,
@@ -452,7 +486,7 @@ function SwipeableSpellRow({
           >
             <Box
               sx={{
-                flex: 2,
+                flex: SPELL_COLUMN_FLEX,
                 minWidth: 0,
                 display: 'flex',
                 alignItems: 'center',
@@ -487,7 +521,7 @@ function SwipeableSpellRow({
             </Box>
             <Box
               sx={{
-                width: 56,
+                width: COST_COLUMN_WIDTH,
                 flexShrink: 0,
                 textAlign: 'right',
                 ...cellSx,
@@ -498,11 +532,12 @@ function SwipeableSpellRow({
             </Box>
             <Box
               sx={{
-                width: 48,
+                width: TARGET_COLUMN_WIDTH,
                 flexShrink: 0,
-                ml: '6px',
-                textAlign: 'right',
+                ml: `${TARGET_COLUMN_GAP}px`,
+                textAlign: 'left',
                 ...cellSx,
+                whiteSpace: 'nowrap',
                 color: isOpen ? fabUTokens.color.brandFg : fabUTokens.color.textPrimary,
               }}
             >
@@ -510,8 +545,8 @@ function SwipeableSpellRow({
             </Box>
             <Box
               sx={{
-                flex: 1.5,
-                minWidth: 0,
+                width: DURATION_COLUMN_WIDTH,
+                flexShrink: 0,
                 pl: 0,
                 pr: '10px',
                 textAlign: 'right',
@@ -808,42 +843,6 @@ function SpellsTable({
     <SurfaceCard
       label={displayLabel}
       title={showTitle ? title : undefined}
-      actions={
-        editingSpell ? (
-          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => commitSpellEdit()}
-              sx={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <CheckCircle size={28} color="#4caf50" />
-            </Box>
-            <Box
-              component="button"
-              type="button"
-              onClick={() => revertSpellEdit()}
-              sx={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <XCircle size={28} color="#a84e49" />
-            </Box>
-          </Box>
-        ) : undefined
-      }
       actionsPosition="inline"
     >
       <Box
@@ -866,13 +865,32 @@ function SpellsTable({
             borderBottom: `1px solid ${headerBorderColor}`,
           }}
         >
-          <Box sx={{ flex: 2, minWidth: 0, ...headerCellSx }}>Spell</Box>
-          <Box sx={{ width: 56, flexShrink: 0, textAlign: 'right', ...headerCellSx }}>Cost</Box>
-          <Box sx={{ width: 48, flexShrink: 0, ml: '6px', textAlign: 'right', ...headerCellSx }}>
+          <Box sx={{ flex: SPELL_COLUMN_FLEX, minWidth: 0, ...headerCellSx }}>Spell</Box>
+          <Box
+            sx={{ width: COST_COLUMN_WIDTH, flexShrink: 0, textAlign: 'right', ...headerCellSx }}
+          >
+            MP
+          </Box>
+          <Box
+            sx={{
+              width: TARGET_COLUMN_WIDTH,
+              flexShrink: 0,
+              ml: `${TARGET_COLUMN_GAP}px`,
+              textAlign: 'left',
+              ...headerCellSx,
+            }}
+          >
             Target
           </Box>
           <Box
-            sx={{ flex: 1.5, minWidth: 0, pl: 0, pr: '10px', textAlign: 'right', ...headerCellSx }}
+            sx={{
+              width: DURATION_COLUMN_WIDTH,
+              flexShrink: 0,
+              pl: 0,
+              pr: '10px',
+              textAlign: 'right',
+              ...headerCellSx,
+            }}
           >
             Duration
           </Box>
@@ -924,63 +942,86 @@ function SpellsTable({
               py: 0.7,
               height: 46,
               bgcolor: fabUTokens.color.pillSurface,
-              gap: 0.5,
             }}
           >
-            <Box sx={{ flex: 2, minWidth: 0 }}>
-              {availableSpellOptions.length > 0 ? (
-                <select
-                  ref={nameSelectRef}
-                  aria-label="Spell name"
-                  value={draftSpell.name}
-                  onChange={(e) => {
-                    const selectedOption = availableSpellOptions.find(
-                      (option) => option.name === e.target.value,
-                    );
-                    setDraftSpell((d) =>
-                      d
-                        ? {
-                            ...d,
-                            name: e.target.value,
-                            cost: selectedOption?.cost ?? d.cost,
-                            target: selectedOption?.target ?? d.target,
-                            duration: selectedOption?.duration ?? d.duration,
-                          }
-                        : d,
-                    );
-                  }}
-                  onKeyDown={draftKeyDown()}
-                  style={{
-                    width: '100%',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    color: fabUTokens.color.textPrimary,
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    fontFamily: 'inherit',
-                    cursor: 'pointer',
-                    colorScheme: fabUTokens.isDark ? 'dark' : undefined,
-                  }}
-                >
-                  {availableSpellOptions.map((option) => (
-                    <option key={option.name} value={option.name}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <InputBase
-                  inputRef={nameInputRef}
-                  value={draftSpell.name}
-                  onChange={(e) => setDraftSpell((d) => (d ? { ...d, name: e.target.value } : d))}
-                  placeholder="Spell name"
-                  onKeyDown={draftKeyDown()}
-                  sx={inputSx}
-                />
-              )}
+            <Box
+              sx={{
+                flex: SPELL_COLUMN_FLEX,
+                minWidth: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                overflow: 'hidden',
+              }}
+            >
+              <IconButton
+                size="small"
+                aria-label="Add spell"
+                onClick={commitDraftSpell}
+                sx={{
+                  color: fabUTokens.color.brand,
+                  p: 0,
+                  flexShrink: 0,
+                  '&:hover': { color: fabUTokens.color.brandStrong },
+                }}
+              >
+                <CheckIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                {availableSpellOptions.length > 0 ? (
+                  <select
+                    ref={nameSelectRef}
+                    aria-label="Spell name"
+                    value={draftSpell.name}
+                    onChange={(e) => {
+                      const selectedOption = availableSpellOptions.find(
+                        (option) => option.name === e.target.value,
+                      );
+                      setDraftSpell((d) =>
+                        d
+                          ? {
+                              ...d,
+                              name: e.target.value,
+                              cost: selectedOption?.cost ?? d.cost,
+                              target: selectedOption?.target ?? d.target,
+                              duration: selectedOption?.duration ?? d.duration,
+                            }
+                          : d,
+                      );
+                    }}
+                    onKeyDown={draftKeyDown()}
+                    style={{
+                      width: '100%',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      color: fabUTokens.color.textPrimary,
+                      background: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                      colorScheme: fabUTokens.isDark ? 'dark' : undefined,
+                    }}
+                  >
+                    {availableSpellOptions.map((option) => (
+                      <option key={option.name} value={option.name}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <InputBase
+                    inputRef={nameInputRef}
+                    value={draftSpell.name}
+                    onChange={(e) => setDraftSpell((d) => (d ? { ...d, name: e.target.value } : d))}
+                    placeholder="Spell name"
+                    onKeyDown={draftKeyDown()}
+                    sx={inputSx}
+                  />
+                )}
+              </Box>
             </Box>
-            <Box sx={{ width: 56, flexShrink: 0 }}>
+            <Box sx={{ width: COST_COLUMN_WIDTH, flexShrink: 0 }}>
               <InputBase
                 value={draftSpell.cost}
                 onChange={(e) => setDraftSpell((d) => (d ? { ...d, cost: e.target.value } : d))}
@@ -992,7 +1033,7 @@ function SpellsTable({
                 }}
               />
             </Box>
-            <Box sx={{ width: 48, flexShrink: 0, ml: '6px' }}>
+            <Box sx={{ width: TARGET_COLUMN_WIDTH, flexShrink: 0, ml: `${TARGET_COLUMN_GAP}px` }}>
               <InputBase
                 value={draftSpell.target}
                 onChange={(e) => setDraftSpell((d) => (d ? { ...d, target: e.target.value } : d))}
@@ -1000,20 +1041,19 @@ function SpellsTable({
                 onKeyDown={draftKeyDown()}
                 sx={{
                   ...inputSx,
-                  '& input': { ...inputSx['& input'], textAlign: 'right' as const },
+                  '& input': { ...inputSx['& input'], textAlign: 'left' as const },
                 }}
               />
             </Box>
             <Box
               sx={{
-                flex: 1.5,
-                minWidth: 0,
+                width: DURATION_COLUMN_WIDTH,
+                flexShrink: 0,
                 pl: 0,
                 pr: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
-                gap: 0.5,
               }}
             >
               <select
@@ -1039,18 +1079,6 @@ function SpellsTable({
                 <option value="Instant">Instant</option>
                 <option value="Scene">Scene</option>
               </select>
-              <IconButton
-                size="small"
-                onClick={commitDraftSpell}
-                sx={{
-                  color: fabUTokens.color.brand,
-                  p: 0.25,
-                  flexShrink: 0,
-                  '&:hover': { color: fabUTokens.color.brandStrong },
-                }}
-              >
-                <CheckIcon sx={{ fontSize: 16 }} />
-              </IconButton>
             </Box>
           </Box>
         )}

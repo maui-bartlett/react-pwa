@@ -24,7 +24,7 @@ type StatusEffects = Record<string, boolean>;
 type CharacterName = {
   firstName: string;
   lastName: string;
-  nickName: string;
+  nickName?: string;
 };
 
 type Character = {

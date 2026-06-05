@@ -51,6 +51,20 @@ test('migrateCharacter normalizes current localStorage character shape', () => {
   expect(migrated.character.zenit).toBe(99);
 });
 
+test('migrateCharacter preserves an absent or blank nickname', () => {
+  const withoutNickname = migrateCharacter({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Mira', lastName: 'Vale' },
+  });
+  const blankNickname = migrateCharacter({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Mira', lastName: 'Vale', nickName: '   ' },
+  });
+
+  expect(withoutNickname.character.name.nickName).toBeUndefined();
+  expect(blankNickname.character.name.nickName).toBeUndefined();
+});
+
 test('migrateCharacter imports older split localStorage values into character state', () => {
   const legacyCurrencyKey = `ze${'nn'}it`;
   const migrated = migrateCharacter(

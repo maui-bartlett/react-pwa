@@ -237,6 +237,17 @@ function describeFabULocalCharacter(character: Character) {
   return fullName || character.name.nickName || 'Fab U Character';
 }
 
+function formatFabUCharacterName(character: Character) {
+  const formattedName = [
+    character.name.firstName,
+    character.name.nickName ? `"${character.name.nickName}"` : '',
+    character.name.lastName,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return formattedName || 'Fab U Character';
+}
+
 const screenMeta: Record<
   Exclude<FabUTab, 'combat'>,
   { title: string; subtitle: string; actionLabel: string }
@@ -2594,13 +2605,15 @@ function FabU() {
     );
   }
 
+  const headerCharacterName = character.name.nickName || character.name.firstName;
+  const fullCharacterName = formatFabUCharacterName(character);
   const eyebrow =
     activeTab === 'overview' ? (
       <>
         Fabula <Sparkles size={10} color={fabUTokens.color.highlight} /> Ultima
       </>
     ) : (
-      `${character.name.nickName} • LVL ${character.level}`
+      `${headerCharacterName} • LVL ${character.level}`
     );
 
   const header = (() => {
@@ -2609,7 +2622,7 @@ function FabU() {
       // account-menu queries scope to Fabula Ultima.
       <AccountSettings
         gameSystem="fabula-ultima"
-        localCharacterName={`${character.name.firstName} "${character.name.nickName}" ${character.name.lastName}`}
+        localCharacterName={fullCharacterName}
         localCharacters={localCharacters}
       />
     );
@@ -2627,10 +2640,7 @@ function FabU() {
     }
 
     const meta = screenMeta[activeTab];
-    const headerTitle =
-      activeTab === 'overview'
-        ? `${character.name.firstName} "${character.name.nickName}" ${character.name.lastName}`
-        : meta.title;
+    const headerTitle = activeTab === 'overview' ? fullCharacterName : meta.title;
     const headerSubtitle =
       activeTab === 'overview' ? safeTraits.identity.join(' · ') : meta.subtitle;
 
