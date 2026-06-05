@@ -3973,7 +3973,7 @@ function CharacterPane() {
                   ))}
                 </Box>
               </Stack>
-              <Stack direction="row" gap={1}>
+              <Stack direction="row" gap={1} sx={{ mt: 0.8 }}>
                 <Button
                   onClick={() => setEditingIdentity(false)}
                   sx={{
