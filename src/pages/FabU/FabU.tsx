@@ -107,6 +107,8 @@ type FabulaUltimaSkillInfo = {
 
 type FabulaUltimaSpellInfo = {
   name?: unknown;
+  class?: unknown;
+  school?: unknown;
   mpCost?: unknown;
   cost?: unknown;
   target?: unknown;
@@ -127,6 +129,31 @@ type FabulaUltimaClassDoc = {
   class?: FabulaUltimaClassInfo;
 };
 
+const SHIFTED_SPELL_COSTS = new Map(
+  Object.entries({
+    'Elementalist|Elemental Weapon': '10',
+    'Elementalist|Flare': '20',
+    'Elementalist|Iceberg': '20',
+    'Elementalist|Soaring Strike': '10',
+    'Elementalist|Thunderbolt': '20',
+    'Elementalist|Vortex': '10',
+    'Entropist|Acceleration': '20',
+    'Entropist|Anomaly': '20',
+    'Entropist|Dark Weapon': '10',
+    'Entropist|Dispel': '10',
+    'Entropist|Divination': '10',
+    'Entropist|Drain Spirit': '5',
+    'Entropist|Drain Vigor': '10',
+    'Entropist|Mirror': '10',
+    'Entropist|Omega': '20',
+    'Entropist|Stop': '10',
+    'Spiritist|Awaken': '20',
+    'Spiritist|Enrage': '10',
+    'Spiritist|Mercy': '20',
+    'Spiritist|Soul Weapon': '10',
+  }),
+);
+
 function getClassSpellRows(character: Character, className: string): SpellRow[] | undefined {
   const spellGroup = character.spellGroups.find((group) => group.className === className);
   if (spellGroup) return spellGroup.spells;
@@ -145,6 +172,25 @@ function normalizeSpellDuration(value: unknown): SpellRow['duration'] {
   return duration.includes('scene') ? 'Scene' : 'Instant';
 }
 
+function isSpellDuration(value: unknown): boolean {
+  const duration = readString(value)?.toLowerCase() ?? '';
+  return duration === 'scene' || duration === 'instantaneous' || duration === 'instant';
+}
+
+function isSpellTarget(value: unknown): boolean {
+  const target = readString(value) ?? '';
+  return /^(One |Up to |Self$|Special$)/.test(target);
+}
+
+function combineSpellDescription(...parts: unknown[]): string {
+  return parts
+    .map(readString)
+    .filter((part): part is string => !!part)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function mapFabulaUltimaSkillOption(skill: FabulaUltimaSkillInfo): SkillRow | null {
   const name = readString(skill.name);
   if (!name) return null;
@@ -160,6 +206,22 @@ function mapFabulaUltimaSkillOption(skill: FabulaUltimaSkillInfo): SkillRow | nu
 function mapFabulaUltimaSpellOption(spell: FabulaUltimaSpellInfo): SpellRow | null {
   const name = readString(spell.name);
   if (!name) return null;
+  const className = readString(spell.class) ?? readString(spell.school);
+  const hasShiftedColumns =
+    isSpellTarget(spell.mpCost) &&
+    isSpellDuration(spell.target) &&
+    !isSpellDuration(spell.duration);
+  if (hasShiftedColumns) {
+    const correctedCost = className ? SHIFTED_SPELL_COSTS.get(`${className}|${name}`) : undefined;
+    const effect = combineSpellDescription(spell.duration, spell.effect, spell.description);
+    return {
+      name,
+      cost: correctedCost ?? '0 MP',
+      target: readString(spell.mpCost) ?? '1',
+      duration: normalizeSpellDuration(spell.target),
+      effect,
+    };
+  }
   return {
     name,
     cost: readString(spell.mpCost) ?? readString(spell.cost) ?? '0 MP',
