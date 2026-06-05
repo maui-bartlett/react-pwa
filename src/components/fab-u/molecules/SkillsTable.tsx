@@ -838,60 +838,87 @@ function SkillsTable({
                 py: 0.7,
                 minHeight: 46,
                 bgcolor: fabUTokens.color.pillSurface,
-                gap: 0.5,
               }}
             >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                {availableSkillOptions.length > 0 ? (
-                  <select
-                    autoFocus
-                    aria-label="Skill name"
-                    value={draftSkill.name}
-                    onChange={(e) => setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitDraftSkill();
-                      if (e.key === 'Escape') setDraftSkill(null);
-                    }}
-                    style={{
-                      width: '100%',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      color: fabUTokens.color.textPrimary,
-                      background: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                      cursor: 'pointer',
-                      colorScheme: fabUTokens.isDark ? 'dark' : undefined,
-                    }}
-                  >
-                    {availableSkillOptions.map((option) => (
-                      <option key={option.name} value={option.name}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <InputBase
-                    autoFocus
-                    value={draftSkill.name}
-                    onChange={(e) => setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))}
-                    placeholder="Skill name"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitDraftSkill();
-                      if (e.key === 'Escape') setDraftSkill(null);
-                    }}
-                    sx={{
-                      color: fabUTokens.color.textPrimary,
-                      width: '100%',
-                      '& input': {
-                        p: 0,
+              <Box
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  overflow: 'hidden',
+                }}
+              >
+                <IconButton
+                  size="small"
+                  aria-label="Add skill"
+                  onClick={commitDraftSkill}
+                  sx={{
+                    color: fabUTokens.color.brand,
+                    p: 0,
+                    flexShrink: 0,
+                    '&:hover': { color: fabUTokens.color.brandStrong },
+                  }}
+                >
+                  <CheckIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  {availableSkillOptions.length > 0 ? (
+                    <select
+                      autoFocus
+                      aria-label="Skill name"
+                      value={draftSkill.name}
+                      onChange={(e) =>
+                        setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitDraftSkill();
+                        if (e.key === 'Escape') setDraftSkill(null);
+                      }}
+                      style={{
+                        width: '100%',
+                        fontSize: '0.74rem',
                         fontWeight: 700,
-                        ...scaledEditableTextStyle(0.74, { stretch: true }),
-                      },
-                    }}
-                  />
-                )}
+                        color: fabUTokens.color.textPrimary,
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                        cursor: 'pointer',
+                        colorScheme: fabUTokens.isDark ? 'dark' : undefined,
+                      }}
+                    >
+                      {availableSkillOptions.map((option) => (
+                        <option key={option.name} value={option.name}>
+                          {option.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <InputBase
+                      autoFocus
+                      value={draftSkill.name}
+                      onChange={(e) =>
+                        setDraftSkill((d) => (d ? { ...d, name: e.target.value } : d))
+                      }
+                      placeholder="Skill name"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitDraftSkill();
+                        if (e.key === 'Escape') setDraftSkill(null);
+                      }}
+                      sx={{
+                        color: fabUTokens.color.textPrimary,
+                        width: '100%',
+                        '& input': {
+                          p: 0,
+                          fontWeight: 700,
+                          ...scaledEditableTextStyle(0.74, { stretch: true }),
+                        },
+                      }}
+                    />
+                  )}
+                </Box>
               </Box>
               <Box sx={{ width: 40, flexShrink: 0 }}>
                 <select
@@ -921,19 +948,7 @@ function SkillsTable({
                   ))}
                 </select>
               </Box>
-              <Box sx={{ width: 38, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-                <IconButton
-                  size="small"
-                  onClick={commitDraftSkill}
-                  sx={{
-                    p: 0.5,
-                    color: fabUTokens.color.brand,
-                    '&:hover': { color: fabUTokens.color.brandStrong },
-                  }}
-                >
-                  <CheckIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Box>
+              {onAddSkillLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
             </Box>
           )}
         </Box>
