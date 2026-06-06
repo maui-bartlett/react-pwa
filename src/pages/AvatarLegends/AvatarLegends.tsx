@@ -2315,9 +2315,6 @@ function PrimaryTrainingSelect() {
                 : technique,
             ),
           }));
-          window.dispatchEvent(
-            new CustomEvent('avatar-legends-primary-training-change', { detail: next }),
-          );
         }}
         sx={{
           width: '100%',
@@ -6416,6 +6413,13 @@ function AvatarLegends() {
     describeCharacter: describeAvatarLegendsCharacter,
     migrate: migrateAvatarLegendsLocalCharacter,
   });
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('avatar-legends-primary-training-change', {
+        detail: character.primaryTraining,
+      }),
+    );
+  }, [character.primaryTraining]);
   const trainingTheme =
     primaryTrainingThemes[character.primaryTraining] ??
     primaryTrainingThemes[defaultCharacter.primaryTraining];
