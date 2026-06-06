@@ -36,6 +36,7 @@ type UseLocalCharacterSlotsOptions<T> = {
 type UseLocalCharacterSlotsResult = {
   characters: LocalCharacterSummary[];
   activeId: string | null;
+  hydrated: boolean;
   limit: number;
   canAdd: boolean;
   addCharacter: () => void;
@@ -86,6 +87,7 @@ function useLocalCharacterSlots<T>({
   const [character, setCharacter] = useAtom(atom);
   const [slots, setSlots] = useState<Array<LocalCharacterSlot<T>>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const hydratedRef = useRef(false);
   const slotsRef = useRef<Array<LocalCharacterSlot<T>>>([]);
   const activeIdRef = useRef<string | null>(null);
@@ -108,6 +110,7 @@ function useLocalCharacterSlots<T>({
   useEffect(() => {
     let cancelled = false;
     hydratedRef.current = false;
+    setHydrated(false);
     writeJsonRef.current = null;
 
     async function hydrate() {
@@ -142,6 +145,7 @@ function useLocalCharacterSlots<T>({
       const activeSlot = nextSlots.find((slot) => slot.id === nextActiveId) ?? nextSlots[0];
 
       hydratedRef.current = true;
+      setHydrated(true);
       writeJsonRef.current = activeSlot ? JSON.stringify(activeSlot.character) : null;
       persistSlots(nextSlots, nextActiveId);
       if (activeSlot) setCharacter(activeSlot.character);
@@ -233,6 +237,7 @@ function useLocalCharacterSlots<T>({
       active: slot.id === activeId,
     })),
     activeId,
+    hydrated,
     limit: LOCAL_CHARACTER_LIMIT,
     canAdd: slots.length < LOCAL_CHARACTER_LIMIT,
     addCharacter,

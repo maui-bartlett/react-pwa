@@ -1213,7 +1213,6 @@ function ConvexCharacterSyncMount() {
     pendingSyncKeyPrefix: AVATAR_LEGENDS_PENDING_SYNC_KEY,
     selectCharacterEventName: AVATAR_LEGENDS_SELECT_CHARACTER_EVENT,
     describeCharacter: describeAvatarLegendsCharacter,
-    createInitialCharacter: createRandomAvatarLegendsCharacter,
   });
 
   // Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z = redo. Skip if focus is in
@@ -6486,7 +6485,7 @@ function AvatarLegends() {
           console.warn('Avatar Legends Convex sync is unavailable; continuing locally.', error);
         }}
       >
-        <ConvexCharacterSyncMount />
+        {localCharacters.hydrated ? <ConvexCharacterSyncMount /> : null}
       </ErrorBoundary>
       <Box
         sx={{

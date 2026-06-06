@@ -47,8 +47,6 @@ type CharacterSyncOptions<TCharacter> = {
   selectCharacterEventName: string;
   /** Optional: human-readable label used in error logs. */
   describeCharacter?: (character: TCharacter) => string;
-  /** Optional: game-specific starter for the first remote row. */
-  createInitialCharacter?: () => TCharacter;
 };
 
 type PendingCharacterSync<TCharacter> = {
@@ -119,7 +117,6 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
     pendingSyncKeyPrefix,
     selectCharacterEventName,
     describeCharacter,
-    createInitialCharacter,
   } = options;
 
   const { data: session } = authClient.useSession();
@@ -134,19 +131,21 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
     api.characters.listMine,
     canSync ? { gameSystem, includeArchived: false } : 'skip',
   );
-  const activeRemoteCharacter = useMemo(
-    () =>
-      characters?.find((item) => item._id === characterId) ??
-      characters?.find((item) => item.meta?.activeForUserProfileId) ??
-      characters?.[0] ??
-      null,
-    [characterId, characters],
-  );
-
   const creatingRef = useRef(false);
+  const pendingCharacterIdRef = useRef<Id<'characters'> | null>(null);
   const readyToPersistRef = useRef(false);
   const lastSyncedJsonRef = useRef<string | null>(null);
   const lastRemoteUpdatedAtRef = useRef<number | null>(null);
+  const activeRemoteCharacter = useMemo(() => {
+    if (!characters) return null;
+    if (characterId) {
+      const selectedCharacter = characters.find((item) => item._id === characterId);
+      if (selectedCharacter) return selectedCharacter;
+      if (pendingCharacterIdRef.current === characterId) return null;
+      return characters.find((item) => item.meta?.activeForUserProfileId) ?? characters[0] ?? null;
+    }
+    return characters.find((item) => item.meta?.activeForUserProfileId) ?? characters[0] ?? null;
+  }, [characterId, characters]);
   const pendingSyncKey =
     session?.user && characterId
       ? `${pendingSyncKeyPrefix}:${session.user.id}:${characterId}`
@@ -173,6 +172,7 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
   useEffect(() => {
     if (!session?.user || (!convexAuth.isLoading && !convexAuth.isAuthenticated)) {
       setCharacterId(null);
+      pendingCharacterIdRef.current = null;
       readyToPersistRef.current = false;
       lastSyncedJsonRef.current = null;
       lastRemoteUpdatedAtRef.current = null;
@@ -183,6 +183,7 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
     const selectCharacter = (event: Event) => {
       const detail = (event as CustomEvent<{ characterId?: Id<'characters'> }>).detail;
       if (!detail?.characterId) return;
+      pendingCharacterIdRef.current = detail.characterId;
       setCharacterId(detail.characterId);
       readyToPersistRef.current = false;
       lastRemoteUpdatedAtRef.current = null;
@@ -205,10 +206,26 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
   }, [selectCharacterEventName, setActiveMine]);
 
   useEffect(() => {
+    if (!characters || !characterId) return;
+    const selectedCharacter = characters.find((item) => item._id === characterId);
+    if (selectedCharacter) {
+      if (pendingCharacterIdRef.current === characterId) pendingCharacterIdRef.current = null;
+      return;
+    }
+    if (pendingCharacterIdRef.current === characterId) return;
+
+    const fallbackCharacter =
+      characters.find((item) => item.meta?.activeForUserProfileId) ?? characters[0] ?? null;
+    setCharacterId(fallbackCharacter?._id ?? null);
+    readyToPersistRef.current = false;
+    lastRemoteUpdatedAtRef.current = null;
+  }, [characterId, characters]);
+
+  useEffect(() => {
     if (!canSync || characters === undefined || creatingRef.current) return;
 
     if (characters.length === 0) {
-      const initialCharacter = createInitialCharacter?.() ?? character;
+      const initialCharacter = character;
       creatingRef.current = true;
       void createFromLocalImport({
         gameSystem,
@@ -216,6 +233,7 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
         characterState: serialize(initialCharacter),
       })
         .then((createdId) => {
+          pendingCharacterIdRef.current = createdId;
           setCharacterId(createdId);
           applyRemote(initialCharacter);
           lastSyncedJsonRef.current = JSON.stringify(initialCharacter);
@@ -246,7 +264,6 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
     characterId,
     characters,
     createFromLocalImport,
-    createInitialCharacter,
     applyRemote,
     describe,
     gameSystem,

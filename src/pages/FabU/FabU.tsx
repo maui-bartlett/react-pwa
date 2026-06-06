@@ -2677,7 +2677,9 @@ function FabU() {
   return (
     <FabUThemeProvider>
       <>
-        <ConvexCharacterSyncBoundary character={character} history={characterHistory} />
+        {localCharacters.hydrated ? (
+          <ConvexCharacterSyncBoundary character={character} history={characterHistory} />
+        ) : null}
         <meta name="title" content="Fab-u Preview" />
         <Stack
           data-pw="app-canvas"
