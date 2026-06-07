@@ -459,9 +459,14 @@ function AccountMenu({
     if (!canLoadCharacters) return;
     const selectedAvatarClass =
       gameSystem === 'avatar-legends'
-        ? [...(avatarClasses ?? [])].sort((a, b) =>
-            String(a.class?.className ?? '').localeCompare(String(b.class?.className ?? '')),
-          )[0]?.class
+        ? (() => {
+            const classOptions = (avatarClasses ?? [])
+              .map((item) => item.class)
+              .filter((avatarClass): avatarClass is { className?: string } =>
+                Boolean(avatarClass?.className),
+              );
+            return classOptions[Math.floor(Math.random() * classOptions.length)];
+          })()
         : undefined;
     const payload = createCharacterPayload?.({ avatarClass: selectedAvatarClass });
     if (payload) {
