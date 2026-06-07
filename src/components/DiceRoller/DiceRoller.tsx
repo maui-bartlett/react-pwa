@@ -23,24 +23,27 @@ type RollResult = {
   total: number;
 };
 
-type AnimatedDie = {
-  id: number;
-  sides: DieSize;
-  value: number;
-  startX: number;
-  startY: number;
-  midX: number;
-  midY: number;
-  endX: number;
-  endY: number;
-  delay: number;
-  duration: number;
-  scale: number;
+type DiceBoxRoll = {
+  rolls?: Array<{
+    sides?: number | string;
+    value?: number;
+    result?: number;
+  }>;
+  sides?: number | string;
+  value?: number;
 };
 
-function rollDie(sides: DieSize) {
-  return Math.floor(Math.random() * sides) + 1;
-}
+type DiceBoxInstance = {
+  init: () => Promise<unknown>;
+  roll: (
+    notation: Array<{ qty: number; sides: DieSize; themeColor?: string }>,
+    options?: { themeColor?: string; newStartPoint?: boolean },
+  ) => Promise<DiceBoxRoll[]>;
+  clear: () => unknown;
+  hide: (className?: string) => unknown;
+  show: () => unknown;
+  updateConfig: (config: { themeColor?: string }) => unknown;
+};
 
 function formatDice(dice: RollDie[]) {
   if (dice.length === 0) return 'Select dice';
@@ -60,147 +63,35 @@ function getThemeColor(fallback: string) {
   return document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? fallback;
 }
 
-function createAnimatedDice(rolls: RollResult['rolls']): AnimatedDie[] {
-  const width = typeof window === 'undefined' ? 390 : window.innerWidth;
-  const height = typeof window === 'undefined' ? 720 : window.innerHeight;
-  const middleY = height * 0.42;
-  const landingSpread = Math.min(width * 0.52, 260);
-  const startX = width + 68;
-
-  return rolls.map((roll, index) => {
-    const offset = rolls.length === 1 ? 0 : (index / (rolls.length - 1) - 0.5) * landingSpread;
-    return {
-      id: Date.now() + index,
-      sides: roll.sides,
-      value: roll.value,
-      startX,
-      startY: height - 140 - (index % 3) * 24,
-      midX: (startX + width / 2 + offset) / 2,
-      midY: middleY - 96,
-      endX: width / 2 + offset,
-      endY: middleY + ((index % 2 === 0 ? -1 : 1) * 20 + (index % 3) * 8),
-      delay: index * 85,
-      duration: 1100 + (index % 3) * 110,
-      scale: roll.sides === 100 ? 0.88 : 1,
-    };
-  });
+function normalizeDieSize(value: number | string | undefined): DieSize {
+  const sides = Number(value);
+  return dieSizes.includes(sides as DieSize) ? (sides as DieSize) : 6;
 }
 
-function RollingDie({ die, accent }: { die: AnimatedDie; accent: string }) {
-  const faceBorder = alpha(accent, 0.58);
-
-  return (
-    <Box
-      sx={{
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        width: 52,
-        height: 52,
-        transform: `translate3d(${die.endX}px, ${die.endY}px, 0) scale(${die.scale})`,
-        animation: `tabletop-dice-travel ${die.duration}ms cubic-bezier(.15,.74,.25,1) ${die.delay}ms both`,
-        '--dice-start-x': `${die.startX}px`,
-        '--dice-start-y': `${die.startY}px`,
-        '--dice-mid-x': `${die.midX}px`,
-        '--dice-mid-y': `${die.midY}px`,
-        '--dice-end-x': `${die.endX}px`,
-        '--dice-end-y': `${die.endY}px`,
-        '--dice-scale': die.scale,
-      }}
-    >
-      <Box
-        sx={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          transformStyle: 'preserve-3d',
-          animation: `tabletop-dice-spin ${die.duration}ms cubic-bezier(.2,.85,.25,1) ${die.delay}ms both`,
-        }}
-      >
-        {[
-          { transform: 'translateZ(26px)', label: die.value },
-          { transform: 'rotateY(180deg) translateZ(26px)', label: die.sides },
-          { transform: 'rotateY(90deg) translateZ(26px)', label: die.value },
-          { transform: 'rotateY(-90deg) translateZ(26px)', label: die.sides },
-          { transform: 'rotateX(90deg) translateZ(26px)', label: die.value },
-          { transform: 'rotateX(-90deg) translateZ(26px)', label: die.sides },
-        ].map((face, index) => (
-          <Box
-            key={index}
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              display: 'grid',
-              placeItems: 'center',
-              border: `1px solid ${faceBorder}`,
-              borderRadius: 1.25,
-              background: `linear-gradient(145deg, ${alpha('#ffffff', 0.96)}, ${alpha(accent, 0.28)})`,
-              boxShadow: `inset -7px -8px 14px ${alpha('#000000', 0.18)}, inset 5px 5px 10px ${alpha('#ffffff', 0.68)}`,
-              color: '#111827',
-              fontSize: 18,
-              fontWeight: 900,
-              transform: face.transform,
-              backfaceVisibility: 'hidden',
-            }}
-          >
-            {face.label}
-          </Box>
-        ))}
-      </Box>
-    </Box>
+function toRollResult(groups: DiceBoxRoll[]): RollResult {
+  const rolls = groups.flatMap((group) =>
+    (group.rolls ?? []).map((roll) => ({
+      sides: normalizeDieSize(roll.sides ?? group.sides),
+      value: roll.value ?? roll.result ?? 0,
+    })),
   );
+  return {
+    id: Date.now(),
+    rolls,
+    total:
+      groups.reduce((sum, group) => sum + (group.value ?? 0), 0) ||
+      rolls.reduce((sum, roll) => sum + roll.value, 0),
+  };
 }
 
-function RollingDiceOverlay({ dice, accent }: { dice: AnimatedDie[]; accent: string }) {
-  if (dice.length === 0) return null;
-
-  return (
-    <Box
-      aria-hidden="true"
-      sx={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: (theme) => theme.zIndex.tooltip + 15,
-        pointerEvents: 'none',
-        perspective: 850,
-        overflow: 'hidden',
-        '@keyframes tabletop-dice-travel': {
-          '0%': {
-            opacity: 0,
-            transform:
-              'translate3d(var(--dice-start-x), var(--dice-start-y), 0) scale(var(--dice-scale))',
-          },
-          '12%': {
-            opacity: 1,
-          },
-          '68%': {
-            transform:
-              'translate3d(var(--dice-mid-x), var(--dice-mid-y), 0) scale(calc(var(--dice-scale) * 1.08))',
-          },
-          '100%': {
-            opacity: 1,
-            transform:
-              'translate3d(var(--dice-end-x), var(--dice-end-y), 0) scale(var(--dice-scale))',
-          },
-        },
-        '@keyframes tabletop-dice-spin': {
-          '0%': {
-            transform: 'rotateX(0deg) rotateY(0deg) rotateZ(0deg)',
-          },
-          '72%': {
-            transform: 'rotateX(760deg) rotateY(620deg) rotateZ(310deg)',
-          },
-          '100%': {
-            transform: 'rotateX(0deg) rotateY(0deg) rotateZ(0deg)',
-          },
-        },
-      }}
-    >
-      {dice.map((die) => (
-        <RollingDie key={die.id} die={die} accent={accent} />
-      ))}
-    </Box>
-  );
+function toDiceBoxNotation(dice: RollDie[], themeColor: string) {
+  return dieSizes
+    .map((sides) => ({
+      sides,
+      qty: dice.filter((die) => die.sides === sides).length,
+      themeColor,
+    }))
+    .filter(({ qty }) => qty > 0);
 }
 
 function DiceRoller() {
@@ -208,14 +99,19 @@ function DiceRoller() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDice, setSelectedDice] = useState<RollDie[]>([]);
   const [lastResult, setLastResult] = useState<RollResult | null>(null);
-  const [pendingResult, setPendingResult] = useState<RollResult | null>(null);
-  const [rollingDice, setRollingDice] = useState<AnimatedDie[]>([]);
+  const [pendingResult, setPendingResult] = useState<Pick<RollResult, 'rolls'> | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
+  const [isDiceBoxReady, setIsDiceBoxReady] = useState(false);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
-  const rollTimeoutRef = useRef<number | null>(null);
+  const diceBoxRef = useRef<DiceBoxInstance | null>(null);
+  const initialDiceBoxConfigRef = useRef({
+    themeColor: appAccent,
+    mode: theme.palette.mode,
+  });
+  const rollSequenceRef = useRef(0);
 
   const selectedLabel = useMemo(() => formatDice(selectedDice), [selectedDice]);
   const hasDice = selectedDice.length > 0;
-  const isRolling = rollingDice.length > 0;
 
   useEffect(() => {
     const refreshAccent = () => {
@@ -237,58 +133,108 @@ function DiceRoller() {
     };
   }, [theme.palette.primary.main]);
 
-  useEffect(
-    () => () => {
-      if (rollTimeoutRef.current !== null) window.clearTimeout(rollTimeoutRef.current);
-    },
-    [],
-  );
+  useEffect(() => {
+    if (diceBoxRef.current) return undefined;
+
+    let isMounted = true;
+
+    void import('@3d-dice/dice-box')
+      .then(({ default: DiceBox }) => {
+        if (!isMounted) return null;
+        const initialConfig = initialDiceBoxConfigRef.current;
+        const diceBox = new DiceBox({
+          assetPath: '/assets/',
+          container: '#tabletop-dice-box',
+          theme: 'default',
+          themeColor: initialConfig.themeColor,
+          scale: 5.4,
+          gravity: 1,
+          mass: 1,
+          friction: 0.8,
+          restitution: 0.15,
+          linearDamping: 0.45,
+          angularDamping: 0.45,
+          spinForce: 5,
+          throwForce: 6,
+          startingHeight: 8,
+          settleTimeout: 5000,
+          offscreen: true,
+          lightIntensity: initialConfig.mode === 'dark' ? 0.8 : 1,
+          enableShadows: true,
+          shadowTransparency: initialConfig.mode === 'dark' ? 0.72 : 0.82,
+        }) as DiceBoxInstance;
+
+        diceBoxRef.current = diceBox;
+        return diceBox.init().then(() => {
+          if (!isMounted) {
+            diceBox.clear();
+            diceBox.hide();
+            return;
+          }
+          diceBox.hide();
+          setIsDiceBoxReady(true);
+        });
+      })
+      .catch((error) => {
+        console.warn('[dice] DiceBox failed to initialize', error);
+      });
+
+    return () => {
+      isMounted = false;
+      diceBoxRef.current?.clear();
+      diceBoxRef.current?.hide();
+      diceBoxRef.current = null;
+      setIsDiceBoxReady(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!diceBoxRef.current || !isDiceBoxReady) return;
+    void diceBoxRef.current.updateConfig({ themeColor: appAccent });
+  }, [appAccent, isDiceBoxReady]);
 
   const addDie = (sides: DieSize) => {
     setSelectedDice((current) => [...current, { id: Date.now() + current.length, sides }]);
   };
 
   const clearDice = () => {
-    if (rollTimeoutRef.current !== null) {
-      window.clearTimeout(rollTimeoutRef.current);
-      rollTimeoutRef.current = null;
-    }
+    rollSequenceRef.current += 1;
     setSelectedDice([]);
     setLastResult(null);
     setPendingResult(null);
-    setRollingDice([]);
+    setIsRolling(false);
+    diceBoxRef.current?.clear();
+    diceBoxRef.current?.hide();
   };
 
-  const rollSelectedDice = () => {
-    if (!hasDice || isRolling) {
+  const rollSelectedDice = async () => {
+    if (!hasDice || isRolling || !diceBoxRef.current || !isDiceBoxReady) {
       setIsExpanded(true);
       return;
     }
 
-    const rolls = selectedDice.map((die) => ({
-      sides: die.sides,
-      value: rollDie(die.sides),
-    }));
-    const nextResult = {
-      id: Date.now(),
-      rolls,
-      total: rolls.reduce((sum, roll) => sum + roll.value, 0),
-    };
-    const nextRollingDice = createAnimatedDice(rolls);
-    setPendingResult(nextResult);
+    const rollSequence = rollSequenceRef.current + 1;
+    rollSequenceRef.current = rollSequence;
+    const notation = toDiceBoxNotation(selectedDice, appAccent);
+    setPendingResult({ rolls: selectedDice.map((die) => ({ sides: die.sides, value: 0 })) });
     setLastResult(null);
-    setRollingDice(nextRollingDice);
+    setIsRolling(true);
 
-    if (rollTimeoutRef.current !== null) window.clearTimeout(rollTimeoutRef.current);
-    rollTimeoutRef.current = window.setTimeout(
-      () => {
-        setLastResult(nextResult);
-        setPendingResult(null);
-        setRollingDice([]);
-        rollTimeoutRef.current = null;
-      },
-      Math.max(...nextRollingDice.map((die) => die.duration + die.delay)) + 120,
-    );
+    try {
+      diceBoxRef.current.show();
+      const results = await diceBoxRef.current.roll(notation, {
+        themeColor: appAccent,
+        newStartPoint: true,
+      });
+      if (rollSequenceRef.current !== rollSequence) return;
+      setLastResult(toRollResult(results));
+      setPendingResult(null);
+    } catch (error) {
+      console.warn('[dice] DiceBox roll failed', error);
+      if (rollSequenceRef.current === rollSequence) setPendingResult(null);
+    } finally {
+      if (rollSequenceRef.current === rollSequence) setIsRolling(false);
+    }
   };
 
   const panelBackground =
@@ -305,7 +251,21 @@ function DiceRoller() {
 
   return (
     <>
-      <RollingDiceOverlay dice={rollingDice} accent={accent} />
+      <Box
+        id="tabletop-dice-box"
+        aria-hidden="true"
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: theme.zIndex.tooltip + 15,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          '& canvas': {
+            width: '100% !important',
+            height: '100% !important',
+          },
+        }}
+      />
       <Box
         sx={{
           position: 'fixed',
@@ -338,7 +298,7 @@ function DiceRoller() {
               <span>
                 <IconButton
                   aria-label="Clear selected dice"
-                  disabled={!hasDice && !lastResult && !pendingResult}
+                  disabled={!hasDice && !lastResult && !pendingResult && !isRolling}
                   onClick={clearDice}
                   size="small"
                   sx={{
@@ -390,7 +350,7 @@ function DiceRoller() {
               >
                 <Typography sx={{ fontSize: 9, fontWeight: 800, lineHeight: 1 }}>TOTAL</Typography>
                 <Typography sx={{ fontSize: 18, fontWeight: 900, lineHeight: 1.1 }}>
-                  {lastResult?.total ?? '...'}
+                  {isRolling ? '...' : lastResult?.total}
                 </Typography>
                 <Typography
                   sx={{
@@ -443,27 +403,33 @@ function DiceRoller() {
         )}
 
         <Tooltip title={isExpanded ? 'Roll selected dice' : 'Open dice roller'} placement="left">
-          <IconButton
-            aria-label={isExpanded ? 'Roll selected dice' : 'Open dice roller'}
-            onClick={() => (isExpanded ? rollSelectedDice() : setIsExpanded(true))}
-            sx={{
-              width: 52,
-              height: 52,
-              border: `1px solid ${alpha(theme.palette.common.white, 0.24)}`,
-              background: `linear-gradient(180deg, ${alpha(accent, 0.98)}, ${alpha('#000000', 0.22)})`,
-              boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.34)}`,
-              color: theme.palette.common.white,
-              fontSize: 11,
-              fontWeight: 900,
-              pointerEvents: 'auto',
-              '&:hover': {
-                background: `linear-gradient(180deg, ${accent}, ${alpha('#000000', 0.18)})`,
-                filter: 'brightness(1.06)',
-              },
-            }}
-          >
-            {isExpanded ? 'ROLL' : <Dice6 aria-hidden="true" size={24} strokeWidth={2.4} />}
-          </IconButton>
+          <span>
+            <IconButton
+              aria-label={isExpanded ? 'Roll selected dice' : 'Open dice roller'}
+              disabled={isExpanded && (!isDiceBoxReady || isRolling)}
+              onClick={() => (isExpanded ? void rollSelectedDice() : setIsExpanded(true))}
+              sx={{
+                width: 52,
+                height: 52,
+                border: `1px solid ${alpha(theme.palette.common.white, 0.24)}`,
+                background: `linear-gradient(180deg, ${alpha(accent, 0.98)}, ${alpha('#000000', 0.22)})`,
+                boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.34)}`,
+                color: theme.palette.common.white,
+                fontSize: 11,
+                fontWeight: 900,
+                pointerEvents: 'auto',
+                '&:hover': {
+                  background: `linear-gradient(180deg, ${accent}, ${alpha('#000000', 0.18)})`,
+                  filter: 'brightness(1.06)',
+                },
+                '&.Mui-disabled': {
+                  color: alpha(theme.palette.common.white, 0.68),
+                },
+              }}
+            >
+              {isExpanded ? 'ROLL' : <Dice6 aria-hidden="true" size={24} strokeWidth={2.4} />}
+            </IconButton>
+          </span>
         </Tooltip>
       </Box>
     </>

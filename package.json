@@ -27,6 +27,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@3d-dice/dice-box": "^1.1.4",
     "@convex-dev/better-auth": "^0.12.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
