@@ -712,7 +712,7 @@ function DiceRoller() {
       <Box
         sx={{
           position: 'fixed',
-          right: { xs: 10, sm: 14 },
+          right: { xs: 40, sm: 44 },
           bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 90px)', sm: 42 },
           zIndex: theme.zIndex.tooltip + 20,
           display: 'flex',
@@ -886,9 +886,11 @@ function DiceRoller() {
                   aria-label="Close dice roller"
                   onClick={closeDiceRail}
                   sx={{
-                    width: 58,
-                    height: 58,
-                    border: `3px solid ${accent}`,
+                    position: 'relative',
+                    zIndex: 3,
+                    width: 72,
+                    height: 72,
+                    border: `4px solid ${accent}`,
                     background: railButtonBackground,
                     boxShadow: `0 0 0 5px ${alpha(accent, 0.22)}, 0 0 18px ${alpha(accent, 0.7)}`,
                     color: theme.palette.common.white,
