@@ -29,11 +29,11 @@ import { api } from '../../../convex/_generated/api';
 // White training symbols extracted from the Avatar Legends training reference pages.
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
-import balanceCardBase from './assets/balance-card-base.png';
-import balanceCardForeground from './assets/balance-card-foreground.png';
 import elementEarth from './assets/earthbending-symbol.png';
 import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
+import principleBg from './assets/principle-bg.png';
+import principleFg from './assets/principle-fg.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
 import elementWeapons from './assets/weapons-symbol.png';
@@ -2008,7 +2008,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
     >
       <Box
         component="img"
-        src={balanceCardBase}
+        src={principleBg}
         alt=""
         sx={{
           display: 'block',
@@ -2020,7 +2020,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
       />
       <Box
         component="img"
-        src={balanceCardForeground}
+        src={principleFg}
         alt=""
         sx={{
           position: 'absolute',
@@ -2042,7 +2042,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           transform: 'translate(-50%, -50%) rotate(-90deg)',
           transformOrigin: 'center',
           color: '#ffffff',
-          backgroundColor: '#000000',
+          backgroundColor: 'transparent',
           fontFamily:
             '"Bebas Neue Balance", "Bebas Neue", "Arial Rounded MT Bold", "Avenir Next Condensed Heavy", "Arial Black", system-ui, sans-serif',
           fontSize: 'clamp(1.3rem, 8vw, 2.1rem)',
@@ -2071,7 +2071,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           transform: 'translate(50%, -50%) rotate(90deg)',
           transformOrigin: 'center',
           color: '#000000',
-          backgroundColor: '#ffffff',
+          backgroundColor: 'transparent',
           fontFamily:
             '"Bebas Neue Balance", "Bebas Neue", "Arial Rounded MT Bold", "Avenir Next Condensed Heavy", "Arial Black", system-ui, sans-serif',
           fontSize: 'clamp(1.3rem, 8vw, 2.1rem)',
