@@ -807,13 +807,28 @@ function DiceRoller() {
                 width: 72,
                 alignItems: 'center',
                 borderRadius: '999px',
-                background: railBackground,
-                boxShadow: `0 12px 26px ${alpha(theme.palette.common.black, 0.38)}`,
+                background: 'transparent',
                 px: 0.75,
                 py: 0.9,
                 pointerEvents: 'auto',
                 transformOrigin: 'bottom center',
                 animation: `${diceRailReveal} 190ms ease-out both`,
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 74,
+                  left: 0,
+                  zIndex: 0,
+                  borderRadius: '999px',
+                  background: railBackground,
+                  boxShadow: `0 12px 26px ${alpha(theme.palette.common.black, 0.38)}`,
+                },
+                '& > *': {
+                  position: 'relative',
+                  zIndex: 1,
+                },
               }}
             >
               {dieSizes
@@ -888,9 +903,9 @@ function DiceRoller() {
                   sx={{
                     position: 'relative',
                     zIndex: 3,
-                    width: 72,
-                    height: 72,
-                    border: `4px solid ${accent}`,
+                    width: 58,
+                    height: 58,
+                    border: `3px solid ${accent}`,
                     background: railButtonBackground,
                     boxShadow: `0 0 0 5px ${alpha(accent, 0.22)}, 0 0 18px ${alpha(accent, 0.7)}`,
                     color: theme.palette.common.white,
