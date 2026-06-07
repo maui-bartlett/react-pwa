@@ -341,16 +341,15 @@ function ResultReadoutOverlay({
       sx={{
         position: 'fixed',
         left: { xs: 22, sm: 28 },
-        right: { xs: 96, sm: 'auto' },
+        right: { xs: 140, sm: 140 },
         top: { xs: 'calc(env(safe-area-inset-top, 0px) + 25vh)', sm: '25vh' },
         zIndex: (theme) => theme.zIndex.tooltip + 16,
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 58px',
-        width: { xs: 'auto', sm: 468 },
-        maxWidth: { xs: 'none', sm: 'calc(100vw - 112px)' },
+        display: 'flex',
+        width: 'auto',
+        maxWidth: 'none',
         minHeight: 78,
         transform: 'none',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: 1.1,
         border: `1.5px solid ${accent}`,
         borderRadius: 2,
@@ -383,7 +382,7 @@ function ResultReadoutOverlay({
           <X size={18} strokeWidth={2.6} />
         </IconButton>
       </Tooltip>
-      <Box sx={{ minWidth: 0 }}>
+      <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
         <Typography
           sx={{
             color: alpha(textColor, 0.56),
@@ -404,7 +403,7 @@ function ResultReadoutOverlay({
             mt: 0.65,
             display: 'flex',
             minWidth: 0,
-            alignItems: 'center',
+            alignItems: 'flex-start',
             gap: 0.7,
             color: textColor,
           }}
@@ -413,13 +412,13 @@ function ResultReadoutOverlay({
           <Typography
             sx={{
               minWidth: 0,
-              overflow: 'hidden',
+              overflow: 'visible',
               color: textColor,
               fontSize: 24,
               fontWeight: 900,
-              lineHeight: 1,
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              lineHeight: 1.12,
+              overflowWrap: 'anywhere',
+              whiteSpace: 'normal',
             }}
           >
             {formatRollEquation(result)}
@@ -428,13 +427,13 @@ function ResultReadoutOverlay({
         <Typography
           sx={{
             mt: 0.45,
-            overflow: 'hidden',
+            overflow: 'visible',
             color: alpha(textColor, 0.62),
             fontSize: 11,
             fontWeight: 800,
-            lineHeight: 1,
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            lineHeight: 1.2,
+            overflowWrap: 'anywhere',
+            whiteSpace: 'normal',
           }}
         >
           {formatRollNotation(result)}
@@ -443,6 +442,7 @@ function ResultReadoutOverlay({
       <Typography
         sx={{
           color: alpha(textColor, 0.56),
+          flex: '0 0 auto',
           fontSize: 26,
           fontWeight: 900,
           lineHeight: 1,
@@ -455,6 +455,7 @@ function ResultReadoutOverlay({
       <Typography
         sx={{
           color: textColor,
+          flex: '0 0 auto',
           fontSize: 30,
           fontWeight: 900,
           lineHeight: 1,
@@ -811,6 +812,7 @@ function DiceRoller() {
                 backgroundColor: 'transparent',
                 backgroundImage: 'none',
                 boxShadow: 'none',
+                overflow: 'visible',
                 px: 0.75,
                 py: 0.9,
                 pointerEvents: 'auto',
@@ -934,12 +936,13 @@ function DiceRoller() {
                   width: 66,
                   height: 66,
                   border: `4px solid ${alpha(theme.palette.common.white, 0.16)}`,
-                  background: `linear-gradient(180deg, ${alpha(accent, 0.98)}, ${alpha('#000000', 0.22)})`,
+                  background: accent,
                   boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.34)}`,
                   color: theme.palette.common.white,
+                  overflow: 'hidden',
                   pointerEvents: 'auto',
                   '&:hover': {
-                    background: `linear-gradient(180deg, ${accent}, ${alpha('#000000', 0.18)})`,
+                    background: accent,
                     filter: 'brightness(1.06)',
                   },
                 }}
