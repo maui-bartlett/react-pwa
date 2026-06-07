@@ -136,6 +136,9 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
   const readyToPersistRef = useRef(false);
   const lastSyncedJsonRef = useRef<string | null>(null);
   const lastRemoteUpdatedAtRef = useRef<number | null>(null);
+  const currentCharacterJson = JSON.stringify(character);
+  const currentCharacterJsonRef = useRef(currentCharacterJson);
+  currentCharacterJsonRef.current = currentCharacterJson;
   const activeRemoteCharacter = useMemo(() => {
     if (!characters) return null;
     if (characterId) {
@@ -283,7 +286,17 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
 
     const remoteCharacter = deserialize(activeRemoteCharacter.characterState);
     const remoteJson = JSON.stringify(remoteCharacter);
+    const localJson = currentCharacterJsonRef.current;
     lastRemoteUpdatedAtRef.current = activeRemoteCharacter.updatedAt;
+
+    const hasUnsyncedLocalChanges =
+      readyToPersistRef.current &&
+      lastSyncedJsonRef.current !== null &&
+      localJson !== lastSyncedJsonRef.current;
+
+    if (hasUnsyncedLocalChanges && remoteJson !== localJson) {
+      return;
+    }
 
     if (remoteJson !== lastSyncedJsonRef.current) {
       applyRemote(remoteCharacter);
