@@ -7,7 +7,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, keyframes, useTheme } from '@mui/material/styles';
 
-import { ChevronUp, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const dieSizes = [4, 6, 8, 10, 12, 20, 100] as const;
 type DieSize = (typeof dieSizes)[number];
@@ -275,23 +275,28 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
       )}
       {sides === 12 && (
         <>
-          <path d="M20 4 32 10 36 23 28 35H12L4 23 8 10Z" {...common} />
-          <path d="M14 13h12l4 10-10 7-10-7Z" {...common} />
-          <path d="M8 10 14 13" {...common} />
-          <path d="M32 10 26 13" {...common} />
-          <path d="M4 23h6" {...common} />
-          <path d="M36 23h-6" {...common} />
+          <path d="M20 4 32 9 36 22 28 35H12L4 22 8 9Z" {...common} />
+          <path d="M14 13h12l5 9-11 8-11-8Z" {...common} />
+          <path d="M8 9 14 13" {...common} />
+          <path d="M20 4 20 13" {...common} />
+          <path d="M32 9 26 13" {...common} />
+          <path d="M4 22h5" {...common} />
+          <path d="M36 22h-5" {...common} />
+          <path d="M12 35 9 22" {...common} />
+          <path d="M28 35 31 22" {...common} />
+          <path d="M20 30v6" {...common} />
         </>
       )}
       {sides === 20 && (
         <>
-          <path d="M20 4 34 12 36 27 26 36H14L4 27 6 12Z" {...common} />
-          <path d="M20 4 29 25H11Z" {...common} />
-          <path d="M6 12 11 25 4 27" {...common} />
-          <path d="M34 12 29 25 36 27" {...common} />
-          <path d="M14 36 11 25" {...common} />
-          <path d="M26 36 29 25" {...common} />
-          <path d="M6 12 20 4 34 12" {...common} />
+          <path d="M20 3 34 11 36 25 20 37 4 25 6 11Z" {...common} />
+          <path d="M20 3 28 24H12Z" {...common} />
+          <path d="M6 11 12 24 4 25" {...common} />
+          <path d="M34 11 28 24 36 25" {...common} />
+          <path d="M4 25 20 37 36 25" {...common} />
+          <path d="M20 37 12 24" {...common} />
+          <path d="M20 37 28 24" {...common} />
+          <path d="M6 11 20 3 34 11" {...common} />
         </>
       )}
       {sides === 100 && (
@@ -332,16 +337,16 @@ function ResultReadoutOverlay({
       aria-live="polite"
       sx={{
         position: 'fixed',
-        left: { xs: 22, sm: '50%' },
+        left: { xs: 22, sm: 28 },
         right: { xs: 96, sm: 'auto' },
-        bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 92px)', sm: 84 },
+        top: { xs: 'calc(env(safe-area-inset-top, 0px) + 18px)', sm: 28 },
         zIndex: (theme) => theme.zIndex.tooltip + 16,
         display: 'grid',
         gridTemplateColumns: '1fr auto 58px',
         width: { xs: 'auto', sm: 468 },
         maxWidth: { xs: 'none', sm: 'calc(100vw - 112px)' },
         minHeight: 78,
-        transform: { xs: 'none', sm: 'translateX(-50%)' },
+        transform: 'none',
         alignItems: 'center',
         gap: 1.1,
         border: `1.5px solid ${accent}`,
@@ -372,7 +377,7 @@ function ResultReadoutOverlay({
             },
           }}
         >
-          <X size={15} strokeWidth={2.4} />
+          <X size={18} strokeWidth={2.6} />
         </IconButton>
       </Tooltip>
       <Box sx={{ minWidth: 0 }}>
@@ -704,13 +709,14 @@ function DiceRoller() {
       <Box
         sx={{
           position: 'fixed',
-          right: { xs: 20, sm: 24 },
-          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 70px)', sm: 22 },
+          right: { xs: 10, sm: 14 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 90px)', sm: 42 },
           zIndex: theme.zIndex.tooltip + 20,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           width: 72,
+          overflow: 'visible',
           pointerEvents: 'none',
         }}
       >
@@ -756,7 +762,7 @@ function DiceRoller() {
                       placeItems: 'center',
                     }}
                   >
-                    <ChevronUp size={22} strokeWidth={2.2} />
+                    <DieGlyph sides={20} size={34} />
                   </Box>
                   <Box
                     sx={{
@@ -768,20 +774,12 @@ function DiceRoller() {
                   <Box
                     sx={{
                       display: 'grid',
+                      height: '100%',
                       justifyItems: 'start',
+                      alignItems: 'center',
                       pl: 1.2,
                     }}
                   >
-                    <Typography
-                      sx={{
-                        color: alpha(theme.palette.common.white, 0.86),
-                        fontSize: 12,
-                        fontWeight: 500,
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      Everyone
-                    </Typography>
                     <Typography
                       sx={{
                         color: theme.palette.common.white,
