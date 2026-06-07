@@ -69,12 +69,24 @@ function normalizeDieSize(value: number | string | undefined): DieSize {
 }
 
 function toRollResult(groups: DiceBoxRoll[]): RollResult {
-  const rolls = groups.flatMap((group) =>
-    (group.rolls ?? []).map((roll) => ({
-      sides: normalizeDieSize(roll.sides ?? group.sides),
-      value: roll.value ?? roll.result ?? 0,
-    })),
-  );
+  const rolls = groups.flatMap((group) => {
+    if (!group.rolls?.length) {
+      return [
+        {
+          sides: normalizeDieSize(group.sides),
+          value: group.value ?? 0,
+        },
+      ];
+    }
+
+    return group.rolls.map((roll) => {
+      const isSingleDieGroup = group.rolls?.length === 1;
+      return {
+        sides: normalizeDieSize(roll.sides ?? group.sides),
+        value: roll.value ?? roll.result ?? (isSingleDieGroup ? group.value : undefined) ?? 0,
+      };
+    });
+  });
   return {
     id: Date.now(),
     rolls,
@@ -92,6 +104,76 @@ function toDiceBoxNotation(dice: RollDie[], themeColor: string) {
       themeColor,
     }))
     .filter(({ qty }) => qty > 0);
+}
+
+function ResultReadoutOverlay({
+  result,
+  accent,
+  textColor,
+}: {
+  result: RollResult | null;
+  accent: string;
+  textColor: string;
+}) {
+  if (!result) return null;
+
+  return (
+    <Box
+      aria-live="polite"
+      sx={{
+        position: 'fixed',
+        left: '50%',
+        bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 152px)', sm: 96 },
+        zIndex: (theme) => theme.zIndex.tooltip + 16,
+        display: 'flex',
+        maxWidth: 'calc(100vw - 112px)',
+        transform: 'translateX(-50%)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 0.6,
+        border: `1px solid ${alpha(accent, 0.46)}`,
+        borderRadius: '999px',
+        background: alpha('#05070a', 0.68),
+        boxShadow: `0 12px 28px ${alpha('#000000', 0.28)}`,
+        px: 1,
+        py: 0.65,
+        pointerEvents: 'none',
+      }}
+    >
+      <Typography
+        sx={{
+          color: alpha(textColor, 0.76),
+          fontSize: 10,
+          fontWeight: 900,
+          lineHeight: 1,
+          textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Total {result.total}
+      </Typography>
+      {result.rolls.map((roll, index) => (
+        <Typography
+          key={`${result.id}-${index}`}
+          sx={{
+            minWidth: 34,
+            borderRadius: '999px',
+            background: alpha(accent, 0.28),
+            color: textColor,
+            fontSize: 11,
+            fontWeight: 900,
+            lineHeight: 1,
+            px: 0.65,
+            py: 0.45,
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          d{roll.sides} {roll.value}
+        </Typography>
+      ))}
+    </Box>
+  );
 }
 
 function DiceRoller() {
@@ -147,21 +229,21 @@ function DiceRoller() {
           container: '#tabletop-dice-box',
           theme: 'default',
           themeColor: initialConfig.themeColor,
-          scale: 5.4,
+          scale: 5.8,
           gravity: 1,
           mass: 1,
           friction: 0.8,
-          restitution: 0.15,
-          linearDamping: 0.45,
-          angularDamping: 0.45,
-          spinForce: 5,
+          restitution: 0,
+          linearDamping: 0.62,
+          angularDamping: 0.62,
+          spinForce: 4.2,
           throwForce: 6,
           startingHeight: 8,
-          settleTimeout: 5000,
+          settleTimeout: 6500,
           offscreen: true,
-          lightIntensity: initialConfig.mode === 'dark' ? 0.8 : 1,
-          enableShadows: true,
-          shadowTransparency: initialConfig.mode === 'dark' ? 0.72 : 0.82,
+          lightIntensity: initialConfig.mode === 'dark' ? 1.12 : 1.25,
+          enableShadows: false,
+          shadowTransparency: 1,
         }) as DiceBoxInstance;
 
         diceBoxRef.current = diceBox;
@@ -265,6 +347,11 @@ function DiceRoller() {
             height: '100% !important',
           },
         }}
+      />
+      <ResultReadoutOverlay
+        result={isRolling ? null : lastResult}
+        accent={accent}
+        textColor={theme.palette.common.white}
       />
       <Box
         sx={{
