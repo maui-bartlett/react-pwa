@@ -2015,7 +2015,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           width: '100%',
           aspectRatio: '1290 / 907',
           objectFit: 'cover',
-          opacity: 1,
+          opacity: isDarkMode ? 0.5 : 1,
         }}
       />
       <Box
