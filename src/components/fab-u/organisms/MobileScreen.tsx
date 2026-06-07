@@ -73,6 +73,7 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
   return (
     <Box
       data-pw="mobile-screen"
+      data-dice-tray-root
       sx={{
         position: 'relative',
         width: { xs: '100vw', md: '100%' },
@@ -97,6 +98,7 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
       >
         <Box
           data-pw="content-area"
+          data-dice-tray-scroll-root
           ref={(el: HTMLDivElement | null) => {
             scrollViewportRef.current = el;
             if (contentScrollRef) contentScrollRef.current = el;

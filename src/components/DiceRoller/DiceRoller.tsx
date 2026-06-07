@@ -25,10 +25,13 @@ type RollResult = {
 
 type DiceBoxRoll = {
   rolls?: Array<{
+    dieType?: string;
     sides?: number | string;
     value?: number;
     result?: number;
   }>;
+  dieType?: string;
+  result?: number;
   sides?: number | string;
   value?: number;
 };
@@ -44,6 +47,55 @@ type DiceBoxInstance = {
   show: () => unknown;
   updateConfig: (config: { themeColor?: string }) => unknown;
 };
+
+type DiceTrayStyle = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+const defaultDiceTrayStyle: DiceTrayStyle = {
+  left: 0,
+  top: 0,
+  width: typeof window === 'undefined' ? 0 : window.innerWidth,
+  height: typeof window === 'undefined' ? 0 : window.innerHeight,
+};
+
+function getDiceTrayMetrics(): DiceTrayStyle {
+  if (typeof document === 'undefined') return defaultDiceTrayStyle;
+
+  const trayRoot =
+    document.querySelector<HTMLElement>('[data-dice-tray-root]') ??
+    document.querySelector<HTMLElement>('[data-pw="mobile-screen"]') ??
+    document.documentElement;
+  const scrollRoot =
+    trayRoot.querySelector<HTMLElement>('[data-dice-tray-scroll-root]') ??
+    document.querySelector<HTMLElement>('[data-dice-tray-scroll-root]') ??
+    trayRoot;
+  const rect = scrollRoot.getBoundingClientRect();
+  const scrollTop = scrollRoot === document.documentElement ? window.scrollY : scrollRoot.scrollTop;
+  const scrollHeight =
+    scrollRoot === document.documentElement
+      ? Math.max(document.documentElement.scrollHeight, window.innerHeight)
+      : Math.max(scrollRoot.scrollHeight, rect.height);
+
+  return {
+    left: rect.left,
+    top: rect.top - scrollTop,
+    width: rect.width,
+    height: scrollHeight,
+  };
+}
+
+function areDiceTrayStylesEqual(a: DiceTrayStyle, b: DiceTrayStyle) {
+  return (
+    Math.round(a.left) === Math.round(b.left) &&
+    Math.round(a.top) === Math.round(b.top) &&
+    Math.round(a.width) === Math.round(b.width) &&
+    Math.round(a.height) === Math.round(b.height)
+  );
+}
 
 function formatDice(dice: RollDie[]) {
   if (dice.length === 0) return 'Select dice';
@@ -64,8 +116,12 @@ function getThemeColor(fallback: string) {
 }
 
 function normalizeDieSize(value: number | string | undefined): DieSize {
-  const sides = Number(value);
+  const sides = typeof value === 'string' ? Number(value.match(/\d+/)?.[0]) : Number(value);
   return dieSizes.includes(sides as DieSize) ? (sides as DieSize) : 6;
+}
+
+function getRollValue(...values: Array<number | undefined>) {
+  return values.find((value) => typeof value === 'number' && Number.isFinite(value)) ?? 0;
 }
 
 function toRollResult(groups: DiceBoxRoll[]): RollResult {
@@ -73,8 +129,8 @@ function toRollResult(groups: DiceBoxRoll[]): RollResult {
     if (!group.rolls?.length) {
       return [
         {
-          sides: normalizeDieSize(group.sides),
-          value: group.value ?? 0,
+          sides: normalizeDieSize(group.sides ?? group.dieType),
+          value: getRollValue(group.value, group.result),
         },
       ];
     }
@@ -82,17 +138,26 @@ function toRollResult(groups: DiceBoxRoll[]): RollResult {
     return group.rolls.map((roll) => {
       const isSingleDieGroup = group.rolls?.length === 1;
       return {
-        sides: normalizeDieSize(roll.sides ?? group.sides),
-        value: roll.value ?? roll.result ?? (isSingleDieGroup ? group.value : undefined) ?? 0,
+        sides: normalizeDieSize(roll.sides ?? roll.dieType ?? group.sides ?? group.dieType),
+        value: getRollValue(
+          roll.value,
+          roll.result,
+          isSingleDieGroup ? group.value : undefined,
+          isSingleDieGroup ? group.result : undefined,
+        ),
       };
     });
   });
+
+  const groupedTotal = groups.reduce(
+    (sum, group) => sum + getRollValue(group.value, group.result),
+    0,
+  );
+
   return {
     id: Date.now(),
     rolls,
-    total:
-      groups.reduce((sum, group) => sum + (group.value ?? 0), 0) ||
-      rolls.reduce((sum, roll) => sum + roll.value, 0),
+    total: groupedTotal || rolls.reduce((sum, roll) => sum + roll.value, 0),
   };
 }
 
@@ -345,6 +410,7 @@ function DiceRoller() {
   const [lastResult, setLastResult] = useState<RollResult | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   const [isDiceBoxReady, setIsDiceBoxReady] = useState(false);
+  const [diceTrayStyle, setDiceTrayStyle] = useState<DiceTrayStyle>(defaultDiceTrayStyle);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
   const diceBoxRef = useRef<DiceBoxInstance | null>(null);
   const initialDiceBoxConfigRef = useRef({
@@ -354,6 +420,77 @@ function DiceRoller() {
   const rollSequenceRef = useRef(0);
 
   const hasDice = selectedDice.length > 0;
+
+  useEffect(() => {
+    let animationFrame = 0;
+    let resizeTimeout = 0;
+
+    const requestDiceBoxResize = () => {
+      window.clearTimeout(resizeTimeout);
+      resizeTimeout = window.setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 40);
+    };
+
+    const refreshTray = () => {
+      animationFrame = 0;
+      const nextStyle = getDiceTrayMetrics();
+      setDiceTrayStyle((currentStyle) => {
+        if (areDiceTrayStylesEqual(currentStyle, nextStyle)) return currentStyle;
+        requestDiceBoxResize();
+        return nextStyle;
+      });
+    };
+
+    const scheduleRefresh = () => {
+      if (animationFrame) return;
+      animationFrame = window.requestAnimationFrame(refreshTray);
+    };
+
+    const connectObservers = () => {
+      const trayRoot = document.querySelector<HTMLElement>('[data-dice-tray-root]');
+      const scrollRoot =
+        trayRoot?.querySelector<HTMLElement>('[data-dice-tray-scroll-root]') ??
+        document.querySelector<HTMLElement>('[data-dice-tray-scroll-root]');
+      const resizeObserver = new ResizeObserver(scheduleRefresh);
+
+      if (trayRoot) resizeObserver.observe(trayRoot);
+      if (scrollRoot) {
+        resizeObserver.observe(scrollRoot);
+        scrollRoot.addEventListener('scroll', scheduleRefresh, { passive: true });
+      }
+      window.addEventListener('resize', scheduleRefresh);
+
+      return () => {
+        resizeObserver.disconnect();
+        scrollRoot?.removeEventListener('scroll', scheduleRefresh);
+        window.removeEventListener('resize', scheduleRefresh);
+      };
+    };
+
+    let disconnectObservers = connectObservers();
+    const mutationObserver = new MutationObserver(() => {
+      disconnectObservers();
+      disconnectObservers = connectObservers();
+      scheduleRefresh();
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-dice-tray-root', 'data-dice-tray-scroll-root'],
+    });
+
+    scheduleRefresh();
+
+    return () => {
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(resizeTimeout);
+      disconnectObservers();
+      mutationObserver.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const refreshAccent = () => {
@@ -402,8 +539,8 @@ function DiceRoller() {
           settleTimeout: 6500,
           offscreen: true,
           lightIntensity: initialConfig.mode === 'dark' ? 1.12 : 1.25,
-          enableShadows: false,
-          shadowTransparency: 1,
+          enableShadows: true,
+          shadowTransparency: initialConfig.mode === 'dark' ? 0.72 : 0.82,
         }) as DiceBoxInstance;
 
         diceBoxRef.current = diceBox;
@@ -480,10 +617,13 @@ function DiceRoller() {
         aria-hidden="true"
         sx={{
           position: 'fixed',
-          inset: 0,
+          left: `${diceTrayStyle.left}px`,
+          top: `${diceTrayStyle.top}px`,
+          width: `${diceTrayStyle.width}px`,
+          height: `${diceTrayStyle.height}px`,
           zIndex: theme.zIndex.tooltip + 15,
           pointerEvents: 'none',
-          overflow: 'hidden',
+          overflow: 'visible',
           '& canvas': {
             width: '100% !important',
             height: '100% !important',

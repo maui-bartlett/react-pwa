@@ -6504,6 +6504,7 @@ function AvatarLegends() {
         }}
       >
         <Box
+          data-dice-tray-root
           sx={{
             width: 'min(100vw, 430px)',
             // 100vh on mobile so the card itself fills through the safe
@@ -6710,6 +6711,7 @@ function AvatarLegends() {
             </Box>
 
             <Box
+              data-dice-tray-scroll-root
               sx={{
                 flex: 1,
                 overflowY: 'auto',
