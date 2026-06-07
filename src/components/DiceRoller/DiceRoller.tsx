@@ -217,14 +217,13 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
         <>
           <path d="M20 5 35 33H5Z" {...common} />
           <path d="M20 5 20 33" {...common} />
-          <path d="M20 33 28 20" {...common} />
         </>
       )}
       {sides === 6 && (
         <>
-          <path d="M10 12 22 6 32 13 20 20Z" {...common} />
-          <path d="M10 12v16l10 6V20Z" {...common} />
-          <path d="M32 13v15l-12 6V20Z" {...common} />
+          <path d="M8 12 20 6 32 12 20 19Z" {...common} />
+          <path d="M8 12v16l12 6V19Z" {...common} />
+          <path d="M32 12v16l-12 6V19Z" {...common} />
         </>
       )}
       {sides === 8 && (
@@ -254,11 +253,13 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
       )}
       {sides === 20 && (
         <>
-          <path d="M20 4 35 13 33 30 20 37 7 30 5 13Z" {...common} />
-          <path d="M20 4 20 37" {...common} />
-          <path d="M5 13 20 21 35 13" {...common} />
-          <path d="M7 30 20 21 33 30" {...common} />
-          <path d="M12 9 20 21 28 9" {...common} />
+          <path d="M20 4 34 12 36 27 26 36H14L4 27 6 12Z" {...common} />
+          <path d="M20 4 29 25H11Z" {...common} />
+          <path d="M6 12 11 25 4 27" {...common} />
+          <path d="M34 12 29 25 36 27" {...common} />
+          <path d="M14 36 11 25" {...common} />
+          <path d="M26 36 29 25" {...common} />
+          <path d="M6 12 20 4 34 12" {...common} />
         </>
       )}
       {sides === 100 && (
@@ -285,10 +286,12 @@ function ResultReadoutOverlay({
   result,
   accent,
   textColor,
+  onClose,
 }: {
   result: RollResult | null;
   accent: string;
   textColor: string;
+  onClose: () => void;
 }) {
   if (!result) return null;
 
@@ -315,9 +318,31 @@ function ResultReadoutOverlay({
         boxShadow: `0 12px 28px ${alpha('#000000', 0.36)}`,
         px: 1.4,
         py: 1,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
       }}
     >
+      <Tooltip title="Close roll result" placement="top">
+        <IconButton
+          aria-label="Close roll result"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            top: -10,
+            right: -10,
+            width: 24,
+            height: 24,
+            border: `1px solid ${alpha(textColor, 0.22)}`,
+            background: alpha('#05070a', 0.96),
+            boxShadow: `0 3px 8px ${alpha('#000000', 0.34)}`,
+            color: alpha(textColor, 0.9),
+            '&:hover': {
+              background: alpha('#05070a', 1),
+            },
+          }}
+        >
+          <X size={15} strokeWidth={2.4} />
+        </IconButton>
+      </Tooltip>
       <Box sx={{ minWidth: 0 }}>
         <Typography
           sx={{
@@ -634,6 +659,7 @@ function DiceRoller() {
         result={isRolling ? null : lastResult}
         accent={accent}
         textColor={theme.palette.common.white}
+        onClose={() => setLastResult(null)}
       />
       <Box
         sx={{
