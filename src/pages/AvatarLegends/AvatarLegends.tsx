@@ -2716,8 +2716,8 @@ function HistorySection({ questions }: { questions: string[] }) {
     <Stack
       spacing={0.6}
       sx={{
-        py: open ? 0 : 0.65,
-        minHeight: open ? 'auto' : 44,
+        py: 0.65,
+        minHeight: 44,
         justifyContent: 'center',
       }}
     >
@@ -2912,8 +2912,8 @@ function CharacterInfoSection({
       onClick={() => setOpen((value) => !value)}
       sx={{
         cursor: 'pointer',
-        py: open ? 0 : 0.65,
-        minHeight: open ? 'auto' : 44,
+        py: 0.65,
+        minHeight: 44,
         justifyContent: 'center',
       }}
     >
