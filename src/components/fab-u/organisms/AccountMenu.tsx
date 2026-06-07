@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useMemo, useState } from 'react';
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -9,7 +9,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
-import NativeSelect from '@mui/material/NativeSelect';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -277,7 +276,6 @@ function AccountMenu({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [newAvatarClassName, setNewAvatarClassName] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -379,13 +377,6 @@ function AccountMenu({
     [campaigns],
   );
 
-  useEffect(() => {
-    if (gameSystem !== 'avatar-legends') return;
-    if (newAvatarClassName) return;
-    const firstClassName = avatarClasses?.[0]?.class?.className;
-    if (firstClassName) setNewAvatarClassName(firstClassName);
-  }, [avatarClasses, gameSystem, newAvatarClassName]);
-
   const accountModalBg = fabUTokens.color.surface;
   const accountActionBg = fabUTokens.color.brand;
   const accountActionHoverBg = fabUTokens.color.brandStrong;
@@ -468,8 +459,9 @@ function AccountMenu({
     if (!canLoadCharacters) return;
     const selectedAvatarClass =
       gameSystem === 'avatar-legends'
-        ? (avatarClasses?.find((item) => item.class?.className === newAvatarClassName)?.class ??
-          avatarClasses?.[0]?.class)
+        ? [...(avatarClasses ?? [])].sort((a, b) =>
+            String(a.class?.className ?? '').localeCompare(String(b.class?.className ?? '')),
+          )[0]?.class
         : undefined;
     const payload = createCharacterPayload?.({ avatarClass: selectedAvatarClass });
     if (payload) {
@@ -750,39 +742,6 @@ function AccountMenu({
                   </Stack>
                 ) : (
                   <Stack spacing={0.7}>
-                    {gameSystem === 'avatar-legends' ? (
-                      <NativeSelect
-                        value={newAvatarClassName}
-                        onChange={(event) => setNewAvatarClassName(event.target.value)}
-                        disableUnderline
-                        sx={{
-                          minHeight: 42,
-                          borderRadius: '8px',
-                          border: `1px solid ${fabUTokens.color.border}`,
-                          bgcolor: fabUTokens.color.pillSurface,
-                          color: fabUTokens.color.textPrimary,
-                          px: 1.2,
-                          fontSize: '0.84rem',
-                          fontWeight: 800,
-                          '& select': {
-                            p: 0,
-                            minHeight: 42,
-                          },
-                          '& svg': {
-                            color: fabUTokens.color.textSecondary,
-                            right: 8,
-                          },
-                        }}
-                      >
-                        {(avatarClasses ?? []).map((item) =>
-                          item.class?.className ? (
-                            <option key={item.class.className} value={item.class.className}>
-                              {item.class.className}
-                            </option>
-                          ) : null,
-                        )}
-                      </NativeSelect>
-                    ) : null}
                     <Button
                       onClick={() => void addCharacter()}
                       disabled={gameSystem === 'avatar-legends' && avatarClasses === undefined}
