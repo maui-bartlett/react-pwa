@@ -267,10 +267,12 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
       )}
       {sides === 10 && (
         <>
-          <path d="M20 4 34 14 34 26 20 36 6 26 6 14Z" {...common} />
-          <path d="M20 4 20 36" {...common} />
-          <path d="M6 14 20 20 34 14" {...common} />
-          <path d="M6 26 20 20 34 26" {...common} />
+          <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
+          <path d="M20 22 20 4" {...common} />
+          <path d="M20 22 34 16" {...common} />
+          <path d="M20 22 29 33" {...common} />
+          <path d="M20 22 11 33" {...common} />
+          <path d="M20 22 6 16" {...common} />
         </>
       )}
       {sides === 12 && (
@@ -286,29 +288,33 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
       )}
       {sides === 20 && (
         <>
-          <path d="M20 3 35 11 36 25 20 37 4 25 5 11Z" {...common} />
+          <path d="M20 3 36 15 36 25 20 37 4 25 4 15Z" {...common} />
           <path d="M20 3 28 24H12Z" {...common} />
-          <path d="M5 11 12 24 4 25" {...common} />
-          <path d="M35 11 28 24 36 25" {...common} />
+          <path d="M4 15 12 24 4 25" {...common} />
+          <path d="M36 15 28 24 36 25" {...common} />
           <path d="M4 25 20 37 36 25" {...common} />
           <path d="M20 37 12 24" {...common} />
           <path d="M20 37 28 24" {...common} />
-          <path d="M5 11 20 3 35 11" {...common} />
+          <path d="M4 15 20 3 36 15" {...common} />
         </>
       )}
       {sides === 100 && (
         <>
           <g transform="translate(-2 6) scale(.55)">
-            <path d="M20 4 34 14 34 26 20 36 6 26 6 14Z" {...common} />
-            <path d="M20 4 20 36" {...common} />
-            <path d="M6 14 20 20 34 14" {...common} />
-            <path d="M6 26 20 20 34 26" {...common} />
+            <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
+            <path d="M20 22 20 4" {...common} />
+            <path d="M20 22 34 16" {...common} />
+            <path d="M20 22 29 33" {...common} />
+            <path d="M20 22 11 33" {...common} />
+            <path d="M20 22 6 16" {...common} />
           </g>
           <g transform="translate(16 1) scale(.55)">
-            <path d="M20 4 34 14 34 26 20 36 6 26 6 14Z" {...common} />
-            <path d="M20 4 20 36" {...common} />
-            <path d="M6 14 20 20 34 14" {...common} />
-            <path d="M6 26 20 20 34 26" {...common} />
+            <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
+            <path d="M20 22 20 4" {...common} />
+            <path d="M20 22 34 16" {...common} />
+            <path d="M20 22 29 33" {...common} />
+            <path d="M20 22 11 33" {...common} />
+            <path d="M20 22 6 16" {...common} />
           </g>
         </>
       )}
@@ -336,7 +342,7 @@ function ResultReadoutOverlay({
         position: 'fixed',
         left: { xs: 22, sm: 28 },
         right: { xs: 96, sm: 'auto' },
-        top: { xs: 'calc(env(safe-area-inset-top, 0px) + 18px)', sm: 28 },
+        top: { xs: 'calc(env(safe-area-inset-top, 0px) + 25vh)', sm: '25vh' },
         zIndex: (theme) => theme.zIndex.tooltip + 16,
         display: 'grid',
         gridTemplateColumns: '1fr auto 58px',
