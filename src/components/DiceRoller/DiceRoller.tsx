@@ -7,7 +7,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 
-import { ChevronDown, Dice6, Trash2 } from 'lucide-react';
+import { ChevronUp, X } from 'lucide-react';
 
 const dieSizes = [4, 6, 8, 10, 12, 20, 100] as const;
 type DieSize = (typeof dieSizes)[number];
@@ -106,6 +106,116 @@ function toDiceBoxNotation(dice: RollDie[], themeColor: string) {
     .filter(({ qty }) => qty > 0);
 }
 
+function countSelectedDice(dice: RollDie[], sides: DieSize) {
+  return dice.filter((die) => die.sides === sides).length;
+}
+
+function formatRollEquation(result: RollResult) {
+  const values = result.rolls.map((roll) => roll.value);
+  if (values.length <= 6) return values.join('+');
+  return `${values.slice(0, 6).join('+')}+...`;
+}
+
+function formatRollNotation(result: RollResult) {
+  const counts = dieSizes
+    .map((sides) => ({
+      sides,
+      count: result.rolls.filter((roll) => roll.sides === sides).length,
+    }))
+    .filter(({ count }) => count > 0);
+
+  return counts.map(({ count, sides }) => `${count}d${sides}`).join('+');
+}
+
+function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
+  const strokeWidth = 1.8;
+  const common = {
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    strokeWidth,
+  };
+
+  return (
+    <Box
+      component="svg"
+      aria-hidden="true"
+      viewBox="0 0 40 40"
+      sx={{
+        width: size,
+        height: size,
+        display: 'block',
+      }}
+    >
+      {sides === 4 && (
+        <>
+          <path d="M20 5 35 33H5Z" {...common} />
+          <path d="M20 5 20 33" {...common} />
+          <path d="M20 33 28 20" {...common} />
+        </>
+      )}
+      {sides === 6 && (
+        <>
+          <path d="M10 12 22 6 32 13 20 20Z" {...common} />
+          <path d="M10 12v16l10 6V20Z" {...common} />
+          <path d="M32 13v15l-12 6V20Z" {...common} />
+        </>
+      )}
+      {sides === 8 && (
+        <>
+          <path d="M20 4 34 20 20 36 6 20Z" {...common} />
+          <path d="M20 4v32" {...common} />
+          <path d="M6 20h28" {...common} />
+        </>
+      )}
+      {sides === 10 && (
+        <>
+          <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
+          <path d="M20 4 20 33" {...common} />
+          <path d="M6 16 20 24 34 16" {...common} />
+          <path d="M11 33 20 24 29 33" {...common} />
+        </>
+      )}
+      {sides === 12 && (
+        <>
+          <path d="M20 4 32 10 36 23 28 35H12L4 23 8 10Z" {...common} />
+          <path d="M14 13h12l4 10-10 7-10-7Z" {...common} />
+          <path d="M8 10 14 13" {...common} />
+          <path d="M32 10 26 13" {...common} />
+          <path d="M4 23h6" {...common} />
+          <path d="M36 23h-6" {...common} />
+        </>
+      )}
+      {sides === 20 && (
+        <>
+          <path d="M20 4 35 13 33 30 20 37 7 30 5 13Z" {...common} />
+          <path d="M20 4 20 37" {...common} />
+          <path d="M5 13 20 21 35 13" {...common} />
+          <path d="M7 30 20 21 33 30" {...common} />
+          <path d="M12 9 20 21 28 9" {...common} />
+        </>
+      )}
+      {sides === 100 && (
+        <>
+          <g transform="translate(-2 6) scale(.55)">
+            <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
+            <path d="M20 4 20 33" {...common} />
+            <path d="M6 16 20 24 34 16" {...common} />
+            <path d="M11 33 20 24 29 33" {...common} />
+          </g>
+          <g transform="translate(16 1) scale(.55)">
+            <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
+            <path d="M20 4 20 33" {...common} />
+            <path d="M6 16 20 24 34 16" {...common} />
+            <path d="M11 33 20 24 29 33" {...common} />
+          </g>
+        </>
+      )}
+    </Box>
+  );
+}
+
 function ResultReadoutOverlay({
   result,
   accent,
@@ -122,56 +232,108 @@ function ResultReadoutOverlay({
       aria-live="polite"
       sx={{
         position: 'fixed',
-        left: '50%',
-        bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 152px)', sm: 96 },
+        left: { xs: 22, sm: '50%' },
+        right: { xs: 96, sm: 'auto' },
+        bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 92px)', sm: 84 },
         zIndex: (theme) => theme.zIndex.tooltip + 16,
-        display: 'flex',
-        maxWidth: 'calc(100vw - 112px)',
-        transform: 'translateX(-50%)',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 58px',
+        width: { xs: 'auto', sm: 468 },
+        maxWidth: { xs: 'none', sm: 'calc(100vw - 112px)' },
+        minHeight: 78,
+        transform: { xs: 'none', sm: 'translateX(-50%)' },
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: 0.6,
-        border: `1px solid ${alpha(accent, 0.46)}`,
-        borderRadius: '999px',
-        background: alpha('#05070a', 0.68),
-        boxShadow: `0 12px 28px ${alpha('#000000', 0.28)}`,
-        px: 1,
-        py: 0.65,
+        gap: 1.1,
+        border: `1.5px solid ${accent}`,
+        borderRadius: 2,
+        background: alpha('#05070a', 0.9),
+        boxShadow: `0 12px 28px ${alpha('#000000', 0.36)}`,
+        px: 1.4,
+        py: 1,
         pointerEvents: 'none',
       }}
     >
-      <Typography
-        sx={{
-          color: alpha(textColor, 0.76),
-          fontSize: 10,
-          fontWeight: 900,
-          lineHeight: 1,
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        Total {result.total}
-      </Typography>
-      {result.rolls.map((roll, index) => (
+      <Box sx={{ minWidth: 0 }}>
         <Typography
-          key={`${result.id}-${index}`}
           sx={{
-            minWidth: 34,
-            borderRadius: '999px',
-            background: alpha(accent, 0.28),
-            color: textColor,
+            color: alpha(textColor, 0.56),
             fontSize: 11,
             fontWeight: 900,
+            letterSpacing: 0,
             lineHeight: 1,
-            px: 0.65,
-            py: 0.45,
-            textAlign: 'center',
+            textTransform: 'uppercase',
+          }}
+        >
+          Custom:{' '}
+          <Box component="span" sx={{ color: accent }}>
+            Roll
+          </Box>
+        </Typography>
+        <Box
+          sx={{
+            mt: 0.65,
+            display: 'flex',
+            minWidth: 0,
+            alignItems: 'center',
+            gap: 0.7,
+            color: textColor,
+          }}
+        >
+          <DieGlyph sides={result.rolls[0]?.sides ?? 20} size={28} />
+          <Typography
+            sx={{
+              minWidth: 0,
+              overflow: 'hidden',
+              color: textColor,
+              fontSize: 24,
+              fontWeight: 900,
+              lineHeight: 1,
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {formatRollEquation(result)}
+          </Typography>
+        </Box>
+        <Typography
+          sx={{
+            mt: 0.45,
+            overflow: 'hidden',
+            color: alpha(textColor, 0.62),
+            fontSize: 11,
+            fontWeight: 800,
+            lineHeight: 1,
+            textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}
         >
-          d{roll.sides} {roll.value}
+          {formatRollNotation(result)}
         </Typography>
-      ))}
+      </Box>
+      <Typography
+        sx={{
+          color: alpha(textColor, 0.56),
+          fontSize: 26,
+          fontWeight: 900,
+          lineHeight: 1,
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        =
+      </Typography>
+      <Typography
+        sx={{
+          color: textColor,
+          fontSize: 30,
+          fontWeight: 900,
+          lineHeight: 1,
+          textAlign: 'right',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {result.total}
+      </Typography>
     </Box>
   );
 }
@@ -181,7 +343,6 @@ function DiceRoller() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDice, setSelectedDice] = useState<RollDie[]>([]);
   const [lastResult, setLastResult] = useState<RollResult | null>(null);
-  const [pendingResult, setPendingResult] = useState<Pick<RollResult, 'rolls'> | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   const [isDiceBoxReady, setIsDiceBoxReady] = useState(false);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
@@ -192,7 +353,6 @@ function DiceRoller() {
   });
   const rollSequenceRef = useRef(0);
 
-  const selectedLabel = useMemo(() => formatDice(selectedDice), [selectedDice]);
   const hasDice = selectedDice.length > 0;
 
   useEffect(() => {
@@ -279,16 +439,6 @@ function DiceRoller() {
     setSelectedDice((current) => [...current, { id: Date.now() + current.length, sides }]);
   };
 
-  const clearDice = () => {
-    rollSequenceRef.current += 1;
-    setSelectedDice([]);
-    setLastResult(null);
-    setPendingResult(null);
-    setIsRolling(false);
-    diceBoxRef.current?.clear();
-    diceBoxRef.current?.hide();
-  };
-
   const rollSelectedDice = async () => {
     if (!hasDice || isRolling || !diceBoxRef.current || !isDiceBoxReady) {
       setIsExpanded(true);
@@ -298,7 +448,6 @@ function DiceRoller() {
     const rollSequence = rollSequenceRef.current + 1;
     rollSequenceRef.current = rollSequence;
     const notation = toDiceBoxNotation(selectedDice, appAccent);
-    setPendingResult({ rolls: selectedDice.map((die) => ({ sides: die.sides, value: 0 })) });
     setLastResult(null);
     setIsRolling(true);
 
@@ -310,26 +459,19 @@ function DiceRoller() {
       });
       if (rollSequenceRef.current !== rollSequence) return;
       setLastResult(toRollResult(results));
-      setPendingResult(null);
     } catch (error) {
       console.warn('[dice] DiceBox roll failed', error);
-      if (rollSequenceRef.current === rollSequence) setPendingResult(null);
     } finally {
       if (rollSequenceRef.current === rollSequence) setIsRolling(false);
     }
   };
 
-  const panelBackground =
-    theme.palette.mode === 'dark'
-      ? alpha('#0b1118', 0.94)
-      : alpha(theme.palette.background.paper, 0.96);
   const accent = appAccent;
-  const menuTextColor =
-    theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.text.primary;
-  const mutedTextColor =
-    theme.palette.mode === 'dark'
-      ? alpha(theme.palette.common.white, 0.72)
-      : theme.palette.text.secondary;
+  const railBackground =
+    theme.palette.mode === 'dark' ? alpha('#82919a', 0.9) : alpha('#a8b4bb', 0.92);
+  const railButtonBackground = alpha('#03070b', 0.92);
+  const railIconColor = alpha('#9badb9', 0.95);
+  const selectedSummary = useMemo(() => formatDice(selectedDice), [selectedDice]);
 
   return (
     <>
@@ -356,168 +498,226 @@ function DiceRoller() {
       <Box
         sx={{
           position: 'fixed',
-          right: { xs: 12, sm: 18 },
-          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 84px)', sm: 22 },
+          right: { xs: 20, sm: 24 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 70px)', sm: 22 },
           zIndex: theme.zIndex.tooltip + 20,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 0.75,
+          width: 72,
           pointerEvents: 'none',
         }}
       >
         {isExpanded && (
-          <Stack
-            spacing={0.55}
-            sx={{
-              width: 60,
-              alignItems: 'center',
-              border: `1px solid ${alpha(accent, 0.48)}`,
-              borderRadius: '999px',
-              background: panelBackground,
-              boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.32)}`,
-              px: 0.55,
-              py: 0.75,
-              pointerEvents: 'auto',
-            }}
-          >
-            <Tooltip title="Clear selected dice" placement="left">
-              <span>
-                <IconButton
-                  aria-label="Clear selected dice"
-                  disabled={!hasDice && !lastResult && !pendingResult && !isRolling}
-                  onClick={clearDice}
-                  size="small"
+          <>
+            {hasDice && (
+              <Tooltip title={`Roll ${selectedSummary}`} placement="top">
+                <Box
+                  component="button"
+                  type="button"
+                  aria-label="Roll selected dice"
+                  disabled={!isDiceBoxReady || isRolling}
+                  onClick={() => void rollSelectedDice()}
                   sx={{
-                    width: 28,
-                    height: 28,
-                    color: mutedTextColor,
+                    position: 'absolute',
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 1,
+                    display: 'grid',
+                    gridTemplateColumns: '56px 1px 1fr',
+                    width: 236,
+                    height: 70,
+                    alignItems: 'center',
+                    border: 0,
+                    borderRadius: '999px',
+                    background: accent,
+                    boxShadow: `0 8px 20px ${alpha(accent, 0.42)}`,
+                    color: theme.palette.common.white,
+                    cursor: isDiceBoxReady && !isRolling ? 'pointer' : 'default',
+                    font: 'inherit',
+                    opacity: isDiceBoxReady && !isRolling ? 1 : 0.72,
+                    overflow: 'hidden',
+                    p: 0,
+                    pointerEvents: 'auto',
                   }}
                 >
-                  <Trash2 size={14} />
-                </IconButton>
-              </span>
-            </Tooltip>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      height: '100%',
+                      placeItems: 'center',
+                    }}
+                  >
+                    <ChevronUp size={22} strokeWidth={2.2} />
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 1,
+                      height: 44,
+                      background: alpha(theme.palette.common.white, 0.36),
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      justifyItems: 'start',
+                      pl: 1.2,
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        color: alpha(theme.palette.common.white, 0.86),
+                        fontSize: 12,
+                        fontWeight: 500,
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      Everyone
+                    </Typography>
+                    <Typography
+                      sx={{
+                        color: theme.palette.common.white,
+                        fontSize: 21,
+                        fontWeight: 900,
+                        lineHeight: 1,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {isRolling ? 'Rolling' : 'Roll'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Tooltip>
+            )}
 
-            {dieSizes.map((sides) => (
-              <Tooltip key={sides} title={`Add d${sides}`} placement="left">
+            <Stack
+              spacing={1}
+              sx={{
+                position: 'relative',
+                zIndex: 2,
+                width: 72,
+                alignItems: 'center',
+                borderRadius: '999px',
+                background: railBackground,
+                boxShadow: `0 12px 26px ${alpha(theme.palette.common.black, 0.38)}`,
+                px: 0.75,
+                py: 0.9,
+                pointerEvents: 'auto',
+              }}
+            >
+              {dieSizes
+                .slice()
+                .reverse()
+                .map((sides) => {
+                  const selectedCount = countSelectedDice(selectedDice, sides);
+                  return (
+                    <Tooltip key={sides} title={`Add d${sides}`} placement="left">
+                      <Box sx={{ position: 'relative' }}>
+                        <IconButton
+                          aria-label={`Add d${sides}`}
+                          onClick={() => addDie(sides)}
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            background: railButtonBackground,
+                            color: railIconColor,
+                            '&:hover': {
+                              background: alpha('#03070b', 0.98),
+                            },
+                          }}
+                        >
+                          <Stack spacing={0.1} sx={{ alignItems: 'center' }}>
+                            <DieGlyph sides={sides} size={sides === 100 ? 30 : 28} />
+                            <Typography
+                              sx={{
+                                color: theme.palette.common.white,
+                                fontSize: 10,
+                                fontWeight: 900,
+                                lineHeight: 1,
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              D{sides}
+                            </Typography>
+                          </Stack>
+                        </IconButton>
+                        {selectedCount > 0 && (
+                          <Box
+                            aria-label={`${selectedCount} selected d${sides}`}
+                            sx={{
+                              position: 'absolute',
+                              top: -3,
+                              right: -8,
+                              display: 'grid',
+                              minWidth: 28,
+                              height: 28,
+                              borderRadius: '999px',
+                              background: theme.palette.common.white,
+                              boxShadow: `0 2px 7px ${alpha(theme.palette.common.black, 0.24)}`,
+                              color: '#111820',
+                              fontSize: 17,
+                              fontWeight: 900,
+                              lineHeight: 1,
+                              placeItems: 'center',
+                              px: 0.45,
+                            }}
+                          >
+                            {selectedCount}
+                          </Box>
+                        )}
+                      </Box>
+                    </Tooltip>
+                  );
+                })}
+
+              <Tooltip title="Close dice roller" placement="left">
                 <IconButton
-                  aria-label={`Add d${sides}`}
-                  onClick={() => addDie(sides)}
+                  aria-label="Close dice roller"
+                  onClick={() => setIsExpanded(false)}
                   sx={{
-                    width: 38,
-                    height: 38,
-                    border: `1px solid ${alpha(accent, 0.5)}`,
-                    background: alpha(accent, theme.palette.mode === 'dark' ? 0.16 : 0.1),
-                    color: menuTextColor,
-                    fontSize: sides === 100 ? 11 : 12,
-                    fontWeight: 900,
+                    width: 58,
+                    height: 58,
+                    border: `3px solid ${accent}`,
+                    background: railButtonBackground,
+                    boxShadow: `0 0 0 5px ${alpha(accent, 0.22)}, 0 0 18px ${alpha(accent, 0.7)}`,
+                    color: theme.palette.common.white,
                     '&:hover': {
-                      background: alpha(accent, theme.palette.mode === 'dark' ? 0.28 : 0.18),
+                      background: alpha('#03070b', 0.98),
                     },
                   }}
                 >
-                  d{sides}
+                  <X size={34} strokeWidth={2.2} />
                 </IconButton>
               </Tooltip>
-            ))}
-
-            {(lastResult || isRolling) && (
-              <Box
-                aria-live="polite"
-                sx={{
-                  width: 48,
-                  borderRadius: 1.5,
-                  background: alpha(accent, theme.palette.mode === 'dark' ? 0.24 : 0.14),
-                  color: menuTextColor,
-                  px: 0.4,
-                  py: 0.6,
-                  textAlign: 'center',
-                }}
-              >
-                <Typography sx={{ fontSize: 9, fontWeight: 800, lineHeight: 1 }}>TOTAL</Typography>
-                <Typography sx={{ fontSize: 18, fontWeight: 900, lineHeight: 1.1 }}>
-                  {isRolling ? '...' : lastResult?.total}
-                </Typography>
-                <Typography
-                  sx={{
-                    mt: 0.3,
-                    color: mutedTextColor,
-                    fontSize: 8,
-                    fontWeight: 700,
-                    lineHeight: 1.1,
-                    overflowWrap: 'anywhere',
-                  }}
-                >
-                  {lastResult?.rolls.map((roll) => roll.value).join(', ') ??
-                    pendingResult?.rolls.map((roll) => `d${roll.sides}`).join(', ')}
-                </Typography>
-              </Box>
-            )}
-
-            <Typography
-              aria-live="polite"
-              sx={{
-                width: '100%',
-                minHeight: 18,
-                color: mutedTextColor,
-                fontSize: 9,
-                fontWeight: 800,
-                lineHeight: 1.1,
-                textAlign: 'center',
-                textTransform: 'uppercase',
-                overflowWrap: 'anywhere',
-              }}
-            >
-              {selectedLabel}
-            </Typography>
-
-            <Tooltip title="Collapse dice roller" placement="left">
-              <IconButton
-                aria-label="Collapse dice roller"
-                onClick={() => setIsExpanded(false)}
-                size="small"
-                sx={{
-                  width: 28,
-                  height: 28,
-                  color: mutedTextColor,
-                }}
-              >
-                <ChevronDown size={15} />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+            </Stack>
+          </>
         )}
 
-        <Tooltip title={isExpanded ? 'Roll selected dice' : 'Open dice roller'} placement="left">
-          <span>
-            <IconButton
-              aria-label={isExpanded ? 'Roll selected dice' : 'Open dice roller'}
-              disabled={isExpanded && (!isDiceBoxReady || isRolling)}
-              onClick={() => (isExpanded ? void rollSelectedDice() : setIsExpanded(true))}
-              sx={{
-                width: 52,
-                height: 52,
-                border: `1px solid ${alpha(theme.palette.common.white, 0.24)}`,
-                background: `linear-gradient(180deg, ${alpha(accent, 0.98)}, ${alpha('#000000', 0.22)})`,
-                boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.34)}`,
-                color: theme.palette.common.white,
-                fontSize: 11,
-                fontWeight: 900,
-                pointerEvents: 'auto',
-                '&:hover': {
-                  background: `linear-gradient(180deg, ${accent}, ${alpha('#000000', 0.18)})`,
-                  filter: 'brightness(1.06)',
-                },
-                '&.Mui-disabled': {
-                  color: alpha(theme.palette.common.white, 0.68),
-                },
-              }}
-            >
-              {isExpanded ? 'ROLL' : <Dice6 aria-hidden="true" size={24} strokeWidth={2.4} />}
-            </IconButton>
-          </span>
-        </Tooltip>
+        {!isExpanded && (
+          <Tooltip title="Open dice roller" placement="left">
+            <span>
+              <IconButton
+                aria-label="Open dice roller"
+                onClick={() => setIsExpanded(true)}
+                sx={{
+                  width: 66,
+                  height: 66,
+                  border: `4px solid ${alpha(theme.palette.common.white, 0.16)}`,
+                  background: `linear-gradient(180deg, ${alpha(accent, 0.98)}, ${alpha('#000000', 0.22)})`,
+                  boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.34)}`,
+                  color: theme.palette.common.white,
+                  pointerEvents: 'auto',
+                  '&:hover': {
+                    background: `linear-gradient(180deg, ${accent}, ${alpha('#000000', 0.18)})`,
+                    filter: 'brightness(1.06)',
+                  },
+                }}
+              >
+                <DieGlyph sides={20} size={42} />
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
       </Box>
     </>
   );
