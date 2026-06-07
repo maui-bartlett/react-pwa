@@ -288,14 +288,14 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
       )}
       {sides === 20 && (
         <>
-          <path d="M20 3 36 15 36 25 20 37 4 25 4 15Z" {...common} />
+          <path d="M20 3 34 15 34 25 20 37 6 25 6 15Z" {...common} />
           <path d="M20 3 28 24H12Z" {...common} />
-          <path d="M4 15 12 24 4 25" {...common} />
-          <path d="M36 15 28 24 36 25" {...common} />
-          <path d="M4 25 20 37 36 25" {...common} />
+          <path d="M6 15 12 24 6 25" {...common} />
+          <path d="M34 15 28 24 34 25" {...common} />
+          <path d="M6 25 20 37 34 25" {...common} />
           <path d="M20 37 12 24" {...common} />
           <path d="M20 37 28 24" {...common} />
-          <path d="M4 15 20 3 36 15" {...common} />
+          <path d="M6 15 20 3 34 15" {...common} />
         </>
       )}
       {sides === 100 && (
