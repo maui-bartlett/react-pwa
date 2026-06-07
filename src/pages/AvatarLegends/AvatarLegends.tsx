@@ -2037,7 +2037,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
       <Typography
         sx={{
           position: 'absolute',
-          left: '12.4%',
+          left: '13.1%',
           top: '50%',
           transform: 'translate(-50%, -50%) rotate(-90deg)',
           transformOrigin: 'center',
@@ -2052,8 +2052,8 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minWidth: 'calc(38% - 20px)',
-          minHeight: '0.84em',
+          minWidth: '110px',
+          minHeight: '0.74em',
           p: 0,
           textShadow: '0 1px 1px rgba(0,0,0,0.65)',
           textTransform: 'uppercase',
@@ -2066,7 +2066,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
       <Typography
         sx={{
           position: 'absolute',
-          right: '12.9%',
+          right: '13.6%',
           top: '50%',
           transform: 'translate(50%, -50%) rotate(90deg)',
           transformOrigin: 'center',
@@ -2081,8 +2081,8 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minWidth: 'calc(38% - 20px)',
-          minHeight: '0.84em',
+          minWidth: '110px',
+          minHeight: '0.74em',
           p: 0,
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
