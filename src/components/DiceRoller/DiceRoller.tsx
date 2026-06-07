@@ -267,51 +267,48 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
       )}
       {sides === 10 && (
         <>
-          <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
-          <path d="M20 4 20 33" {...common} />
-          <path d="M6 16 20 24 34 16" {...common} />
-          <path d="M11 33 20 24 29 33" {...common} />
+          <path d="M20 4 34 14 34 26 20 36 6 26 6 14Z" {...common} />
+          <path d="M20 4 20 36" {...common} />
+          <path d="M6 14 20 20 34 14" {...common} />
+          <path d="M6 26 20 20 34 26" {...common} />
         </>
       )}
       {sides === 12 && (
         <>
-          <path d="M20 4 32 9 36 22 28 35H12L4 22 8 9Z" {...common} />
-          <path d="M14 13h12l5 9-11 8-11-8Z" {...common} />
-          <path d="M8 9 14 13" {...common} />
-          <path d="M20 4 20 13" {...common} />
-          <path d="M32 9 26 13" {...common} />
-          <path d="M4 22h5" {...common} />
-          <path d="M36 22h-5" {...common} />
-          <path d="M12 35 9 22" {...common} />
-          <path d="M28 35 31 22" {...common} />
-          <path d="M20 30v6" {...common} />
+          <path d="M20 4 32 10 36 23 28 35H12L4 23 8 10Z" {...common} />
+          <path d="M14 13h12l4 10-10 7-10-7Z" {...common} />
+          <path d="M8 10 14 13" {...common} />
+          <path d="M32 10 26 13" {...common} />
+          <path d="M4 23h6" {...common} />
+          <path d="M36 23h-6" {...common} />
+          <path d="M20 30v5" {...common} />
         </>
       )}
       {sides === 20 && (
         <>
-          <path d="M20 3 34 11 36 25 20 37 4 25 6 11Z" {...common} />
+          <path d="M20 3 35 11 36 25 20 37 4 25 5 11Z" {...common} />
           <path d="M20 3 28 24H12Z" {...common} />
-          <path d="M6 11 12 24 4 25" {...common} />
-          <path d="M34 11 28 24 36 25" {...common} />
+          <path d="M5 11 12 24 4 25" {...common} />
+          <path d="M35 11 28 24 36 25" {...common} />
           <path d="M4 25 20 37 36 25" {...common} />
           <path d="M20 37 12 24" {...common} />
           <path d="M20 37 28 24" {...common} />
-          <path d="M6 11 20 3 34 11" {...common} />
+          <path d="M5 11 20 3 35 11" {...common} />
         </>
       )}
       {sides === 100 && (
         <>
           <g transform="translate(-2 6) scale(.55)">
-            <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
-            <path d="M20 4 20 33" {...common} />
-            <path d="M6 16 20 24 34 16" {...common} />
-            <path d="M11 33 20 24 29 33" {...common} />
+            <path d="M20 4 34 14 34 26 20 36 6 26 6 14Z" {...common} />
+            <path d="M20 4 20 36" {...common} />
+            <path d="M6 14 20 20 34 14" {...common} />
+            <path d="M6 26 20 20 34 26" {...common} />
           </g>
           <g transform="translate(16 1) scale(.55)">
-            <path d="M20 4 34 16 29 33 11 33 6 16Z" {...common} />
-            <path d="M20 4 20 33" {...common} />
-            <path d="M6 16 20 24 34 16" {...common} />
-            <path d="M11 33 20 24 29 33" {...common} />
+            <path d="M20 4 34 14 34 26 20 36 6 26 6 14Z" {...common} />
+            <path d="M20 4 20 36" {...common} />
+            <path d="M6 14 20 20 34 14" {...common} />
+            <path d="M6 26 20 20 34 26" {...common} />
           </g>
         </>
       )}
