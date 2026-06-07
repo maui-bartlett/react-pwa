@@ -5,12 +5,34 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
+import { alpha, keyframes, useTheme } from '@mui/material/styles';
 
 import { ChevronUp, X } from 'lucide-react';
 
 const dieSizes = [4, 6, 8, 10, 12, 20, 100] as const;
 type DieSize = (typeof dieSizes)[number];
+
+const diceRailReveal = keyframes`
+  from {
+    clip-path: inset(100% 0 0 0);
+    transform: translateY(12px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+  }
+`;
+
+const diceRollButtonReveal = keyframes`
+  from {
+    clip-path: inset(0 0 0 100%);
+    transform: translateX(14px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: translateX(0);
+  }
+`;
 
 type RollDie = {
   id: number;
@@ -62,7 +84,7 @@ const defaultDiceTrayStyle: DiceTrayStyle = {
   height: typeof window === 'undefined' ? 0 : window.innerHeight,
 };
 
-function getDiceTrayMetrics(): DiceTrayStyle {
+function getDiceTrayMetrics(constrainToVisibleFrame = false): DiceTrayStyle {
   if (typeof document === 'undefined') return defaultDiceTrayStyle;
 
   const trayRoot =
@@ -74,6 +96,16 @@ function getDiceTrayMetrics(): DiceTrayStyle {
     document.querySelector<HTMLElement>('[data-dice-tray-scroll-root]') ??
     trayRoot;
   const rect = scrollRoot.getBoundingClientRect();
+
+  if (constrainToVisibleFrame) {
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
   const scrollTop = scrollRoot === document.documentElement ? window.scrollY : scrollRoot.scrollTop;
   const scrollHeight =
     scrollRoot === document.documentElement
@@ -459,7 +491,7 @@ function DiceRoller() {
 
     const refreshTray = () => {
       animationFrame = 0;
-      const nextStyle = getDiceTrayMetrics();
+      const nextStyle = getDiceTrayMetrics(isRolling);
       setDiceTrayStyle((currentStyle) => {
         if (areDiceTrayStylesEqual(currentStyle, nextStyle)) return currentStyle;
         requestDiceBoxResize();
@@ -515,7 +547,7 @@ function DiceRoller() {
       disconnectObservers();
       mutationObserver.disconnect();
     };
-  }, []);
+  }, [isRolling]);
 
   useEffect(() => {
     const refreshAccent = () => {
@@ -551,7 +583,7 @@ function DiceRoller() {
           container: '#tabletop-dice-box',
           theme: 'default',
           themeColor: initialConfig.themeColor,
-          scale: 5.8,
+          scale: 4.4,
           gravity: 1,
           mass: 1,
           friction: 0.8,
@@ -601,6 +633,11 @@ function DiceRoller() {
     setSelectedDice((current) => [...current, { id: Date.now() + current.length, sides }]);
   };
 
+  const closeDiceRail = () => {
+    setSelectedDice([]);
+    setIsExpanded(false);
+  };
+
   const rollSelectedDice = async () => {
     if (!hasDice || isRolling || !diceBoxRef.current || !isDiceBoxReady) {
       setIsExpanded(true);
@@ -612,8 +649,11 @@ function DiceRoller() {
     const notation = toDiceBoxNotation(selectedDice, appAccent);
     setLastResult(null);
     setIsRolling(true);
+    setDiceTrayStyle(getDiceTrayMetrics(true));
 
     try {
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      window.dispatchEvent(new Event('resize'));
       diceBoxRef.current.show();
       const results = await diceBoxRef.current.roll(notation, {
         themeColor: appAccent,
@@ -705,6 +745,8 @@ function DiceRoller() {
                     overflow: 'hidden',
                     p: 0,
                     pointerEvents: 'auto',
+                    transformOrigin: 'right center',
+                    animation: `${diceRollButtonReveal} 180ms ease-out both`,
                   }}
                 >
                   <Box
@@ -769,6 +811,8 @@ function DiceRoller() {
                 px: 0.75,
                 py: 0.9,
                 pointerEvents: 'auto',
+                transformOrigin: 'bottom center',
+                animation: `${diceRailReveal} 190ms ease-out both`,
               }}
             >
               {dieSizes
@@ -839,7 +883,7 @@ function DiceRoller() {
               <Tooltip title="Close dice roller" placement="left">
                 <IconButton
                   aria-label="Close dice roller"
-                  onClick={() => setIsExpanded(false)}
+                  onClick={closeDiceRail}
                   sx={{
                     width: 58,
                     height: 58,
