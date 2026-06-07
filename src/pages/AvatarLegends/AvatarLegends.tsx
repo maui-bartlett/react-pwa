@@ -2037,7 +2037,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
       <Typography
         sx={{
           position: 'absolute',
-          left: '13.1%',
+          left: '12.6%',
           top: '50%',
           transform: 'translate(-50%, -50%) rotate(-90deg)',
           transformOrigin: 'center',
@@ -2066,7 +2066,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
       <Typography
         sx={{
           position: 'absolute',
-          right: '13.6%',
+          right: '13.1%',
           top: '50%',
           transform: 'translate(50%, -50%) rotate(90deg)',
           transformOrigin: 'center',
