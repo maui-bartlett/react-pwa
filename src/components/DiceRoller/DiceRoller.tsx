@@ -23,6 +23,17 @@ const diceRailReveal = keyframes`
   }
 `;
 
+const diceRailConceal = keyframes`
+  from {
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+  }
+  to {
+    clip-path: inset(100% 0 0 0);
+    transform: translateY(12px);
+  }
+`;
+
 const diceRollButtonReveal = keyframes`
   from {
     clip-path: inset(0 0 0 100%);
@@ -326,11 +337,13 @@ function ResultReadoutOverlay({
   result,
   accent,
   textColor,
+  isDismissing,
   onClose,
 }: {
   result: RollResult | null;
   accent: string;
   textColor: string;
+  isDismissing: boolean;
   onClose: () => void;
 }) {
   if (!result) return null;
@@ -340,7 +353,7 @@ function ResultReadoutOverlay({
       aria-live="polite"
       sx={{
         position: 'fixed',
-        left: { xs: 22, sm: 28 },
+        left: { xs: 32, sm: 38 },
         right: { xs: 140, sm: 140 },
         top: { xs: 'calc(env(safe-area-inset-top, 0px) + 25vh)', sm: '25vh' },
         zIndex: (theme) => theme.zIndex.tooltip + 16,
@@ -355,9 +368,11 @@ function ResultReadoutOverlay({
         borderRadius: 2,
         background: alpha('#05070a', 0.9),
         boxShadow: `0 12px 28px ${alpha('#000000', 0.36)}`,
+        opacity: isDismissing ? 0 : 1,
         px: 1.4,
         py: 1,
         pointerEvents: 'auto',
+        transition: 'opacity 180ms ease',
       }}
     >
       <Tooltip title="Close roll result" placement="top">
@@ -379,7 +394,7 @@ function ResultReadoutOverlay({
             },
           }}
         >
-          <X size={18} strokeWidth={2.6} />
+          <X size={21} strokeWidth={2.8} />
         </IconButton>
       </Tooltip>
       <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
@@ -476,6 +491,8 @@ function DiceRoller() {
   const [lastResult, setLastResult] = useState<RollResult | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   const [isDiceBoxReady, setIsDiceBoxReady] = useState(false);
+  const [isResultDismissing, setIsResultDismissing] = useState(false);
+  const [isRailClosing, setIsRailClosing] = useState(false);
   const [diceTrayStyle, setDiceTrayStyle] = useState<DiceTrayStyle>(defaultDiceTrayStyle);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
   const diceBoxRef = useRef<DiceBoxInstance | null>(null);
@@ -642,9 +659,24 @@ function DiceRoller() {
     setSelectedDice((current) => [...current, { id: Date.now() + current.length, sides }]);
   };
 
+  const dismissRollResult = () => {
+    if (!lastResult || isResultDismissing) return;
+    setIsResultDismissing(true);
+    window.setTimeout(() => {
+      diceBoxRef.current?.clear();
+      diceBoxRef.current?.hide();
+      setLastResult(null);
+      setIsResultDismissing(false);
+    }, 180);
+  };
+
   const closeDiceRail = () => {
     setSelectedDice([]);
-    setIsExpanded(false);
+    setIsRailClosing(true);
+    window.setTimeout(() => {
+      setIsExpanded(false);
+      setIsRailClosing(false);
+    }, 190);
   };
 
   const rollSelectedDice = async () => {
@@ -657,6 +689,7 @@ function DiceRoller() {
     rollSequenceRef.current = rollSequence;
     const notation = toDiceBoxNotation(selectedDice, appAccent);
     setLastResult(null);
+    setIsResultDismissing(false);
     setIsRolling(true);
     setDiceTrayStyle(getDiceTrayMetrics(true));
 
@@ -698,6 +731,8 @@ function DiceRoller() {
           zIndex: theme.zIndex.tooltip + 15,
           pointerEvents: 'none',
           overflow: 'visible',
+          opacity: isResultDismissing ? 0 : 1,
+          transition: 'opacity 180ms ease',
           '& canvas': {
             width: '100% !important',
             height: '100% !important',
@@ -708,12 +743,13 @@ function DiceRoller() {
         result={isRolling ? null : lastResult}
         accent={accent}
         textColor={theme.palette.common.white}
-        onClose={() => setLastResult(null)}
+        isDismissing={isResultDismissing}
+        onClose={dismissRollResult}
       />
       <Box
         sx={{
           position: 'fixed',
-          right: { xs: 40, sm: 44 },
+          right: { xs: 30, sm: 34 },
           bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 90px)', sm: 42 },
           zIndex: theme.zIndex.tooltip + 20,
           display: 'flex',
@@ -724,9 +760,9 @@ function DiceRoller() {
           pointerEvents: 'none',
         }}
       >
-        {isExpanded && (
+        {(isExpanded || isRailClosing) && (
           <>
-            {hasDice && (
+            {hasDice && !isRailClosing && (
               <Tooltip title={`Roll ${selectedSummary}`} placement="top">
                 <Box
                   component="button"
@@ -736,7 +772,7 @@ function DiceRoller() {
                   onClick={() => void rollSelectedDice()}
                   sx={{
                     position: 'absolute',
-                    right: 0,
+                    right: 72,
                     bottom: 0,
                     zIndex: 1,
                     display: 'grid',
@@ -817,7 +853,7 @@ function DiceRoller() {
                 py: 0.9,
                 pointerEvents: 'auto',
                 transformOrigin: 'bottom center',
-                animation: `${diceRailReveal} 190ms ease-out both`,
+                animation: `${isRailClosing ? diceRailConceal : diceRailReveal} 190ms ease-out both`,
                 '&::before': {
                   content: '""',
                   position: 'absolute',
@@ -931,7 +967,10 @@ function DiceRoller() {
             <span>
               <IconButton
                 aria-label="Open dice roller"
-                onClick={() => setIsExpanded(true)}
+                onClick={() => {
+                  setIsRailClosing(false);
+                  setIsExpanded(true);
+                }}
                 sx={{
                   width: 66,
                   height: 66,
