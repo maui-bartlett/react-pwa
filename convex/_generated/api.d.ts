@@ -16,6 +16,7 @@ import type * as gameSystems from "../gameSystems.js";
 import type * as http from "../http.js";
 import type * as invites from "../invites.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_avatarTechniqueFatigue from "../lib/avatarTechniqueFatigue.js";
 import type * as lib_fabulaMeta from "../lib/fabulaMeta.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as users from "../users.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   invites: typeof invites;
   "lib/auth": typeof lib_auth;
+  "lib/avatarTechniqueFatigue": typeof lib_avatarTechniqueFatigue;
   "lib/fabulaMeta": typeof lib_fabulaMeta;
   "lib/hash": typeof lib_hash;
   users: typeof users;
