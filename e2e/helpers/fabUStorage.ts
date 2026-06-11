@@ -5,6 +5,11 @@ type StoredFabUCharacter = Record<string, unknown>;
 async function readActiveFabUCharacter(page: Page): Promise<StoredFabUCharacter> {
   return page.evaluate(async () => {
     const openRequest = indexedDB.open('tabletop-games-local', 1);
+    openRequest.onupgradeneeded = () => {
+      if (!openRequest.result.objectStoreNames.contains('characters')) {
+        openRequest.result.createObjectStore('characters');
+      }
+    };
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       openRequest.onsuccess = () => resolve(openRequest.result);
       openRequest.onerror = () => reject(openRequest.error);
@@ -38,6 +43,11 @@ async function readActiveFabUCharacter(page: Page): Promise<StoredFabUCharacter>
 async function clearFabUCharacterStorage(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const openRequest = indexedDB.open('tabletop-games-local', 1);
+    openRequest.onupgradeneeded = () => {
+      if (!openRequest.result.objectStoreNames.contains('characters')) {
+        openRequest.result.createObjectStore('characters');
+      }
+    };
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       openRequest.onsuccess = () => resolve(openRequest.result);
       openRequest.onerror = () => reject(openRequest.error);
@@ -58,4 +68,17 @@ async function clearFabUCharacterStorage(page: Page): Promise<void> {
   });
 }
 
-export { clearFabUCharacterStorage, readActiveFabUCharacter };
+async function activeFabUCharacterHasBond(page: Page, name: string): Promise<boolean> {
+  const character = await readActiveFabUCharacter(page);
+  if (!Array.isArray(character.bonds)) return false;
+
+  return character.bonds.some(
+    (bond) =>
+      bond !== null &&
+      typeof bond === 'object' &&
+      'characterName' in bond &&
+      (bond as { characterName?: unknown }).characterName === name,
+  );
+}
+
+export { activeFabUCharacterHasBond, clearFabUCharacterStorage, readActiveFabUCharacter };

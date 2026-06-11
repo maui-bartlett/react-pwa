@@ -1,6 +1,6 @@
 import { devices, expect, test } from '@playwright/test';
 
-import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+import { activeFabUCharacterHasBond } from '../helpers/fabUStorage';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
 
@@ -41,14 +41,10 @@ test.describe('BondsCard + Bond add flow (mobile viewport)', () => {
     await page.locator('[data-pw="bond-add-new"]').first().click();
     await page.locator('[data-pw="bond-name-input"]').fill('Vesper');
     await page.keyboard.press('Enter');
-    await expect
-      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
-      .toContain('Vesper');
+    await expect.poll(() => activeFabUCharacterHasBond(page, 'Vesper')).toBe(true);
     await page.reload();
     await expect(page.locator('text=Vesper').first()).toBeVisible();
-    await expect
-      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
-      .toContain('Vesper');
+    await expect.poll(() => activeFabUCharacterHasBond(page, 'Vesper')).toBe(true);
   });
 
   test('Empty submit → no row added, input cancels', async ({ page }) => {

@@ -1,6 +1,6 @@
 import { type Page, devices, expect, test } from '@playwright/test';
 
-import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+import { activeFabUCharacterHasBond } from '../helpers/fabUStorage';
 
 /** Confirm the deletion modal that now gates every destructive action. */
 async function confirmDeleteModal(page: Page) {
@@ -141,9 +141,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     // Row removed from DOM after collapse animation
     await expect(row).toHaveCount(0, { timeout: 1500 });
 
-    await expect
-      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
-      .not.toContain('Jelena');
+    await expect.poll(() => activeFabUCharacterHasBond(page, 'Jelena')).toBe(false);
   });
 
   // ── Sub-threshold springs back ────────────────────────────────────────────
@@ -192,9 +190,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
 
     await expect(row).toHaveCount(0, { timeout: 1500 });
 
-    await expect
-      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
-      .not.toContain('Yoru');
+    await expect.poll(() => activeFabUCharacterHasBond(page, 'Yoru')).toBe(false);
   });
 
   // ── Cross-card sync ───────────────────────────────────────────────────────
@@ -220,9 +216,7 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await page.locator(`[data-pw="bond-delete-${id}"]`).click();
     await confirmDeleteModal(page);
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
-    await expect
-      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
-      .not.toContain('Juice');
+    await expect.poll(() => activeFabUCharacterHasBond(page, 'Juice')).toBe(false);
 
     await page.reload();
 
