@@ -3513,13 +3513,18 @@ function AddListCard({ label, onClick }: { label: string; onClick: () => void })
 
 function TechniqueAddCard({
   selectedKind,
+  canRestoreClassTechnique,
   onSelectKind,
   onCancel,
 }: {
-  selectedKind: 'custom' | 'canon' | null;
-  onSelectKind: (kind: 'custom' | 'canon') => void;
+  selectedKind: 'custom' | 'canon' | 'class' | null;
+  canRestoreClassTechnique: boolean;
+  onSelectKind: (kind: 'custom' | 'canon' | 'class') => void;
   onCancel: () => void;
 }) {
+  const kinds = canRestoreClassTechnique
+    ? (['custom', 'canon', 'class'] as const)
+    : (['custom', 'canon'] as const);
   return (
     <Panel ornament={false}>
       <Stack spacing={1.2}>
@@ -3536,7 +3541,7 @@ function TechniqueAddCard({
           Add Technique
         </Typography>
         <Stack direction="row" gap={1}>
-          {(['custom', 'canon'] as const).map((kind) => {
+          {kinds.map((kind) => {
             const active = selectedKind === kind;
             return (
               <Button
@@ -3558,7 +3563,7 @@ function TechniqueAddCard({
                   },
                 }}
               >
-                {kind === 'custom' ? 'Custom' : 'Canon'}
+                {kind === 'custom' ? 'Custom' : kind === 'canon' ? 'Canon' : 'Class'}
               </Button>
             );
           })}
@@ -4988,18 +4993,23 @@ function CombatPane() {
   const [techFilter, setTechFilter] = useAtom(techniqueFilterAtom);
   const [elementFilter, setElementFilter] = useAtom(techniqueElementAtom);
   const [addTechniqueOpen, setAddTechniqueOpen] = useState(false);
-  const [addTechniqueKind, setAddTechniqueKind] = useState<'custom' | 'canon' | null>(null);
+  const [addTechniqueKind, setAddTechniqueKind] = useState<'custom' | 'canon' | 'class' | null>(
+    null,
+  );
   const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElementFilter>('all');
   const [canonTechniqueName, setCanonTechniqueName] = useState('');
   const [pendingTechniqueDelete, setPendingTechniqueDelete] = useState<number | null>(null);
-  const canonGameSystem = useQuery(
-    api.gameSystems.getById,
-    addTechniqueOpen ? { id: 'avatar-legends' } : 'skip',
-  );
   // Techniques live on the character record (characterStateAtom) so
   // each character carries their own set of known techniques.
   const character = useAtomValue(characterStateAtom);
   const techniques = character.techniques;
+  const canonGameSystem = useQuery(
+    api.gameSystems.getById,
+    addTechniqueOpen ? { id: 'avatar-legends' } : 'skip',
+  );
+  const avatarClass = useQuery(api.classes.getAvatarLegendsClassByName, {
+    className: character.className,
+  }) as AvatarClassData | null | undefined;
   // Filter by both element and proficiency level. techFilter 0 = All
   // (no level filter); 1..3 map to learned / practiced / mastered.
   const visibleTechniques = useMemo(() => {
@@ -5024,6 +5034,21 @@ function CombatPane() {
       .filter((technique): technique is CanonTechnique => Boolean(technique))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [canonGameSystem]);
+  const deletedClassTechnique = useMemo(() => {
+    const technique = coerceAdvancedTechnique(avatarClass, character.primaryTraining);
+    if (!technique) return null;
+    const key = getTechniquePersistenceKey(technique);
+    const deleted = (character.deletedTechniqueKeys ?? []).includes(key);
+    const alreadyPresent = character.techniques.some(
+      (existing) => existing.classTechnique && getTechniquePersistenceKey(existing) === key,
+    );
+    return deleted && !alreadyPresent ? technique : null;
+  }, [
+    avatarClass,
+    character.deletedTechniqueKeys,
+    character.primaryTraining,
+    character.techniques,
+  ]);
   const resetAddTechniqueFlow = () => {
     setAddTechniqueOpen(false);
     setAddTechniqueKind(null);
@@ -5068,6 +5093,18 @@ function CombatPane() {
           level: 'learned',
         },
       ],
+    }));
+    resetAddTechniqueFlow();
+  };
+  const restoreClassTechnique = () => {
+    if (!deletedClassTechnique) return;
+    const key = getTechniquePersistenceKey(deletedClassTechnique);
+    setCharacterState((prev) => ({
+      ...prev,
+      techniques: [...prev.techniques, deletedClassTechnique],
+      deletedTechniqueKeys: (prev.deletedTechniqueKeys ?? []).filter(
+        (deletedKey) => deletedKey !== key,
+      ),
     }));
     resetAddTechniqueFlow();
   };
@@ -5238,11 +5275,13 @@ function CombatPane() {
             {addTechniqueOpen ? (
               <TechniqueAddCard
                 selectedKind={addTechniqueKind}
+                canRestoreClassTechnique={deletedClassTechnique !== null}
                 onSelectKind={(kind) => {
                   setAddTechniqueKind(kind);
                   setCanonTechniqueType('all');
                   setCanonTechniqueName('');
                   if (kind === 'custom') addCustomTechnique();
+                  if (kind === 'class') restoreClassTechnique();
                 }}
                 onCancel={resetAddTechniqueFlow}
               />
