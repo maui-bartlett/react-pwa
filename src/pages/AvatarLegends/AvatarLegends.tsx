@@ -1401,7 +1401,8 @@ function techniqueCategoryColor(category: TechniqueCategory, isDarkMode: boolean
 function techniqueElementVisual(type: TechniqueElement): {
   color: string;
   frameColor?: string;
-  src: string;
+  src?: string;
+  label?: string;
 } {
   if (type === 'earthbending')
     return { color: earth, frameColor: elementFilterFrames.earthbending, src: elementEarth };
@@ -1414,9 +1415,8 @@ function techniqueElementVisual(type: TechniqueElement): {
   if (type === 'technology')
     return { color: tech, frameColor: elementFilterFrames.technology, src: elementTech };
   if (type === 'universal')
-    return { color: ink, frameColor: elementFilterFrames.universal, src: elementWater };
-  if (type === 'group')
-    return { color: brown, frameColor: elementFilterFrames.group, src: elementWeapons };
+    return { color: ink, frameColor: elementFilterFrames.universal, label: 'U' };
+  if (type === 'group') return { color: brown, frameColor: elementFilterFrames.group, label: 'G' };
   return { color: water, frameColor: elementFilterFrames.waterbending, src: elementWater };
 }
 
@@ -3690,7 +3690,7 @@ function CanonTechniquePickerDialog({
                     <Stack direction="row" alignItems="flex-start" spacing={1}>
                       <ElementMark
                         color={chromeText}
-                        label={technique.name.slice(0, 1)}
+                        label={visual.label ?? technique.name.slice(0, 1)}
                         src={visual.src}
                         frameColor={visual.frameColor}
                         size={34}
@@ -4569,6 +4569,7 @@ function TechniqueAccordion({
   description,
   fatigue,
   src,
+  elementLabel,
   techColor,
   frameColor,
   isBasic = false,
@@ -4581,7 +4582,8 @@ function TechniqueAccordion({
   summary: string;
   description: string;
   fatigue: TechniqueFatigue;
-  src: string;
+  src?: string;
+  elementLabel?: string;
   techColor: string;
   frameColor?: string;
   /**
@@ -4666,6 +4668,7 @@ function TechniqueAccordion({
           ) : (
             <ElementMark
               color={techColor}
+              label={elementLabel}
               frameColor={isDarkMode ? undefined : frameColor}
               src={src}
               size={36}
@@ -5144,6 +5147,7 @@ function CombatPane() {
                   isBasic={isBasic}
                   // src is only used when isBasic=false (image badge path).
                   src={visual.src}
+                  elementLabel={visual.label}
                   techColor={isBasic ? ink : visual.color}
                   frameColor={visual.frameColor}
                 />
