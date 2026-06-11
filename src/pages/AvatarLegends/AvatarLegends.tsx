@@ -5079,13 +5079,17 @@ function CombatPane() {
     setCharacterState((prev) => {
       const technique = prev.techniques[pendingTechniqueDelete];
       if (!technique) return prev;
-      const deletedTechniqueKey = getTechniquePersistenceKey(technique);
+      const deletedTechniqueKey = technique.classTechnique
+        ? getTechniquePersistenceKey(technique)
+        : null;
+      const currentDeletedTechniqueKeys = prev.deletedTechniqueKeys ?? [];
       return {
         ...prev,
         techniques: prev.techniques.filter((_, index) => index !== pendingTechniqueDelete),
-        deletedTechniqueKeys: (prev.deletedTechniqueKeys ?? []).includes(deletedTechniqueKey)
-          ? (prev.deletedTechniqueKeys ?? [])
-          : [...(prev.deletedTechniqueKeys ?? []), deletedTechniqueKey],
+        deletedTechniqueKeys:
+          deletedTechniqueKey === null || currentDeletedTechniqueKeys.includes(deletedTechniqueKey)
+            ? currentDeletedTechniqueKeys
+            : [...currentDeletedTechniqueKeys, deletedTechniqueKey],
       };
     });
     setPendingTechniqueDelete(null);
