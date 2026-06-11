@@ -492,6 +492,7 @@ function DiceRoller() {
   const [isRolling, setIsRolling] = useState(false);
   const [isDiceBoxReady, setIsDiceBoxReady] = useState(false);
   const [isResultDismissing, setIsResultDismissing] = useState(false);
+  const [hasVisibleDice, setHasVisibleDice] = useState(false);
   const [isRailClosing, setIsRailClosing] = useState(false);
   const [diceTrayStyle, setDiceTrayStyle] = useState<DiceTrayStyle>(defaultDiceTrayStyle);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
@@ -501,6 +502,7 @@ function DiceRoller() {
     mode: theme.palette.mode,
   });
   const rollSequenceRef = useRef(0);
+  const fadeOutPromiseRef = useRef<Promise<void> | null>(null);
 
   const hasDice = selectedDice.length > 0;
 
@@ -517,7 +519,7 @@ function DiceRoller() {
 
     const refreshTray = () => {
       animationFrame = 0;
-      const nextStyle = getDiceTrayMetrics(isRolling);
+      const nextStyle = getDiceTrayMetrics(isRolling || hasVisibleDice);
       setDiceTrayStyle((currentStyle) => {
         if (areDiceTrayStylesEqual(currentStyle, nextStyle)) return currentStyle;
         requestDiceBoxResize();
@@ -573,7 +575,7 @@ function DiceRoller() {
       disconnectObservers();
       mutationObserver.disconnect();
     };
-  }, [isRolling]);
+  }, [hasVisibleDice, isRolling]);
 
   useEffect(() => {
     const refreshAccent = () => {
@@ -659,19 +661,35 @@ function DiceRoller() {
     setSelectedDice((current) => [...current, { id: Date.now() + current.length, sides }]);
   };
 
-  const dismissRollResult = () => {
-    if (!lastResult || isResultDismissing) return;
+  const fadeOutDisplayedRoll = () => {
+    if (fadeOutPromiseRef.current) return fadeOutPromiseRef.current;
+    if (!lastResult && !hasVisibleDice && !isRolling) return Promise.resolve();
+
     setIsResultDismissing(true);
-    window.setTimeout(() => {
-      diceBoxRef.current?.clear();
-      diceBoxRef.current?.hide();
-      setLastResult(null);
-      setIsResultDismissing(false);
-    }, 180);
+    const fadePromise = new Promise<void>((resolve) => {
+      window.setTimeout(() => {
+        diceBoxRef.current?.clear();
+        diceBoxRef.current?.hide();
+        setLastResult(null);
+        setHasVisibleDice(false);
+        setIsResultDismissing(false);
+        fadeOutPromiseRef.current = null;
+        resolve();
+      }, 180);
+    });
+    fadeOutPromiseRef.current = fadePromise;
+    return fadePromise;
+  };
+
+  const dismissRollResult = () => {
+    void fadeOutDisplayedRoll();
   };
 
   const closeDiceRail = () => {
+    rollSequenceRef.current += 1;
+    setIsRolling(false);
     setSelectedDice([]);
+    void fadeOutDisplayedRoll();
     setIsRailClosing(true);
     window.setTimeout(() => {
       setIsExpanded(false);
@@ -680,17 +698,21 @@ function DiceRoller() {
   };
 
   const rollSelectedDice = async () => {
-    if (!hasDice || isRolling || !diceBoxRef.current || !isDiceBoxReady) {
+    if (!hasDice || isRolling || isResultDismissing || !diceBoxRef.current || !isDiceBoxReady) {
       setIsExpanded(true);
       return;
     }
 
     const rollSequence = rollSequenceRef.current + 1;
     rollSequenceRef.current = rollSequence;
+    await fadeOutDisplayedRoll();
+    if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
+
     const notation = toDiceBoxNotation(selectedDice, appAccent);
     setLastResult(null);
     setIsResultDismissing(false);
     setIsRolling(true);
+    setHasVisibleDice(true);
     setDiceTrayStyle(getDiceTrayMetrics(true));
 
     try {
