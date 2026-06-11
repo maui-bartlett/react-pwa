@@ -4412,7 +4412,7 @@ function MoveAccordion({
                 sx={{
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.86rem',
+                  fontSize: '0.9rem',
                   lineHeight: 1.5,
                   pt: 2,
                   px: 2,
@@ -4444,7 +4444,7 @@ function MoveAccordion({
                     sx={{
                       color: brown,
                       fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.86rem',
+                      fontSize: '0.9rem',
                       lineHeight: 1.45,
                       pt: 0.5,
                       px: 2,
@@ -4462,7 +4462,7 @@ function MoveAccordion({
                 sx={{
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.86rem',
+                  fontSize: '0.9rem',
                   lineHeight: 1.5,
                   pt: 2,
                   px: 2,
@@ -4772,7 +4772,7 @@ function TechniqueAccordion({
                   sx={{
                     color: brown,
                     fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.82rem',
+                    fontSize: '0.86rem',
                     lineHeight: 1.5,
                     '& input': { p: 0 },
                   }}
@@ -4810,7 +4810,7 @@ function TechniqueAccordion({
                   sx={{
                     color: brown,
                     fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.82rem',
+                    fontSize: '0.86rem',
                     lineHeight: 1.5,
                     pb: 0.45,
                     ...(open
@@ -4901,7 +4901,7 @@ function TechniqueAccordion({
                 sx={{
                   color: brown,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.86rem',
+                  fontSize: '0.9rem',
                   lineHeight: 1.5,
                   pt: 2,
                   px: 2,
@@ -5754,7 +5754,7 @@ function ConnectionAccordion({
                         width: '100%',
                         color: brown,
                         fontFamily: 'Georgia, "Times New Roman", serif',
-                        fontSize: '0.86rem',
+                        fontSize: '0.9rem',
                         lineHeight: 1.5,
                         pt: 2.2,
                         px: 2.3,
@@ -5768,7 +5768,7 @@ function ConnectionAccordion({
                       sx={{
                         color: brown,
                         fontFamily: 'Georgia, "Times New Roman", serif',
-                        fontSize: '0.86rem',
+                        fontSize: '0.9rem',
                         lineHeight: 1.5,
                         pt: 2.2,
                         px: 2.3,
@@ -5969,6 +5969,7 @@ function BackpackCard({
                     border: `1px solid ${alpha(border, 0.6)}`,
                     borderRadius: '4px',
                     bgcolor: alpha(parchmentLight, 0.72),
+                    mt: 0.75,
                   }}
                 >
                   {editingField === 'description' ? (
@@ -5987,7 +5988,7 @@ function BackpackCard({
                         width: '100%',
                         color: brown,
                         fontFamily: 'Georgia, "Times New Roman", serif',
-                        fontSize: '0.86rem',
+                        fontSize: '0.9rem',
                         lineHeight: 1.5,
                         pt: 2,
                         px: 2,
@@ -6001,7 +6002,7 @@ function BackpackCard({
                       sx={{
                         color: brown,
                         fontFamily: 'Georgia, "Times New Roman", serif',
-                        fontSize: '0.86rem',
+                        fontSize: '0.9rem',
                         lineHeight: 1.5,
                         pt: 2,
                         px: 2,
@@ -6653,6 +6654,10 @@ function AvatarLegends() {
             boxShadow: {
               xs: 'none',
               sm: `0 26px 70px ${alpha(deepInk, 0.55)}, 0 0 0 1px ${alpha(border, 0.45)}`,
+            },
+            '& input, & textarea': {
+              fontSize: '16px !important',
+              zoom: 0.875,
             },
           }}
         >
