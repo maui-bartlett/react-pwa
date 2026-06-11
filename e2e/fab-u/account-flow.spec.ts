@@ -4,6 +4,7 @@ test.describe('Fab U account flow', () => {
   test('opens account dialog and shows OAuth sign in options', async ({ page }) => {
     // Fab-U lives at /fab-u (home '/' now serves the Avatar Legends page)
     await page.goto('/fab-u');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
     await page.locator('[data-pw="account-menu-button"]').click();
     await expect(page.locator('[data-pw="account-dialog"]')).toBeVisible();

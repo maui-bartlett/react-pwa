@@ -5,8 +5,7 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 test.describe('Bottom nav footer z-index — stays above bond card rows', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('footer has explicit zIndex higher than bond rows', async ({ page }) => {

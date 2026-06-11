@@ -5,9 +5,7 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 test.describe('BondsCard layout fixes (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('+ button is vertically centered within its bond row (within 1px)', async ({ page }) => {

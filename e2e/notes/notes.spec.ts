@@ -1,18 +1,19 @@
 import { devices, expect, test } from '@playwright/test';
 
+import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 test.describe('Notes tab — editable persistent fields (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     // Clear localStorage before each test for a clean slate
     await page.goto('/fab-u');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.evaluate(() => {
       localStorage.removeItem('fab-u-backstory-answers');
       localStorage.removeItem('fab-u-character-notes');
     });
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Notes' }).first().click();
-    await page.waitForLoadState('networkidle');
   });
 
   test('backstory answer fields are visible and editable', async ({ page }) => {
@@ -30,14 +31,17 @@ test.describe('Notes tab — editable persistent fields (mobile viewport)', () =
   test('typed text persists across page reload', async ({ page }) => {
     const firstField = page.locator('textarea:not([aria-hidden])').first();
     await firstField.fill('Persistent answer text');
+    await expect
+      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
+      .toContain('Persistent answer text');
 
     // Reload and navigate back to Notes
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Notes' }).first().click();
-    await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('textarea:not([aria-hidden])').first()).toHaveValue('Persistent answer text');
+    await expect(page.locator('textarea:not([aria-hidden])').first()).toHaveValue(
+      'Persistent answer text',
+    );
   });
 
   test('notes field text persists across page reload', async ({ page }) => {
@@ -47,17 +51,16 @@ test.describe('Notes tab — editable persistent fields (mobile viewport)', () =
     const notesField = fields.nth(count - 1);
 
     await notesField.fill('My persistent campaign notes');
+    await expect
+      .poll(async () => (await readActiveFabUCharacter(page)).notes)
+      .toBe('My persistent campaign notes');
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Notes' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     const reloadedFields = page.locator('textarea:not([aria-hidden])');
     const reloadedCount = await reloadedFields.count();
-    await expect(reloadedFields.nth(reloadedCount - 1)).toHaveValue(
-      'My persistent campaign notes',
-    );
+    await expect(reloadedFields.nth(reloadedCount - 1)).toHaveValue('My persistent campaign notes');
   });
 
   test('focused field border is darker than unfocused', async ({ page }) => {

@@ -1,14 +1,14 @@
 import { devices, expect, test } from '@playwright/test';
 
+import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 test.describe('Zenit editable pill (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.getByRole('button', { name: 'Gear' }).first().click();
-    await page.waitForLoadState('networkidle');
   });
 
   test('Zenit pill shows default value of 30', async ({ page }) => {
@@ -37,20 +37,15 @@ test.describe('Zenit editable pill (mobile viewport)', () => {
     await expect(page.locator('[data-pw="metric-zenit"]')).toContainText('120');
   });
 
-  test('value persists to localStorage and across reload', async ({ page }) => {
+  test('value persists to IndexedDB and across reload', async ({ page }) => {
     await page.locator('[data-pw="metric-zenit"]').click();
     await page.locator('[data-pw="metric-zenit-input"]').fill('250');
     await page.locator('[data-pw="metric-zenit-input"]').blur();
 
-    const stored = await page.evaluate(() =>
-      JSON.parse(localStorage.getItem('fab-u-character') ?? '{}'),
-    );
-    expect(stored.zenit).toBe(250);
+    await expect.poll(async () => (await readActiveFabUCharacter(page)).zenit).toBe(250);
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Gear' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     await expect(page.locator('[data-pw="metric-zenit"]')).toContainText('250');
   });

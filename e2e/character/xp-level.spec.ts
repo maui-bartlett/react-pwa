@@ -5,9 +5,7 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 test.describe('XP and Level editing (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   // ── XP ──────────────────────────────────────────────────────────────────
@@ -34,13 +32,11 @@ test.describe('XP and Level editing (mobile viewport)', () => {
     await input.fill('5');
     await input.blur();
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-pw="metric-ov-xp"]').locator('p').first()).toHaveText('5');
   });
 
   test('Skills XP: tap → editable, edit to 3 → display reads 3 / 10', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-sk-xp"]');
     await pill.click();
     const input = page.locator('[data-pw="metric-sk-xp-input"]');
@@ -66,7 +62,6 @@ test.describe('XP and Level editing (mobile viewport)', () => {
 
   test('Skills LVL: tap → editable, edit to 14 → displays 14', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-sk-level"]');
     await pill.click();
     const input = page.locator('[data-pw="metric-sk-level-input"]');
@@ -78,7 +73,6 @@ test.describe('XP and Level editing (mobile viewport)', () => {
 
   test('Editing level on Skills tab updates non-Overview header eyebrow', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-sk-level"]');
     await pill.click();
     const input = page.locator('[data-pw="metric-sk-level-input"]');
@@ -92,7 +86,6 @@ test.describe('XP and Level editing (mobile viewport)', () => {
     page,
   }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     const eyebrow = page.locator('[data-pw="header-eyebrow"]');
     await eyebrow.click();
     // No input should appear after clicking the eyebrow
@@ -107,14 +100,12 @@ test.describe('XP and Level editing (mobile viewport)', () => {
 
   test('Skills SummaryStrip label shows LVL', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     // The label text inside the metric-sk-level pill
     await expect(page.locator('[data-pw="metric-sk-level"]')).toContainText('LVL');
   });
 
   test('Non-Overview header eyebrow reads LVL (not LV)', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-pw="header-eyebrow"]')).toHaveText(/LVL/);
     await expect(page.locator('[data-pw="header-eyebrow"]')).not.toHaveText(/\bLV\b/);
   });

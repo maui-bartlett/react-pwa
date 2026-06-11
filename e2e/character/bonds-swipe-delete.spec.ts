@@ -1,5 +1,7 @@
 import { type Page, devices, expect, test } from '@playwright/test';
 
+import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+
 /** Confirm the deletion modal that now gates every destructive action. */
 async function confirmDeleteModal(page: Page) {
   const btn = page.locator('[data-pw="confirm-delete-confirm"]');
@@ -121,9 +123,7 @@ async function touchSwipeLeftPartial(page: Page, bondId: string, distancePx: num
 test.describe('Bond swipe-to-delete (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   // ── Threshold removes bond ────────────────────────────────────────────────
@@ -141,8 +141,9 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     // Row removed from DOM after collapse animation
     await expect(row).toHaveCount(0, { timeout: 1500 });
 
-    const stored = await page.evaluate(() => localStorage.getItem('fab-u-character'));
-    expect(stored).not.toContain('Jelena');
+    await expect
+      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
+      .not.toContain('Jelena');
   });
 
   // ── Sub-threshold springs back ────────────────────────────────────────────
@@ -191,8 +192,9 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
 
     await expect(row).toHaveCount(0, { timeout: 1500 });
 
-    const stored = await page.evaluate(() => localStorage.getItem('fab-u-character'));
-    expect(stored).not.toContain('Yoru');
+    await expect
+      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
+      .not.toContain('Yoru');
   });
 
   // ── Cross-card sync ───────────────────────────────────────────────────────
@@ -205,7 +207,6 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
 
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0);
     await expect(page.locator('text=Granada')).toHaveCount(0);
@@ -219,9 +220,11 @@ test.describe('Bond swipe-to-delete (mobile viewport)', () => {
     await page.locator(`[data-pw="bond-delete-${id}"]`).click();
     await confirmDeleteModal(page);
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0, { timeout: 1500 });
+    await expect
+      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
+      .not.toContain('Juice');
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
 
     await expect(page.locator(`[data-pw="bond-row-${id}"]`)).toHaveCount(0);
     await expect(page.locator('text=Juice')).toHaveCount(0);
@@ -285,9 +288,7 @@ test.describe('Bond × button absent on touch device', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('× button not in DOM when pointer is coarse (touch device)', async ({ page }) => {

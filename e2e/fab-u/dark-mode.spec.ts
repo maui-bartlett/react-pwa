@@ -3,12 +3,12 @@ import { expect, test } from '@playwright/test';
 test.describe('Dark mode', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.evaluate(() => {
-      localStorage.removeItem('fab-u-character');
       localStorage.setItem('theme-mode', '"dark"');
     });
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   // ── Canvas is rich black ────────────────────────────────────────────────────
@@ -24,9 +24,10 @@ test.describe('Dark mode', () => {
     const match = canvasBg!.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     expect(match, 'background should be an rgb color').toBeTruthy();
     const brightness = (parseInt(match![1]) + parseInt(match![2]) + parseInt(match![3])) / 3;
-    expect(brightness, `canvas brightness should be very dark (< 30), got ${canvasBg}`).toBeLessThan(
-      30,
-    );
+    expect(
+      brightness,
+      `canvas brightness should be very dark (< 30), got ${canvasBg}`,
+    ).toBeLessThan(30);
   });
 
   // ── Section labels are dark green in dark mode ─────────────────────────────
@@ -50,12 +51,19 @@ test.describe('Dark mode', () => {
       const b = parseInt(bgMatch![3]);
       const brightness = (r + g + b) / 3;
       // Both modes use #315c4d → rgb(49,92,77): G > R (green-ish), brightness ≈ 73.
-      expect(g, `section label bg should be green-ish (G=${g} > R=${r}), got: ${bg}`).toBeGreaterThan(r);
+      expect(
+        g,
+        `section label bg should be green-ish (G=${g} > R=${r}), got: ${bg}`,
+      ).toBeGreaterThan(r);
       // Text should be light (white #fff → brightness ≈ 255).
       const colorMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
       if (colorMatch) {
-        const textBrightness = (parseInt(colorMatch[1]) + parseInt(colorMatch[2]) + parseInt(colorMatch[3])) / 3;
-        expect(textBrightness, `section label text should be near-white (> 200), got: ${color}`).toBeGreaterThan(200);
+        const textBrightness =
+          (parseInt(colorMatch[1]) + parseInt(colorMatch[2]) + parseInt(colorMatch[3])) / 3;
+        expect(
+          textBrightness,
+          `section label text should be near-white (> 200), got: ${color}`,
+        ).toBeGreaterThan(200);
       }
     }
   });
@@ -108,13 +116,17 @@ test.describe('Dark mode', () => {
   // ── Scrollbar is styled in dark mode ──────────────────────────────────────
 
   test('scrollbar is styled (dark track) in dark mode', async ({ page }) => {
-    const scrollbarColor = await page.evaluate(() => getComputedStyle(document.body).scrollbarColor);
+    const scrollbarColor = await page.evaluate(
+      () => getComputedStyle(document.body).scrollbarColor,
+    );
     // Firefox exposes scrollbar-color: "<thumb> <track>".
     // In dark mode it should contain the dark border token (#263530).
     // WebKit doesn't expose scrollbar-color via getComputedStyle; we just verify the property
     // is non-empty when set (Firefox) or skip gracefully (Chromium).
     if (scrollbarColor && scrollbarColor !== 'auto') {
-      expect(scrollbarColor, 'scrollbar-color should contain dark values in dark mode').not.toBe('');
+      expect(scrollbarColor, 'scrollbar-color should contain dark values in dark mode').not.toBe(
+        '',
+      );
     }
     // Verify the GlobalStyles were injected by checking a stylesheet rule exists.
     const hasScrollbarRule = await page.evaluate(() => {
@@ -137,7 +149,7 @@ test.describe('Dark mode', () => {
   test('light mode still works — section labels are medium green', async ({ page }) => {
     await page.evaluate(() => localStorage.setItem('theme-mode', '"light"'));
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
     const labelBgs = await page.evaluate(() => {
       return Array.from(document.querySelectorAll('[data-pw="section-label"]')).map(
@@ -157,7 +169,10 @@ test.describe('Dark mode', () => {
         g,
         `section label in light mode should be green (G=${g} > R=${r}), got: ${bg}`,
       ).toBeGreaterThan(r);
-      expect(brightness, `light mode label should be medium brightness (> 50), got: ${bg}`).toBeGreaterThan(50);
+      expect(
+        brightness,
+        `light mode label should be medium brightness (> 50), got: ${bg}`,
+      ).toBeGreaterThan(50);
     }
   });
 

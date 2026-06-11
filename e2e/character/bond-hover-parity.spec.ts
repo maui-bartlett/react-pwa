@@ -51,9 +51,7 @@ async function revealDeleteAction(page: import('@playwright/test').Page, bondId:
  */
 test('bond + button and delete action keep their intended dimensions', async ({ page }) => {
   await page.goto('/fab-u');
-  await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-  await page.reload();
-  await page.waitForLoadState('networkidle');
+  await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
   // Resolve bond ID by name
   const row = page.locator('[data-pw^="bond-row-"]').filter({ hasText: 'Jelena' }).first();
@@ -74,28 +72,12 @@ test('bond + button and delete action keep their intended dimensions', async ({ 
   expect(delIconBox).not.toBeNull();
 
   // Both should be 28×28px (icon 20px + padding 4px × 2)
-  expect(
-    addBox!.width,
-    `+ button width was ${addBox!.width}px`,
-  ).toBeCloseTo(28, 0);
-  expect(
+  expect(addBox!.width, `+ button width was ${addBox!.width}px`).toBeCloseTo(28, 0);
+  expect(addBox!.height, `+ button height was ${addBox!.height}px`).toBeCloseTo(28, 0);
+  expect(delBox!.width, `delete action width was ${delBox!.width}px`).toBeCloseTo(64, 0);
+  expect(delBox!.height, `delete action height was ${delBox!.height}px`).toBeGreaterThanOrEqual(
     addBox!.height,
-    `+ button height was ${addBox!.height}px`,
-  ).toBeCloseTo(28, 0);
-  expect(
-    delBox!.width,
-    `delete action width was ${delBox!.width}px`,
-  ).toBeCloseTo(64, 0);
-  expect(
-    delBox!.height,
-    `delete action height was ${delBox!.height}px`,
-  ).toBeGreaterThanOrEqual(addBox!.height);
-  expect(
-    delIconBox!.width,
-    `delete icon width was ${delIconBox!.width}px`,
-  ).toBeCloseTo(18, 0);
-  expect(
-    delIconBox!.height,
-    `delete icon height was ${delIconBox!.height}px`,
-  ).toBeCloseTo(18, 0);
+  );
+  expect(delIconBox!.width, `delete icon width was ${delIconBox!.width}px`).toBeCloseTo(18, 0);
+  expect(delIconBox!.height, `delete icon height was ${delIconBox!.height}px`).toBeCloseTo(18, 0);
 });

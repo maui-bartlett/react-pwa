@@ -7,9 +7,7 @@ import { expect, test } from '@playwright/test';
 test.describe('Attribute pill spacing', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('all 4 attribute pills have height ≥ 48px', async ({ page }) => {

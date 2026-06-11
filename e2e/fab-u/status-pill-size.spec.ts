@@ -11,13 +11,10 @@ test.describe('Status Effects pill size increase', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
     // Status Effects accordion is on the Combat tab
     await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
-    await page.waitForLoadState('networkidle');
 
     // Open the accordion to reveal the full-size StatusPillGroup
     const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
@@ -94,7 +91,10 @@ test.describe('Status Effects pill size increase', () => {
     const slowPill = page.locator('[data-pw="status-pill-slow"]');
     const shakenPill = page.locator('[data-pw="status-pill-shaken"]');
 
-    const cardEl = page.locator('[data-pw="status-effects-accordion-toggle"]').locator('xpath=ancestor::*[contains(@class,"MuiPaper")]').first();
+    const cardEl = page
+      .locator('[data-pw="status-effects-accordion-toggle"]')
+      .locator('xpath=ancestor::*[contains(@class,"MuiPaper")]')
+      .first();
     const cardBox = await cardEl.boundingBox();
     const slowBox = await slowPill.boundingBox();
     const shakenBox = await shakenPill.boundingBox();
@@ -104,9 +104,8 @@ test.describe('Status Effects pill size increase', () => {
     expect(shakenBox).not.toBeNull();
 
     expect(slowBox!.x, 'Slow pill overflows card left').toBeGreaterThanOrEqual(cardBox!.x);
-    expect(
-      shakenBox!.x + shakenBox!.width,
-      'Shaken pill overflows card right',
-    ).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
+    expect(shakenBox!.x + shakenBox!.width, 'Shaken pill overflows card right').toBeLessThanOrEqual(
+      cardBox!.x + cardBox!.width + 1,
+    );
   });
 });

@@ -9,9 +9,7 @@ import { expect, test } from '@playwright/test';
 test.describe('StatPill slash position parity', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('slash x position unchanged between display and edit mode (HP overview)', async ({
@@ -33,7 +31,10 @@ test.describe('StatPill slash position parity', () => {
     expect(editBox).not.toBeNull();
 
     const diff = Math.abs(editBox!.x - displayBox!.x);
-    expect(diff, `slash shifted by ${diff}px (display x=${displayBox!.x}, edit x=${editBox!.x})`).toBeLessThanOrEqual(1);
+    expect(
+      diff,
+      `slash shifted by ${diff}px (display x=${displayBox!.x}, edit x=${editBox!.x})`,
+    ).toBeLessThanOrEqual(1);
   });
 
   test('slash x position unchanged between display and edit mode (MP overview)', async ({

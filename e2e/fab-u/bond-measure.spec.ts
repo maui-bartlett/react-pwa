@@ -7,9 +7,7 @@ test('measure bond add/delete button sizes', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'requires Touch/TouchEvent constructors');
 
   await page.goto('/fab-u');
-  await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-  await page.reload();
-  await page.waitForLoadState('networkidle');
+  await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
   // Get bond ID for Jelena
   const row = page.locator('[data-pw^="bond-row-"]').filter({ hasText: 'Jelena' }).first();
@@ -91,16 +89,30 @@ test('measure bond add/delete button sizes', async ({ page, browserName }) => {
   // Get the icon sizes
   const addIconStyles = await addBtn.locator('svg').evaluate((el) => {
     const cs = getComputedStyle(el);
-    return { fontSize: cs.fontSize, width: el.getAttribute('width'), height: el.getAttribute('height') };
+    return {
+      fontSize: cs.fontSize,
+      width: el.getAttribute('width'),
+      height: el.getAttribute('height'),
+    };
   });
 
   const delIconStyles = await delBtn.locator('svg').evaluate((el) => {
     const cs = getComputedStyle(el);
-    return { fontSize: cs.fontSize, width: el.getAttribute('width'), height: el.getAttribute('height') };
+    return {
+      fontSize: cs.fontSize,
+      width: el.getAttribute('width'),
+      height: el.getAttribute('height'),
+    };
   });
 
-  console.log('ADD button:', JSON.stringify({ box: addBox, styles: addStyles, icon: addIconStyles }, null, 2));
-  console.log('DEL button:', JSON.stringify({ box: delBox, styles: delStyles, icon: delIconStyles }, null, 2));
+  console.log(
+    'ADD button:',
+    JSON.stringify({ box: addBox, styles: addStyles, icon: addIconStyles }, null, 2),
+  );
+  console.log(
+    'DEL button:',
+    JSON.stringify({ box: delBox, styles: delStyles, icon: delIconStyles }, null, 2),
+  );
 
   // This is just a measurement test — always passes
   expect(true).toBe(true);

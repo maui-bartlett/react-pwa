@@ -1,5 +1,7 @@
 import { devices, expect, test } from '@playwright/test';
 
+import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 const pillValue = (page: import('@playwright/test').Page, pillId: string, value: string) =>
@@ -8,8 +10,7 @@ const pillValue = (page: import('@playwright/test').Page, pillId: string, value:
 test.describe('Attribute pills — die + modifier picker (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     // Overview tab has Attributes & Stats card with bottomRow attribute pills
   });
 
@@ -75,21 +76,18 @@ test.describe('Attribute pills — die + modifier picker (mobile viewport)', () 
     await expect(page.getByText('d8 + 1')).not.toBeVisible();
   });
 
-  test('attribute changes persist to localStorage and survive reload', async ({ page }) => {
+  test('attribute changes persist to IndexedDB and survive reload', async ({ page }) => {
     await page.getByText('Insight').click();
     await page.locator('[data-pw="attr-die-select"]').selectOption('d12');
     const modSelect = page.locator('[data-pw="attr-mod-select"]');
     await modSelect.selectOption('3');
     await page.keyboard.press('Escape');
 
-    const stored = await page.evaluate(
-      () => JSON.parse(localStorage.getItem('fab-u-character') ?? '{}'),
-    );
-    expect(stored.attributes.insight.die).toBe('d12');
-    expect(stored.attributes.insight.modifier).toBe(3);
+    await expect
+      .poll(async () => readActiveFabUCharacter(page))
+      .toMatchObject({ attributes: { insight: { die: 'd12', modifier: 3 } } });
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
 
     await expect(pillValue(page, 'attr-pill-insight', 'd12 + 3')).toBeVisible();
   });
@@ -100,7 +98,6 @@ test.describe('Attribute pills — die + modifier picker (mobile viewport)', () 
     await page.keyboard.press('Escape');
 
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     await expect(pillValue(page, 'attr-pill-might', 'd10')).toBeVisible();
   });

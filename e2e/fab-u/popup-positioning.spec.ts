@@ -20,14 +20,12 @@ test.describe('Popup positioning and border styling', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    // Full clear so theme defaults to dark (atomWithStorage default = DARK)
-    await page.evaluate(() => localStorage.clear());
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+    await page.evaluate(() => localStorage.removeItem('theme-mode'));
     await page.reload();
-    await page.waitForLoadState('networkidle');
 
     // Navigate to Combat tab (default = overview after reload)
     await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
-    await page.waitForLoadState('networkidle');
   });
 
   // ─── AttributePill popup ───────────────────────────────────────────────────
@@ -156,9 +154,7 @@ test.describe('Popup positioning and border styling', () => {
     const popup = page.locator('[data-pw="attr-popup"]');
     await expect(popup).toBeVisible();
 
-    const borderColor = await popup.evaluate(
-      (el) => window.getComputedStyle(el).borderTopColor,
-    );
+    const borderColor = await popup.evaluate((el) => window.getComputedStyle(el).borderTopColor);
     // #ffffff → rgb(255, 255, 255)
     expect(borderColor, `dark-mode border should be white, got ${borderColor}`).toBe(
       'rgb(255, 255, 255)',
@@ -177,9 +173,7 @@ test.describe('Popup positioning and border styling', () => {
     const popup = page.locator('[data-pw="attr-popup"]');
     await expect(popup).toBeVisible();
 
-    const borderColor = await popup.evaluate(
-      (el) => window.getComputedStyle(el).borderTopColor,
-    );
+    const borderColor = await popup.evaluate((el) => window.getComputedStyle(el).borderTopColor);
     // color.brand = #315c4d → rgb(49, 92, 77)
     expect(borderColor, `light-mode border should be brand green, got ${borderColor}`).toBe(
       'rgb(49, 92, 77)',
@@ -192,9 +186,7 @@ test.describe('Popup positioning and border styling', () => {
     const menu = page.locator('[data-pw="bond-type-menu"]');
     await expect(menu).toBeVisible();
 
-    const borderColor = await menu.evaluate(
-      (el) => window.getComputedStyle(el).borderTopColor,
-    );
+    const borderColor = await menu.evaluate((el) => window.getComputedStyle(el).borderTopColor);
     expect(borderColor, `dark-mode bond menu border should be white, got ${borderColor}`).toBe(
       'rgb(255, 255, 255)',
     );
@@ -212,13 +204,12 @@ test.describe('Popup positioning and border styling', () => {
     const menu = page.locator('[data-pw="bond-type-menu"]');
     await expect(menu).toBeVisible();
 
-    const borderColor = await menu.evaluate(
-      (el) => window.getComputedStyle(el).borderTopColor,
-    );
+    const borderColor = await menu.evaluate((el) => window.getComputedStyle(el).borderTopColor);
     // color.brand = #315c4d → rgb(49, 92, 77)
-    expect(borderColor, `light-mode bond menu border should be brand green, got ${borderColor}`).toBe(
-      'rgb(49, 92, 77)',
-    );
+    expect(
+      borderColor,
+      `light-mode bond menu border should be brand green, got ${borderColor}`,
+    ).toBe('rgb(49, 92, 77)');
   });
 
   // ─── Background color — dark mode (default) ───────────────────────────────

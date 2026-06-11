@@ -30,8 +30,7 @@ test.describe('Bond row — vertical scroll pass-through', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   // ── Direction gate (synthetic events) ──────────────────────────────────────
@@ -128,10 +127,7 @@ test.describe('Bond row — vertical scroll pass-through', () => {
       };
     });
     expect(scrollInfo).not.toBeNull();
-    expect(
-      scrollInfo!.cy,
-      'target y must be within viewport',
-    ).toBeLessThan(scrollInfo!.viewportH);
+    expect(scrollInfo!.cy, 'target y must be within viewport').toBeLessThan(scrollInfo!.viewportH);
 
     const before = await getScrollTop(page);
 
@@ -146,9 +142,10 @@ test.describe('Bond row — vertical scroll pass-through', () => {
     });
 
     const after = await getScrollTop(page);
-    expect(after, 'scrollTop should increase after vertical drag in scroll container').toBeGreaterThan(
-      before,
-    );
+    expect(
+      after,
+      'scrollTop should increase after vertical drag in scroll container',
+    ).toBeGreaterThan(before);
   });
 
   // ── Sub-commit horizontal drag: no visual slide ──────────────────────────

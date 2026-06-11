@@ -5,13 +5,12 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function navigateTo(page: any, tab: string) {
   await page.locator('[data-pw="app-footer"]').getByText(tab).click();
-  await page.waitForLoadState('networkidle');
 }
 
 test.describe('HeaderBar — eyebrow text per tab (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('Overview eyebrow contains "Fabula" and "Ultima" text with a sparkle SVG', async ({

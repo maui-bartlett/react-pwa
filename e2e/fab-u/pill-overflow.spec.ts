@@ -14,14 +14,11 @@ import { expect, test } from '@playwright/test';
 test.describe('Pill overflow and slash fixes', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('Defense suffix stays within pill bounds', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     const pill = page.locator('[data-pw="statpill-cb-defense"]');
     await expect(pill).toBeVisible();
@@ -43,7 +40,6 @@ test.describe('Pill overflow and slash fixes', () => {
 
   test('Magic Def. suffix stays within pill bounds', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     const pill = page.locator('[data-pw="statpill-cb-magic-defense"]');
     await expect(pill).toBeVisible();

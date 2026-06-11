@@ -15,9 +15,8 @@ async function openStatusEffects(page: import('@playwright/test').Page) {
 test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     // Status effects are inside a collapsed accordion — open it first
     await openStatusEffects(page);
   });
@@ -33,20 +32,36 @@ test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile view
     const dropBB = await page.locator('[data-pw="left-drop"]').first().boundingBox();
 
     const pillBottom = pillBB!.y + pillBB!.height;
-    const dropTop    = dropBB!.y;
+    const dropTop = dropBB!.y;
 
-    console.log('BEFORE: pill bottom =', pillBottom, '| drop top =', dropTop, '| gap =', dropTop - pillBottom);
+    console.log(
+      'BEFORE: pill bottom =',
+      pillBottom,
+      '| drop top =',
+      dropTop,
+      '| gap =',
+      dropTop - pillBottom,
+    );
     expect(Math.abs(dropTop - pillBottom)).toBeLessThanOrEqual(TOLERANCE);
   });
 
-  test('right-drop top is flush with Dazed pill outer bottom edge (within 1px)', async ({ page }) => {
+  test('right-drop top is flush with Dazed pill outer bottom edge (within 1px)', async ({
+    page,
+  }) => {
     const pillBB = await page.locator('[data-pw="status-pill-dazed"]').boundingBox();
     const dropBB = await page.locator('[data-pw="right-drop"]').first().boundingBox();
 
     const pillBottom = pillBB!.y + pillBB!.height;
-    const dropTop    = dropBB!.y;
+    const dropTop = dropBB!.y;
 
-    console.log('Dazed pill bottom =', pillBottom, '| drop top =', dropTop, '| gap =', dropTop - pillBottom);
+    console.log(
+      'Dazed pill bottom =',
+      pillBottom,
+      '| drop top =',
+      dropTop,
+      '| gap =',
+      dropTop - pillBottom,
+    );
     expect(Math.abs(dropTop - pillBottom)).toBeLessThanOrEqual(TOLERANCE);
   });
 
@@ -56,16 +71,23 @@ test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile view
     // Center stem has no data-pw — locate it by position: it is the sibling Box
     // between the horizontal and the Enraged pill. Use the Enraged pill's top.
     const enragedBB = await page.locator('[data-pw="status-pill-enraged"]').boundingBox();
-    const dropBB    = await page.locator('[data-pw="left-drop"]').first().boundingBox();
+    const dropBB = await page.locator('[data-pw="left-drop"]').first().boundingBox();
 
     // Reconstruct: stem bottom = container_top + H_TOP + STEM_H
     // We know container_top from drop top - PILL_H
     const containerTop = dropBB!.y - 41; // PILL_H = 41
-    const stemBottom   = containerTop + 51 + 12; // H_TOP + STEM_H
+    const stemBottom = containerTop + 51 + 12; // H_TOP + STEM_H
 
     const enragedTop = enragedBB!.y;
 
-    console.log('Stem bottom =', stemBottom, '| Enraged top =', enragedTop, '| gap =', enragedTop - stemBottom);
+    console.log(
+      'Stem bottom =',
+      stemBottom,
+      '| Enraged top =',
+      enragedTop,
+      '| gap =',
+      enragedTop - stemBottom,
+    );
     expect(Math.abs(stemBottom - enragedTop)).toBeLessThanOrEqual(TOLERANCE);
   });
 
@@ -75,10 +97,10 @@ test.describe('StatusEffectsDiagram — bracket connectors geometry (mobile view
   });
 
   test('second group (Weak/Shaken → Poisoned) has same geometry', async ({ page }) => {
-    const weakBB    = await page.locator('[data-pw="status-pill-weak"]').boundingBox();
-    const shakenBB  = await page.locator('[data-pw="status-pill-shaken"]').boundingBox();
-    const drop2L    = await page.locator('[data-pw="left-drop"]').nth(1).boundingBox();
-    const drop2R    = await page.locator('[data-pw="right-drop"]').nth(1).boundingBox();
+    const weakBB = await page.locator('[data-pw="status-pill-weak"]').boundingBox();
+    const shakenBB = await page.locator('[data-pw="status-pill-shaken"]').boundingBox();
+    const drop2L = await page.locator('[data-pw="left-drop"]').nth(1).boundingBox();
+    const drop2R = await page.locator('[data-pw="right-drop"]').nth(1).boundingBox();
 
     expect(Math.abs(drop2L!.y - (weakBB!.y + weakBB!.height))).toBeLessThanOrEqual(TOLERANCE);
     expect(Math.abs(drop2R!.y - (shakenBB!.y + shakenBB!.height))).toBeLessThanOrEqual(TOLERANCE);

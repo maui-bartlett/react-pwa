@@ -7,11 +7,7 @@ import { expect, test } from '@playwright/test';
 test.describe('Card heading→content spacing', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => {
-      localStorage.removeItem('fab-u-character');
-    });
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('all labeled SurfaceCards have consistent paddingTop (≈27px)', async ({ page }) => {
@@ -20,12 +16,14 @@ test.describe('Card heading→content spacing', () => {
     // section-label elements and walk up to their grandparent Paper.
     const paddings = await page.evaluate(() => {
       const labels = Array.from(document.querySelectorAll('[data-pw="section-label"]'));
-      return labels.map((label) => {
-        // label → wrapper Box → Paper (SurfaceCard root)
-        const card = label.parentElement?.parentElement as HTMLElement | null;
-        if (!card) return null;
-        return parseFloat(getComputedStyle(card).paddingTop);
-      }).filter((v): v is number => v !== null);
+      return labels
+        .map((label) => {
+          // label → wrapper Box → Paper (SurfaceCard root)
+          const card = label.parentElement?.parentElement as HTMLElement | null;
+          if (!card) return null;
+          return parseFloat(getComputedStyle(card).paddingTop);
+        })
+        .filter((v): v is number => v !== null);
     });
 
     expect(paddings.length, 'should find labeled SurfaceCards').toBeGreaterThan(0);

@@ -17,10 +17,9 @@ async function openStatusEffects(page: import('@playwright/test').Page) {
 test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.evaluate(() => localStorage.removeItem('fab-u-status-effects'));
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     // Status effects are inside a collapsed accordion — open it first
     await openStatusEffects(page);
   });
@@ -112,9 +111,7 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
     );
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     await openStatusEffects(page);
 
     await expect(page.locator('[data-pw="status-pill-slow"]')).not.toHaveCSS(
@@ -203,9 +200,7 @@ test.describe('StatusEffects — toggleable pills (mobile viewport)', () => {
     );
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     await openStatusEffects(page);
 
     await expect(page.locator('[data-pw="status-pill-slow"]')).not.toHaveCSS(

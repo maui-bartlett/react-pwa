@@ -23,12 +23,9 @@ test.describe('Status Effects accordion smooth close', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     // Status Effects accordion is on the Combat tab
     await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
-    await page.waitForLoadState('networkidle');
   });
 
   test('accordion closes smoothly — detail pills gone, summary pills visible after close', async ({

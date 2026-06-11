@@ -5,9 +5,8 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 test.describe('Gear tab — Backpack add-item affordance (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.getByRole('button', { name: 'Gear' }).first().click();
-    await page.waitForLoadState('networkidle');
   });
 
   test('Backpack section has a "+ Item" add affordance at the bottom', async ({ page }) => {

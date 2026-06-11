@@ -1,14 +1,14 @@
 import { devices, expect, test } from '@playwright/test';
 
+import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 test.describe('HP / MP editable pills — Spells tab (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
   });
 
   test('HP pill shows currentHP with / totalHP suffix', async ({ page }) => {
@@ -72,16 +72,12 @@ test.describe('HP / MP editable pills — Spells tab (mobile viewport)', () => {
     await page.locator('[data-pw="metric-mp-input"]').fill('17');
     await page.locator('[data-pw="metric-mp-input"]').blur();
 
-    const stored = await page.evaluate(
-      () => JSON.parse(localStorage.getItem('fab-u-character') ?? '{}'),
-    );
-    expect(stored.currentHP).toBe(33);
-    expect(stored.currentMP).toBe(17);
+    await expect
+      .poll(async () => readActiveFabUCharacter(page))
+      .toMatchObject({ currentHP: 33, currentMP: 17 });
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     await expect(page.locator('[data-pw="metric-hp"]')).toContainText('33');
     await expect(page.locator('[data-pw="metric-mp"]')).toContainText('17');

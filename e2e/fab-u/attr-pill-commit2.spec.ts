@@ -10,9 +10,7 @@ import { expect, test } from '@playwright/test';
 test.describe('AttributePill popup polish + Status Effects layout', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('Mod select background matches Base select background', async ({ page }) => {
@@ -34,10 +32,7 @@ test.describe('AttributePill popup polish + Status Effects layout', () => {
       return window.getComputedStyle(el).backgroundColor;
     });
 
-    expect(
-      modBg,
-      `Mod input bg (${modBg}) should match Base select bg (${baseBg})`,
-    ).toBe(baseBg);
+    expect(modBg, `Mod input bg (${modBg}) should match Base select bg (${baseBg})`).toBe(baseBg);
   });
 
   test('Resting pill shows temp die in parens when temp is set', async ({ page }) => {
@@ -69,12 +64,14 @@ test.describe('AttributePill popup polish + Status Effects layout', () => {
 
   test('Status Effects pills fit within card with equal left/right padding', async ({ page }) => {
     await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
-    await page.waitForLoadState('networkidle');
     const toggle = page.locator('[data-pw="status-effects-accordion-toggle"]');
     await toggle.click({ position: { x: 8, y: 8 } });
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
-    const card = page.locator('[data-pw="status-pill-slow"]').locator('xpath=ancestor::*[contains(@class,"MuiPaper")]').first();
+    const card = page
+      .locator('[data-pw="status-pill-slow"]')
+      .locator('xpath=ancestor::*[contains(@class,"MuiPaper")]')
+      .first();
 
     // Locate a known pill on each side
     const leftPill = page.locator('[data-pw="status-pill-slow"]');

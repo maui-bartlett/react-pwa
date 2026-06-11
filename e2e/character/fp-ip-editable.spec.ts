@@ -1,15 +1,15 @@
 import { devices, expect, test } from '@playwright/test';
 
+import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 test.describe('FP / IP editable pills (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     // Navigate to Spells tab which shows both FP and IP resource pills
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
   });
 
   test('FP pill: click opens input, non-digit stripped, value commits on blur', async ({
@@ -38,7 +38,6 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
 
   test('IP pill: click opens input, value commits, blur shows new value', async ({ page }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
     const ipPill = page.locator('[data-pw="metric-ip"]');
     const input = page.locator('[data-pw="metric-ip-input"]');
 
@@ -61,24 +60,17 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
 
     // Edit IP
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
     await page.locator('[data-pw="metric-ip"]').click();
     await page.locator('[data-pw="metric-ip-input"]').fill('15');
     await page.locator('[data-pw="metric-ip-input"]').blur();
 
-    // Verify localStorage has the values
-    const stored = await page.evaluate(
-      () => JSON.parse(localStorage.getItem('fab-u-character') ?? '{}'),
-    );
-    console.log('Stored character:', stored);
-    expect(stored.fabulaPoints).toBe(7);
-    expect(stored.inventoryPoints).toBe(15);
+    await expect
+      .poll(async () => readActiveFabUCharacter(page))
+      .toMatchObject({ fabulaPoints: 7, inventoryPoints: 15 });
 
     // Reload and verify
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
 
     await expect(page.locator('[data-pw="metric-fp"]')).toContainText('7');
     await expect(page.locator('[data-pw="metric-ip"]')).toContainText('15');

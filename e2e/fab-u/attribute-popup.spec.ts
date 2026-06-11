@@ -7,9 +7,7 @@ const ATTRS = ['dexterity', 'insight', 'might', 'willpower'];
 test.describe('Attribute popup overhaul', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   for (const attr of ATTRS) {
@@ -63,14 +61,8 @@ test.describe('Attribute popup overhaul', () => {
       expect(modBox).not.toBeNull();
       expect(tempBox).not.toBeNull();
 
-      expect(
-        modBox!.y,
-        'Mod should be below Base',
-      ).toBeGreaterThan(baseBox!.y);
-      expect(
-        tempBox!.y,
-        'Temp should be below Mod',
-      ).toBeGreaterThan(modBox!.y);
+      expect(modBox!.y, 'Mod should be below Base').toBeGreaterThan(baseBox!.y);
+      expect(tempBox!.y, 'Temp should be below Mod').toBeGreaterThan(modBox!.y);
 
       await page.keyboard.press('Escape');
     });

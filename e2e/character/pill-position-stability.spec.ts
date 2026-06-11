@@ -27,8 +27,7 @@ async function measureShift(
 test.describe('Pill value position stability on edit toggle (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('Overview IP (StatPill inline, no suffix) — x stable within tolerance', async ({ page }) => {
@@ -57,7 +56,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Combat FP (StatPill inline, no suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="statpill-cb-fp"]');
     const valueEl = pill.locator('h6').first();
     const input = page.locator('[data-pw="statpill-cb-fp-input"]');
@@ -67,7 +65,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Combat IP (StatPill inline, no suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="statpill-cb-ip"]');
     const valueEl = pill.locator('h6').first();
     const input = page.locator('[data-pw="statpill-cb-ip-input"]');
@@ -77,7 +74,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Combat HP (StatPill inline, with suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="statpill-cb-hp"]');
     const valueEl = pill.locator('h6').first();
     const input = page.locator('[data-pw="statpill-cb-hp-input"]');
@@ -87,7 +83,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Combat MP (StatPill inline, with suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="statpill-cb-mp"]');
     const valueEl = pill.locator('h6').first();
     const input = page.locator('[data-pw="statpill-cb-mp-input"]');
@@ -97,7 +92,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Skills FP (SummaryStrip, no suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-fp"]');
     const valueEl = pill.locator('p').first();
     const input = page.locator('[data-pw="metric-fp-input"]');
@@ -112,7 +106,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Spells IP (SummaryStrip, no suffix) — x stable within tolerance', async ({ page }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-ip"]');
     const valueEl = pill.locator('p').first();
     const input = page.locator('[data-pw="metric-ip-input"]');
@@ -127,7 +120,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Gear Zenit (SummaryStrip, no suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Gear' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-zenit"]');
     const valueEl = pill.locator('p').first();
     const input = page.locator('[data-pw="metric-zenit-input"]');
@@ -142,7 +134,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
 
   test('Spells HP (SummaryStrip, with suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-hp"]');
     const valueEl = pill.locator('p').first();
     const input = page.locator('[data-pw="metric-hp-input"]');

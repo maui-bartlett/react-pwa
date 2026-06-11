@@ -14,9 +14,7 @@ test.describe('+ Skill button height matches skill row height', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
     // Navigate to the Combat tab via the footer nav
     await page.locator('[data-pw="app-footer"]').getByText('Combat').click();

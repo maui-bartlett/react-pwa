@@ -8,7 +8,6 @@ const HEIGHT_TOLERANCE = 1; // px
 async function navigateTo(page: any, tab: string) {
   const navLabel = tab === 'Overview' ? 'Character' : tab;
   await page.locator('[data-pw="app-footer"]').getByText(navLabel).click();
-  await page.waitForLoadState('networkidle');
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,7 +18,7 @@ async function headerHeight(page: any) {
 test.describe('HeaderBar — consistency across tabs (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('Combat header height matches Skills header height (same content length)', async ({

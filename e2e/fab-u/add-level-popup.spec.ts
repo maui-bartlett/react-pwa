@@ -12,13 +12,12 @@ test.describe('Add Level popover', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.clear());
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+    await page.evaluate(() => localStorage.removeItem('theme-mode'));
     await page.reload();
-    await page.waitForLoadState('networkidle');
 
     // Navigate to Skills tab
     await page.locator('[data-pw="app-footer"]').getByText('Skills').click();
-    await page.waitForLoadState('networkidle');
   });
 
   test('+ button opens popover below itself', async ({ page }) => {

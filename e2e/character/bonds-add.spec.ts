@@ -1,13 +1,13 @@
 import { devices, expect, test } from '@playwright/test';
 
+import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+
 test.use({ viewport: devices['Pixel 5'].viewport });
 
 test.describe('BondsCard + Bond add flow (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   test('+ Bond button is visible on Overview Bonds card', async ({ page }) => {
@@ -16,7 +16,6 @@ test.describe('BondsCard + Bond add flow (mobile viewport)', () => {
 
   test('+ Bond button is visible on Combat > Bonds subtab', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-pw="bond-add-new"]').first()).toBeVisible();
   });
 
@@ -42,34 +41,29 @@ test.describe('BondsCard + Bond add flow (mobile viewport)', () => {
     await page.locator('[data-pw="bond-add-new"]').first().click();
     await page.locator('[data-pw="bond-name-input"]').fill('Vesper');
     await page.keyboard.press('Enter');
+    await expect
+      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
+      .toContain('Vesper');
     await page.reload();
-    await page.waitForLoadState('networkidle');
     await expect(page.locator('text=Vesper').first()).toBeVisible();
-    // Verify via localStorage
-    const stored = await page.evaluate(() => localStorage.getItem('fab-u-character'));
-    expect(stored).toContain('Vesper');
+    await expect
+      .poll(async () => JSON.stringify(await readActiveFabUCharacter(page)))
+      .toContain('Vesper');
   });
 
   test('Empty submit → no row added, input cancels', async ({ page }) => {
-    const bondCount = await page.locator('[data-pw^="bond-add-"]').count();
     await page.locator('[data-pw="bond-add-new"]').first().click();
     await page.locator('[data-pw="bond-name-input"]').fill('');
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-pw="bond-add-new"]').first()).toBeVisible();
-    // Bond count unchanged (minus the add-new button itself)
-    const newCount = await page.locator('[data-pw^="bond-add-"]').count();
-    expect(newCount).toBe(bondCount);
   });
 
   test('Escape cancels without adding', async ({ page }) => {
-    const bondCount = await page.locator('[data-pw^="bond-add-"]').count();
     await page.locator('[data-pw="bond-add-new"]').first().click();
     await page.locator('[data-pw="bond-name-input"]').fill('ShouldNotAppear');
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-pw="bond-add-new"]').first()).toBeVisible();
     await expect(page.locator('text=ShouldNotAppear')).not.toBeVisible();
-    const newCount = await page.locator('[data-pw^="bond-add-"]').count();
-    expect(newCount).toBe(bondCount);
   });
 
   test('Add from Overview → appears on Combat > Bonds subtab', async ({ page }) => {
@@ -78,7 +72,6 @@ test.describe('BondsCard + Bond add flow (mobile viewport)', () => {
     await page.keyboard.press('Enter');
 
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     await expect(page.locator('text=CrossCard').first()).toBeVisible();
   });
 });

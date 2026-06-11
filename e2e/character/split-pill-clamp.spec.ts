@@ -5,9 +5,7 @@ test.use({ viewport: devices['Pixel 5'].viewport });
 test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
-    await page.evaluate(() => localStorage.removeItem('fab-u-character'));
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
   // ── Click-through: clicking suffix or neutral area enters edit mode ──────
@@ -26,7 +24,6 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
 
   test('Spells HP SummaryStrip: clicking suffix area enters edit mode', async ({ page }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
     await page.locator('[data-pw="metric-hp"]').click({ position: { x: 70, y: 32 } });
     await expect(page.locator('[data-pw="metric-hp-input"]')).toBeVisible();
     await page.locator('[data-pw="metric-hp-input"]').blur();
@@ -72,7 +69,6 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
 
   test('Skills XP: typing 999 → rolls over into level and XP 9', async ({ page }) => {
     await page.getByRole('button', { name: 'Skills' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-sk-xp"]');
     await pill.click();
     const input = page.locator('[data-pw="metric-sk-xp-input"]');
@@ -84,7 +80,6 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
 
   test('Spells HP SummaryStrip: typing 999 → clamped to totalHP (58)', async ({ page }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="metric-hp"]');
     await pill.click();
     const input = page.locator('[data-pw="metric-hp-input"]');
@@ -111,7 +106,6 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
 
   test('Combat HP: typing 999 → clamped to totalHP (58)', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="statpill-cb-hp"]');
     await pill.click();
     const input = page.locator('[data-pw="statpill-cb-hp-input"]');
@@ -123,7 +117,6 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
 
   test('Combat MP: typing 999 → clamped to totalMP (58)', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
-    await page.waitForLoadState('networkidle');
     const pill = page.locator('[data-pw="statpill-cb-mp"]');
     await pill.click();
     const input = page.locator('[data-pw="statpill-cb-mp-input"]');

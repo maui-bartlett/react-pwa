@@ -1,7 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { createDefaultCharacter } from './src/domain/fabU/characterDefaults';
+
 const PORT = process.env.CI ? 4173 : 5173;
 const BASE_URL = `http://localhost:${PORT}`;
+const defaultFabUCharacter = createDefaultCharacter();
 
 /**
  * Read environment variables from file.
@@ -30,6 +33,20 @@ export default defineConfig({
     trace: 'on-first-retry',
     testIdAttribute: 'data-pw',
     baseURL: BASE_URL,
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: BASE_URL,
+          localStorage: [
+            {
+              name: 'fab-u-character',
+              value: JSON.stringify(defaultFabUCharacter),
+            },
+          ],
+        },
+      ],
+    },
   },
 
   timeout: 30 * 1000,
