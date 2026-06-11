@@ -96,6 +96,7 @@ const authModes: Array<{ label: string; value: AuthMode }> = [
 // handlers/state stay in this component so restoring the option later is
 // just a matter of flipping this back on.
 const showEmailPasswordAuth = false;
+const avatarPrimaryTrainingChangeEvent = 'avatar-legends-primary-training-change';
 
 function GoogleLogo() {
   return (
@@ -202,6 +203,14 @@ function getCharacterDisplayName(character: {
   } catch {
     return 'Unnamed character';
   }
+}
+
+function getAvatarPrimaryTraining(characterState: unknown) {
+  if (!characterState || typeof characterState !== 'object') return null;
+  const character = (characterState as { character?: unknown }).character;
+  if (!character || typeof character !== 'object') return null;
+  const primaryTraining = (character as { primaryTraining?: unknown }).primaryTraining;
+  return typeof primaryTraining === 'string' ? primaryTraining : null;
 }
 
 function AuthField({
@@ -475,7 +484,7 @@ function AccountMenu({
         schemaVersion: payload.schemaVersion,
         characterState: payload.characterState,
       });
-      await selectCharacter(characterId);
+      await selectCharacter(characterId, payload.characterState);
       return;
     }
     const nextCharacter = createRandomFabUCharacter();
@@ -487,13 +496,22 @@ function AccountMenu({
     await selectCharacter(characterId);
   }
 
-  async function selectCharacter(characterId: Id<'characters'>) {
-    await setActiveCharacter({ characterId });
+  async function selectCharacter(characterId: Id<'characters'>, characterState?: unknown) {
+    const primaryTraining =
+      gameSystem === 'avatar-legends' ? getAvatarPrimaryTraining(characterState) : null;
+    if (primaryTraining) {
+      window.dispatchEvent(
+        new CustomEvent(avatarPrimaryTrainingChangeEvent, {
+          detail: primaryTraining,
+        }),
+      );
+    }
     window.dispatchEvent(
       new CustomEvent(selectCharacterEventName, {
         detail: { characterId },
       }),
     );
+    await setActiveCharacter({ characterId });
   }
 
   async function addCampaign() {
@@ -853,7 +871,9 @@ function AccountMenu({
                           </Stack>
                         ) : (
                           <Button
-                            onClick={() => void selectCharacter(character._id)}
+                            onClick={() =>
+                              void selectCharacter(character._id, character.characterState)
+                            }
                             sx={{
                               width: '100%',
                               justifyContent: 'flex-start',

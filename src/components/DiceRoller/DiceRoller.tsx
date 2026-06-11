@@ -78,7 +78,6 @@ type DiceBoxInstance = {
   clear: () => unknown;
   hide: (className?: string) => unknown;
   show: () => unknown;
-  updateConfig: (config: { themeColor?: string }) => unknown;
 };
 
 type DiceTrayStyle = {
@@ -652,11 +651,6 @@ function DiceRoller() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!diceBoxRef.current || !isDiceBoxReady) return;
-    void diceBoxRef.current.updateConfig({ themeColor: appAccent });
-  }, [appAccent, isDiceBoxReady]);
-
   const addDie = (sides: DieSize) => {
     setSelectedDice((current) => [...current, { id: Date.now() + current.length, sides }]);
   };
@@ -724,7 +718,11 @@ function DiceRoller() {
         newStartPoint: true,
       });
       if (rollSequenceRef.current !== rollSequence) return;
-      setLastResult(toRollResult(results));
+      const result = toRollResult(results);
+      if (result.rolls.length !== selectedDice.length) {
+        throw new Error('DiceBox returned an incomplete roll result.');
+      }
+      setLastResult(result);
     } catch (error) {
       console.warn('[dice] DiceBox roll failed', error);
     } finally {
