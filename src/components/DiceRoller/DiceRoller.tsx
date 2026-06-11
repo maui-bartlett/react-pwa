@@ -772,7 +772,7 @@ function DiceRoller() {
                   onClick={() => void rollSelectedDice()}
                   sx={{
                     position: 'absolute',
-                    right: 72,
+                    right: 0,
                     bottom: 0,
                     zIndex: 1,
                     display: 'grid',
