@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 
 import type { MutationCtx } from './_generated/server';
 import { internalMutation, query } from './_generated/server';
+import { deriveTechniqueFatigue, withTechniqueFatigue } from './lib/avatarTechniqueFatigue';
 
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
@@ -23,7 +24,7 @@ function technique(
   };
 }
 
-const avatarLegendsBuiltInTechniques = [
+const avatarLegendsBuiltInTechniquesWithoutFatigue = [
   {
     type: 'basic',
     approach: 'Defend & Maneuver',
@@ -816,6 +817,9 @@ const avatarLegendsBuiltInTechniques = [
   ),
 ];
 
+const avatarLegendsBuiltInTechniques =
+  avatarLegendsBuiltInTechniquesWithoutFatigue.map(withTechniqueFatigue);
+
 async function upsertGameSystem(ctx: MutationCtx, document: unknown) {
   if (!document || typeof document !== 'object' || Array.isArray(document)) return null;
   const id = (document as { id?: unknown }).id;
@@ -865,6 +869,66 @@ export const seedDefaults = internalMutation({
     );
 
     return results.filter(Boolean);
+  },
+});
+
+export const migrateAvatarLegendsTechniqueFatigue = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const gameSystem = await ctx.db
+      .query('gameSystems')
+      .withIndex('by_systemId', (q) => q.eq('id', AVATAR_LEGENDS_GAME_SYSTEM))
+      .unique();
+    let gameSystemUpdated = false;
+    if (gameSystem) {
+      const techniques = Array.isArray(gameSystem.techniques)
+        ? gameSystem.techniques
+            .filter(
+              (technique): technique is Record<string, unknown> =>
+                Boolean(technique) && typeof technique === 'object' && !Array.isArray(technique),
+            )
+            .map(withTechniqueFatigue)
+        : avatarLegendsBuiltInTechniques;
+      await ctx.db.patch(gameSystem._id, { techniques, updatedAt: Date.now() });
+      gameSystemUpdated = true;
+    }
+
+    const classes = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM),
+      )
+      .collect();
+    let classesUpdated = 0;
+    for (const classDoc of classes) {
+      if (!classDoc.class || typeof classDoc.class !== 'object') continue;
+      const classInfo = classDoc.class as Record<string, unknown>;
+      if (
+        !classInfo.advancedTechnique ||
+        typeof classInfo.advancedTechnique !== 'object' ||
+        Array.isArray(classInfo.advancedTechnique)
+      ) {
+        continue;
+      }
+      const advancedTechnique = classInfo.advancedTechnique as Record<string, unknown>;
+      const normalizedTechnique = {
+        ...advancedTechnique,
+        fatigue: deriveTechniqueFatigue(
+          typeof advancedTechnique.description === 'string'
+            ? advancedTechnique.description
+            : typeof advancedTechnique.text === 'string'
+              ? advancedTechnique.text
+              : '',
+          typeof advancedTechnique.approach === 'string' ? advancedTechnique.approach : '',
+        ),
+      };
+      await ctx.db.patch(classDoc._id, {
+        class: { ...classInfo, advancedTechnique: normalizedTechnique },
+      });
+      classesUpdated += 1;
+    }
+
+    return { gameSystemUpdated, classesScanned: classes.length, classesUpdated };
   },
 });
 

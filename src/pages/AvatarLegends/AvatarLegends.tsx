@@ -37,6 +37,7 @@ import principleFg from './assets/principle-fg.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
 import elementWeapons from './assets/weapons-symbol.png';
+import { type TechniqueFatigue, withTechniqueFatigue } from './techniqueFatigue';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -623,6 +624,7 @@ type Technique = {
   name: string;
   summary: string;
   description: string;
+  fatigue: TechniqueFatigue;
   id?: string;
   custom?: boolean;
   classTechnique?: boolean;
@@ -698,7 +700,7 @@ const defaultBasicTechniques: Technique[] = [
     description:
       "Mark fatigue and close to a foe within sight as part of the same action. If you act before they do this exchange, you may engage them and shift the encounter's distance one step closer.",
   },
-];
+].map((technique) => withTechniqueFatigue(technique) as Technique);
 const defaultBalancePrinciples = ['Tradition', 'Progress'] as const;
 
 function normalizeTechniqueType(value: unknown): TechniqueElement {
@@ -725,7 +727,7 @@ function coerceCanonTechnique(value: unknown): CanonTechnique | null {
     return null;
   }
 
-  return {
+  return withTechniqueFatigue({
     type: normalizeTechniqueType(candidate.type),
     approach: coerceApproach(candidate.approach),
     name: candidate.name,
@@ -735,7 +737,7 @@ function coerceCanonTechnique(value: unknown): CanonTechnique | null {
     tags: Array.isArray(candidate.tags)
       ? candidate.tags.filter((tag): tag is string => typeof tag === 'string')
       : undefined,
-  };
+  }) as CanonTechnique;
 }
 
 function createBalanceState(
@@ -944,7 +946,7 @@ function coerceAdvancedTechnique(
   const name = typeof raw.techniqueName === 'string' ? raw.techniqueName : '';
   const description = typeof raw.text === 'string' ? raw.text : '';
   if (!name || !description) return null;
-  return {
+  return withTechniqueFatigue({
     type: trainingToTechniqueType(primaryTraining),
     approach: coerceApproach(raw.approach),
     level: 'learned',
@@ -952,7 +954,7 @@ function coerceAdvancedTechnique(
     summary: summarizeTechnique(description),
     description,
     classTechnique: true,
-  };
+  }) as Technique;
 }
 
 function applyClassDataToCharacter(
@@ -1030,9 +1032,9 @@ const characterStateAtom = atom<CharacterState>(defaultCharacter);
  *  v4: add primaryTraining for training-themed app chrome.
  *  v5: class trait display data comes from the classes table;
  *      history answers are stored on the character by prompt text.
- *  v6 (current): balance stores two principle objects instead of
- *      a single signed number. */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 6;
+ *  v6: balance stores two principle objects instead of a single signed number.
+ *  v7 (current): every technique stores structured self/target fatigue data. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 7;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -1046,7 +1048,10 @@ function serializeAvatarLegendsCharacter(state: CharacterState) {
     classTraitBody?: unknown;
     classTraitTitle?: unknown;
   };
-  const character = { ...legacy };
+  const character = {
+    ...legacy,
+    techniques: legacy.techniques.map((technique) => withTechniqueFatigue(technique) as Technique),
+  };
   delete character.classTraitBody;
   delete character.classTraitTitle;
   return { schemaVersion: AVATAR_LEGENDS_SCHEMA_VERSION, character };
@@ -1105,13 +1110,13 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
         delete rest.title;
         delete rest.body;
         delete rest.category;
-        return {
+        return withTechniqueFatigue({
           ...rest,
           type: nextType,
           name: nextName,
           approach: nextApproach,
           description: nextDescription,
-        } as Technique;
+        }) as Technique;
       })
     : defaultCharacter.techniques;
 
@@ -1409,13 +1414,6 @@ function techniqueElementVisual(type: TechniqueElement): {
   if (type === 'group')
     return { color: brown, frameColor: elementFilterFrames.group, src: elementWeapons };
   return { color: water, frameColor: elementFilterFrames.waterbending, src: elementWater };
-}
-
-function getMarkedFatigueCount(text: string) {
-  const match = text.toLowerCase().match(/\bmark(?:ing)?\s+(?:(\d+)[-\s])?(?:a\s+)?fatigue\b/);
-  if (!match) return 0;
-  const parsed = match[1] ? Number.parseInt(match[1], 10) : 1;
-  return Number.isFinite(parsed) ? Math.max(1, Math.min(10, parsed)) : 1;
 }
 
 /**
@@ -4565,6 +4563,7 @@ function TechniqueAccordion({
   name,
   summary,
   description,
+  fatigue,
   src,
   techColor,
   frameColor,
@@ -4577,6 +4576,7 @@ function TechniqueAccordion({
   name: string;
   summary: string;
   description: string;
+  fatigue: TechniqueFatigue;
   src: string;
   techColor: string;
   frameColor?: string;
@@ -4595,7 +4595,7 @@ function TechniqueAccordion({
   const [draft, setDraft] = useState({ approach, name, summary, description });
   const categoryColor = techniqueCategoryColor(approach, isDarkMode);
   const fatigueAccentColor = bookAccent;
-  const markedFatigueCount = getMarkedFatigueCount(description);
+  const selfFatigueCount = fatigue.self.mark + fatigue.self.clear;
   function saveEdit() {
     const nextName = draft.name.trim();
     if (!nextName) return;
@@ -4778,7 +4778,7 @@ function TechniqueAccordion({
               </>
             )}
           </Stack>
-          {markedFatigueCount > 0 ? (
+          {selfFatigueCount > 0 ? (
             <Stack
               direction="row"
               alignItems="center"
@@ -4791,8 +4791,16 @@ function TechniqueAccordion({
               }}
             >
               <Stack direction="row" gap={0.25} alignItems="center">
-                {Array.from({ length: markedFatigueCount }).map((_, i) => (
-                  <FatigueDiamond key={i} filled color={fatigueAccentColor} size={8} />
+                {Array.from({ length: fatigue.self.mark }).map((_, i) => (
+                  <FatigueDiamond key={`mark-${i}`} filled color={fatigueAccentColor} size={8} />
+                ))}
+                {Array.from({ length: fatigue.self.clear }).map((_, i) => (
+                  <FatigueDiamond
+                    key={`clear-${i}`}
+                    filled={false}
+                    color={fatigueAccentColor}
+                    size={8}
+                  />
                 ))}
               </Stack>
               <Typography
@@ -4986,7 +4994,7 @@ function CombatPane() {
         ...prev,
         techniques: [
           ...prev.techniques,
-          {
+          withTechniqueFatigue({
             id: createLocalId('technique'),
             type: nextType,
             approach: 'Advance & Attack',
@@ -4995,7 +5003,7 @@ function CombatPane() {
             summary: 'Add a short technique summary.',
             description: 'Describe how this custom technique works.',
             custom: true,
-          },
+          }) as Technique,
         ],
       };
     });
@@ -5098,6 +5106,7 @@ function CombatPane() {
                   name={tech.name}
                   summary={tech.summary}
                   description={tech.description}
+                  fatigue={tech.fatigue}
                   custom={tech.custom}
                   onUpdate={
                     tech.custom
@@ -5105,7 +5114,13 @@ function CombatPane() {
                           setCharacterState((prev) => ({
                             ...prev,
                             techniques: prev.techniques.map((item) =>
-                              item === tech ? { ...item, ...next, custom: true } : item,
+                              item === tech
+                                ? (withTechniqueFatigue({
+                                    ...item,
+                                    ...next,
+                                    custom: true,
+                                  }) as Technique)
+                                : item,
                             ),
                           }))
                       : undefined

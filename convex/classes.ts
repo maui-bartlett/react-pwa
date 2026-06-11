@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 
 import { internalMutation, query } from './_generated/server';
+import { deriveTechniqueFatigue } from './lib/avatarTechniqueFatigue';
 
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
@@ -117,6 +118,14 @@ function normalizeClassInfo(classInfo: Record<string, unknown>) {
     if (typeof technique.approach === 'string') {
       technique.approach = titleCaseLabel(technique.approach);
     }
+    technique.fatigue = deriveTechniqueFatigue(
+      typeof technique.description === 'string'
+        ? technique.description
+        : typeof technique.text === 'string'
+          ? technique.text
+          : '',
+      typeof technique.approach === 'string' ? technique.approach : '',
+    );
   }
 
   return next;

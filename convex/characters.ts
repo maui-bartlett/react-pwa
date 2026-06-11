@@ -10,6 +10,7 @@ import {
   getOrCreateUserProfile,
   requireCharacterOwner,
 } from './lib/auth';
+import { deriveTechniqueFatigue } from './lib/avatarTechniqueFatigue';
 import { isActiveForProfile, withGameSystemMeta } from './lib/fabulaMeta';
 
 const TITLE_SMALL_WORDS = new Set([
@@ -74,6 +75,44 @@ function getCharacterClassName(character: Doc<'characters'>) {
       ? (state.character as Record<string, unknown>)
       : null;
   return typeof inner?.className === 'string' ? titleCaseLabel(inner.className) : null;
+}
+
+function normalizeAvatarLegendsTechniqueFatigue(gameSystem: string, characterState: unknown) {
+  if (
+    gameSystem !== 'avatar-legends' ||
+    !characterState ||
+    typeof characterState !== 'object' ||
+    Array.isArray(characterState)
+  ) {
+    return characterState;
+  }
+  const state = characterState as Record<string, unknown>;
+  const inner =
+    state.character && typeof state.character === 'object' && !Array.isArray(state.character)
+      ? (state.character as Record<string, unknown>)
+      : null;
+  if (!inner || !Array.isArray(inner.techniques)) return characterState;
+
+  const techniques = inner.techniques.map((technique) => {
+    if (!technique || typeof technique !== 'object' || Array.isArray(technique)) return technique;
+    const candidate = technique as Record<string, unknown>;
+    return {
+      ...candidate,
+      fatigue: deriveTechniqueFatigue(
+        typeof candidate.description === 'string'
+          ? candidate.description
+          : typeof candidate.body === 'string'
+            ? candidate.body
+            : '',
+        typeof candidate.approach === 'string'
+          ? candidate.approach
+          : typeof candidate.category === 'string'
+            ? candidate.category
+            : '',
+      ),
+    };
+  });
+  return { ...state, character: { ...inner, techniques } };
 }
 
 async function getAvatarLegendsClassForCharacter(ctx: QueryCtx, character: Doc<'characters'>) {
@@ -167,7 +206,7 @@ export const create = mutation({
       meta: withGameSystemMeta(args.gameSystem, { activeForUserProfileId: profile._id }),
       portraitUrl: args.portraitUrl,
       schemaVersion: args.schemaVersion,
-      characterState: args.characterState,
+      characterState: normalizeAvatarLegendsTechniqueFatigue(args.gameSystem, args.characterState),
       createdAt: now,
       updatedAt: now,
     });
@@ -187,7 +226,7 @@ export const createFromLocalImport = mutation({
       ownerUserId: profile._id,
       meta: withGameSystemMeta(args.gameSystem, { activeForUserProfileId: profile._id }),
       schemaVersion: args.schemaVersion,
-      characterState: args.characterState,
+      characterState: normalizeAvatarLegendsTechniqueFatigue(args.gameSystem, args.characterState),
       createdAt: now,
       updatedAt: now,
     });
@@ -240,9 +279,13 @@ export const updateState = mutation({
   handler: async (ctx, args) => {
     if (!(await canWriteCanonicalCharacter(ctx, args.characterId)))
       throw new ConvexError('FORBIDDEN');
+    const character = await ctx.db.get(args.characterId);
     await ctx.db.patch(args.characterId, {
       schemaVersion: args.schemaVersion,
-      characterState: args.characterState,
+      characterState: normalizeAvatarLegendsTechniqueFatigue(
+        character?.meta?.gameSystem ?? '',
+        args.characterState,
+      ),
       updatedAt: Date.now(),
     });
   },
@@ -761,6 +804,41 @@ export const migrateAvatarLegendsV5ClassData = internalMutation({
       await ctx.db.patch(row._id, {
         schemaVersion: Math.max(rowVersion, 5),
         characterState: { ...state, schemaVersion: 5, character: nextInner },
+        updatedAt: Date.now(),
+      });
+      migrated += 1;
+    }
+    return { scanned: rows.length, migrated };
+  },
+});
+
+/**
+ * Adds the structured fatigue cost/effect object to every technique
+ * embedded in an Avatar Legends character record. Safe to re-run.
+ */
+export const migrateAvatarLegendsTechniqueFatigue = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let migrated = 0;
+    for (const row of rows) {
+      if (row.meta?.gameSystem !== 'avatar-legends') continue;
+      const characterState = normalizeAvatarLegendsTechniqueFatigue(
+        'avatar-legends',
+        row.characterState,
+      );
+      const nextCharacterState =
+        characterState && typeof characterState === 'object' && !Array.isArray(characterState)
+          ? { ...(characterState as Record<string, unknown>), schemaVersion: 7 }
+          : characterState;
+      if (
+        row.schemaVersion >= 7 &&
+        JSON.stringify(nextCharacterState) === JSON.stringify(row.characterState)
+      )
+        continue;
+      await ctx.db.patch(row._id, {
+        schemaVersion: Math.max(row.schemaVersion, 7),
+        characterState: nextCharacterState,
         updatedAt: Date.now(),
       });
       migrated += 1;
