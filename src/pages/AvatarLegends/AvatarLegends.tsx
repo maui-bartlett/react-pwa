@@ -669,6 +669,7 @@ type CharacterState = {
   connections: Connection[];
   classMoves: MoveEntry[];
   techniques: Technique[];
+  deletedTechniqueKeys: string[];
   inventory: JournalEntry[];
   notes: JournalEntry[];
 };
@@ -706,6 +707,12 @@ const defaultBasicTechniques: Technique[] = [
   },
 ].map((technique) => withTechniqueFatigue(technique) as Technique);
 const defaultBalancePrinciples = ['Tradition', 'Progress'] as const;
+
+function getTechniquePersistenceKey(technique: Pick<Technique, 'approach' | 'name' | 'type'>) {
+  return [technique.type, technique.approach, technique.name]
+    .map((value) => value.trim().toLowerCase())
+    .join(':');
+}
 
 function normalizeTechniqueType(value: unknown): TechniqueElement {
   if (value === 'water' || value === 'waterbending') return 'waterbending';
@@ -777,6 +784,7 @@ const defaultCharacter: CharacterState = {
   connections: [],
   classMoves: [],
   techniques: defaultBasicTechniques,
+  deletedTechniqueKeys: [],
   inventory: [
     {
       type: 'Item',
@@ -972,6 +980,9 @@ function applyClassDataToCharacter(
     (technique) => technique.custom || technique.type === 'basic' || !technique.classTechnique,
   );
   const advancedTechnique = coerceAdvancedTechnique(classData, character.primaryTraining);
+  const advancedTechniqueDeleted =
+    advancedTechnique !== null &&
+    (character.deletedTechniqueKeys ?? []).includes(getTechniquePersistenceKey(advancedTechnique));
   const [leftPrinciple, rightPrinciple] = resolveAvatarPrinciples(classData);
   return {
     ...character,
@@ -979,14 +990,15 @@ function applyClassDataToCharacter(
     balance: normalizeBalanceState(character.balance, leftPrinciple, rightPrinciple),
     stats: coerceStartingStats(classData),
     classMoves: [...classMoves, ...customMoves],
-    techniques: advancedTechnique
-      ? [
-          ...customOrBasicTechniques.filter(
-            (technique) => technique.name !== advancedTechnique.name || technique.custom,
-          ),
-          advancedTechnique,
-        ]
-      : customOrBasicTechniques,
+    techniques:
+      advancedTechnique && !advancedTechniqueDeleted
+        ? [
+            ...customOrBasicTechniques.filter(
+              (technique) => technique.name !== advancedTechnique.name || technique.custom,
+            ),
+            advancedTechnique,
+          ]
+        : customOrBasicTechniques,
   };
 }
 
@@ -1010,6 +1022,7 @@ function createRandomAvatarLegendsCharacter(classData?: AvatarClassData | null):
     historyAnswers: {},
     connections: [],
     techniques: defaultBasicTechniques,
+    deletedTechniqueKeys: [],
     inventory: defaultCharacter.inventory,
     notes: defaultCharacter.notes,
   };
@@ -1037,8 +1050,10 @@ const characterStateAtom = atom<CharacterState>(defaultCharacter);
  *  v5: class trait display data comes from the classes table;
  *      history answers are stored on the character by prompt text.
  *  v6: balance stores two principle objects instead of a single signed number.
- *  v7 (current): every technique stores structured self/target fatigue data. */
-const AVATAR_LEGENDS_SCHEMA_VERSION = 7;
+ *  v7: every technique stores structured self/target fatigue data.
+ *  v8 (current): deleted technique keys prevent class hydration from
+ *      restoring intentionally removed techniques. */
+const AVATAR_LEGENDS_SCHEMA_VERSION = 8;
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const AVATAR_LEGENDS_PENDING_SYNC_KEY = 'avatar-legends-convex-pending-character';
 const AVATAR_LEGENDS_SELECT_CHARACTER_EVENT = 'avatar-legends-select-character';
@@ -1148,6 +1163,11 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     primaryTrainingOptions.includes(innerCandidate.primaryTraining as PrimaryTraining)
       ? (innerCandidate.primaryTraining as PrimaryTraining)
       : defaultCharacter.primaryTraining;
+  const deletedTechniqueKeys = Array.isArray(innerCandidate.deletedTechniqueKeys)
+    ? innerCandidate.deletedTechniqueKeys.filter(
+        (value): value is string => typeof value === 'string',
+      )
+    : defaultCharacter.deletedTechniqueKeys;
   const rawHistoryAnswers = innerCandidate.historyAnswers;
   const historyAnswers =
     rawHistoryAnswers && typeof rawHistoryAnswers === 'object'
@@ -1173,6 +1193,7 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     balance: normalizeBalanceState(innerCandidate.balance),
     historyAnswers,
     techniques,
+    deletedTechniqueKeys,
     inventory,
     notes,
   };
@@ -3855,16 +3876,30 @@ function CharacterPane() {
     if (!avatarClass) return;
     const hasClassMoves = character.classMoves.some((move) => !move.custom);
     const hasClassTechnique = character.techniques.some((technique) => technique.classTechnique);
-    if (hasClassMoves && hasClassTechnique) return;
+    const expectedClassTechnique = coerceAdvancedTechnique(avatarClass, character.primaryTraining);
+    const classTechniqueDeleted =
+      expectedClassTechnique !== null &&
+      (character.deletedTechniqueKeys ?? []).includes(
+        getTechniquePersistenceKey(expectedClassTechnique),
+      );
+    if (hasClassMoves && (hasClassTechnique || classTechniqueDeleted)) return;
     setCharacter((prev) => {
       const hydrated = applyClassDataToCharacter(prev, avatarClass);
       return {
         ...prev,
         classMoves: hasClassMoves ? prev.classMoves : hydrated.classMoves,
-        techniques: hasClassTechnique ? prev.techniques : hydrated.techniques,
+        techniques:
+          hasClassTechnique || classTechniqueDeleted ? prev.techniques : hydrated.techniques,
       };
     });
-  }, [avatarClass, character.classMoves, character.techniques, setCharacter]);
+  }, [
+    avatarClass,
+    character.classMoves,
+    character.deletedTechniqueKeys,
+    character.primaryTraining,
+    character.techniques,
+    setCharacter,
+  ]);
 
   function beginIdentityEdit() {
     setIdentityDraft({
@@ -4956,6 +4991,7 @@ function CombatPane() {
   const [addTechniqueKind, setAddTechniqueKind] = useState<'custom' | 'canon' | null>(null);
   const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElementFilter>('all');
   const [canonTechniqueName, setCanonTechniqueName] = useState('');
+  const [pendingTechniqueDelete, setPendingTechniqueDelete] = useState<number | null>(null);
   const canonGameSystem = useQuery(
     api.gameSystems.getById,
     addTechniqueOpen ? { id: 'avatar-legends' } : 'skip',
@@ -5038,6 +5074,22 @@ function CombatPane() {
   const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
     setCharacterState((prev) => ({ ...prev, fatigue: base, tempFatigue: temp }));
   };
+  const confirmTechniqueDelete = () => {
+    if (pendingTechniqueDelete === null) return;
+    setCharacterState((prev) => {
+      const technique = prev.techniques[pendingTechniqueDelete];
+      if (!technique) return prev;
+      const deletedTechniqueKey = getTechniquePersistenceKey(technique);
+      return {
+        ...prev,
+        techniques: prev.techniques.filter((_, index) => index !== pendingTechniqueDelete),
+        deletedTechniqueKeys: (prev.deletedTechniqueKeys ?? []).includes(deletedTechniqueKey)
+          ? (prev.deletedTechniqueKeys ?? [])
+          : [...(prev.deletedTechniqueKeys ?? []), deletedTechniqueKey],
+      };
+    });
+    setPendingTechniqueDelete(null);
+  };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -5106,51 +5158,58 @@ function CombatPane() {
             {visibleTechniques.map((tech, index) => {
               const isBasic = tech.type === 'basic';
               const visual = techniqueElementVisual(tech.type);
+              const techniqueIndex = techniques.indexOf(tech);
+              const requestDelete = () => setPendingTechniqueDelete(techniqueIndex);
               return (
-                <TechniqueAccordion
+                <SwipeableCard
                   key={
                     tech.id ??
                     `${tech.custom ? 'custom' : tech.classTechnique ? 'class' : 'tech'}-${tech.type}-${tech.level}-${tech.name}-${index}`
                   }
-                  approach={tech.approach}
-                  name={tech.name}
-                  summary={tech.summary}
-                  description={tech.description}
-                  fatigue={tech.fatigue}
-                  custom={tech.custom}
-                  onUpdate={
-                    tech.custom
-                      ? (next) =>
-                          setCharacterState((prev) => ({
-                            ...prev,
-                            techniques: prev.techniques.map((item) =>
-                              item === tech
-                                ? (withTechniqueFatigue({
-                                    ...item,
-                                    ...next,
-                                    custom: true,
-                                  }) as Technique)
-                                : item,
-                            ),
-                          }))
-                      : undefined
-                  }
-                  onDelete={
-                    tech.custom
-                      ? () =>
-                          setCharacterState((prev) => ({
-                            ...prev,
-                            techniques: prev.techniques.filter((item) => item !== tech),
-                          }))
-                      : undefined
-                  }
-                  isBasic={isBasic}
-                  // src is only used when isBasic=false (image badge path).
-                  src={visual.src}
-                  elementLabel={visual.label}
-                  techColor={isBasic ? ink : visual.color}
-                  frameColor={visual.frameColor}
-                />
+                  actions={[
+                    {
+                      icon: <Trash2 size={18} />,
+                      color: passionRed,
+                      ariaLabel: `Delete ${tech.name}`,
+                      onClick: requestDelete,
+                      closeOnClick: false,
+                    },
+                  ]}
+                  borderRadius="4px"
+                >
+                  <TechniqueAccordion
+                    approach={tech.approach}
+                    name={tech.name}
+                    summary={tech.summary}
+                    description={tech.description}
+                    fatigue={tech.fatigue}
+                    custom={tech.custom}
+                    onUpdate={
+                      tech.custom
+                        ? (next) =>
+                            setCharacterState((prev) => ({
+                              ...prev,
+                              techniques: prev.techniques.map((item) =>
+                                item === tech
+                                  ? (withTechniqueFatigue({
+                                      ...item,
+                                      ...next,
+                                      custom: true,
+                                    }) as Technique)
+                                  : item,
+                              ),
+                            }))
+                        : undefined
+                    }
+                    onDelete={tech.custom ? requestDelete : undefined}
+                    isBasic={isBasic}
+                    // src is only used when isBasic=false (image badge path).
+                    src={visual.src}
+                    elementLabel={visual.label}
+                    techColor={isBasic ? ink : visual.color}
+                    frameColor={visual.frameColor}
+                  />
+                </SwipeableCard>
               );
             })}
             {visibleTechniques.length === 0 ? (
@@ -5329,6 +5388,11 @@ function CombatPane() {
         open={pendingInventoryDelete !== null}
         onCancel={() => setPendingInventoryDelete(null)}
         onConfirm={deleteInventoryItem}
+      />
+      <AvatarLegendsConfirmDialog
+        open={pendingTechniqueDelete !== null}
+        onCancel={() => setPendingTechniqueDelete(null)}
+        onConfirm={confirmTechniqueDelete}
       />
     </>
   );
