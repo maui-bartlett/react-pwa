@@ -110,17 +110,17 @@ export function deriveTechniqueFatigue(description: string, approach: string): T
     }
 
     for (const alternative of clause.matchAll(
-      /\binflict(?:s|ed|ing)?\b[^.;]{0,80}\bor\s+(\d+|one|two|three|four|five)[-\s]fatigue\b(?!\s+to\b)/gi,
+      /\binflict(?:s|ed|ing)?\b[^.;]{0,80}\bor\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)[-\s]fatigue\b(?!\s+to\b)/gi,
     )) {
       fatigue.target.mark = mergeFatigueValue(fatigue.target.mark, fatigueCount(alternative[1]));
     }
     for (const alternative of clause.matchAll(
-      /\bmark\b[^.;]{0,100}\bor\s+(\d+|one|two|three|four|five)[-\s]fatigue\s+to\b/gi,
+      /\bmark\b[^.;]{0,100}\bor\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)[-\s]fatigue\s+to\b/gi,
     )) {
       fatigue.self.mark = mergeFatigueValue(fatigue.self.mark, fatigueCount(alternative[1]));
     }
     for (const additional of clause.matchAll(
-      /\b(inflict|mark|clear|suffer)\s+(\d+|one|two|three|four|five)\s+additional\s+fatigue\b/gi,
+      /\b(inflict|mark|clear|suffer)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+additional\s+fatigue\b/gi,
     )) {
       const action = additional[1].toLowerCase();
       const operation = action === 'clear' ? 'clear' : 'mark';
@@ -132,7 +132,7 @@ export function deriveTechniqueFatigue(description: string, approach: string): T
       );
     }
     for (const incoming of clause.matchAll(
-      /\b(\d+|one|two|three|four|five)[-\s]fatigue\s+inflict(?:ed|s|ing)?\s+(?:on|upon)\s+you\b/gi,
+      /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)[-\s]fatigue\s+inflict(?:ed|s|ing)?\s+(?:on|upon)\s+you\b/gi,
     )) {
       fatigue.self.mark = mergeFatigueValue(fatigue.self.mark, fatigueCount(incoming[1]));
     }

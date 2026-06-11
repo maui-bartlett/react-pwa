@@ -831,13 +831,14 @@ export const migrateAvatarLegendsTechniqueFatigue = internalMutation({
         characterState && typeof characterState === 'object' && !Array.isArray(characterState)
           ? { ...(characterState as Record<string, unknown>), schemaVersion: 7 }
           : characterState;
+      const rowVersion = typeof row.schemaVersion === 'number' ? row.schemaVersion : 0;
       if (
-        row.schemaVersion >= 7 &&
+        rowVersion >= 7 &&
         JSON.stringify(nextCharacterState) === JSON.stringify(row.characterState)
       )
         continue;
       await ctx.db.patch(row._id, {
-        schemaVersion: Math.max(row.schemaVersion, 7),
+        schemaVersion: Math.max(rowVersion, 7),
         characterState: nextCharacterState,
         updatedAt: Date.now(),
       });

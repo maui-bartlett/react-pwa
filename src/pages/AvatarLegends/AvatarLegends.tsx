@@ -37,7 +37,11 @@ import principleFg from './assets/principle-fg.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
 import elementWeapons from './assets/weapons-symbol.png';
-import { type TechniqueFatigue, withTechniqueFatigue } from './techniqueFatigue';
+import {
+  type TechniqueFatigue,
+  deriveTechniqueFatigue,
+  withTechniqueFatigue,
+} from './techniqueFatigue';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -4595,7 +4599,10 @@ function TechniqueAccordion({
   const [draft, setDraft] = useState({ approach, name, summary, description });
   const categoryColor = techniqueCategoryColor(approach, isDarkMode);
   const fatigueAccentColor = bookAccent;
-  const selfFatigueCount = fatigue.self.mark + fatigue.self.clear;
+  const displayedFatigue = editing
+    ? deriveTechniqueFatigue(draft.description, draft.approach)
+    : fatigue;
+  const selfFatigueCount = displayedFatigue.self.mark + displayedFatigue.self.clear;
   function saveEdit() {
     const nextName = draft.name.trim();
     if (!nextName) return;
@@ -4791,10 +4798,10 @@ function TechniqueAccordion({
               }}
             >
               <Stack direction="row" gap={0.25} alignItems="center">
-                {Array.from({ length: fatigue.self.mark }).map((_, i) => (
+                {Array.from({ length: displayedFatigue.self.mark }).map((_, i) => (
                   <FatigueDiamond key={`mark-${i}`} filled color={fatigueAccentColor} size={8} />
                 ))}
-                {Array.from({ length: fatigue.self.clear }).map((_, i) => (
+                {Array.from({ length: displayedFatigue.self.clear }).map((_, i) => (
                   <FatigueDiamond
                     key={`clear-${i}`}
                     filled={false}
