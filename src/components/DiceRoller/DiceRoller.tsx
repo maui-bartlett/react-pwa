@@ -749,7 +749,7 @@ function DiceRoller() {
       <Box
         sx={{
           position: 'fixed',
-          right: { xs: 30, sm: 34 },
+          right: { xs: 15, sm: 34 },
           bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 90px)', sm: 42 },
           zIndex: theme.zIndex.tooltip + 20,
           display: 'flex',
