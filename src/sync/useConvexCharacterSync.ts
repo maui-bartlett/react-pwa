@@ -184,12 +184,24 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
 
   useEffect(() => {
     const selectCharacter = (event: Event) => {
-      const detail = (event as CustomEvent<{ characterId?: Id<'characters'> }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          characterId?: Id<'characters'>;
+          characterState?: unknown;
+        }>
+      ).detail;
       if (!detail?.characterId) return;
       pendingCharacterIdRef.current = detail.characterId;
       setCharacterId(detail.characterId);
       readyToPersistRef.current = false;
       lastRemoteUpdatedAtRef.current = null;
+
+      if (detail.characterState !== undefined) {
+        const remoteCharacter = deserialize(detail.characterState);
+        applyRemote(remoteCharacter);
+        lastSyncedJsonRef.current = JSON.stringify(remoteCharacter);
+      }
+
       void setActiveMine({ characterId: detail.characterId }).catch((error) => {
         console.warn('[sync] failed to set active character', { error });
       });
@@ -206,7 +218,7 @@ function useConvexCharacterSync<TCharacter>(options: CharacterSyncOptions<TChara
       window.removeEventListener('focus', retry);
       document.removeEventListener('visibilitychange', retry);
     };
-  }, [selectCharacterEventName, setActiveMine]);
+  }, [applyRemote, deserialize, selectCharacterEventName, setActiveMine]);
 
   useEffect(() => {
     if (!characters || !characterId) return;

@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -45,6 +45,7 @@ import { authClient } from '@/lib/auth-client';
 import { FAB_U_SELECT_CHARACTER_EVENT } from '@/pages/FabU/useConvexCharacterSync';
 import { gameSystemAtom } from '@/sections/AccountSettings/atoms';
 import type { UseLocalCharacterSlotsResult } from '@/state/useLocalCharacterSlots';
+import { applyAvatarTrainingChrome } from '@/theme/avatarTrainingChrome';
 
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -288,6 +289,7 @@ function AccountMenu({
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [avatarBackdropOverride, setAvatarBackdropOverride] = useState<string | null>(null);
   const canLoadCharacters = Boolean(user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
   const gameSystem = useAtomValue(gameSystemAtom);
   const createCharacter = useMutation(api.characters.createFromLocalImport);
@@ -389,13 +391,19 @@ function AccountMenu({
   const accountModalBg = fabUTokens.color.surface;
   const accountActionBg = fabUTokens.color.brand;
   const accountActionHoverBg = fabUTokens.color.brandStrong;
-  const accountBackdropBg = accountActionBg;
+  const accountBackdropBg = avatarBackdropOverride ?? accountActionBg;
   const accountModalBorder = themeMode === 'dark' ? '#ffffff' : '#d8dde3';
   const accountSectionHeadingSx = {
     color: fabUTokens.color.textPrimary,
     fontSize: '1.05rem',
     fontWeight: 800,
   };
+
+  useEffect(() => {
+    if (avatarBackdropOverride === accountActionBg) {
+      setAvatarBackdropOverride(null);
+    }
+  }, [accountActionBg, avatarBackdropOverride]);
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -493,13 +501,14 @@ function AccountMenu({
       schemaVersion: CHARACTER_SCHEMA_VERSION,
       characterState: serializeCharacterForBackend(nextCharacter),
     });
-    await selectCharacter(characterId);
+    await selectCharacter(characterId, serializeCharacterForBackend(nextCharacter));
   }
 
   async function selectCharacter(characterId: Id<'characters'>, characterState?: unknown) {
     const primaryTraining =
       gameSystem === 'avatar-legends' ? getAvatarPrimaryTraining(characterState) : null;
     if (primaryTraining) {
+      setAvatarBackdropOverride(applyAvatarTrainingChrome(primaryTraining));
       window.dispatchEvent(
         new CustomEvent(avatarPrimaryTrainingChangeEvent, {
           detail: primaryTraining,
@@ -508,7 +517,7 @@ function AccountMenu({
     }
     window.dispatchEvent(
       new CustomEvent(selectCharacterEventName, {
-        detail: { characterId },
+        detail: { characterId, characterState },
       }),
     );
     await setActiveCharacter({ characterId });

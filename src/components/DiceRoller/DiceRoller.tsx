@@ -9,8 +9,15 @@ import { alpha, keyframes, useTheme } from '@mui/material/styles';
 
 import { X } from 'lucide-react';
 
-const dieSizes = [4, 6, 8, 10, 12, 20, 100] as const;
-type DieSize = (typeof dieSizes)[number];
+import {
+  type DiceBoxRoll,
+  type DieSize,
+  type RollDie,
+  type RollResult,
+  dieSizes,
+  isValidRollResult,
+  toRollResult,
+} from './diceRollResults';
 
 const diceRailReveal = keyframes`
   from {
@@ -44,30 +51,6 @@ const diceRollButtonReveal = keyframes`
     transform: translateX(0);
   }
 `;
-
-type RollDie = {
-  id: number;
-  sides: DieSize;
-};
-
-type RollResult = {
-  id: number;
-  rolls: Array<{ sides: DieSize; value: number }>;
-  total: number;
-};
-
-type DiceBoxRoll = {
-  rolls?: Array<{
-    dieType?: string;
-    sides?: number | string;
-    value?: number;
-    result?: number;
-  }>;
-  dieType?: string;
-  result?: number;
-  sides?: number | string;
-  value?: number;
-};
 
 type DiceBoxInstance = {
   init: () => Promise<unknown>;
@@ -155,52 +138,6 @@ function formatDice(dice: RollDie[]) {
 function getThemeColor(fallback: string) {
   if (typeof document === 'undefined') return fallback;
   return document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? fallback;
-}
-
-function normalizeDieSize(value: number | string | undefined): DieSize {
-  const sides = typeof value === 'string' ? Number(value.match(/\d+/)?.[0]) : Number(value);
-  return dieSizes.includes(sides as DieSize) ? (sides as DieSize) : 6;
-}
-
-function getRollValue(...values: Array<number | undefined>) {
-  return values.find((value) => typeof value === 'number' && Number.isFinite(value)) ?? 0;
-}
-
-function toRollResult(groups: DiceBoxRoll[]): RollResult {
-  const rolls = groups.flatMap((group) => {
-    if (!group.rolls?.length) {
-      return [
-        {
-          sides: normalizeDieSize(group.sides ?? group.dieType),
-          value: getRollValue(group.value, group.result),
-        },
-      ];
-    }
-
-    return group.rolls.map((roll) => {
-      const isSingleDieGroup = group.rolls?.length === 1;
-      return {
-        sides: normalizeDieSize(roll.sides ?? roll.dieType ?? group.sides ?? group.dieType),
-        value: getRollValue(
-          roll.value,
-          roll.result,
-          isSingleDieGroup ? group.value : undefined,
-          isSingleDieGroup ? group.result : undefined,
-        ),
-      };
-    });
-  });
-
-  const groupedTotal = groups.reduce(
-    (sum, group) => sum + getRollValue(group.value, group.result),
-    0,
-  );
-
-  return {
-    id: Date.now(),
-    rolls,
-    total: groupedTotal || rolls.reduce((sum, roll) => sum + roll.value, 0),
-  };
 }
 
 function toDiceBoxNotation(dice: RollDie[], themeColor: string) {
@@ -713,18 +650,34 @@ function DiceRoller() {
       await new Promise((resolve) => window.requestAnimationFrame(resolve));
       window.dispatchEvent(new Event('resize'));
       diceBoxRef.current.show();
-      const results = await diceBoxRef.current.roll(notation, {
-        themeColor: appAccent,
-        newStartPoint: true,
-      });
-      if (rollSequenceRef.current !== rollSequence) return;
-      const result = toRollResult(results);
-      if (result.rolls.length !== selectedDice.length) {
-        throw new Error('DiceBox returned an incomplete roll result.');
+
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const results = await diceBoxRef.current.roll(notation, {
+          themeColor: appAccent,
+          newStartPoint: true,
+        });
+        if (rollSequenceRef.current !== rollSequence) return;
+
+        const result = toRollResult(results);
+        if (isValidRollResult(result, selectedDice)) {
+          setLastResult(result);
+          return;
+        }
+
+        console.warn('[dice] DiceBox returned an invalid roll; retrying', {
+          attempt,
+          maxAttempts,
+          result,
+        });
       }
-      setLastResult(result);
+
+      throw new Error('DiceBox returned invalid roll results after three attempts.');
     } catch (error) {
       console.warn('[dice] DiceBox roll failed', error);
+      diceBoxRef.current?.clear();
+      diceBoxRef.current?.hide();
+      setHasVisibleDice(false);
     } finally {
       if (rollSequenceRef.current === rollSequence) setIsRolling(false);
     }

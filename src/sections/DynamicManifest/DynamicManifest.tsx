@@ -4,6 +4,12 @@ import { useLocation } from 'react-router';
 import avatarLegendsIcon192 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-192x192.png';
 import avatarLegendsIcon512 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-512x512.png';
 import { readIndexedDbCharacter } from '../../state/indexedDbCharacterStorage';
+import {
+  type AvatarTraining,
+  applyAvatarTrainingChrome,
+  avatarTrainingChrome,
+  toAvatarTraining,
+} from '../../theme/avatarTrainingChrome';
 
 /**
  * Mirrors the static `manifest.json` at the project root. Kept inline so
@@ -32,29 +38,6 @@ const manifestBase = {
     },
   ],
 };
-
-type AvatarTraining =
-  | 'Waterbending'
-  | 'Earthbending'
-  | 'Firebending'
-  | 'Airbending'
-  | 'Weapons'
-  | 'Technology';
-
-const avatarTrainingChrome: Record<AvatarTraining, string> = {
-  Waterbending: '#173755',
-  Earthbending: '#24351f',
-  Firebending: '#4a1f1b',
-  Airbending: '#544821',
-  Weapons: '#0b1018',
-  Technology: '#3c294c',
-};
-
-function toAvatarTraining(candidate: unknown): AvatarTraining {
-  return typeof candidate === 'string' && candidate in avatarTrainingChrome
-    ? (candidate as AvatarTraining)
-    : 'Waterbending';
-}
 
 async function getStoredAvatarTraining(): Promise<AvatarTraining> {
   const stored = await readIndexedDbCharacter<{ primaryTraining?: unknown }>(
@@ -156,6 +139,7 @@ function DynamicManifest() {
     // caches it at install time). The body bg + theme-color update
     // immediately and cover the visible chrome surfaces (safe-area
     // tint, mobile address-bar tint, the strip outside the app card).
+    document.documentElement.style.backgroundColor = background;
     document.body.style.background = background;
     let themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (!themeMeta) {
@@ -197,12 +181,19 @@ function DynamicManifest() {
     const refresh = (event?: Event) => {
       const candidate = (event as CustomEvent<unknown> | undefined)?.detail;
       if (typeof candidate === 'string') {
+        applyAvatarTrainingChrome(candidate);
         setAvatarTraining(toAvatarTraining(candidate));
         return;
       }
-      void getStoredAvatarTraining().then(setAvatarTraining);
+      void getStoredAvatarTraining().then((training) => {
+        applyAvatarTrainingChrome(training);
+        setAvatarTraining(training);
+      });
     };
-    void getStoredAvatarTraining().then(setAvatarTraining);
+    void getStoredAvatarTraining().then((training) => {
+      applyAvatarTrainingChrome(training);
+      setAvatarTraining(training);
+    });
     window.addEventListener('avatar-legends-primary-training-change', refresh);
     window.addEventListener('storage', refresh);
     return () => {
