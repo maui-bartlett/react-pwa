@@ -26,6 +26,12 @@ See `package.json` scripts section. Key commands:
 - The `prepare` script runs `husky install` and copies `env/.shared` to `.env`. This runs automatically on `npm install`.
 - ESLint is configured with `--max-warnings=0`, so any warning will cause a non-zero exit code.
 
+### Release version rule
+
+- Before every push to `master`, update `pwa_version` in `manifest.json` to a new value.
+- Treat every new `master` push as a new app release, including test-only, documentation, and small UI changes.
+- The runtime manifest and new-version banner read this value automatically; do not duplicate the version elsewhere.
+
 ### Scheduling rule
 
 - Always schedule `at` jobs using standalone scripts (for example, under `~/Library/Scripts`) and invoke them via `/bin/bash /path/to/script`.
