@@ -9,6 +9,7 @@ import DiceRoller from './components/DiceRoller';
 import Pages from './routes/Pages';
 import DynamicManifest from './sections/DynamicManifest';
 import HotKeys from './sections/HotKeys';
+import NewVersionBanner from './sections/NewVersionBanner';
 import Sidebar from './sections/Sidebar';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
       <HotKeys />
       <BrowserRouter>
         <DynamicManifest />
+        <NewVersionBanner />
         <Sidebar />
         <Pages />
         <DiceRoller />

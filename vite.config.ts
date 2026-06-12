@@ -8,6 +8,9 @@ import manifest from './manifest.json';
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __PWA_VERSION__: JSON.stringify(manifest.pwa_version),
+  },
   plugins: [
     react(),
     VitePWA({
