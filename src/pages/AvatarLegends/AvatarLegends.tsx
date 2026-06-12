@@ -6540,7 +6540,13 @@ function AvatarLegends() {
   // correct theme palette on its next render. Done at the start of
   // render, before children read those colors during their own render.
   const { isDarkMode } = useThemeMode();
-  const character = useAtomValue(characterStateAtom);
+  const [character, setCharacter] = useAtom(characterStateAtom);
+  const selectRemoteCharacter = useCallback(
+    (characterState: unknown) => {
+      setCharacter(deserializeAvatarLegendsCharacter(characterState));
+    },
+    [setCharacter],
+  );
   const localCharacters = useLocalCharacterSlots({
     atom: characterStateAtom,
     gameSystem: AVATAR_LEGENDS_GAME_SYSTEM,
@@ -6831,6 +6837,7 @@ function AvatarLegends() {
                 createCharacterPayload={({ avatarClass }) =>
                   createRandomAvatarLegendsBackendPayload(avatarClass as AvatarClassData | null)
                 }
+                onSelectCharacterState={selectRemoteCharacter}
                 selectCharacterEventName={AVATAR_LEGENDS_SELECT_CHARACTER_EVENT}
               />
             </Box>

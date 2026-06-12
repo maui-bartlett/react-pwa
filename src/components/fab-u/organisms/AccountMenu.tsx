@@ -75,6 +75,7 @@ type AccountMenuProps = {
     schemaVersion: number;
     characterState: unknown;
   };
+  onSelectCharacterState?: (characterState: unknown) => void;
   selectCharacterEventName?: string;
 };
 
@@ -273,6 +274,7 @@ function AccountMenu({
   onToggleTheme,
   themeMode,
   createCharacterPayload,
+  onSelectCharacterState,
   selectCharacterEventName = FAB_U_SELECT_CHARACTER_EVENT,
 }: AccountMenuProps) {
   const fabUTokens = useFabUTokens();
@@ -507,6 +509,9 @@ function AccountMenu({
   async function selectCharacter(characterId: Id<'characters'>, characterState?: unknown) {
     const primaryTraining =
       gameSystem === 'avatar-legends' ? getAvatarPrimaryTraining(characterState) : null;
+    if (characterState !== undefined) {
+      onSelectCharacterState?.(characterState);
+    }
     if (primaryTraining) {
       setAvatarBackdropOverride(applyAvatarTrainingChrome(primaryTraining));
       window.dispatchEvent(

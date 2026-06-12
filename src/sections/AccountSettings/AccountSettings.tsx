@@ -34,6 +34,8 @@ type AccountSettingsProps = {
     schemaVersion: number;
     characterState: unknown;
   };
+  /** Applies a selected backend character to the owning app immediately. */
+  onSelectCharacterState?: (characterState: unknown) => void;
   /** App-specific event fired after selecting a character. */
   selectCharacterEventName?: string;
 };
@@ -51,6 +53,7 @@ function AccountSettings({
   localCharacters,
   tokensOverride,
   createCharacterPayload,
+  onSelectCharacterState,
   selectCharacterEventName,
 }: AccountSettingsProps) {
   const setGameSystem = useSetAtom(gameSystemAtom);
@@ -80,6 +83,7 @@ function AccountSettings({
         themeMode={isDarkMode ? 'dark' : 'light'}
         onToggleTheme={toggle}
         createCharacterPayload={createCharacterPayload}
+        onSelectCharacterState={onSelectCharacterState}
         selectCharacterEventName={selectCharacterEventName}
       />
     </FabUTokensContext.Provider>
