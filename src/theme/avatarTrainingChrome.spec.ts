@@ -21,19 +21,32 @@ describe('avatar training chrome', () => {
         if (name === 'content') this.content = value;
       },
     } as HTMLMetaElement;
+    const root = { style: { background: '', backgroundColor: '' } };
+    const properties = new Map<string, string>();
     const targetDocument = {
-      body: { style: { background: '' } },
-      documentElement: { style: { backgroundColor: '' } },
+      body: { style: { background: '', backgroundColor: '' } },
+      documentElement: {
+        style: {
+          background: '',
+          backgroundColor: '',
+          setProperty: (name: string, value: string) => properties.set(name, value),
+        },
+      },
       head: { appendChild: () => undefined },
       createElement: () => meta,
-      querySelector: () => null,
-    };
+      querySelector: (selector: string) => (selector === '#root' ? root : null),
+    } as unknown as NonNullable<Parameters<typeof applyAvatarTrainingChrome>[1]>;
 
     const color = applyAvatarTrainingChrome('Technology', targetDocument);
 
     expect(color).toBe('#3c294c');
+    expect(properties.get('--app-chrome-color')).toBe('#3c294c');
+    expect(targetDocument.documentElement.style.background).toBe('#3c294c');
     expect(targetDocument.documentElement.style.backgroundColor).toBe('#3c294c');
     expect(targetDocument.body.style.background).toBe('#3c294c');
+    expect(targetDocument.body.style.backgroundColor).toBe('#3c294c');
+    expect(root.style.background).toBe('#3c294c');
+    expect(root.style.backgroundColor).toBe('#3c294c');
     expect(meta.name).toBe('theme-color');
     expect(meta.content).toBe('#3c294c');
   });

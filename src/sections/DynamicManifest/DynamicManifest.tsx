@@ -139,8 +139,16 @@ function DynamicManifest() {
     // caches it at install time). The body bg + theme-color update
     // immediately and cover the visible chrome surfaces (safe-area
     // tint, mobile address-bar tint, the strip outside the app card).
+    document.documentElement.style.setProperty('--app-chrome-color', background);
+    document.documentElement.style.background = background;
     document.documentElement.style.backgroundColor = background;
     document.body.style.background = background;
+    document.body.style.backgroundColor = background;
+    const root = document.querySelector<HTMLElement>('#root');
+    if (root) {
+      root.style.background = background;
+      root.style.backgroundColor = background;
+    }
     let themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (!themeMeta) {
       themeMeta = document.createElement('meta');

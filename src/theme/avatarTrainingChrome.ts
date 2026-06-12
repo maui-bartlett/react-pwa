@@ -16,11 +16,17 @@ const avatarTrainingChrome: Record<AvatarTraining, string> = {
 };
 
 type AvatarChromeDocument = {
-  body: { style: { background: string } };
-  documentElement: { style: { backgroundColor: string } };
+  body: { style: { background: string; backgroundColor: string } };
+  documentElement: {
+    style: {
+      background: string;
+      backgroundColor: string;
+      setProperty: (name: string, value: string) => unknown;
+    };
+  };
   head: { appendChild: (element: HTMLMetaElement) => unknown };
   createElement: (tagName: 'meta') => HTMLMetaElement;
-  querySelector: (selector: string) => HTMLMetaElement | null;
+  querySelector: (selector: string) => HTMLElement | HTMLMetaElement | null;
 };
 
 function toAvatarTraining(candidate: unknown): AvatarTraining {
@@ -40,10 +46,20 @@ function applyAvatarTrainingChrome(
   const color = getAvatarTrainingChrome(candidate);
   if (!targetDocument) return color;
 
+  targetDocument.documentElement.style.setProperty('--app-chrome-color', color);
+  targetDocument.documentElement.style.background = color;
   targetDocument.documentElement.style.backgroundColor = color;
   targetDocument.body.style.background = color;
+  targetDocument.body.style.backgroundColor = color;
+  const root = targetDocument.querySelector('#root') as HTMLElement | null;
+  if (root) {
+    root.style.background = color;
+    root.style.backgroundColor = color;
+  }
 
-  let themeMeta = targetDocument.querySelector('meta[name="theme-color"]');
+  let themeMeta = targetDocument.querySelector(
+    'meta[name="theme-color"]',
+  ) as HTMLMetaElement | null;
   if (!themeMeta) {
     themeMeta = targetDocument.createElement('meta');
     themeMeta.name = 'theme-color';

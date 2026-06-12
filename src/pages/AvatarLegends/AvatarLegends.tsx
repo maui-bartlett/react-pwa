@@ -1457,6 +1457,7 @@ function WatercolorBand({
   overflowVisible = false,
   showEdgeLine = true,
   zIndex = 2,
+  topOffset = 0,
 }: {
   bottom?: boolean;
   height?: number;
@@ -1472,6 +1473,7 @@ function WatercolorBand({
   overflowVisible?: boolean;
   showEdgeLine?: boolean;
   zIndex?: number;
+  topOffset?: number | string;
 }) {
   const solidEdge = height - 18;
   const bandFill = fill ?? deepInk;
@@ -1517,7 +1519,7 @@ function WatercolorBand({
         position: 'absolute',
         left: 0,
         right: 0,
-        [bottom ? 'bottom' : 'top']: 0,
+        [bottom ? 'bottom' : 'top']: bottom ? 0 : topOffset,
         height,
         overflow: overflowVisible ? 'visible' : 'hidden',
         pointerEvents: 'none',
@@ -6661,6 +6663,19 @@ function AvatarLegends() {
             },
           }}
         >
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 'env(safe-area-inset-top, 0px)',
+              background: trainingTheme.chromeColor,
+              pointerEvents: 'none',
+              zIndex: 3,
+            }}
+          />
           {/* Paper grain via repeating radial noise */}
           <Box
             aria-hidden
@@ -6696,6 +6711,7 @@ function AvatarLegends() {
             borderColor={trainingHeaderBorder}
             brushBorder={trainingTheme.brushBorder}
             borderOffsetY={headerBorderOffsetY}
+            topOffset="env(safe-area-inset-top, 0px)"
             extendFillToEdge={shouldExtendHeaderFill}
             mirrorX={shouldMirrorHeader}
             overflowVisible={
@@ -6717,12 +6733,29 @@ function AvatarLegends() {
 
           {/* Page corner ornaments — near-white in both modes, sitting on
             the deep-navy header. */}
-          <Box sx={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 'env(safe-area-inset-top, 0px)',
+              right: 0,
+              bottom: 0,
+              left: 0,
+              zIndex: 4,
+              pointerEvents: 'none',
+            }}
+          >
             <CornerOrnament position="tl" color={chromeText} size={18} />
             <CornerOrnament position="tr" color={chromeText} size={18} />
           </Box>
 
-          <Stack sx={{ position: 'relative', height: '100%' }}>
+          <Stack
+            sx={{
+              position: 'relative',
+              height: '100%',
+              boxSizing: 'border-box',
+              pt: 'env(safe-area-inset-top, 0px)',
+            }}
+          >
             {/* Top header — dark navy brush-stroke band. Heading text on the
               left, app-level settings button on the right, both centered
               vertically within the solid portion of the band. The heading
