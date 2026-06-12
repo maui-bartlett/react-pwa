@@ -14,7 +14,7 @@ function shouldShowVersionBanner() {
 }
 
 function NewVersionBanner() {
-  const [open, setOpen] = useState(shouldShowVersionBanner);
+  const [open, setOpen] = useState(() => shouldShowVersionBanner());
 
   useEffect(() => {
     if (!open) return;
