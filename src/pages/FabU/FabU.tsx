@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { useSwipeable } from 'react-swipeable';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
@@ -25,6 +26,7 @@ import {
   ChevronDown,
   Feather,
   FlaskConical,
+  House,
   Pencil,
   Shield,
   Sparkles,
@@ -2617,6 +2619,25 @@ function FabU() {
     );
 
   const header = (() => {
+    const homeAction = (
+      <IconButton
+        component={Link}
+        to="/"
+        aria-label="Back to Table Top home"
+        sx={{
+          width: 34,
+          height: 34,
+          borderRadius: '8px',
+          bgcolor: alpha('#ffffff', 0.16),
+          color: '#ffffff',
+          '&:hover': {
+            bgcolor: alpha('#ffffff', 0.22),
+          },
+        }}
+      >
+        <House size={18} strokeWidth={2} />
+      </IconButton>
+    );
     const settingsAction = (
       // App-level settings menu — passing the FabU game system so downstream
       // account-menu queries scope to Fabula Ultima.
@@ -2635,6 +2656,7 @@ function FabU() {
           subtitle="Stats, status effects, and battle actions"
           actionLabel="Combat"
           action={settingsAction}
+          navigationAction={homeAction}
         />
       );
     }
@@ -2651,6 +2673,7 @@ function FabU() {
         subtitle={headerSubtitle}
         actionLabel={activeTab === 'overview' ? `LVL ${character.level}` : meta.actionLabel}
         action={settingsAction}
+        navigationAction={homeAction}
       />
     );
   })();

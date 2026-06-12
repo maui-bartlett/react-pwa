@@ -91,5 +91,14 @@ function isValidRollResult(result: RollResult, selectedDice: RollDie[]) {
   return dieSizes.every((sides) => expectedCounts.get(sides) === actualCounts.get(sides));
 }
 
-export { dieSizes, isValidRollResult, toRollResult };
+function createRandomRollResult(dice: RollDie[], random: () => number = Math.random): RollResult {
+  return toRollResult(
+    dice.map(({ sides }) => ({
+      sides,
+      value: Math.floor(random() * sides) + 1,
+    })),
+  );
+}
+
+export { createRandomRollResult, dieSizes, isValidRollResult, toRollResult };
 export type { DiceBoxRoll, DieSize, RollDie, RollResult };

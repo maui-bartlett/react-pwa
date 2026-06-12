@@ -13,6 +13,7 @@ type HeaderBarProps = {
   subtitle?: string;
   actionLabel?: string;
   action?: ReactNode;
+  navigationAction?: ReactNode;
   variant?: 'compact' | 'hero';
 };
 
@@ -22,10 +23,12 @@ function HeaderBar({
   subtitle,
   actionLabel,
   action,
+  navigationAction,
   variant = 'hero',
 }: HeaderBarProps) {
   const fabUTokens = useFabUTokens();
   const compact = variant === 'compact';
+  const topRowPaddingRight = action || actionLabel || navigationAction ? (compact ? 13 : 17) : 0;
 
   return (
     <Stack
@@ -55,7 +58,6 @@ function HeaderBar({
         sx={{
           flex: 1,
           minWidth: 0,
-          pr: action || actionLabel ? (compact ? 9 : 11) : 0,
         }}
       >
         {eyebrow ? (
@@ -71,6 +73,7 @@ function HeaderBar({
               display: 'flex',
               alignItems: 'center',
               gap: '3px',
+              pr: topRowPaddingRight,
             }}
           >
             {eyebrow}
@@ -85,6 +88,7 @@ function HeaderBar({
             fontSize: compact ? '1.05rem' : '1.36rem',
             letterSpacing: compact ? '0.07em' : '0.005em',
             textTransform: compact ? 'uppercase' : 'none',
+            pr: topRowPaddingRight,
           }}
         >
           {title}
@@ -116,6 +120,19 @@ function HeaderBar({
           {action}
         </Box>
       ) : null}
+      {navigationAction ? (
+        <Box
+          data-pw="header-navigation-action"
+          sx={{
+            position: 'absolute',
+            top: compact ? 9 : 'max(12px, calc(env(safe-area-inset-top) + 8px))',
+            right: compact ? 50 : 52,
+            zIndex: 1,
+          }}
+        >
+          {navigationAction}
+        </Box>
+      ) : null}
       {actionLabel ? (
         <Box
           data-pw="header-action"
@@ -123,23 +140,23 @@ function HeaderBar({
             position: 'absolute',
             top: compact ? 9 : 'max(12px, calc(env(safe-area-inset-top) + 8px))',
             bottom: 'auto',
-            right: compact ? 10 : 58,
+            right: compact ? 92 : navigationAction ? 92 : 58,
             transform: 'none',
-            minWidth: compact ? 78 : 72,
-            minHeight: compact ? 34 : 34,
-            height: 34,
+            minWidth: compact ? 60 : navigationAction ? 48 : 72,
+            minHeight: compact ? 30 : navigationAction ? 30 : 34,
+            height: compact ? 30 : navigationAction ? 30 : 34,
             borderRadius: '7px',
             bgcolor: fabUTokens.isDark ? fabUTokens.color.brandSoft : alpha('#ffffff', 0.96),
             color: fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brandStrong,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            px: 1.15,
+            px: navigationAction ? 0.8 : 1.15,
             boxShadow: 'none',
             cursor: 'default',
             textTransform: 'none',
             fontWeight: 700,
-            fontSize: compact ? '0.72rem' : '0.74rem',
+            fontSize: compact ? '0.7rem' : navigationAction ? '0.67rem' : '0.74rem',
           }}
         >
           {actionLabel}

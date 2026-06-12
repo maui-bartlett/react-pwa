@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isValidRollResult, toRollResult } from './diceRollResults';
+import { createRandomRollResult, isValidRollResult, toRollResult } from './diceRollResults';
 
 describe('DiceRoller results', () => {
   it('accepts valid flat DiceBox results', () => {
@@ -45,5 +45,21 @@ describe('DiceRoller results', () => {
     const second = toRollResult([{ dieType: 'd6', sides: 6, value: 3 }]);
 
     expect(second.id).not.toBe(first.id);
+  });
+
+  it('creates a complete valid fallback result without rerolling physics', () => {
+    const dice = [
+      { id: 1, sides: 6 as const },
+      { id: 2, sides: 20 as const },
+    ];
+    const values = [0, 0.999];
+    const result = createRandomRollResult(dice, () => values.shift() ?? 0);
+
+    expect(result.rolls).toEqual([
+      { sides: 6, value: 1 },
+      { sides: 20, value: 20 },
+    ]);
+    expect(result.total).toBe(21);
+    expect(isValidRollResult(result, dice)).toBe(true);
   });
 });

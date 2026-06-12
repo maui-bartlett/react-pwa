@@ -52,3 +52,14 @@ test('returns to the Table Top home from Avatar Legends', async ({ page }) => {
 
   await expect(page).toHaveURL('/');
 });
+
+test('returns to the Table Top home from Fabula Ultima', async ({ page }) => {
+  await page.goto('/fab-u');
+
+  const homeLink = page.getByRole('link', { name: 'Back to Table Top home' });
+  await expect(homeLink).toHaveAttribute('href', '/');
+  await homeLink.click();
+
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Table-TopOnline');
+});

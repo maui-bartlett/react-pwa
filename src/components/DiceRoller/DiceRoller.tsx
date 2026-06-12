@@ -14,6 +14,7 @@ import {
   type DieSize,
   type RollDie,
   type RollResult,
+  createRandomRollResult,
   dieSizes,
   isValidRollResult,
   toRollResult,
@@ -548,16 +549,17 @@ function DiceRoller() {
           theme: 'default',
           themeColor: initialConfig.themeColor,
           scale: 4.4,
-          gravity: 1,
+          gravity: 2,
           mass: 1,
           friction: 0.8,
           restitution: 0,
-          linearDamping: 0.62,
-          angularDamping: 0.62,
-          spinForce: 4.2,
-          throwForce: 6,
-          startingHeight: 8,
-          settleTimeout: 6500,
+          linearDamping: 0.8,
+          angularDamping: 0.8,
+          spinForce: 2.8,
+          throwForce: 3.5,
+          startingHeight: 4,
+          settleTimeout: 750,
+          delay: 10,
           offscreen: true,
           lightIntensity: initialConfig.mode === 'dark' ? 1.12 : 1.25,
           enableShadows: true,
@@ -651,28 +653,22 @@ function DiceRoller() {
       window.dispatchEvent(new Event('resize'));
       diceBoxRef.current.show();
 
-      const maxAttempts = 3;
-      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        const results = await diceBoxRef.current.roll(notation, {
-          themeColor: appAccent,
-          newStartPoint: true,
-        });
-        if (rollSequenceRef.current !== rollSequence) return;
+      const results = await diceBoxRef.current.roll(notation, {
+        themeColor: appAccent,
+        newStartPoint: true,
+      });
+      if (rollSequenceRef.current !== rollSequence) return;
 
-        const result = toRollResult(results);
-        if (isValidRollResult(result, selectedDice)) {
-          setLastResult(result);
-          return;
-        }
-
-        console.warn('[dice] DiceBox returned an invalid roll; retrying', {
-          attempt,
-          maxAttempts,
-          result,
-        });
+      const result = toRollResult(results);
+      if (isValidRollResult(result, selectedDice)) {
+        setLastResult(result);
+        return;
       }
 
-      throw new Error('DiceBox returned invalid roll results after three attempts.');
+      console.warn('[dice] DiceBox returned an invalid roll; using a valid fallback result', {
+        result,
+      });
+      setLastResult(createRandomRollResult(selectedDice));
     } catch (error) {
       console.warn('[dice] DiceBox roll failed', error);
       diceBoxRef.current?.clear();

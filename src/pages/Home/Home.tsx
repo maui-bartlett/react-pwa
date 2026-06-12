@@ -277,17 +277,11 @@ function Home() {
                 maxWidth: 760,
               }}
             >
-              <Box component="span" sx={{ display: { xs: 'block', md: 'none' } }}>
-                Table Top
+              <Box component="span" sx={{ display: 'block' }}>
+                Table-Top
               </Box>
-              <Box component="span" sx={{ display: { xs: 'none', md: 'block' } }}>
-                Fabula Ultima
-              </Box>
-              <Box component="span" sx={{ display: { xs: 'none', md: 'block' } }}>
-                &
-              </Box>
-              <Box component="span" sx={{ display: { xs: 'none', md: 'block' } }}>
-                Avatar Legends
+              <Box component="span" sx={{ display: 'block' }}>
+                Online
               </Box>
             </Typography>
             <Typography
