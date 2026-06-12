@@ -53,6 +53,21 @@ const diceRollButtonReveal = keyframes`
   }
 `;
 
+const visibleDieRoll = keyframes`
+  0% {
+    transform: translate3d(-18px, 18px, 0) rotate(-30deg) scale(0.94);
+  }
+  35% {
+    transform: translate3d(12px, -18px, 0) rotate(145deg) scale(1.06);
+  }
+  70% {
+    transform: translate3d(-6px, 8px, 0) rotate(285deg) scale(0.98);
+  }
+  100% {
+    transform: translate3d(14px, -10px, 0) rotate(390deg) scale(1.02);
+  }
+`;
+
 type DiceBoxInstance = {
   init: () => Promise<unknown>;
   roll: (
@@ -77,6 +92,22 @@ const defaultDiceTrayStyle: DiceTrayStyle = {
   width: typeof window === 'undefined' ? 0 : window.innerWidth,
   height: typeof window === 'undefined' ? 0 : window.innerHeight,
 };
+
+const minVisibleRollMs = 700;
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function waitForNextPaint() {
+  return new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => resolve());
+    });
+  });
+}
 
 function getDiceTrayMetrics(constrainToVisibleFrame = false): DiceTrayStyle {
   if (typeof document === 'undefined') return defaultDiceTrayStyle;
@@ -120,6 +151,74 @@ function areDiceTrayStylesEqual(a: DiceTrayStyle, b: DiceTrayStyle) {
     Math.round(a.top) === Math.round(b.top) &&
     Math.round(a.width) === Math.round(b.width) &&
     Math.round(a.height) === Math.round(b.height)
+  );
+}
+
+function RollingDiceVisibilityLayer({
+  dice,
+  trayStyle,
+  accent,
+  textColor,
+  visible,
+}: {
+  dice: RollDie[];
+  trayStyle: DiceTrayStyle;
+  accent: string;
+  textColor: string;
+  visible: boolean;
+}) {
+  if (!visible || dice.length === 0) return null;
+
+  const displayDice = dice.slice(0, 8);
+  const columns = Math.min(4, displayDice.length);
+
+  return (
+    <Box
+      aria-hidden="true"
+      sx={{
+        position: 'fixed',
+        left: `${trayStyle.left}px`,
+        top: `${trayStyle.top}px`,
+        width: `${trayStyle.width}px`,
+        height: `${trayStyle.height}px`,
+        zIndex: (theme) => theme.zIndex.tooltip + 14,
+        display: 'grid',
+        placeItems: 'center',
+        pointerEvents: 'none',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columns}, 50px)`,
+          gap: 1.1,
+          justifyContent: 'center',
+          maxWidth: 'min(260px, 76vw)',
+        }}
+      >
+        {displayDice.map((die, index) => (
+          <Box
+            key={die.id}
+            sx={{
+              display: 'grid',
+              width: 50,
+              height: 50,
+              placeItems: 'center',
+              border: `2px solid ${alpha(textColor, 0.28)}`,
+              borderRadius: '14px',
+              bgcolor: alpha(accent, 0.88),
+              boxShadow: `0 12px 24px ${alpha('#000000', 0.28)}`,
+              color: textColor,
+              animation: `${visibleDieRoll} ${760 + (index % 3) * 90}ms ease-in-out ${
+                index * 55
+              }ms infinite alternate`,
+            }}
+          >
+            <DieGlyph sides={die.sides} size={die.sides === 100 ? 30 : 32} />
+          </Box>
+        ))}
+      </Box>
+    </Box>
   );
 }
 
@@ -560,7 +659,7 @@ function DiceRoller() {
           startingHeight: 4,
           settleTimeout: 750,
           delay: 10,
-          offscreen: true,
+          offscreen: false,
           lightIntensity: initialConfig.mode === 'dark' ? 1.12 : 1.25,
           enableShadows: true,
           shadowTransparency: initialConfig.mode === 'dark' ? 0.72 : 0.82,
@@ -649,14 +748,21 @@ function DiceRoller() {
     setDiceTrayStyle(getDiceTrayMetrics(true));
 
     try {
-      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      const visualRollStartedAt = performance.now();
+      await waitForNextPaint();
       window.dispatchEvent(new Event('resize'));
       diceBoxRef.current.show();
+      await waitForNextPaint();
 
       const results = await diceBoxRef.current.roll(notation, {
         themeColor: appAccent,
-        newStartPoint: true,
+        newStartPoint: false,
       });
+      if (rollSequenceRef.current !== rollSequence) return;
+      const remainingVisibleRollMs = minVisibleRollMs - (performance.now() - visualRollStartedAt);
+      if (remainingVisibleRollMs > 0) {
+        await wait(remainingVisibleRollMs);
+      }
       if (rollSequenceRef.current !== rollSequence) return;
 
       const result = toRollResult(results);
@@ -707,6 +813,13 @@ function DiceRoller() {
             height: '100% !important',
           },
         }}
+      />
+      <RollingDiceVisibilityLayer
+        dice={selectedDice}
+        trayStyle={diceTrayStyle}
+        accent={accent}
+        textColor={theme.palette.common.white}
+        visible={isRolling}
       />
       <ResultReadoutOverlay
         result={isRolling ? null : lastResult}

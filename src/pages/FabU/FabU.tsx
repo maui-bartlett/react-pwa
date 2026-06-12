@@ -250,34 +250,26 @@ function formatFabUCharacterName(character: Character) {
   return formattedName || 'Fab U Character';
 }
 
-const screenMeta: Record<
-  Exclude<FabUTab, 'combat'>,
-  { title: string; subtitle: string; actionLabel: string }
-> = {
+const screenMeta: Record<Exclude<FabUTab, 'combat'>, { title: string; subtitle: string }> = {
   overview: {
     title: 'Radovan "Rad" Milinic',
     subtitle: 'Transfer Student to UoE · Political refugee',
-    actionLabel: '',
   },
   skills: {
     title: 'Skills & Growth',
     subtitle: 'Class skill tables, levels, and effects',
-    actionLabel: 'Skills',
   },
   spells: {
     title: 'Spells & Arcana',
     subtitle: 'Magic, resources, and rituals',
-    actionLabel: 'Spells',
   },
   gear: {
     title: 'Gear & Inventory',
     subtitle: 'Equipment, backpack, and zenit',
-    actionLabel: 'Gear',
   },
   notes: {
     title: 'Character Notes',
     subtitle: 'Backstory prompts and campaign notes',
-    actionLabel: 'Notes',
   },
 };
 
@@ -2654,7 +2646,6 @@ function FabU() {
           eyebrow={eyebrow}
           title="Combat"
           subtitle="Stats, status effects, and battle actions"
-          actionLabel="Combat"
           action={settingsAction}
           navigationAction={homeAction}
         />
@@ -2671,7 +2662,6 @@ function FabU() {
         eyebrow={eyebrow}
         title={headerTitle}
         subtitle={headerSubtitle}
-        actionLabel={activeTab === 'overview' ? `LVL ${character.level}` : meta.actionLabel}
         action={settingsAction}
         navigationAction={homeAction}
       />
