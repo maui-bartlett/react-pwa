@@ -719,7 +719,7 @@ function DiceRoller() {
         sx={{
           position: 'fixed',
           right: { xs: 15, sm: 34 },
-          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 90px)', sm: 42 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 70px)', sm: 22 },
           zIndex: theme.zIndex.tooltip + 20,
           display: 'flex',
           flexDirection: 'column',
