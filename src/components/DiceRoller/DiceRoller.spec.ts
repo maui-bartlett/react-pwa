@@ -39,4 +39,11 @@ describe('DiceRoller results', () => {
     ).toBe(false);
     expect(isValidRollResult(result, [{ id: 1, sides: 8 }])).toBe(false);
   });
+
+  it('assigns unique IDs to results created in rapid succession', () => {
+    const first = toRollResult([{ dieType: 'd6', sides: 6, value: 2 }]);
+    const second = toRollResult([{ dieType: 'd6', sides: 6, value: 3 }]);
+
+    expect(second.id).not.toBe(first.id);
+  });
 });

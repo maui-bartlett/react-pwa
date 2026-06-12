@@ -25,6 +25,8 @@ type DiceBoxRoll = {
   value?: number;
 };
 
+let resultIdCounter = 0;
+
 function normalizeDieSize(value: number | string | undefined): DieSize {
   const sides = typeof value === 'string' ? Number(value.match(/\d+/)?.[0]) : Number(value);
   return dieSizes.includes(sides as DieSize) ? (sides as DieSize) : 6;
@@ -65,7 +67,7 @@ function toRollResult(groups: DiceBoxRoll[]): RollResult {
   );
 
   return {
-    id: Date.now(),
+    id: Date.now() * 1000 + (resultIdCounter++ % 1000),
     rolls,
     total: groupedTotal || rolls.reduce((sum, roll) => sum + roll.value, 0),
   };
