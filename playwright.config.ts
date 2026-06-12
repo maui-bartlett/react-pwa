@@ -6,9 +6,22 @@ import { createDefaultCharacter } from './src/domain/fabU/characterDefaults';
 const PORT = process.env.CI ? 4173 : 5173;
 const BASE_URL = `http://localhost:${PORT}`;
 const defaultFabUCharacter = createDefaultCharacter();
-const { pwa_version: pwaVersion } = JSON.parse(
-  readFileSync(new URL('./manifest.json', import.meta.url), 'utf8'),
-) as { pwa_version: string };
+let pwaVersion: string;
+
+try {
+  const manifest = JSON.parse(
+    readFileSync(new URL('./manifest.json', import.meta.url), 'utf8'),
+  ) as Record<string, unknown>;
+
+  if (typeof manifest.pwa_version !== 'string') {
+    throw new Error('manifest.json is missing a valid pwa_version');
+  }
+
+  pwaVersion = manifest.pwa_version;
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  throw new Error(`Failed to load the PWA version: ${message}`);
+}
 
 /**
  * Read environment variables from file.
