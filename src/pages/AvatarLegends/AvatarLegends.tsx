@@ -6631,7 +6631,7 @@ function AvatarLegends() {
           // iOS safe areas (home indicator strip) instead of stopping at
           // the small-viewport line and exposing the page background
           // colour below the app card.
-          minHeight: '100vh',
+          minHeight: '100dvh',
           // Outer mat around the parchment card — gradient switches with mode.
           background: pageBg,
           display: 'grid',
@@ -6643,9 +6643,9 @@ function AvatarLegends() {
           data-dice-tray-root
           sx={{
             width: 'min(100vw, 430px)',
-            // 100vh on mobile so the card itself fills through the safe
-            // area too; desktop keeps its capped card height.
-            height: { xs: '100vh', sm: 'min(860px, calc(100vh - 32px))' },
+            // Use the dynamic viewport on mobile so the card fills the visible
+            // safe area without extending beneath iOS browser chrome.
+            height: { xs: '100dvh', sm: 'min(860px, calc(100dvh - 32px))' },
             borderRadius: { xs: 0, sm: '12px' },
             // Flat solid card background. The cornflower watercolor wash
             // applied on top (see overlay layer below) handles the colour
@@ -6671,7 +6671,7 @@ function AvatarLegends() {
               left: 0,
               right: 0,
               height: 'env(safe-area-inset-top, 0px)',
-              background: trainingTheme.chromeColor,
+              background: `var(--app-chrome-color, ${trainingTheme.chromeColor})`,
               pointerEvents: 'none',
               zIndex: 3,
             }}
@@ -6903,7 +6903,7 @@ function AvatarLegends() {
                 // Footer pb dropped by 8px (see below) — content reserve
                 // shrinks to match so the last row sits flush against the
                 // nav top.
-                pb: 'calc(76px + 20px)',
+                pb: 'calc(76px + max(20px, env(safe-area-inset-bottom, 0px)))',
               }}
             >
               {activeTab === 'character' ? <CharacterPane /> : null}
@@ -6923,7 +6923,7 @@ function AvatarLegends() {
                 // ~12px of bottom padding to clear the iOS home
                 // indicator without making the footer feel oversized.
                 // (Was 28px — shrunk by 8px per spec.)
-                pb: '20px',
+                pb: 'max(20px, env(safe-area-inset-bottom, 0px))',
                 pt: 0.3,
                 position: 'absolute',
                 bottom: 0,
