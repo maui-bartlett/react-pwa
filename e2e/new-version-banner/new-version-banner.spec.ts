@@ -3,8 +3,12 @@ import { expect, test } from '@playwright/test';
 const STORAGE_KEY = 'table-top-last-seen-version';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate((key) => window.localStorage.removeItem(key), STORAGE_KEY);
+  await page.addInitScript((key) => {
+    const resetMarker = `${key}:e2e-reset`;
+    if (window.sessionStorage.getItem(resetMarker)) return;
+    window.localStorage.removeItem(key);
+    window.sessionStorage.setItem(resetMarker, 'true');
+  }, STORAGE_KEY);
 });
 
 test('shows the current version once and can be closed', async ({ page }) => {

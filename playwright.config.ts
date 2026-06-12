@@ -1,10 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 import { createDefaultCharacter } from './src/domain/fabU/characterDefaults';
 
 const PORT = process.env.CI ? 4173 : 5173;
 const BASE_URL = `http://localhost:${PORT}`;
 const defaultFabUCharacter = createDefaultCharacter();
+const { pwa_version: pwaVersion } = JSON.parse(
+  readFileSync(new URL('./manifest.json', import.meta.url), 'utf8'),
+) as { pwa_version: string };
 
 /**
  * Read environment variables from file.
@@ -42,6 +46,10 @@ export default defineConfig({
             {
               name: 'fab-u-character',
               value: JSON.stringify(defaultFabUCharacter),
+            },
+            {
+              name: 'table-top-last-seen-version',
+              value: pwaVersion,
             },
           ],
         },
