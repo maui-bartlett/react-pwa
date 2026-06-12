@@ -42,3 +42,13 @@ test('uses one root launch route across the site', async ({ page }) => {
     scope: '/',
   });
 });
+
+test('returns to the Table Top home from Avatar Legends', async ({ page }) => {
+  await page.goto('/avatar-legends');
+
+  const homeLink = page.getByRole('link', { name: 'Back to Table Top home' });
+  await expect(homeLink).toHaveAttribute('href', '/');
+  await homeLink.click();
+
+  await expect(page).toHaveURL('/');
+});

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { Link } from 'react-router';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -13,7 +14,7 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue } from 'jotai';
-import { Backpack, ChevronRight, HandFist, Pencil, Trash2 } from 'lucide-react';
+import { Backpack, ChevronRight, HandFist, House, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
@@ -6638,6 +6639,9 @@ function AvatarLegends() {
           // the small-viewport line and exposing the page background
           // colour below the app card.
           minHeight: '100dvh',
+          '@media (display-mode: standalone)': {
+            minHeight: '100lvh',
+          },
           // Outer mat around the parchment card — gradient switches with mode.
           background: pageBg,
           display: 'grid',
@@ -6652,6 +6656,9 @@ function AvatarLegends() {
             // Use the dynamic viewport on mobile so the card fills the visible
             // safe area without extending beneath iOS browser chrome.
             height: { xs: '100dvh', sm: 'min(860px, calc(100dvh - 32px))' },
+            '@media (display-mode: standalone) and (max-width: 599.95px)': {
+              height: '100lvh',
+            },
             borderRadius: { xs: 0, sm: '12px' },
             // Flat solid card background. The cornflower watercolor wash
             // applied on top (see overlay layer below) handles the colour
@@ -6829,17 +6836,38 @@ function AvatarLegends() {
                   </Typography>
                 </Stack>
               )}
-              <AccountSettings
-                gameSystem="avatar-legends"
-                localCharacterName={character.name}
-                localCharacters={localCharacters}
-                tokensOverride={accountTokens}
-                createCharacterPayload={({ avatarClass }) =>
-                  createRandomAvatarLegendsBackendPayload(avatarClass as AvatarClassData | null)
-                }
-                onSelectCharacterState={selectRemoteCharacter}
-                selectCharacterEventName={AVATAR_LEGENDS_SELECT_CHARACTER_EVENT}
-              />
+              <Stack direction="row" alignItems="center" spacing={0.75}>
+                <Button
+                  component={Link}
+                  to="/"
+                  aria-label="Back to Table Top home"
+                  sx={{
+                    minWidth: 34,
+                    width: 34,
+                    height: 34,
+                    borderRadius: '8px',
+                    bgcolor: alpha('#ffffff', 0.16),
+                    color: chromeText,
+                    p: 0,
+                    '&:hover': {
+                      bgcolor: alpha('#ffffff', 0.22),
+                    },
+                  }}
+                >
+                  <House size={18} strokeWidth={2} />
+                </Button>
+                <AccountSettings
+                  gameSystem="avatar-legends"
+                  localCharacterName={character.name}
+                  localCharacters={localCharacters}
+                  tokensOverride={accountTokens}
+                  createCharacterPayload={({ avatarClass }) =>
+                    createRandomAvatarLegendsBackendPayload(avatarClass as AvatarClassData | null)
+                  }
+                  onSelectCharacterState={selectRemoteCharacter}
+                  selectCharacterEventName={AVATAR_LEGENDS_SELECT_CHARACTER_EVENT}
+                />
+              </Stack>
             </Box>
 
             {/* Active-tab title bar. In light mode this band carries the

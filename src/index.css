@@ -27,3 +27,12 @@ body,
 body {
   background: var(--app-chrome-color, #173755);
 }
+
+@media (display-mode: standalone) {
+  html,
+  body,
+  #root {
+    height: 100lvh;
+    min-height: 100lvh;
+  }
+}
