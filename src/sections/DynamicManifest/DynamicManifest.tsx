@@ -58,6 +58,12 @@ function isAvatarLegendsRoute(pathname: string): boolean {
   return pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/');
 }
 
+function installationRouteForPath(pathname: string): string {
+  if (isAvatarLegendsRoute(pathname)) return '/avatar-legends';
+  if (pathname === '/fab-u' || pathname.startsWith('/fab-u/')) return '/fab-u';
+  return '/';
+}
+
 function iconsForRoute(pathname: string) {
   const icons = isAvatarLegendsRoute(pathname)
     ? [
@@ -111,8 +117,12 @@ function DynamicManifest() {
 
   useEffect(() => {
     const background = backgroundColorForRoute(pathname, avatarTraining);
+    const installationRoute = installationRouteForPath(pathname);
     const next = {
       ...manifestBase,
+      id: installationRoute,
+      start_url: installationRoute,
+      scope: '/',
       background_color: background,
       theme_color: background,
       icons: iconsForRoute(pathname),
