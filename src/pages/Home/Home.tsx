@@ -17,6 +17,8 @@ const systems = [
     action: 'Open Fabula Ultima',
     color: '#315c4d',
     accent: '#d6b76c',
+    cover: '/fabula-ultima-cover.jpg',
+    coverPosition: 'center 28%',
     visual: 'crest',
     icon: AutoAwesomeIcon,
   },
@@ -28,6 +30,8 @@ const systems = [
     action: 'Open Avatar Legends',
     color: '#3c294c',
     accent: '#b793c8',
+    cover: '/avatar-legends-cover.jpg',
+    coverPosition: 'center 32%',
     visual: 'avatar',
     icon: PublicIcon,
   },
@@ -120,44 +124,52 @@ function Home() {
   return (
     <Box
       sx={{
+        height: '100dvh',
         minHeight: '100dvh',
-        background:
-          'radial-gradient(circle at 12% 8%, rgba(183,147,200,0.3), transparent 28%), radial-gradient(circle at 88% 18%, rgba(49,92,77,0.32), transparent 30%), linear-gradient(180deg, #182237 0%, #241b2e 48%, #101721 100%)',
+        background: {
+          xs: '#182237',
+          md: 'radial-gradient(circle at 12% 8%, rgba(183,147,200,0.3), transparent 28%), radial-gradient(circle at 88% 18%, rgba(49,92,77,0.32), transparent 30%), linear-gradient(180deg, #182237 0%, #241b2e 48%, #101721 100%)',
+        },
         color: '#f8f4ec',
         overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <Box
         component="main"
         sx={{
-          py: { xs: 4, md: 6 },
+          py: { xs: 0, md: 6 },
         }}
       >
         <Box
           component="section"
           sx={{
             position: 'relative',
-            minHeight: { xs: 720, md: 'calc(100dvh - 48px)' },
+            minHeight: { xs: '56dvh', sm: 580, md: 'calc(100dvh - 48px)' },
             display: 'grid',
             alignItems: 'center',
             overflow: 'hidden',
             isolation: 'isolate',
-            px: { xs: 2, md: 4 },
+            px: { xs: 2.5, md: 4 },
             '&::before': {
               content: '""',
               position: 'absolute',
               inset: 0,
               zIndex: 1,
-              background:
-                'radial-gradient(circle at 50% 42%, rgba(15,18,28,0.24), rgba(15,18,28,0.72) 46%, rgba(15,18,28,0.08) 72%), linear-gradient(90deg, rgba(24,34,55,0.22), rgba(36,27,46,0.72) 34%, rgba(36,27,46,0.72) 66%, rgba(245,246,248,0.42))',
+              background: {
+                xs: 'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.1), transparent 34%), linear-gradient(180deg, #182237 0%, #101721 100%)',
+                md: 'radial-gradient(circle at 50% 42%, rgba(15,18,28,0.24), rgba(15,18,28,0.72) 46%, rgba(15,18,28,0.08) 72%), linear-gradient(90deg, rgba(24,34,55,0.22), rgba(36,27,46,0.72) 34%, rgba(36,27,46,0.72) 66%, rgba(245,246,248,0.42))',
+              },
             },
             '&::after': {
               content: '""',
               position: 'absolute',
               inset: 0,
               zIndex: 1,
-              background:
-                'linear-gradient(180deg, rgba(16,23,33,0.08) 0%, rgba(16,23,33,0.1) 68%, #101721 100%)',
+              background: {
+                xs: 'linear-gradient(180deg, transparent 60%, #101721 100%)',
+                md: 'linear-gradient(180deg, rgba(16,23,33,0.08) 0%, rgba(16,23,33,0.1) 68%, #101721 100%)',
+              },
             },
           }}
         >
@@ -171,6 +183,7 @@ function Home() {
                 alt={cover.label}
                 sx={{
                   position: 'absolute',
+                  display: { xs: 'none', md: 'block' },
                   zIndex: 0,
                   top: { xs: isLeft ? 18 : 'auto', md: '50%' },
                   bottom: { xs: isLeft ? 'auto' : 18, md: 'auto' },
@@ -225,10 +238,22 @@ function Home() {
               mx: 'auto',
               textAlign: 'center',
               alignItems: 'center',
-              py: { xs: 12, md: 10 },
+              py: { xs: 5, md: 10 },
               textShadow: '0 4px 24px rgba(0,0,0,0.5)',
             }}
           >
+            <Box
+              component="img"
+              src="/pwa-192x192.png"
+              alt=""
+              sx={{
+                display: { xs: 'block', md: 'none' },
+                width: 86,
+                height: 86,
+                borderRadius: 2,
+                boxShadow: '0 18px 44px rgba(0,0,0,0.34)',
+              }}
+            />
             <Typography
               component="p"
               sx={{
@@ -245,75 +270,100 @@ function Home() {
               component="h1"
               sx={{
                 fontFamily: 'Georgia, serif',
-                fontSize: { xs: 43, sm: 64, md: 82 },
+                fontSize: { xs: 44, sm: 64, md: 82 },
                 lineHeight: 0.95,
                 fontWeight: 800,
                 letterSpacing: 0,
                 maxWidth: 760,
               }}
             >
-              <Box component="span" sx={{ display: 'block' }}>
+              <Box component="span" sx={{ display: { xs: 'block', md: 'none' } }}>
+                Table Top
+              </Box>
+              <Box component="span" sx={{ display: { xs: 'none', md: 'block' } }}>
                 Fabula Ultima
               </Box>
-              <Box component="span" sx={{ display: 'block' }}>
+              <Box component="span" sx={{ display: { xs: 'none', md: 'block' } }}>
                 &
               </Box>
-              <Box component="span" sx={{ display: 'block' }}>
+              <Box component="span" sx={{ display: { xs: 'none', md: 'block' } }}>
                 Avatar Legends
               </Box>
             </Typography>
             <Typography
               sx={{
                 color: alpha('#f8f4ec', 0.86),
-                fontSize: { xs: 17, md: 20 },
+                fontSize: { xs: 16, md: 20 },
                 lineHeight: 1.58,
                 maxWidth: 650,
               }}
             >
-              Two focused play spaces for keeping characters, progress, combat options, and campaign
-              notes close at hand.
+              Keep your characters, progress, combat options, and campaign notes close at hand.
             </Typography>
           </Stack>
         </Box>
 
         <Box
           sx={{
-            width: 'min(1120px, calc(100% - 32px))',
+            width: { xs: '100%', md: 'min(1120px, calc(100% - 32px))' },
             mx: 'auto',
-            mt: { xs: 3, md: 5 },
-            pb: { xs: 5, md: 8 },
+            mt: { xs: 0, md: 5 },
+            pb: { xs: 0, md: 8 },
           }}
         >
           <Box
             sx={{
               display: 'grid',
               gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-              gap: { xs: 2.4, md: 3 },
+              gap: { xs: 0, md: 3 },
             }}
           >
             {systems.map((system) => {
               const Icon = system.icon;
               return (
                 <Box
+                  component="section"
                   key={system.name}
                   sx={{
-                    borderRadius: 2,
-                    border: `1px solid ${alpha('#ffffff', 0.2)}`,
-                    background: `linear-gradient(145deg, ${alpha(
-                      system.color,
-                      0.82,
-                    )}, ${alpha('#080c13', 0.88)})`,
-                    minHeight: 300,
-                    p: { xs: 2.4, sm: 3 },
+                    position: 'relative',
+                    isolation: 'isolate',
+                    overflow: 'hidden',
+                    borderRadius: { xs: 0, md: 2 },
+                    border: { xs: 0, md: `1px solid ${alpha('#ffffff', 0.2)}` },
+                    backgroundImage: {
+                      xs: `linear-gradient(180deg, rgba(8,12,19,0.1) 0%, rgba(8,12,19,0.42) 42%, ${alpha(
+                        system.color,
+                        0.96,
+                      )} 100%), url("${system.cover}")`,
+                      md: `linear-gradient(145deg, ${alpha(
+                        system.color,
+                        0.82,
+                      )}, ${alpha('#080c13', 0.88)})`,
+                    },
+                    backgroundPosition: { xs: system.coverPosition, md: 'center' },
+                    backgroundSize: 'cover',
+                    minHeight: { xs: '64dvh', sm: 480, md: 300 },
+                    p: { xs: 2.5, sm: 3 },
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', sm: 'auto 1fr' },
-                    alignItems: 'center',
+                    alignItems: { xs: 'end', sm: 'center' },
                     gap: 3,
-                    boxShadow: '0 24px 70px rgba(0,0,0,0.28)',
+                    boxShadow: { xs: 'none', md: '0 24px 70px rgba(0,0,0,0.28)' },
                   }}
                 >
-                  <SystemVisual visual={system.visual} />
-                  <Stack spacing={1.5} alignItems="flex-start">
+                  <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    <SystemVisual visual={system.visual} />
+                  </Box>
+                  <Stack
+                    spacing={1.5}
+                    alignItems="flex-start"
+                    sx={{
+                      position: 'relative',
+                      zIndex: 1,
+                      maxWidth: { xs: 430, md: 'none' },
+                      pb: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 20px)', md: 0 },
+                    }}
+                  >
                     <Typography
                       sx={{
                         color: system.accent,
@@ -329,7 +379,7 @@ function Home() {
                       component="h2"
                       sx={{
                         fontFamily: 'Georgia, serif',
-                        fontSize: { xs: 30, sm: 34 },
+                        fontSize: { xs: 36, sm: 34 },
                         lineHeight: 1.05,
                         fontWeight: 800,
                         letterSpacing: 0,
@@ -337,7 +387,13 @@ function Home() {
                     >
                       {system.name}
                     </Typography>
-                    <Typography sx={{ color: alpha('#ffffff', 0.76), lineHeight: 1.55 }}>
+                    <Typography
+                      sx={{
+                        color: alpha('#ffffff', 0.88),
+                        fontSize: { xs: 16, md: 16 },
+                        lineHeight: 1.55,
+                      }}
+                    >
                       {system.description}
                     </Typography>
                     <Button
@@ -347,11 +403,12 @@ function Home() {
                       startIcon={<Icon />}
                       sx={{
                         mt: 1,
-                        minHeight: 44,
+                        minHeight: { xs: 50, md: 44 },
                         borderRadius: 1.4,
                         bgcolor: '#f8f4ec',
                         color: system.color,
                         fontWeight: 800,
+                        px: { xs: 2.2, md: 2 },
                         textTransform: 'none',
                         '&:hover': {
                           bgcolor: '#fffaf0',

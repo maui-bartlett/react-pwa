@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
-import avatarLegendsIcon192 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-192x192.png';
-import avatarLegendsIcon512 from '../../pages/AvatarLegends/assets/avatar-legends-pwa-512x512.png';
 import { readIndexedDbCharacter } from '../../state/indexedDbCharacterStorage';
 import {
   type AvatarTraining,
@@ -19,11 +17,14 @@ import {
  * verbatim; route-specific colors and icons are set dynamically below.
  */
 const manifestBase = {
-  name: 'React PWA',
-  short_name: 'reactpwa',
-  description: 'Starter kit for modern web applications',
-  theme_color: '#173755',
-  background_color: '#173755',
+  name: 'Table Top',
+  short_name: 'Table Top',
+  description: 'Character tools for tabletop roleplaying games.',
+  id: '/',
+  start_url: '/',
+  scope: '/',
+  theme_color: '#182237',
+  background_color: '#182237',
   display: 'standalone',
   orientation: 'portrait',
   pwa_version: __PWA_VERSION__,
@@ -47,37 +48,15 @@ async function getStoredAvatarTraining(): Promise<AvatarTraining> {
   return toAvatarTraining(stored.primaryTraining);
 }
 
-const defaultIconHref = '/favicon.svg';
-const defaultAppleTouchIconHref = '/apple-touch-icon.png';
-
 function absoluteManifestUrl(src: string) {
   return new URL(src, window.location.origin).toString();
 }
 
-function isAvatarLegendsRoute(pathname: string): boolean {
-  return pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/');
-}
-
-function installationRouteForPath(pathname: string): string {
-  if (isAvatarLegendsRoute(pathname)) return '/avatar-legends';
-  if (pathname === '/fab-u' || pathname.startsWith('/fab-u/')) return '/fab-u';
-  return '/';
-}
-
-function iconsForRoute(pathname: string) {
-  const icons = isAvatarLegendsRoute(pathname)
-    ? [
-        { src: avatarLegendsIcon192, sizes: '192x192', type: 'image/png' },
-        { src: avatarLegendsIcon512, sizes: '512x512', type: 'image/png' },
-        {
-          src: avatarLegendsIcon512,
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any maskable',
-        },
-      ]
-    : manifestBase.icons;
-  return icons.map((icon) => ({ ...icon, src: absoluteManifestUrl(icon.src) }));
+function siteIcons() {
+  return manifestBase.icons.map((icon) => ({
+    ...icon,
+    src: absoluteManifestUrl(icon.src),
+  }));
 }
 
 /**
@@ -117,15 +96,11 @@ function DynamicManifest() {
 
   useEffect(() => {
     const background = backgroundColorForRoute(pathname, avatarTraining);
-    const installationRoute = installationRouteForPath(pathname);
     const next = {
       ...manifestBase,
-      id: installationRoute,
-      start_url: installationRoute,
-      scope: '/',
       background_color: background,
       theme_color: background,
-      icons: iconsForRoute(pathname),
+      icons: siteIcons(),
     };
     const blob = new Blob([JSON.stringify(next)], {
       type: 'application/manifest+json',
@@ -167,15 +142,14 @@ function DynamicManifest() {
     }
     themeMeta.setAttribute('content', background);
 
-    const faviconHref = isAvatarLegendsRoute(pathname) ? avatarLegendsIcon192 : defaultIconHref;
     let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!favicon) {
       favicon = document.createElement('link');
       favicon.rel = 'icon';
       document.head.appendChild(favicon);
     }
-    favicon.setAttribute('href', faviconHref);
-    favicon.setAttribute('type', isAvatarLegendsRoute(pathname) ? 'image/png' : 'image/svg+xml');
+    favicon.setAttribute('href', '/favicon.svg');
+    favicon.setAttribute('type', 'image/svg+xml');
 
     let appleTouchIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
     if (!appleTouchIcon) {
@@ -183,10 +157,7 @@ function DynamicManifest() {
       appleTouchIcon.rel = 'apple-touch-icon';
       document.head.appendChild(appleTouchIcon);
     }
-    appleTouchIcon.setAttribute(
-      'href',
-      isAvatarLegendsRoute(pathname) ? avatarLegendsIcon512 : defaultAppleTouchIconHref,
-    );
+    appleTouchIcon.setAttribute('href', '/apple-touch-icon.png');
 
     // Revoke the previous URL after the new one is wired up so the
     // manifest link never points at a freed object.

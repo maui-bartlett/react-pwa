@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>React PWA</title>
+    <title>Table Top</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -10,26 +10,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <meta name="description" content="Starter kit for modern web applications" />
+    <meta name="description" content="Character tools for tabletop roleplaying games." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="alternate icon" href="/favicon.ico" type="image/png" sizes="16x16" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
-    <script>
-      if (
-        window.location.pathname === '/avatar-legends' ||
-        window.location.pathname.startsWith('/avatar-legends/')
-      ) {
-        document.querySelectorAll('link[rel~="icon"]').forEach((icon) => {
-          icon.setAttribute('href', '/avatar-legends-pwa-192x192.png');
-          icon.setAttribute('type', 'image/png');
-          icon.setAttribute('sizes', '192x192');
-        });
-        const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
-        if (appleIcon) {
-          appleIcon.setAttribute('href', '/avatar-legends-pwa-512x512.png');
-        }
-      }
-    </script>
     <link rel="mask-icon" href="/favicon.svg" color="#FFFFFF" />
     <!-- Initial fallback; route-specific PWA chrome is updated at runtime
        by DynamicManifest. -->

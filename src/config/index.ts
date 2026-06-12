@@ -1,4 +1,4 @@
-const title = 'React PWA';
+const title = 'Table Top';
 
 const email = 'auther-email@gmail.com';
 
