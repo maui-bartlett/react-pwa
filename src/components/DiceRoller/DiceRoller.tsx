@@ -566,7 +566,7 @@ function DiceRoller() {
           spinForce: 2.8,
           throwForce: 3.5,
           startingHeight: 4,
-          settleTimeout: 1300,
+          settleTimeout: 1600,
           delay: 10,
           offscreen: false,
           lightIntensity: initialConfig.mode === 'dark' ? 1.12 : 1.25,

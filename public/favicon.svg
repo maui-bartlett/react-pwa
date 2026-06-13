@@ -1,19 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="#182237"/>
-  <g
-    fill="none"
-    stroke="#fff"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    stroke-width="20"
-  >
-    <path d="M256 64 424 154 435 312 256 448 77 312 88 154Z"/>
-    <path d="M256 64 346 301H166Z"/>
-    <path d="M88 154 166 301 77 312"/>
-    <path d="M424 154 346 301 435 312"/>
-    <path d="M77 312 256 448 435 312"/>
-    <path d="M256 448 166 301"/>
-    <path d="M256 448 346 301"/>
-    <path d="M88 154 256 64 424 154"/>
-  </g>
+  <svg x="52" y="52" width="408" height="408" viewBox="0 0 40 40">
+    <g
+      fill="none"
+      stroke="#fff"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="1.8"
+    >
+      <path d="M20 3 35 11 36 25 20 37 4 25 5 11Z"/>
+      <path d="M20 3 28 24H12Z"/>
+      <path d="M5 11 12 24 4 25"/>
+      <path d="M35 11 28 24 36 25"/>
+      <path d="M4 25 20 37 36 25"/>
+      <path d="M20 37 12 24"/>
+      <path d="M20 37 28 24"/>
+      <path d="M5 11 20 3 35 11"/>
+    </g>
+  </svg>
 </svg>
