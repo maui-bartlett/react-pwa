@@ -2707,13 +2707,13 @@ function FabU() {
           data-pw="app-canvas"
           alignItems="center"
           sx={{
-            minHeight: { xs: '100vh', md: '100dvh' },
-            height: { xs: '100vh', md: '100dvh' },
+            minHeight: { xs: '100vh', md: '100vh' },
+            height: { xs: '100vh', md: '100vh' },
             '@supports (-moz-appearance: none)': {
               // Firefox PWAs need the same visible-viewport sizing that works
               // for Avatar Legends; Safari keeps the existing 100vh path.
-              minHeight: { xs: '100dvh', md: '100dvh' },
-              height: { xs: '100dvh', md: '100dvh' },
+              minHeight: { xs: '100vh', md: '100vh' },
+              height: { xs: '100vh', md: '100vh' },
             },
             width: { xs: '100vw', md: '100%' },
             overflow: 'hidden',

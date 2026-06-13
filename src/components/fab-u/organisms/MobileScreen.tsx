@@ -82,14 +82,14 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
         maxWidth: { xs: 'none', md: 390 },
         height: {
           xs: '100vh',
-          md: 'min(920px, calc(100dvh - 40px))',
+          md: 'min(920px, calc(100vh - 40px))',
         },
         '@supports (-moz-appearance: none)': {
           // Match Avatar Legends' visible-viewport sizing in Firefox PWAs so
           // the absolutely positioned footer is anchored inside the shown area.
           height: {
-            xs: '100dvh',
-            md: 'min(920px, calc(100dvh - 40px))',
+            xs: '100vh',
+            md: 'min(920px, calc(100vh - 40px))',
           },
         },
         borderRadius: { xs: 0, md: '14px' },

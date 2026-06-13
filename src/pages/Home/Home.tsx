@@ -139,8 +139,8 @@ function Home() {
   return (
     <Box
       sx={{
-        height: '100dvh',
-        minHeight: '100dvh',
+        height: '100vh',
+        minHeight: '100vh',
         background: {
           xs: '#182237',
           md: 'radial-gradient(circle at 12% 8%, rgba(183,147,200,0.3), transparent 28%), radial-gradient(circle at 88% 18%, rgba(49,92,77,0.32), transparent 30%), linear-gradient(180deg, #182237 0%, #241b2e 48%, #101721 100%)',
@@ -160,7 +160,7 @@ function Home() {
           component="section"
           sx={{
             position: 'relative',
-            minHeight: { xs: '56dvh', sm: 580, md: 'calc(100dvh - 48px)' },
+            minHeight: { xs: '56dvh', sm: 580, md: 'calc(100vh - 48px)' },
             display: 'grid',
             alignItems: 'center',
             overflow: 'hidden',

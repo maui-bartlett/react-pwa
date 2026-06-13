@@ -6644,11 +6644,9 @@ function AvatarLegends() {
       </ErrorBoundary>
       <Box
         sx={{
-          // Use the *large* viewport unit so the outer mat extends through
-          // iOS safe areas (home indicator strip) instead of stopping at
-          // the small-viewport line and exposing the page background
-          // colour below the app card.
-          minHeight: '100dvh',
+          // Use the full viewport so the outer mat extends through safe areas
+          // instead of exposing the page background below the app card.
+          minHeight: '100vh',
           '@media (display-mode: standalone)': {
             minHeight: '100lvh',
           },
@@ -6663,9 +6661,9 @@ function AvatarLegends() {
           data-dice-tray-root
           sx={{
             width: 'min(100vw, 430px)',
-            // Use the dynamic viewport on mobile so the card fills the visible
-            // safe area without extending beneath iOS browser chrome.
-            height: { xs: '100dvh', sm: 'min(860px, calc(100dvh - 32px))' },
+            // Use the full viewport on mobile so installed PWAs keep the footer
+            // anchored consistently across browsers.
+            height: { xs: '100vh', sm: 'min(860px, calc(100vh - 32px))' },
             '@media (display-mode: standalone) and (max-width: 599.95px)': {
               height: '100lvh',
             },

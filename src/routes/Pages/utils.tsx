@@ -5,7 +5,7 @@ import { objectInsertIf } from '@/utils/insertIf';
 import { Routes } from '../types';
 
 function getPageHeight() {
-  return '100dvh';
+  return '100vh';
 }
 
 function renderRoutes(routes: Routes) {
