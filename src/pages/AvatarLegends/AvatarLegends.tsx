@@ -6625,6 +6625,8 @@ function AvatarLegends() {
   const titleBarGradient = `linear-gradient(180deg, ${parchment} 0%, ${parchment} 18%, #ffffff 100%)`;
   const tabTitleBg = isDarkMode ? 'transparent' : titleBarGradient;
   const tabTitleColor = isDarkMode ? ink : '#000000';
+  const bottomSafeAreaPadding = 'max(20px, env(safe-area-inset-bottom, 0px))';
+  const firefoxBottomNavInset = '24px';
   return (
     <>
       {/* Render-less mount that keeps the characterStateAtom in lockstep
@@ -6946,7 +6948,10 @@ function AvatarLegends() {
                 // Footer pb dropped by 8px (see below) — content reserve
                 // shrinks to match so the last row sits flush against the
                 // nav top.
-                pb: 'calc(76px + max(20px, env(safe-area-inset-bottom, 0px)))',
+                pb: `calc(76px + ${bottomSafeAreaPadding})`,
+                '@supports (-moz-appearance: none)': {
+                  pb: `calc(76px + ${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
+                },
               }}
             >
               {activeTab === 'character' ? <CharacterPane /> : null}
@@ -6966,7 +6971,11 @@ function AvatarLegends() {
                 // ~12px of bottom padding to clear the iOS home
                 // indicator without making the footer feel oversized.
                 // (Was 28px — shrunk by 8px per spec.)
-                pb: 'max(20px, env(safe-area-inset-bottom, 0px))',
+                pb: bottomSafeAreaPadding,
+                '@supports (-moz-appearance: none)': {
+                  // Firefox installed PWAs need an extra bottom lift; Safari keeps using env().
+                  pb: `calc(${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
+                },
                 pt: 0.3,
                 position: 'absolute',
                 bottom: 0,
