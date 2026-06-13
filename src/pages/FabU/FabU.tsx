@@ -66,6 +66,7 @@ import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
+import { persistAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
@@ -720,6 +721,14 @@ function FabU() {
   // so FabU no longer needs its own toggle helper.
   const [activeTab, setActiveTab] = useAtom(activeTabState);
   const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
+
+  useEffect(() => {
+    persistAppView('fab-u', 'tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    persistAppView('fab-u', 'combat-tab', activeCombatTab);
+  }, [activeCombatTab]);
 
   // Per-tab scroll position persistence
   const scrollPositions = useRef<Record<string, number>>({});

@@ -10,6 +10,7 @@ import Pages from './routes/Pages';
 import DynamicManifest from './sections/DynamicManifest';
 import HotKeys from './sections/HotKeys';
 import NewVersionBanner from './sections/NewVersionBanner';
+import PersistentAppLocation from './sections/PersistentAppLocation';
 import Sidebar from './sections/Sidebar';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
       <CssBaseline />
       <HotKeys />
       <BrowserRouter>
+        <PersistentAppLocation />
         <DynamicManifest />
         <NewVersionBanner />
         <Sidebar />

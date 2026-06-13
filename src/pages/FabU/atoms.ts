@@ -1,5 +1,4 @@
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 
 import type { CombatSubTab, FabUTab } from '@/components/fab-u';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
@@ -12,6 +11,7 @@ import type {
   StatusEffects,
 } from '@/domain/fabU/characterTypes';
 import { readJsonLocalStorage } from '@/state/indexedDbCharacterStorage';
+import { readPersistentAppView } from '@/state/persistentAppLocation';
 
 function migrateFabULocalCharacter(key: string, initialValue: Character): Character {
   const oldBackstoryAnswers = readJsonLocalStorage('fab-u-backstory-answers');
@@ -39,11 +39,32 @@ const MAX_CHARACTER_LEVEL = 50;
 const initialFabUCharacter = createRandomFabUCharacter();
 const characterState = atom<Character>(initialFabUCharacter);
 
-/** Last active main tab — persisted so the app reopens on the same screen. */
-const activeTabState = atomWithStorage<FabUTab>('fab-u-active-tab', 'overview');
+const fabUTabs: readonly FabUTab[] = ['overview', 'combat', 'skills', 'spells', 'gear', 'notes'];
+const combatSubTabs: readonly CombatSubTab[] = ['bonds', 'skills', 'spells', 'gear', 'traits'];
+
+function readLegacyView<T extends string>(key: string, validValues: readonly T[], fallback: T): T {
+  const value = readJsonLocalStorage(key);
+  return validValues.includes(value as T) ? (value as T) : fallback;
+}
+
+const initialFabUTab = readPersistentAppView(
+  'fab-u',
+  'tab',
+  fabUTabs,
+  readLegacyView('fab-u-active-tab', fabUTabs, 'overview'),
+);
+const initialCombatSubTab = readPersistentAppView(
+  'fab-u',
+  'combat-tab',
+  combatSubTabs,
+  readLegacyView('fab-u-active-combat-tab', combatSubTabs, 'bonds'),
+);
+
+/** Last active main tab — persisted in the shared Table-Top location record. */
+const activeTabState = atom<FabUTab>(initialFabUTab);
 
 /** Last active combat sub-tab — persisted alongside the main tab. */
-const activeCombatTabState = atomWithStorage<CombatSubTab>('fab-u-active-combat-tab', 'bonds');
+const activeCombatTabState = atom<CombatSubTab>(initialCombatSubTab);
 
 export {
   activeTabState,

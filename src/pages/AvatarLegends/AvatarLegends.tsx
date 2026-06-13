@@ -22,6 +22,7 @@ import type { FabUTokens } from '@/components/fab-u/tokens';
 import AccountSettings from '@/sections/AccountSettings';
 import { createCharacterHistory } from '@/state/createCharacterHistory';
 import { readJsonLocalStorage } from '@/state/indexedDbCharacterStorage';
+import { persistAppView, readPersistentAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 import { useThemeMode } from '@/theme/hooks';
@@ -586,6 +587,7 @@ const tabs: TabConfig[] = [
     renderIcon: ({ color, size }) => <Backpack color={color} size={size} strokeWidth={1.75} />,
   },
 ];
+const avatarTabValues = tabs.map(({ value }) => value);
 
 // Technique vocabulary (rulebook-wide). Used by the technique list on
 // characterStateAtom + by the element/level filter atoms below.
@@ -6530,11 +6532,17 @@ function BackpackPane() {
 }
 
 function AvatarLegends() {
-  const [activeTab, setActiveTab] = useState<AvatarTab>('character');
+  const [activeTab, setActiveTab] = useState<AvatarTab>(() =>
+    readPersistentAppView('avatar-legends', 'tab', avatarTabValues, 'character'),
+  );
   const activeConfig = useMemo(
     () => tabs.find((tab) => tab.value === activeTab) ?? tabs[0],
     [activeTab],
   );
+
+  useEffect(() => {
+    persistAppView('avatar-legends', 'tab', activeTab);
+  }, [activeTab]);
 
   // Dark mode for the avatar-legends UI. applyAvatarPalette mutates the
   // module-level color `let`s so every helper component picks up the
