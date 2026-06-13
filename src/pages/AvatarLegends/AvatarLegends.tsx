@@ -6647,8 +6647,10 @@ function AvatarLegends() {
           // Use the full viewport so the outer mat extends through safe areas
           // instead of exposing the page background below the app card.
           minHeight: '100vh',
-          '@media (display-mode: standalone)': {
-            minHeight: '100lvh',
+          '@supports (-webkit-touch-callout: none)': {
+            '@media (display-mode: standalone)': {
+              minHeight: '100lvh',
+            },
           },
           // Outer mat around the parchment card — gradient switches with mode.
           background: pageBg,
@@ -6664,8 +6666,10 @@ function AvatarLegends() {
             // Use the full viewport on mobile so installed PWAs keep the footer
             // anchored consistently across browsers.
             height: { xs: '100vh', sm: 'min(860px, calc(100vh - 32px))' },
-            '@media (display-mode: standalone) and (max-width: 599.95px)': {
-              height: '100lvh',
+            '@supports (-webkit-touch-callout: none)': {
+              '@media (display-mode: standalone) and (max-width: 599.95px)': {
+                height: '100lvh',
+              },
             },
             borderRadius: { xs: 0, sm: '12px' },
             // Flat solid card background. The cornflower watercolor wash
