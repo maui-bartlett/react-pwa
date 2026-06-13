@@ -1,18 +1,33 @@
 import { Link } from 'react-router';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import PublicIcon from '@mui/icons-material/Public';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+function AvatarLegendsAppIcon() {
+  return (
+    <Box
+      component="img"
+      alt=""
+      src="/avatar-legends-pwa-192x192.png"
+      sx={{
+        display: 'block',
+        width: 22,
+        height: 22,
+        borderRadius: '5px',
+      }}
+    />
+  );
+}
+
 const systems = [
   {
     name: 'Fabula Ultima',
     href: '/fab-u',
-    eyebrow: 'Character workshop',
+    eyebrow: 'Adventure awaits',
     description: 'Class levels, bonds, spells, gear, and combat notes for heroic fantasy play.',
     action: 'Open Fabula Ultima',
     color: '#315c4d',
@@ -33,7 +48,7 @@ const systems = [
     cover: '/avatar-legends-cover.jpg',
     coverPosition: 'center 32%',
     visual: 'avatar',
-    icon: PublicIcon,
+    icon: AvatarLegendsAppIcon,
   },
 ] as const;
 
