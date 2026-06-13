@@ -6626,7 +6626,7 @@ function AvatarLegends() {
   const tabTitleBg = isDarkMode ? 'transparent' : titleBarGradient;
   const tabTitleColor = isDarkMode ? ink : '#000000';
   const bottomSafeAreaPadding = 'max(20px, env(safe-area-inset-bottom, 0px))';
-  const firefoxBottomNavInset = '24px';
+  const firefoxBottomNavInset = '48px';
   return (
     <>
       {/* Render-less mount that keeps the characterStateAtom in lockstep
