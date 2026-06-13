@@ -59,10 +59,11 @@ test.describe('HeaderBar — consistency across tabs (mobile viewport)', () => {
     expect(new Set(sizes).size).toBe(1); // all identical
   });
 
-  test('Combat header pill reads "Combat"', async ({ page }) => {
+  test('Combat header has no action pill', async ({ page }) => {
     await navigateTo(page, 'Combat');
-    await expect(page.locator('[data-pw="header-bar"] [data-pw="header-action"]')).toHaveText(
-      'Combat',
+    await expect(page.locator('[data-pw="header-bar"] [data-pw="header-action"]')).toHaveCount(0);
+    await expect(page.locator('[data-pw="header-bar"] [data-pw="header-eyebrow"]')).toHaveText(
+      /LVL \d+/,
     );
   });
 

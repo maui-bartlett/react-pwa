@@ -94,8 +94,8 @@ test.describe('XP and Level editing (mobile viewport)', () => {
 
   // ── LV → LVL visual rename ───────────────────────────────────────────────
 
-  test('Overview header shows LVL (not LV) in the right pill', async ({ page }) => {
-    await expect(page.locator('[data-pw="header-action"]')).toHaveText(/LVL/);
+  test('Overview header no longer shows a right-side LVL pill', async ({ page }) => {
+    await expect(page.locator('[data-pw="header-action"]')).toHaveCount(0);
   });
 
   test('Skills SummaryStrip label shows LVL', async ({ page }) => {
