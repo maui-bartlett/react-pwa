@@ -45,6 +45,14 @@ export default defineSchema({
 
   gameSystems: defineTable(v.any()).index('by_systemId', ['id']),
 
+  // Small key/value singleton store. Currently holds the latest published
+  // PWA build version so open clients can be prompted to update in real time.
+  appConfig: defineTable({
+    key: v.string(),
+    value: v.string(),
+    updatedAt: v.number(),
+  }).index('by_key', ['key']),
+
   campaigns: defineTable({
     ownerUserId: v.id('userProfiles'),
     meta: v.optional(

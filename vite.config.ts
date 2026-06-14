@@ -18,7 +18,10 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       // switch to "true" to enable sw on development
       devOptions: { enabled: false },
-      registerType: 'autoUpdate',
+      // 'prompt' (not 'autoUpdate') so a new deploy never silently reloads an
+      // open client mid-action. The AppUpdatePrompt banner asks first, then
+      // skip-waits + reloads on tap. See src/sections/AppUpdatePrompt.
+      registerType: 'prompt',
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html}', '**/*.{svg,png,jpg,gif}'],

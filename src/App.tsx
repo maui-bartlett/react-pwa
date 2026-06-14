@@ -7,6 +7,7 @@ import AppErrorBoundaryFallback from '@/error-handling/fallbacks/App';
 
 import DiceRoller from './components/DiceRoller';
 import Pages from './routes/Pages';
+import AppUpdatePrompt from './sections/AppUpdatePrompt';
 import DynamicManifest from './sections/DynamicManifest';
 import HotKeys from './sections/HotKeys';
 import NewVersionBanner from './sections/NewVersionBanner';
@@ -21,6 +22,7 @@ function App() {
       <BrowserRouter>
         <PersistentAppLocation />
         <DynamicManifest />
+        <AppUpdatePrompt />
         <NewVersionBanner />
         <Sidebar />
         <Pages />

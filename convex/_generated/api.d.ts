@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as appVersion from "../appVersion.js";
 import type * as auth from "../auth.js";
 import type * as campaigns from "../campaigns.js";
 import type * as characters from "../characters.js";
@@ -28,6 +29,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  appVersion: typeof appVersion;
   auth: typeof auth;
   campaigns: typeof campaigns;
   characters: typeof characters;
