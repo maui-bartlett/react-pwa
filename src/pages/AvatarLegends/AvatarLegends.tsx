@@ -34,6 +34,7 @@ import elementAir from './assets/airbending-symbol.png';
 import elementEarth from './assets/earthbending-symbol.png';
 import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
+import elementMartial from './assets/element-martial.png';
 import principleBg from './assets/principle-bg.png';
 import principleFg from './assets/principle-fg.png';
 import elementTech from './assets/technology-symbol.png';
@@ -445,6 +446,7 @@ const fire = '#a8413a';
 const air = '#a3bbc4';
 const weapons = '#3d3d4a';
 const tech = '#7a5d8a';
+const martial = '#8b5e3c';
 const darkStatWater = '#6fa9d6';
 const darkStatEarth = '#a3ba72';
 const elementFilterFrames: Record<Exclude<TechniqueElementFilter, 'all' | 'basic'>, string> = {
@@ -456,6 +458,7 @@ const elementFilterFrames: Record<Exclude<TechniqueElementFilter, 'all' | 'basic
   technology: tech,
   universal: '#173755',
   group: '#5b5368',
+  martial: '#4a2c12',
 };
 const primaryTrainingOptions: PrimaryTraining[] = [
   'Waterbending',
@@ -600,6 +603,7 @@ type TechniqueElement =
   | 'technology'
   | 'universal'
   | 'group'
+  | 'martial'
   | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
@@ -722,7 +726,8 @@ function normalizeTechniqueType(value: unknown): TechniqueElement {
   if (value === 'earth' || value === 'earthbending') return 'earthbending';
   if (value === 'fire' || value === 'firebending') return 'firebending';
   if (value === 'air' || value === 'airbending') return 'airbending';
-  if (value === 'martial' || value === 'weapons') return 'weapons';
+  if (value === 'weapons') return 'weapons';
+  if (value === 'martial' || value === 'martial arts') return 'martial';
   if (value === 'tech' || value === 'technology') return 'technology';
   if (value === 'universal') return 'universal';
   if (value === 'group') return 'group';
@@ -1438,6 +1443,8 @@ function techniqueElementVisual(type: TechniqueElement): {
     return { color: weapons, frameColor: elementFilterFrames.weapons, src: elementWeapons };
   if (type === 'technology')
     return { color: tech, frameColor: elementFilterFrames.technology, src: elementTech };
+  if (type === 'martial')
+    return { color: martial, frameColor: elementFilterFrames.martial, src: elementMartial };
   if (type === 'universal')
     return { color: ink, frameColor: elementFilterFrames.universal, label: 'U' };
   if (type === 'group') return { color: brown, frameColor: elementFilterFrames.group, label: 'G' };
@@ -3192,6 +3199,7 @@ function getTechniqueElementFilters(): Array<{
     { key: 'airbending', label: 'Air', color: air, src: elementAir },
     { key: 'weapons', label: 'Weapons', color: weapons, src: elementWeapons },
     { key: 'technology', label: 'Tech', color: tech, src: elementTech },
+    { key: 'martial', label: 'Martial', color: martial, src: elementMartial },
   ];
 }
 
