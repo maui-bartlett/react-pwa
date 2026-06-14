@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
 
@@ -681,6 +681,9 @@ type CharacterState = {
   tempFatigue: boolean[];
   backgrounds: Record<string, boolean>;
   historyAnswers: Record<string, string>;
+  /** Checked state for the markable boxes (drives, destiny details, etc.) in
+   *  the class-trait card, keyed by the box's label text. */
+  classTraitChecks: Record<string, boolean>;
   connections: Connection[];
   classMoves: MoveEntry[];
   techniques: Technique[];
@@ -797,6 +800,7 @@ const defaultCharacter: CharacterState = {
   tempFatigue: [],
   backgrounds: { Urban: true, Privileged: true },
   historyAnswers: {},
+  classTraitChecks: {},
   connections: [],
   classMoves: [],
   techniques: defaultBasicTechniques,
@@ -1193,6 +1197,15 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
             .map(([key, value]) => [key, value]),
         )
       : defaultCharacter.historyAnswers;
+  const rawClassTraitChecks = innerCandidate.classTraitChecks;
+  const classTraitChecks =
+    rawClassTraitChecks && typeof rawClassTraitChecks === 'object'
+      ? Object.fromEntries(
+          Object.entries(rawClassTraitChecks as Record<string, unknown>)
+            .filter((entry): entry is [string, boolean] => typeof entry[1] === 'boolean')
+            .map(([key, value]) => [key, value]),
+        )
+      : defaultCharacter.classTraitChecks;
   const rest = { ...innerCandidate } as Partial<CharacterState> & {
     classTraitBody?: unknown;
     classTraitTitle?: unknown;
@@ -1208,6 +1221,7 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     primaryTraining,
     balance: normalizeBalanceState(innerCandidate.balance),
     historyAnswers,
+    classTraitChecks,
     techniques,
     deletedTechniqueKeys,
     inventory,
@@ -1312,6 +1326,7 @@ const fatigueAtom = sliceAtom('fatigue');
 const tempFatigueAtom = sliceAtom('tempFatigue');
 const backgroundsAtom = sliceAtom('backgrounds');
 const historyAnswersAtom = sliceAtom('historyAnswers');
+const classTraitChecksAtom = sliceAtom('classTraitChecks');
 const notesAtom = sliceAtom('notes');
 const inventoryAtom = sliceAtom('inventory');
 
@@ -2189,7 +2204,7 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
  *   - Harmony:    blue (water)
  *   - Passion:    a warm red (its own hue)
  */
-function StatsPanel() {
+function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
   const { isDarkMode } = useThemeMode();
   const rows: Array<[string, string]> = [
     ['Creativity', isDarkMode ? darkStatWater : water],
@@ -2208,9 +2223,13 @@ function StatsPanel() {
   }
   const statOptions = [-3, -2, -1, 0, 1, 2, 3];
   return (
-    <Panel>
-      <SectionTitle>Stats</SectionTitle>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
+    // When sticky, pin to the top of the scrolling tab body so the stats stay
+    // visible while scrolling Moves / Combat. zIndex keeps it above the cards
+    // that scroll underneath.
+    <Box sx={sticky ? { position: 'sticky', top: 0, zIndex: 4 } : undefined}>
+      <Panel>
+        <SectionTitle>Stats</SectionTitle>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
         {rows.map(([label, color]) => {
           // Clamp to the pick-list range in case persisted state holds a
           // legacy value outside [-3, 3].
@@ -2286,8 +2305,9 @@ function StatsPanel() {
             </Stack>
           );
         })}
-      </Box>
-    </Panel>
+        </Box>
+      </Panel>
+    </Box>
   );
 }
 
@@ -2864,6 +2884,273 @@ function HistorySection({ questions }: { questions: string[] }) {
   );
 }
 
+// ---------- Class-trait rich-text parsing ----------
+// Class-trait text arrives as one long run-on string with inline markers:
+//   □ … markable boxes (drives, destiny details, condition penalties)
+//   • … bulleted choices
+//   ____ … fill-in blanks
+// We parse it into structured blocks so the card can render real paragraphs,
+// section headers, bullet lists, and a checkbox grid instead of a wall of text.
+type ClassTraitBlock =
+  | { kind: 'paragraph'; text: string }
+  | { kind: 'header'; text: string }
+  | { kind: 'checkboxes'; items: string[] }
+  | { kind: 'bullets'; items: string[] };
+
+const CHECKBOX_MARKERS = /[□▢☐]/;
+const CLASS_TRAIT_MARKER = /[□▢☐]|[•◦‣]/g;
+const TITLE_MINOR_WORDS = new Set(['of', 'the', 'and', 'to', 'a', 'an', 'for', 'in']);
+
+/**
+ * Split a run of plain (non-marker) text into header + paragraph blocks.
+ * Best-effort header detection: a short standalone Title-Case phrase, or a
+ * 2–3 word Title-Case run at the start of a sentence that precedes the real
+ * sentence (e.g. "Destiny Details Fill these in…" → header "Destiny Details").
+ */
+function splitClassTraitPlainText(text: string): ClassTraitBlock[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  const words = trimmed.split(/\s+/);
+  const isTitleWord = (word: string) =>
+    /^[A-Z][A-Za-z'’-]*$/.test(word) || TITLE_MINOR_WORDS.has(word.toLowerCase());
+  // Whole segment is a short title phrase (e.g. "Destiny Signs").
+  if (words.length <= 4 && !/[.!?:]$/.test(trimmed) && /^[A-Z(]/.test(trimmed) && words.every(isTitleWord)) {
+    return [{ kind: 'header', text: trimmed }];
+  }
+
+  const blocks: ClassTraitBlock[] = [];
+  const sentences = trimmed.split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    const sentenceWords = sentence.split(/\s+/);
+    let capsRun = 0;
+    while (capsRun < sentenceWords.length && /^[A-Z][A-Za-z'’-]*$/.test(sentenceWords[capsRun])) {
+      capsRun += 1;
+    }
+    // 3+ leading capitalized words ⇒ the first ones read as a heading and the
+    // last one begins the actual sentence.
+    if (capsRun >= 3) {
+      blocks.push({ kind: 'header', text: sentenceWords.slice(0, capsRun - 1).join(' ') });
+      const rest = sentenceWords.slice(capsRun - 1).join(' ').trim();
+      if (rest) blocks.push({ kind: 'paragraph', text: rest });
+      continue;
+    }
+    const previous = blocks[blocks.length - 1];
+    if (previous && previous.kind === 'paragraph') previous.text += ` ${sentence}`;
+    else blocks.push({ kind: 'paragraph', text: sentence });
+  }
+  return blocks;
+}
+
+function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
+  const text = rawText.replace(/\s+/g, ' ').trim();
+  if (!text) return [];
+
+  const parts: Array<{ marker: 'check' | 'bullet' | null; text: string }> = [];
+  let lastIndex = 0;
+  let pendingMarker: 'check' | 'bullet' | null = null;
+  CLASS_TRAIT_MARKER.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = CLASS_TRAIT_MARKER.exec(text))) {
+    parts.push({ marker: pendingMarker, text: text.slice(lastIndex, match.index).trim() });
+    pendingMarker = CHECKBOX_MARKERS.test(match[0]) ? 'check' : 'bullet';
+    lastIndex = match.index + match[0].length;
+  }
+  parts.push({ marker: pendingMarker, text: text.slice(lastIndex).trim() });
+
+  const blocks: ClassTraitBlock[] = [];
+  for (const part of parts) {
+    if (part.marker === null) {
+      blocks.push(...splitClassTraitPlainText(part.text));
+      continue;
+    }
+    if (!part.text) continue;
+    const listKind = part.marker === 'check' ? 'checkboxes' : 'bullets';
+    const previous = blocks[blocks.length - 1];
+    if (previous && previous.kind === listKind) previous.items.push(part.text);
+    else blocks.push({ kind: listKind, items: [part.text] } as ClassTraitBlock);
+  }
+  return blocks;
+}
+
+/** Render text with `____` fill-in runs shown as blank underlines. */
+function renderClassTraitText(text: string): React.ReactNode {
+  return text.split(/(_{3,})/).map((segment, index) =>
+    /^_{3,}$/.test(segment) ? (
+      <Box
+        key={index}
+        component="span"
+        sx={{
+          display: 'inline-block',
+          minWidth: 64,
+          mx: 0.4,
+          borderBottom: `1px solid ${alpha(brown, 0.55)}`,
+          transform: 'translateY(2px)',
+        }}
+      />
+    ) : (
+      <Fragment key={index}>{segment}</Fragment>
+    ),
+  );
+}
+
+/**
+ * Renders parsed class-trait content: paragraphs, section headers, bullet
+ * lists, and a grid of markable checkboxes whose checked state persists on the
+ * character record (keyed by the box label).
+ */
+function ClassTraitContent({ text, className }: { text: string; className: string }) {
+  const blocks = useMemo(() => parseClassTraitContent(text), [text]);
+  const [checks, setChecks] = useAtom(classTraitChecksAtom);
+  // Namespace persisted checkbox state by playbook + position so saved marks
+  // can't collide between same-labelled boxes or bleed into a different
+  // playbook after a class switch.
+  const checkKey = (blockIndex: number, itemIndex: number) =>
+    `${className}::cb-${blockIndex}-${itemIndex}`;
+  const toggle = (key: string) => setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  if (blocks.length === 0) {
+    return (
+      <Typography
+        sx={{
+          color: brown,
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontSize: '0.86rem',
+          lineHeight: 1.5,
+          pt: 1.05,
+          px: 2,
+          pb: 2,
+        }}
+      >
+        {text}
+      </Typography>
+    );
+  }
+
+  return (
+    <Stack spacing={1.1} sx={{ pt: 1.05, px: 2, pb: 2 }}>
+      {blocks.map((block, index) => {
+        if (block.kind === 'header') {
+          return (
+            <Typography
+              key={index}
+              sx={{
+                color: ink,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.74rem',
+                fontWeight: 900,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                mt: index === 0 ? 0 : 0.4,
+              }}
+            >
+              {block.text}
+            </Typography>
+          );
+        }
+        if (block.kind === 'paragraph') {
+          return (
+            <Typography
+              key={index}
+              sx={{
+                color: brown,
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontSize: '0.86rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {renderClassTraitText(block.text)}
+            </Typography>
+          );
+        }
+        if (block.kind === 'bullets') {
+          return (
+            <Stack key={index} spacing={0.5}>
+              {block.items.map((item, itemIndex) => (
+                <Stack key={`${item}-${itemIndex}`} direction="row" gap={0.7} alignItems="flex-start">
+                  <Box
+                    sx={{
+                      mt: '8px',
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      flex: '0 0 auto',
+                      bgcolor: alpha(brown, 0.7),
+                    }}
+                  />
+                  <Typography
+                    sx={{
+                      color: brown,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {renderClassTraitText(item)}
+                  </Typography>
+                </Stack>
+              ))}
+            </Stack>
+          );
+        }
+        // checkboxes — laid out in a responsive grid
+        return (
+          <Box
+            key={index}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              columnGap: 1.4,
+              rowGap: 0.75,
+            }}
+          >
+            {block.items.map((item, itemIndex) => {
+              const key = checkKey(index, itemIndex);
+              const checked = Boolean(checks[key]);
+              return (
+              <Box
+                key={`${item}-${itemIndex}`}
+                component="button"
+                type="button"
+                aria-pressed={checked}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggle(key);
+                }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 0.7,
+                  p: 0,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <Box sx={{ mt: '1px', flex: '0 0 auto' }}>
+                  <Checkbox checked={checked} size={16} />
+                </Box>
+                <Typography
+                  sx={{
+                    color: brown,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.84rem',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {renderClassTraitText(item)}
+                </Typography>
+              </Box>
+              );
+            })}
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+}
+
 /**
  * Collapsible class-trait card. Renders a parchment heading row with a
  * disclosure chevron; clicking the heading toggles the body open/closed.
@@ -2872,10 +3159,13 @@ function HistorySection({ questions }: { questions: string[] }) {
 function ClassTraitAccordion({
   title,
   children,
+  className = '',
   defaultOpen = false,
 }: {
   title: string;
   children: React.ReactNode;
+  /** Playbook name used to namespace persisted checkbox state. */
+  className?: string;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -2922,19 +3212,23 @@ function ClassTraitAccordion({
         />
       </Box>
       {open ? (
-        <Typography
-          sx={{
-            color: brown,
-            fontFamily: 'Georgia, "Times New Roman", serif',
-            fontSize: '0.86rem',
-            lineHeight: 1.5,
-            pt: 1.05,
-            px: 2,
-            pb: 2,
-          }}
-        >
-          {children}
-        </Typography>
+        typeof children === 'string' ? (
+          <ClassTraitContent text={children} className={className} />
+        ) : (
+          <Typography
+            sx={{
+              color: brown,
+              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontSize: '0.86rem',
+              lineHeight: 1.5,
+              pt: 1.05,
+              px: 2,
+              pb: 2,
+            }}
+          >
+            {children}
+          </Typography>
+        )
       ) : null}
     </Stack>
   );
@@ -2960,9 +3254,18 @@ function CharacterInfoSection({
       }}
     >
       {/* Fixed-height heading row so the title stays put when the body opens
-          (vertically centering the whole Stack would shift it on toggle). */}
+          (vertically centering the whole Stack would shift it on toggle).
+          flexDirection column keeps SectionTitle full-width so its cross-line
+          still spans the row. */}
       <Box
-        sx={{ position: 'relative', pr: 2.2, minHeight: 30, display: 'flex', alignItems: 'center' }}
+        sx={{
+          position: 'relative',
+          pr: 2.2,
+          minHeight: 30,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}
       >
         <SectionTitle>{title}</SectionTitle>
         <Box
@@ -4209,7 +4512,9 @@ function CharacterPane() {
       </Panel>
 
       <Panel>
-        <ClassTraitAccordion title={classTrait.title}>{classTrait.body}</ClassTraitAccordion>
+        <ClassTraitAccordion title={classTrait.title} className={character.className}>
+          {classTrait.body}
+        </ClassTraitAccordion>
       </Panel>
 
       <Panel>
@@ -4569,6 +4874,8 @@ function MovesPane() {
         : character.classMoves;
   return (
     <Stack spacing={1}>
+      {/* Stats stay pinned at the top of the Moves tab while the list scrolls. */}
+      <StatsPanel sticky />
       <FilterTabs
         labels={['Basic', 'Balance', 'Class']}
         activeIndex={subTab}
@@ -4635,14 +4942,14 @@ function TechniqueLevelPill({ level }: { level: TechniqueLevel }) {
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
-        px: 0.6,
-        py: '1px',
+        px: 0.7,
+        py: '4px',
         borderRadius: '2px',
         border: `1px solid ${alpha(accentColor, 0.7)}`,
         bgcolor: filled ? accentColor : 'transparent',
         color: filled ? parchmentLight : accentColor,
         fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-        fontSize: '0.5rem',
+        fontSize: '0.52rem',
         fontWeight: 900,
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
@@ -4837,8 +5144,8 @@ function TechniqueAccordion({
             width: '100%',
             // Taller collapsed card so the stacked proficiency pill + approach
             // eyebrow + title + summary all get vertical breathing room.
-            height: open ? 'auto' : 116,
-            minHeight: open ? 116 : undefined,
+            height: open ? 'auto' : 126,
+            minHeight: open ? 126 : undefined,
             gap: 0.9,
             pt: 0.75,
             pr: 3.2,
@@ -4949,7 +5256,7 @@ function TechniqueAccordion({
                     text, with breathing room between the two and a little extra
                     space below the approach text. Basic techniques have no
                     mastery progression, so they skip the pill. */}
-                <Stack alignItems="flex-start" spacing={0.5} sx={{ pb: 0.65 }}>
+                <Stack alignItems="flex-start" spacing={0.85} sx={{ pb: 0.65 }}>
                   {isBasic ? null : <TechniqueLevelPill level={level} />}
                   <Typography
                     sx={{
@@ -5333,8 +5640,9 @@ function CombatPane() {
     <>
       <Stack spacing={1}>
         {/* Combat tab opens with the same Stats panel that lives on Character,
-          for at-a-glance reference during combat rolls. */}
-        <StatsPanel />
+          for at-a-glance reference during combat rolls. Sticky so it stays
+          visible while scrolling through techniques. */}
+        <StatsPanel sticky />
         <FatigueCard
           baseFatigue={fatigue}
           tempFatigue={tempFatigue}
