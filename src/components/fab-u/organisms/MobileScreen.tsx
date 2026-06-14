@@ -52,8 +52,11 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
       // Top padding: push content below the floating header
       setTopPaddingHeight(headerElement.offsetHeight);
 
-      // Bottom spacer: enough room to scroll past the floating footer
-      const desiredScrollAllowance = footerElement.offsetHeight + 12;
+      // Bottom spacer: enough room to scroll content clear of the floating
+      // footer AND the dice-roller FAB, which floats ~128px above the footer
+      // (see DiceRoller). Without this, the last items scroll under the FAB and
+      // can't be tapped.
+      const desiredScrollAllowance = footerElement.offsetHeight + 150;
       const viewportFillRequirement = scrollViewport.clientHeight - content.offsetHeight;
       const nextSpacerHeight = Math.max(desiredScrollAllowance, viewportFillRequirement, 0);
       setBottomSpacerHeight(nextSpacerHeight);
