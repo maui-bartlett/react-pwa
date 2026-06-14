@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
 import { readIndexedDbCharacter } from '../../state/indexedDbCharacterStorage';
-import { applyRouteChrome, appChromeColorForRoute } from '../../theme/appChrome';
+import { appChromeColorForRoute, applyRouteChrome } from '../../theme/appChrome';
 import { type AvatarTraining, toAvatarTraining } from '../../theme/avatarTrainingChrome';
 
 /**

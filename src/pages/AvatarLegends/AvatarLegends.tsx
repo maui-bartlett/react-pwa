@@ -32,9 +32,9 @@ import { api } from '../../../convex/_generated/api';
 // They are transparent PNGs and rely on the deep-ink filter band for contrast.
 import elementAir from './assets/airbending-symbol.png';
 import elementEarth from './assets/earthbending-symbol.png';
+import elementMartial from './assets/element-martial.svg';
 import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
-import elementMartial from './assets/element-martial.svg';
 import principleBg from './assets/principle-bg.png';
 import principleFg from './assets/principle-fg.png';
 import elementTech from './assets/technology-symbol.png';
@@ -2260,81 +2260,81 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
       <Panel>
         <SectionTitle>Stats</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
-        {rows.map(([label, color]) => {
-          // Clamp to the pick-list range in case persisted state holds a
-          // legacy value outside [-3, 3].
-          const value = Math.max(-3, Math.min(3, stats[label] ?? 0));
-          return (
-            <Stack key={label} spacing={0.45} alignItems="center">
-              <Typography
-                sx={{
-                  color,
-                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.6rem',
-                  fontWeight: 900,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {label}
-              </Typography>
-              <Box
-                component="select"
-                className="ios-zoom-keep"
-                value={value}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setValue(label, e.target.value)
-                }
-                aria-label={`${label} stat`}
-                sx={{
-                  width: 44,
-                  height: 44,
-                  textAlign: 'center',
-                  textAlignLast: 'center',
-                  // Solid white fill in both light and dark mode.
-                  background: '#ffffff',
-                  // Border matches the stat's text color (e.g., Creativity
-                  // gets water-blue, Passion gets the warm red).
-                  border: `1.5px solid ${color}`,
-                  borderRadius: '50%',
-                  color: isDarkMode ? deepInk : ink,
-                  // Handwritten font where the "1" is clearly distinct
-                  // from "I" — the IM Fell serif previously used had a
-                  // capital-I-shaped 1. Larger size to read clearly in
-                  // the 44x44 circle.
-                  fontFamily: '"Caveat", "Patrick Hand", "Bradley Hand", "Marker Felt", cursive',
-                  fontSize: '1.95rem',
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  p: 0,
-                  pr: '5px',
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  // Hide the native chevron — keep the field looking like
-                  // the previous numeric circle.
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none',
-                  appearance: 'none',
-                  backgroundImage: 'none',
-                  '&:focus': {
-                    borderColor: color,
-                    boxShadow: `0 0 0 2px ${alpha(color, 0.3)}`,
-                  },
-                }}
-              >
-                {statOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {/* Positive stats display with an explicit plus
+          {rows.map(([label, color]) => {
+            // Clamp to the pick-list range in case persisted state holds a
+            // legacy value outside [-3, 3].
+            const value = Math.max(-3, Math.min(3, stats[label] ?? 0));
+            return (
+              <Stack key={label} spacing={0.45} alignItems="center">
+                <Typography
+                  sx={{
+                    color,
+                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                    fontSize: '0.6rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {label}
+                </Typography>
+                <Box
+                  component="select"
+                  className="ios-zoom-keep"
+                  value={value}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setValue(label, e.target.value)
+                  }
+                  aria-label={`${label} stat`}
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    textAlign: 'center',
+                    textAlignLast: 'center',
+                    // Solid white fill in both light and dark mode.
+                    background: '#ffffff',
+                    // Border matches the stat's text color (e.g., Creativity
+                    // gets water-blue, Passion gets the warm red).
+                    border: `1.5px solid ${color}`,
+                    borderRadius: '50%',
+                    color: isDarkMode ? deepInk : ink,
+                    // Handwritten font where the "1" is clearly distinct
+                    // from "I" — the IM Fell serif previously used had a
+                    // capital-I-shaped 1. Larger size to read clearly in
+                    // the 44x44 circle.
+                    fontFamily: '"Caveat", "Patrick Hand", "Bradley Hand", "Marker Felt", cursive',
+                    fontSize: '1.95rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    p: 0,
+                    pr: '5px',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    // Hide the native chevron — keep the field looking like
+                    // the previous numeric circle.
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    appearance: 'none',
+                    backgroundImage: 'none',
+                    '&:focus': {
+                      borderColor: color,
+                      boxShadow: `0 0 0 2px ${alpha(color, 0.3)}`,
+                    },
+                  }}
+                >
+                  {statOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {/* Positive stats display with an explicit plus
                         sign so the modifier reads correctly inside
                         the circle and in the picker. */}
-                    {option > 0 ? `+${option}` : `${option}`}
-                  </option>
-                ))}
-              </Box>
-            </Stack>
-          );
-        })}
+                      {option > 0 ? `+${option}` : `${option}`}
+                    </option>
+                  ))}
+                </Box>
+              </Stack>
+            );
+          })}
         </Box>
       </Panel>
     </Box>
@@ -2957,7 +2957,10 @@ const AVATAR_STATUS_CONDITION_NAMES = new Set([
   'troubled',
 ]);
 function isStatusOrConditionCheckbox(label: string): boolean {
-  const firstWord = label.trim().toLowerCase().match(/^[a-z]+/);
+  const firstWord = label
+    .trim()
+    .toLowerCase()
+    .match(/^[a-z]+/);
   return firstWord ? AVATAR_STATUS_CONDITION_NAMES.has(firstWord[0]) : false;
 }
 
@@ -2984,7 +2987,12 @@ function splitClassTraitPlainText(text: string, allowLabelHeaders: boolean): Cla
     /^[A-Z][A-Za-z'’-]*$/.test(word) || TITLE_MINOR_WORDS.has(word.toLowerCase());
   // Whole segment is a short Title-Case phrase (e.g. "Destiny Signs",
   // "Live Up to Your Role").
-  if (words.length <= 5 && !/[.!?:]$/.test(trimmed) && /^[A-Z(]/.test(trimmed) && words.every(isTitleWord)) {
+  if (
+    words.length <= 5 &&
+    !/[.!?:]$/.test(trimmed) &&
+    /^[A-Z(]/.test(trimmed) &&
+    words.every(isTitleWord)
+  ) {
     return [{ kind: 'header', text: trimmed }];
   }
 
@@ -3000,7 +3008,10 @@ function splitClassTraitPlainText(text: string, allowLabelHeaders: boolean): Cla
     // last one begins the actual sentence.
     if (capsRun >= 3) {
       blocks.push({ kind: 'header', text: sentenceWords.slice(0, capsRun - 1).join(' ') });
-      const rest = sentenceWords.slice(capsRun - 1).join(' ').trim();
+      const rest = sentenceWords
+        .slice(capsRun - 1)
+        .join(' ')
+        .trim();
       if (rest) blocks.push({ kind: 'paragraph', text: rest });
       continue;
     }
@@ -3086,7 +3097,10 @@ function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
     let match: RegExpExecArray | null;
     const lineParts: Array<{ marker: 'check' | 'bullet' | null; text: string }> = [];
     while ((match = CLASS_TRAIT_MARKER.exec(trimmedLine))) {
-      lineParts.push({ marker: pendingMarker, text: trimmedLine.slice(lastIndex, match.index).trim() });
+      lineParts.push({
+        marker: pendingMarker,
+        text: trimmedLine.slice(lastIndex, match.index).trim(),
+      });
       pendingMarker = CHECKBOX_MARKERS.test(match[0]) ? 'check' : 'bullet';
       lastIndex = match.index + match[0].length;
     }
@@ -3299,7 +3313,12 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
           return (
             <Stack key={index} spacing={0.5}>
               {block.items.map((item, itemIndex) => (
-                <Stack key={`${item}-${itemIndex}`} direction="row" gap={0.7} alignItems="flex-start">
+                <Stack
+                  key={`${item}-${itemIndex}`}
+                  direction="row"
+                  gap={0.7}
+                  alignItems="flex-start"
+                >
                   <Box
                     sx={{
                       mt: '8px',
@@ -5423,9 +5442,8 @@ function TechniqueAccordion({
   // description). Canon and class techniques are rulebook text, so in edit mode
   // they show the read-only display and only the proficiency level is editable.
   const canEditContent = Boolean(onUpdate);
-  const displayedFatigue = editing && canEditContent
-    ? deriveTechniqueFatigue(draft.description, draft.approach)
-    : fatigue;
+  const displayedFatigue =
+    editing && canEditContent ? deriveTechniqueFatigue(draft.description, draft.approach) : fatigue;
   const selfFatigueCount = displayedFatigue.self.mark + displayedFatigue.self.clear;
   function saveEdit() {
     const nextName = draft.name.trim();

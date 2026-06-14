@@ -1,4 +1,8 @@
-import { type AvatarTraining, avatarTrainingChrome, toAvatarTraining } from './avatarTrainingChrome';
+import {
+  type AvatarTraining,
+  avatarTrainingChrome,
+  toAvatarTraining,
+} from './avatarTrainingChrome';
 
 type AppChromeDocument = {
   body: { style: { background: string; backgroundColor: string } };
@@ -44,7 +48,9 @@ function applyAppChromeColor(
     root.style.backgroundColor = color;
   }
 
-  let themeMeta = targetDocument.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+  let themeMeta = targetDocument.querySelector(
+    'meta[name="theme-color"]',
+  ) as HTMLMetaElement | null;
   if (!themeMeta) {
     themeMeta = targetDocument.createElement('meta');
     themeMeta.name = 'theme-color';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyRouteChrome, appChromeColorForRoute } from './appChrome';
+import { appChromeColorForRoute, applyRouteChrome } from './appChrome';
 
 function createChromeDocument() {
   const meta = {

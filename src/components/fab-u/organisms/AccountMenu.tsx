@@ -37,11 +37,11 @@ import {
   CHARACTER_SCHEMA_VERSION,
   createRandomFabUCharacter,
 } from '@/domain/fabU/characterDefaults';
-import type { CharacterName } from '@/domain/fabU/characterTypes';
 import {
   deserializeCharacterFromBackend,
   serializeCharacterForBackend,
 } from '@/domain/fabU/characterMigration';
+import type { CharacterName } from '@/domain/fabU/characterTypes';
 import { authClient } from '@/lib/auth-client';
 import { FAB_U_SELECT_CHARACTER_EVENT } from '@/pages/FabU/useConvexCharacterSync';
 import { gameSystemAtom } from '@/sections/AccountSettings/atoms';
