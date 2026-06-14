@@ -4677,7 +4677,7 @@ function TechniqueLevelSelector({
       >
         Proficiency
       </Typography>
-      <Stack direction="row" gap={0.5}>
+      <Stack direction="row" gap={0.5} role="group" aria-label="Technique proficiency">
         {techniqueLevelOptions.map((option) => {
           const active = value === option;
           return (
@@ -4685,6 +4685,8 @@ function TechniqueLevelSelector({
               key={option}
               component="button"
               type="button"
+              aria-pressed={active}
+              aria-label={`Set proficiency to ${techniqueLevelLabels[option]}`}
               onClick={(event) => {
                 event.stopPropagation();
                 onChange(option);
