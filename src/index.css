@@ -48,12 +48,16 @@ body {
    behavior is iOS-Safari-only, so desktop and Android keep their native input
    sizing untouched. */
 @supports (-webkit-touch-callout: none) {
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']),
-  textarea,
-  select,
-  [contenteditable]:not([contenteditable='false']) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']):not(.ios-zoom-keep),
+  textarea:not(.ios-zoom-keep),
+  select:not(.ios-zoom-keep),
+  [contenteditable]:not([contenteditable='false']):not(.ios-zoom-keep) {
     font-size: 16px !important;
     transform: scale(0.875);
     transform-origin: left center;
   }
 }
+
+/* Controls that are already comfortably above the 16px zoom threshold (e.g. the
+   big Stats number circles) opt out of the rule above with `.ios-zoom-keep` so
+   they keep their intended font size. */

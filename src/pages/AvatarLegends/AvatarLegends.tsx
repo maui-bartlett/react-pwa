@@ -2231,6 +2231,7 @@ function StatsPanel() {
               </Typography>
               <Box
                 component="select"
+                className="ios-zoom-keep"
                 value={value}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                   setValue(label, e.target.value)
