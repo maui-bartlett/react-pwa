@@ -234,7 +234,7 @@ export const getAvatarLegendsClassByName = query({
 const SUCCESSOR_CLASS_TRAIT_TEXT = `You hail from a powerful, infamous lineage — one with an impressive and terrible reputation. Your lineage has had a massive impact on the world within the scope of your story — its reach extends over the whole scope, and everyone in the scope knows of it. Choose one domain that is the source of your lineage’s power—the area in which they affected the world—and another into which they’re now beginning to extend their reach.
 □ high society □ military command □ arts and entertainment □ land ownership □ organized crime □ spiritual authority □ state politics □ business and industry □ elite academics □ vigilante militias □ media and news □ vital supply chains
 Lineage Resources
-You have access to your family’s extensive stores of two of the following resources:
+You have access to your family’s extensive stores of two of the following resources.
 □ obscure or forbidden knowledge □ introductions and connections □ servants or muscle □ high technology □ cold hard cash □ spiritual artifacts or tomes
 Spend resources during the session to establish a boon you had previously asked for or obtained, something that your lineage’s unique position and stores could provide: a vehicle, an invitation, a chest of jade coins, etc.
 Humble Yourself
@@ -307,6 +307,86 @@ export const cleanDestinedClassTrait = internalMutation({
         ? { ...(classInfo.classTrait as Record<string, unknown>) }
         : {};
     classTrait.text = DESTINED_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});
+
+// Cleaned "Role" trait text for The Icon. Drops the status sidebar / stray
+// labels and line-structures it so the responsibilities and prohibitions
+// become checkbox grids under their headings, and the moves (Break Tradition,
+// Live Up to Your Role, End of Session) read as headings + paragraphs.
+const ICON_CLASS_TRAIT_TEXT = `You are an icon of your burden and tradition. You are expected to be its exemplar, its single most important representative, trained up from a young age and saddled with the weight of history. You have been told that you are vital to the world.
+Choose 3 responsibilities of your burden and tradition you are expected to assume:
+□ Protecting humanity from natural disasters and dark spirits □ destroying dangerous creatures □ overthrowing tyrants □ serving and defending rightful rulers □ performing rituals □ providing aid and succor to the downtrodden □ searching for hidden histories and artifacts □ guarding nature from threats and destruction □ safekeeping records and relics
+Choose 3 prohibitions of your burden and tradition:
+□ Never refuse an earnest request for help □ never express great emotion □ never run from a fight □ never start a fight □ never deny someone knowledge or truth □ never use your role for gain or profit □ never intervene in a community without invitation □ never withhold forgiveness □ never steal or cheat
+Break Tradition
+When you directly and openly break a prohibition of your burden and tradition, mark a condition, shift your balance twice towards Freedom, and mark growth.
+Live Up to Your Role
+When you live up to your Role through the responsibilities of your burden and tradition despite opposition or danger, shift your balance toward Role instead of marking fatigue, and clear fatigue equal to your Role (minimum 0-fatigue).
+End of Session
+At the end of each session, answer these after your standard growth questions.
+• Did I uphold a responsibility? If yes, shift balance toward Role and clear a condition. • Did I break a prohibition? If yes, shift balance toward Freedom.
+Underline one prohibition you broke during the session. If it’s already underlined, cross it out—it doesn’t mean anything to you to break it again.`;
+
+/** One-off cleanup of The Icon's class-trait text. Idempotent. */
+export const cleanIconClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Icon'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.text = ICON_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});
+
+// Cleaned "Squad Leader" trait text for The Pillar. Converts the squad-trait,
+// values, and team-disposition lists into checkbox grids under their headings,
+// keeps the leadership/support style lists, and breaks the prose paragraphs
+// out. Drops the trailing status sidebar.
+const PILLAR_CLASS_TRAIT_TEXT = `You were the leader of a small group of 10 or so well-trained warriors from a recognized and noble tradition. Where does your squad call home? _______________________________
+Which are the most well known traits of your squad? (choose up to 3):
+□ our weapons □ our fighting style □ our battle cry □ our costumes □ our legends □ our purpose
+What does your squad value? (choose 2):
+□ Excellence □ Justice □ Duty □ Mercy □ Tradition □ Protection
+Despite being the leader, you chose to travel with your new companions for the time being, until you’ve achieved this group’s purpose.
+Choose where your team is without you:
+□ protecting the team’s home while you are away □ protecting a powerful figure □ temporarily disbanded or exiled □ training and preparing for something important □ journeying and doing good works throughout your scope □ escorting important travelers □ stationed at an important location □ performing traditional or ceremonial duties
+Within any group, you serve a role both subtle and overt, sometimes leading the team, sometimes helping it glue itself together. You earn Team through your leadership style, and you spend Team through your support style. At the end of each session, you may change 1 style of leadership and 1 style of support.
+Choose 2 styles of leadership. Earn 1-Team when…
+□ Firm: …you openly call on a companion to live up to their principle. □ Inspiring: …you live up to your principle and roll a hit. □ Diplomatic: …you plead with an NPC for help and roll a 10+. □ Empathetic: …you guide and comfort a companion and they open up to you. □ Guidance: …you assess a situation and give a companion instructions based on the answers. □ Indomitable: …you roll a hit when you resist shifting your balance or you deny a callout.
+Choose 2 styles of support. Spend 1-Team when…
+□ Comforting: …you spend time one-on-one in a quiet moment with a companion to clear a condition from them. □ Invigorating: …you rally a companion to action in a tense moment to clear 2-fatigue from them. □ Defending: …you are within reach of a companion in combat to clear a negative status from them. □ Bolstering: …you help another companion to give them a +1 to their roll, after the roll. □ Encouraging: …you openly endorse a friend living up to their principle to shift their balance toward that principle. □ Trusting: …you openly endorse a friend resisting shifting their balance to give them +2, after the roll.`;
+
+/** One-off cleanup of The Pillar's class-trait text. Idempotent. */
+export const cleanPillarClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Pillar'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.text = PILLAR_CLASS_TRAIT_TEXT;
     await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
     return { updated: true };
   },

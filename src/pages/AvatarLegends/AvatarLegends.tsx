@@ -2937,15 +2937,24 @@ function isStatusOrConditionCheckbox(label: string): boolean {
  * 2–3 word Title-Case run at the start of a sentence that precedes the real
  * sentence (e.g. "Destiny Details Fill these in…" → header "Destiny Details").
  */
-function splitClassTraitPlainText(text: string): ClassTraitBlock[] {
+function splitClassTraitPlainText(text: string, allowLabelHeaders: boolean): ClassTraitBlock[] {
   const trimmed = text.trim();
   if (!trimmed) return [];
+
+  // In line-structured (cleaned) text, a standalone line ending in a colon or
+  // ellipsis is a list label / section heading ("Choose where your team is
+  // without you:", "Earn 1-Team when…"). Only when the source uses line breaks,
+  // so an un-cleaned class's long colon-ending intro isn't turned into a header.
+  if (allowLabelHeaders && /(:|…|\.\.\.)$/.test(trimmed) && /^[A-Z(]/.test(trimmed)) {
+    return [{ kind: 'header', text: trimmed }];
+  }
 
   const words = trimmed.split(/\s+/);
   const isTitleWord = (word: string) =>
     /^[A-Z][A-Za-z'’-]*$/.test(word) || TITLE_MINOR_WORDS.has(word.toLowerCase());
-  // Whole segment is a short title phrase (e.g. "Destiny Signs").
-  if (words.length <= 4 && !/[.!?:]$/.test(trimmed) && /^[A-Z(]/.test(trimmed) && words.every(isTitleWord)) {
+  // Whole segment is a short Title-Case phrase (e.g. "Destiny Signs",
+  // "Live Up to Your Role").
+  if (words.length <= 5 && !/[.!?:]$/.test(trimmed) && /^[A-Z(]/.test(trimmed) && words.every(isTitleWord)) {
     return [{ kind: 'header', text: trimmed }];
   }
 
@@ -3023,6 +3032,8 @@ function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
     .replace(/\n{2,}/g, '\n')
     .trim();
   if (!normalized) return [];
+  // Line-structured (cleaned) text enables label/section-heading detection.
+  const structured = normalized.includes('\n');
 
   const blocks: ClassTraitBlock[] = [];
   const pushListItem = (kind: 'checkboxes' | 'bullets', item: string) => {
@@ -3063,7 +3074,7 @@ function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
 
     for (const part of lineParts) {
       if (part.marker === null) {
-        for (const block of splitClassTraitPlainText(part.text)) blocks.push(block);
+        for (const block of splitClassTraitPlainText(part.text, structured)) blocks.push(block);
         continue;
       }
       if (!part.text) continue;
@@ -3122,7 +3133,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
         sx={{
           color: brown,
           fontFamily: 'Georgia, "Times New Roman", serif',
-          fontSize: '0.86rem',
+          fontSize: '0.96rem',
           lineHeight: 1.5,
           pt: 1.05,
           px: 2,
@@ -3144,7 +3155,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
               sx={{
                 color: ink,
                 fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.74rem',
+                fontSize: '0.84rem',
                 fontWeight: 900,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
@@ -3162,7 +3173,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
               sx={{
                 color: brown,
                 fontFamily: 'Georgia, "Times New Roman", serif',
-                fontSize: '0.86rem',
+                fontSize: '0.96rem',
                 lineHeight: 1.5,
               }}
             >
@@ -3189,7 +3200,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                     sx={{
                       color: brown,
                       fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.86rem',
+                      fontSize: '0.96rem',
                       lineHeight: 1.5,
                     }}
                   >
@@ -3213,7 +3224,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                 sx={{
                   color: ink,
                   fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                  fontSize: '0.74rem',
+                  fontSize: '0.84rem',
                   fontWeight: 900,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
@@ -3310,7 +3321,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                     sx={{
                       color: brown,
                       fontFamily: 'Georgia, "Times New Roman", serif',
-                      fontSize: '0.84rem',
+                      fontSize: '0.94rem',
                       lineHeight: 1.4,
                     }}
                   >
@@ -4348,6 +4359,10 @@ function resolveAvatarHistoryQuestions(classData: AvatarClassData | null | undef
 }
 
 function CharacterPane() {
+  const { isDarkMode } = useThemeMode();
+  // White dropdown chevron in dark mode (native arrow stays dark and is hard
+  // to see on the slate select); deep ink in light mode.
+  const selectArrowColor = encodeURIComponent(isDarkMode ? '#ffffff' : ink);
   const [character, setCharacter] = useAtom(characterStateAtom);
   const [editingIdentity, setEditingIdentity] = useState(false);
   const [identityDraft, setIdentityDraft] = useState({
@@ -4499,7 +4514,8 @@ function CharacterPane() {
                     border: `1px solid ${alpha(accent, 0.72)}`,
                     bgcolor: alpha(parchmentLight, 0.72),
                     color: ink,
-                    px: 1.25,
+                    pl: 1.25,
+                    pr: 3,
                     py: 1,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
                     fontSize: '1rem',
@@ -4507,6 +4523,14 @@ function CharacterPane() {
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
+                    // Custom chevron so we can colour it white in dark mode.
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    appearance: 'none',
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5' stroke='${selectArrowColor}' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 10px center',
+                    backgroundSize: '14px 14px',
                   }}
                 >
                   {classOptions.length === 0 ? (
