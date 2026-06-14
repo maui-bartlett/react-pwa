@@ -1504,6 +1504,15 @@ function techniqueElementVisual(type: TechniqueElement): {
   return { color: water, frameColor: elementFilterFrames.waterbending, src: elementWater };
 }
 
+// Class (playbook) techniques show a lettered "C" badge — styled like the U /
+// G badges for Universal / Group — instead of their bending element icon.
+const classTechniqueVisual: {
+  color: string;
+  frameColor?: string;
+  src?: string;
+  label?: string;
+} = { color: bookAccent, frameColor: '#4a3c12', label: 'C' };
+
 /**
  * Painted chrome band. Trainings can opt into themed SVG border motifs
  * at the inner edge while sharing the same header/footer layout.
@@ -2386,7 +2395,7 @@ function PrimaryTrainingSelect() {
         sx={{
           color: alpha(brown, 0.76),
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.58rem',
+          fontSize: '0.72rem',
           fontWeight: 900,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
@@ -3187,6 +3196,7 @@ function renderClassTraitText(text: string, writeIn?: ClassTraitWriteIn): React.
           width: `${widthCh}ch`,
           maxWidth: '100%',
           mx: 0.4,
+          mt: 0.6,
           p: 0,
           border: 'none',
           borderBottom: `1px solid ${alpha(brown, 0.55)}`,
@@ -3287,7 +3297,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                 lineHeight: 1.3,
                 // Heading text breaks onto a new line per sentence.
                 whiteSpace: 'pre-line',
-                mt: index === 0 ? 0.2 : 1.3,
+                mt: index === 0 ? 0.4 : 2.2,
               }}
             >
               {splitHeadingSentences(block.text)}
@@ -3351,7 +3361,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
               direction="row"
               alignItems="center"
               gap={1}
-              sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: index === 0 ? 0.2 : 1.3 }}
+              sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: index === 0 ? 0.4 : 2.2 }}
             >
               <Typography
                 sx={{
@@ -4749,7 +4759,7 @@ function CharacterPane() {
                     // both themes.
                     color: bookAccent,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.72rem',
+                    fontSize: '0.92rem',
                     fontWeight: 900,
                     letterSpacing: '0.16em',
                   }}
@@ -4776,7 +4786,7 @@ function CharacterPane() {
                       sx={{
                         color: brown,
                         fontFamily: 'Georgia, serif',
-                        fontSize: '0.7rem',
+                        fontSize: '0.86rem',
                         fontWeight: 700,
                         fontStyle: 'italic',
                       }}
@@ -6007,7 +6017,9 @@ function CombatPane() {
             />
             {visibleTechniques.map((tech, index) => {
               const isBasic = tech.type === 'basic';
-              const visual = techniqueElementVisual(tech.type);
+              const visual = tech.classTechnique
+                ? classTechniqueVisual
+                : techniqueElementVisual(tech.type);
               const techniqueIndex = techniques.indexOf(tech);
               const requestDelete = () => setPendingTechniqueDelete(techniqueIndex);
               // Editable when content (custom) or proficiency level (all
