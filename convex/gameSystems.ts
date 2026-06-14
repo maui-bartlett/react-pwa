@@ -102,7 +102,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     name: 'Blood Twisting',
     summary: "Use bloodbending to painfully move and twist a foe's body.",
     description:
-      'Use bloodbending to move and twist a foe's body in painful ways. You must be Empowered to use this technique. Inflict a condition on your foe. If they are already Impaired, Trapped, or Doomed, inflict an additional condition. If this is your first, second, or third time ever using this technique, mark a condition.',
+      'Use bloodbending to move and twist a foe\'s body in painful ways. You must be Empowered to use this technique. Inflict a condition on your foe. If they are already Impaired, Trapped, or Doomed, inflict an additional condition. If this is your first, second, or third time ever using this technique, mark a condition.',
     rare: true,
     tags: ['blood'],
   },
@@ -128,7 +128,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     name: 'Crushing Grip of Seas',
     summary: 'Wrap a foe with water to impair or trap them.',
     description:
-      'Throw a tendril of water that wraps around a foe's limb and holds it in place. Mark fatigue and inflict Impaired on a foe; mark an additional 2-fatigue to inflict Trapped on that foe with a second tendril. If the foe is already Impaired, you only need to pay 2-fatigue for Trapped.',
+      'Throw a tendril of water that wraps around a foe\'s limb and holds it in place. Mark fatigue and inflict Impaired on a foe; mark an additional 2-fatigue to inflict Trapped on that foe with a second tendril. If the foe is already Impaired, you only need to pay 2-fatigue for Trapped.',
     rare: true,
   },
   {
@@ -206,7 +206,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     name: 'Water Whip',
     summary: 'Lash a target with a tendril of water.',
     description:
-      'Lash out with a tendril of water. Mark fatigue to inflict a condition or 2-fatigue, target's choice.',
+      'Lash out with a tendril of water. Mark fatigue to inflict a condition or 2-fatigue, target\'s choice.',
   },
   technique(
     'waterbending',
@@ -336,7 +336,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     name: 'Attack Weakness',
     summary: 'Strike an injured enemy at a weak point.',
     description:
-      'Strike an enemy at a weak point where they've already been injured. Mark fatigue to target an engaged, Impaired enemy in reach; they suffer fatigue equal to however many conditions they already have marked.',
+      'Strike an enemy at a weak point where they\'ve already been injured. Mark fatigue to target an engaged, Impaired enemy in reach; they suffer fatigue equal to however many conditions they already have marked.',
   },
   {
     type: 'universal',
@@ -344,7 +344,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     name: 'Charge',
     summary: 'Close distance and strike an unengaged enemy at full force.',
     description:
-      'Advance straight at an enemy to strike them full force. Mark fatigue to close the distance and engage with an enemy you aren't currently engaged with, inflicting one condition or 2-fatigue, their choice. Become Favored for next exchange.',
+      'Advance straight at an enemy to strike them full force. Mark fatigue to close the distance and engage with an enemy you aren\'t currently engaged with, inflicting one condition or 2-fatigue, their choice. Become Favored for next exchange.',
   },
   {
     type: 'universal',
@@ -352,7 +352,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     name: 'Duck and Twist',
     summary: 'Use fast movement to avoid the worst of harm.',
     description:
-      'Rely on your fast movement to help keep you out of the worst of harm's way. Mark fatigue to clear one condition and become Favored.',
+      'Rely on your fast movement to help keep you out of the worst of harm\'s way. Mark fatigue to clear one condition and become Favored.',
   },
   {
     type: 'universal',
@@ -530,7 +530,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     name: 'Test Defenses',
     summary: 'Probe a foe and learn their abilities.',
     description:
-      'The group slowly probes the defenses of a foe, one or two members attacking individually to determine the foe's abilities. The group becomes Prepared, Favored, Inspired, and learns the balance principle of its target; the chosen foe may immediately use Strike on the group in turn.',
+      'The group slowly probes the defenses of a foe, one or two members attacking individually to determine the foe\'s abilities. The group becomes Prepared, Favored, Inspired, and learns the balance principle of its target; the chosen foe may immediately use Strike on the group in turn.',
   },
   {
     type: 'group',
@@ -569,7 +569,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'earthbending',
     'Defend & Maneuver',
     'Earth Launch',
-    'Throw yourself into the air with a massive burst of force. Mark 1-fatigue and become Favored. You disengage with all foes who can't reach you high in the air for the rest of this exchange, but you come right back down into their midst at the end of this exchange.',
+    'Throw yourself into the air with a massive burst of force. Mark 1-fatigue and become Favored. You disengage with all foes who can\'t reach you high in the air for the rest of this exchange, but you come right back down into their midst at the end of this exchange.',
   ),
   technique(
     'earthbending',
@@ -601,7 +601,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'earthbending',
     'Evade & Observe',
     'Metal Bindings',
-    'Catch an enemy's limbs in metal you control. They become Impaired and cannot remove the status unless they are able to metalbend or the fight ends. While they are Impaired and you are engaged with them, you are Favored.',
+    'Catch an enemy\'s limbs in metal you control. They become Impaired and cannot remove the status unless they are able to metalbend or the fight ends. While they are Impaired and you are engaged with them, you are Favored.',
     { tags: ['metal'] },
   ),
   technique(
@@ -838,7 +838,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'firebending',
     'Advance & Attack',
     'Fire Blade',
-    'Swipe your surroundings with a blade of flame. Mark 1-fatigue to slice through a piece of your surroundings and destabilize your foe's footing, inflicting 2-fatigue and Impaired on them.',
+    'Swipe your surroundings with a blade of flame. Mark 1-fatigue to slice through a piece of your surroundings and destabilize your foe\'s footing, inflicting 2-fatigue and Impaired on them.',
   ),
   technique(
     'firebending',
@@ -857,7 +857,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'firebending',
     'Defend & Maneuver',
     'Fire Whip',
-    'Lash out from a distance. Inflict 2-fatigue or a condition, target's choice, and enemies must mark fatigue to get close enough to attack you this exchange.',
+    'Lash out from a distance. Inflict 2-fatigue or a condition, target\'s choice, and enemies must mark fatigue to get close enough to attack you this exchange.',
   ),
   technique(
     'firebending',
@@ -919,7 +919,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'airbending',
     'Advance & Attack',
     'Cannonball',
-    'Rush forward with the might of the wind behind you and crash into a foe. Mark 1-fatigue to target a foe you aren't currently engaged with and rush at them. You become engaged with them, disengaging with other current foes, and inflict a condition on them.',
+    'Rush forward with the might of the wind behind you and crash into a foe. Mark 1-fatigue to target a foe you aren\'t currently engaged with and rush at them. You become engaged with them, disengaging with other current foes, and inflict a condition on them.',
   ),
   technique(
     'airbending',
@@ -958,7 +958,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'airbending',
     'Evade & Observe',
     'Suction',
-    'Snatch a small object off the ground or from a foe's hand with a sucking wind. The object snaps to your hand unless someone marks 2-fatigue to hold it or block its movement.',
+    'Snatch a small object off the ground or from a foe\'s hand with a sucking wind. The object snaps to your hand unless someone marks 2-fatigue to hold it or block its movement.',
   ),
   technique(
     'airbending',
@@ -970,7 +970,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'airbending',
     'Defend & Maneuver',
     'Wind Run',
-    'Race at high speeds, dodging attacks and seeking escape. Mark 1-fatigue to slip to a particular point of escape, disengaging with foes; you don't engage any new foes. If no one re-engages with you or blocks your retreat by the end of the exchange, you escape the scene.',
+    'Race at high speeds, dodging attacks and seeking escape. Mark 1-fatigue to slip to a particular point of escape, disengaging with foes; you don\'t engage any new foes. If no one re-engages with you or blocks your retreat by the end of the exchange, you escape the scene.',
   ),
   technique(
     'weapons',
@@ -982,7 +982,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'weapons',
     'Advance & Attack',
     'Boom!',
-    'Throw a small prepared explosive into the midst of your foes. Mark 2-fatigue or clear Prepared to toss the explosive into your enemies' midst. Everyone in range, including allies in the area, must either mark 3-fatigue to dive away, or mark a condition and become Stunned, their choice.',
+    'Throw a small prepared explosive into the midst of your foes. Mark 2-fatigue or clear Prepared to toss the explosive into your enemies\' midst. Everyone in range, including allies in the area, must either mark 3-fatigue to dive away, or mark a condition and become Stunned, their choice.',
     { rare: true },
   ),
   technique(
@@ -996,13 +996,13 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'weapons',
     'Defend & Maneuver',
     'Counterstrike',
-    'Using impeccable timing, read your foe's movement and lash out with blinding speed. Execute a Strike as if you had marked 1-fatigue against an engaged foe who chose advance and attack as their approach. You cannot use this technique if you have any negative statuses.',
+    'Using impeccable timing, read your foe\'s movement and lash out with blinding speed. Execute a Strike as if you had marked 1-fatigue against an engaged foe who chose advance and attack as their approach. You cannot use this technique if you have any negative statuses.',
   ),
   technique(
     'weapons',
     'Defend & Maneuver',
     'Disarm',
-    'Target your foe's ability to fight by breaking, removing, or limiting a particular style. Mark 2-fatigue to name any advanced advance and attack technique your foe has; they are unable to use that technique for the remainder of this encounter.',
+    'Target your foe\'s ability to fight by breaking, removing, or limiting a particular style. Mark 2-fatigue to name any advanced advance and attack technique your foe has; they are unable to use that technique for the remainder of this encounter.',
   ),
   technique(
     'weapons',
@@ -1014,7 +1014,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'weapons',
     'Defend & Maneuver',
     'Parry',
-    'Stop a foe's attack before it connects. Choose a foe who used advance and attack this exchange; during advance and attack, mark fatigue 1-for-1 to cancel an attack they use against you after they pay the costs.',
+    'Stop a foe\'s attack before it connects. Choose a foe who used advance and attack this exchange; during advance and attack, mark fatigue 1-for-1 to cancel an attack they use against you after they pay the costs.',
   ),
   technique(
     'weapons',
@@ -1045,7 +1045,7 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
     'weapons',
     'Advance & Attack',
     'Turn the Tables',
-    'Make careful strikes to undermine your foe's advantageous position. Mark 1-fatigue to knock your foe from their position to a new, disadvantageous location, inflicting 1-fatigue. If your foe was Favored or Prepared at the start of the exchange, you do not mark fatigue, you inflict an additional 1-fatigue, and they lose all appropriate positive statuses. These costs and consequences cannot be canceled or avoided by another technique.',
+    'Make careful strikes to undermine your foe\'s advantageous position. Mark 1-fatigue to knock your foe from their position to a new, disadvantageous location, inflicting 1-fatigue. If your foe was Favored or Prepared at the start of the exchange, you do not mark fatigue, you inflict an additional 1-fatigue, and they lose all appropriate positive statuses. These costs and consequences cannot be canceled or avoided by another technique.',
     { rare: true },
   ),
   technique(
