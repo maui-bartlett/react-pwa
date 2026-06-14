@@ -607,6 +607,14 @@ type TechniqueElement =
   | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
+// Proficiency levels in mastery order; used for both the edit-mode selector
+// and the at-a-glance level pill on each technique card.
+const techniqueLevelOptions = ['learned', 'practiced', 'mastered'] as const;
+const techniqueLevelLabels: Record<TechniqueLevel, string> = {
+  learned: 'Learned',
+  practiced: 'Practiced',
+  mastered: 'Mastered',
+};
 
 // UI-only atoms (no character data; just remember which sub-tab is
 // active when the user navigates away and comes back).
@@ -4611,6 +4619,103 @@ function MovesPane() {
 }
 
 /**
+ * Compact proficiency badge shown on the technique card header. Learned is
+ * rendered muted (the default), while Practiced and Mastered escalate to the
+ * gold book accent — Mastered filled — so advancement reads at a glance.
+ */
+function TechniqueLevelPill({ level }: { level: TechniqueLevel }) {
+  const filled = level === 'mastered';
+  const accentColor = level === 'learned' ? brownSoft : bookAccent;
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: 0.6,
+        py: '1px',
+        borderRadius: '2px',
+        border: `1px solid ${alpha(accentColor, 0.7)}`,
+        bgcolor: filled ? accentColor : 'transparent',
+        color: filled ? parchmentLight : accentColor,
+        fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+        fontSize: '0.5rem',
+        fontWeight: 900,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        lineHeight: 1,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {techniqueLevelLabels[level]}
+    </Box>
+  );
+}
+
+/**
+ * Segmented Learned / Practiced / Mastered control used inside the technique
+ * edit mode to set the character's proficiency level for a technique.
+ */
+function TechniqueLevelSelector({
+  value,
+  onChange,
+}: {
+  value: TechniqueLevel;
+  onChange: (level: TechniqueLevel) => void;
+}) {
+  return (
+    <Stack spacing={0.45}>
+      <Typography
+        sx={{
+          color: brown,
+          fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+          fontSize: '0.55rem',
+          fontWeight: 900,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+        }}
+      >
+        Proficiency
+      </Typography>
+      <Stack direction="row" gap={0.5}>
+        {techniqueLevelOptions.map((option) => {
+          const active = value === option;
+          return (
+            <Box
+              key={option}
+              component="button"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onChange(option);
+              }}
+              sx={{
+                flex: 1,
+                minHeight: 30,
+                px: 0.5,
+                borderRadius: '3px',
+                border: `1px solid ${active ? bookAccent : alpha(border, 0.75)}`,
+                bgcolor: active ? bookAccent : alpha(parchmentLight, 0.55),
+                color: active ? parchmentLight : brown,
+                cursor: 'pointer',
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.6rem',
+                fontWeight: 900,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                transition: 'background-color 0.15s ease, border-color 0.15s ease',
+              }}
+            >
+              {techniqueLevelLabels[option]}
+            </Box>
+          );
+        })}
+      </Stack>
+    </Stack>
+  );
+}
+
+/**
  * Expandable Technique card. Collapsed: shows the element badge, name,
  * and summary line, with the fatigue indicator on the right. Expanded:
  * appends the full description text below the row.
@@ -4621,6 +4726,7 @@ function TechniqueAccordion({
   summary,
   description,
   fatigue,
+  level,
   src,
   elementLabel,
   techColor,
@@ -4628,6 +4734,7 @@ function TechniqueAccordion({
   isBasic = false,
   custom = false,
   onUpdate,
+  onLevelChange,
   onDelete,
 }: {
   approach: TechniqueCategory;
@@ -4635,6 +4742,7 @@ function TechniqueAccordion({
   summary: string;
   description: string;
   fatigue: TechniqueFatigue;
+  level: TechniqueLevel;
   src?: string;
   elementLabel?: string;
   techColor: string;
@@ -4646,14 +4754,20 @@ function TechniqueAccordion({
   isBasic?: boolean;
   custom?: boolean;
   onUpdate?: (next: Pick<Technique, 'approach' | 'name' | 'summary' | 'description'>) => void;
+  /** Set the character's proficiency level for this technique. Available
+   *  on every technique (canon, class, and custom), not just custom ones. */
+  onLevelChange?: (level: TechniqueLevel) => void;
   onDelete?: () => void;
 }) {
   const { isDarkMode } = useThemeMode();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({ approach, name, summary, description });
+  const [draft, setDraft] = useState({ approach, name, summary, description, level });
   const categoryColor = techniqueCategoryColor(approach, isDarkMode);
   const fatigueAccentColor = bookAccent;
+  // Edit mode is available whenever the card can mutate either its content
+  // (custom techniques) or its proficiency level (all techniques).
+  const editable = Boolean(onUpdate) || Boolean(onLevelChange);
   const displayedFatigue = editing
     ? deriveTechniqueFatigue(draft.description, draft.approach)
     : fatigue;
@@ -4667,6 +4781,7 @@ function TechniqueAccordion({
       summary: draft.summary.trim(),
       description: draft.description.trim(),
     });
+    if (draft.level !== level) onLevelChange?.(draft.level);
     setEditing(false);
   }
   return (
@@ -4793,19 +4908,29 @@ function TechniqueAccordion({
               </>
             ) : (
               <>
-                <Typography
-                  sx={{
-                    color: categoryColor,
-                    fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.58rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    lineHeight: 1,
-                  }}
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  gap={0.6}
+                  sx={{ flexWrap: 'wrap', rowGap: 0.25 }}
                 >
-                  {approach}
-                </Typography>
+                  <Typography
+                    sx={{
+                      color: categoryColor,
+                      fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                      fontSize: '0.58rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {approach}
+                  </Typography>
+                  {/* Basic techniques are always available and have no mastery
+                      progression, so they skip the proficiency badge. */}
+                  {isBasic ? null : <TechniqueLevelPill level={level} />}
+                </Stack>
                 <Typography
                   sx={{
                     color: ink,
@@ -4939,55 +5064,67 @@ function TechniqueAccordion({
             )}
           </>
         ) : null}
-        {custom ? (
-          <Stack direction="row" gap={1} justifyContent="flex-end">
-            {editing ? (
-              <>
-                <Button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setEditing(false);
-                  }}
-                  sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    saveEdit();
-                  }}
-                  sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
-                >
-                  Save
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setDraft({ approach, name, summary, description });
-                    setOpen(true);
-                    setEditing(true);
-                  }}
-                  startIcon={<Pencil size={14} />}
-                  sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
-                >
-                  Edit
-                </Button>
-                <Button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onDelete?.();
-                  }}
-                  startIcon={<Trash2 size={14} />}
-                  sx={{ color: passionRed, textTransform: 'none', fontWeight: 800 }}
-                >
-                  Delete
-                </Button>
-              </>
-            )}
+        {editable ? (
+          <Stack spacing={0.75} sx={{ pt: 0.25 }}>
+            {editing && onLevelChange ? (
+              <TechniqueLevelSelector
+                value={draft.level}
+                onChange={(nextLevel) =>
+                  setDraft((prev) => ({ ...prev, level: nextLevel }))
+                }
+              />
+            ) : null}
+            <Stack direction="row" gap={1} justifyContent="flex-end">
+              {editing ? (
+                <>
+                  <Button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setEditing(false);
+                    }}
+                    sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      saveEdit();
+                    }}
+                    sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
+                  >
+                    Save
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDraft({ approach, name, summary, description, level });
+                      setOpen(true);
+                      setEditing(true);
+                    }}
+                    startIcon={<Pencil size={14} />}
+                    sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
+                  >
+                    Edit
+                  </Button>
+                  {custom ? (
+                    <Button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDelete?.();
+                      }}
+                      startIcon={<Trash2 size={14} />}
+                      sx={{ color: passionRed, textTransform: 'none', fontWeight: 800 }}
+                    >
+                      Delete
+                    </Button>
+                  ) : null}
+                </>
+              )}
+            </Stack>
           </Stack>
         ) : null}
       </Stack>
@@ -5237,6 +5374,7 @@ function CombatPane() {
                     summary={tech.summary}
                     description={tech.description}
                     fatigue={tech.fatigue}
+                    level={tech.level}
                     custom={tech.custom}
                     onUpdate={
                       tech.custom
@@ -5254,6 +5392,17 @@ function CombatPane() {
                               ),
                             }))
                         : undefined
+                    }
+                    onLevelChange={
+                      isBasic
+                        ? undefined
+                        : (nextLevel) =>
+                            setCharacterState((prev) => ({
+                              ...prev,
+                              techniques: prev.techniques.map((item) =>
+                                item === tech ? { ...item, level: nextLevel } : item,
+                              ),
+                            }))
                     }
                     onDelete={tech.custom ? requestDelete : undefined}
                     isBasic={isBasic}
