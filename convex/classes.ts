@@ -223,3 +223,51 @@ export const getAvatarLegendsClassByName = query({
     return classDoc?.class ?? null;
   },
 });
+
+// Cleaned "A Tainted Past" trait text for The Successor. The raw rulebook
+// extraction interleaved a status/condition sidebar and stray labels
+// ("Conditions", "FOCUS [+1]", "NEGATIVE Background NAME:") into the domain
+// checkboxes. This version drops that noise and uses line breaks to delineate
+// the intro, the two domain rows, the resource list, and the three sub-moves
+// (Lineage Resources / Humble Yourself / Raid Your Lineage's Resources) so the
+// sheet can render proper headings, paragraphs, and a checkbox grid.
+const SUCCESSOR_CLASS_TRAIT_TEXT = `You hail from a powerful, infamous lineage — one with an impressive and terrible reputation. Your lineage has had a massive impact on the world within the scope of your story — its reach extends over the whole scope, and everyone in the scope knows of it. Choose one domain that is the source of your lineage’s power—the area in which they affected the world—and another into which they’re now beginning to extend their reach.
+□ high society □ military command □ arts and entertainment □ land ownership □ organized crime □ spiritual authority □ state politics □ business and industry □ elite academics □ vigilante militias □ media and news □ vital supply chains
+Lineage Resources
+You have access to your family’s extensive stores of two of the following resources:
+□ obscure or forbidden knowledge □ introductions and connections □ servants or muscle □ high technology □ cold hard cash □ spiritual artifacts or tomes
+Spend resources during the session to establish a boon you had previously asked for or obtained, something that your lineage’s unique position and stores could provide: a vehicle, an invitation, a chest of jade coins, etc.
+Humble Yourself
+When you politely and obediently humble yourself before a powerful member of your lineage, roll with your Tradition. On a hit, you earn some credit; hold 3-resources. On a 7–9, their resources don’t come without strings; you’ll need to promise to fulfill some other obligation of your lineage, or let them shift your balance. On a miss, they’re dissatisfied with your display; they’re cutting you off until you fulfill some task they set to you.
+Raid Your Lineage’s Resources
+When you raid your lineage’s resources without their consent or knowledge, mark a condition and roll with your Progress. On a hit, hold 1-resource. On a 7–9, choose 1. On a 10+, choose 2.
+• You obtain an additional 1-resource • You nab your goodies quietly; your lineage is none the wiser • You steel yourself for what you’re doing; avoid marking a condition
+On a miss, you’re caught red-handed by a powerful member of your lineage who saw you coming.`;
+
+/**
+ * One-off cleanup: replace The Successor's class-trait text with the cleaned,
+ * line-structured version above. Idempotent — safe to re-run.
+ */
+export const cleanSuccessorClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Successor'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.text = SUCCESSOR_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});

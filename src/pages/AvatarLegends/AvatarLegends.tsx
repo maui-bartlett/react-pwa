@@ -2842,7 +2842,7 @@ function HistorySection({ questions }: { questions: string[] }) {
                 sx={{
                   color: ink,
                   fontFamily: 'Georgia, "Times New Roman", serif',
-                  fontSize: '0.88rem',
+                  fontSize: '1rem',
                   fontStyle: 'italic',
                   lineHeight: 1.45,
                 }}
@@ -2900,6 +2900,28 @@ type ClassTraitBlock =
 const CHECKBOX_MARKERS = /[□▢☐]/;
 const CLASS_TRAIT_MARKER = /[□▢☐]|[•◦‣]/g;
 const TITLE_MINOR_WORDS = new Set(['of', 'the', 'and', 'to', 'a', 'an', 'for', 'in']);
+// Status / condition names. Class-trait text extracted from the rulebook PDFs
+// often carries a stray sidebar of these as □ boxes; they aren't real trait
+// checkboxes, so we drop any checkbox whose label begins with one of them.
+const AVATAR_STATUS_CONDITION_NAMES = new Set([
+  'doomed',
+  'impaired',
+  'trapped',
+  'stunned',
+  'empowered',
+  'favored',
+  'inspired',
+  'prepared',
+  'afraid',
+  'angry',
+  'guilty',
+  'insecure',
+  'troubled',
+]);
+function isStatusOrConditionCheckbox(label: string): boolean {
+  const firstWord = label.trim().toLowerCase().match(/^[a-z]+/);
+  return firstWord ? AVATAR_STATUS_CONDITION_NAMES.has(firstWord[0]) : false;
+}
 
 /**
  * Split a run of plain (non-marker) text into header + paragraph blocks.
@@ -2943,34 +2965,51 @@ function splitClassTraitPlainText(text: string): ClassTraitBlock[] {
 }
 
 function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
-  const text = rawText.replace(/\s+/g, ' ').trim();
-  if (!text) return [];
-
-  const parts: Array<{ marker: 'check' | 'bullet' | null; text: string }> = [];
-  let lastIndex = 0;
-  let pendingMarker: 'check' | 'bullet' | null = null;
-  CLASS_TRAIT_MARKER.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = CLASS_TRAIT_MARKER.exec(text))) {
-    parts.push({ marker: pendingMarker, text: text.slice(lastIndex, match.index).trim() });
-    pendingMarker = CHECKBOX_MARKERS.test(match[0]) ? 'check' : 'bullet';
-    lastIndex = match.index + match[0].length;
-  }
-  parts.push({ marker: pendingMarker, text: text.slice(lastIndex).trim() });
+  // Keep newlines as hard block boundaries (collapse only spaces/tabs and
+  // runs of blank lines). Cleaned trait text uses line breaks to separate
+  // headers, paragraphs, and lists so prose can't bleed into a checkbox label.
+  const normalized = rawText
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+  if (!normalized) return [];
 
   const blocks: ClassTraitBlock[] = [];
-  for (const part of parts) {
-    if (part.marker === null) {
-      blocks.push(...splitClassTraitPlainText(part.text));
-      continue;
-    }
-    if (!part.text) continue;
-    const listKind = part.marker === 'check' ? 'checkboxes' : 'bullets';
+  const pushListItem = (kind: 'checkboxes' | 'bullets', item: string) => {
+    if (kind === 'checkboxes' && isStatusOrConditionCheckbox(item)) return;
     const previous = blocks[blocks.length - 1];
-    if (previous && previous.kind === listKind) previous.items.push(part.text);
-    else blocks.push({ kind: listKind, items: [part.text] } as ClassTraitBlock);
+    if (previous && previous.kind === kind) previous.items.push(item);
+    else blocks.push({ kind, items: [item] });
+  };
+
+  for (const line of normalized.split('\n')) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+
+    let lastIndex = 0;
+    let pendingMarker: 'check' | 'bullet' | null = null;
+    CLASS_TRAIT_MARKER.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    const lineParts: Array<{ marker: 'check' | 'bullet' | null; text: string }> = [];
+    while ((match = CLASS_TRAIT_MARKER.exec(trimmedLine))) {
+      lineParts.push({ marker: pendingMarker, text: trimmedLine.slice(lastIndex, match.index).trim() });
+      pendingMarker = CHECKBOX_MARKERS.test(match[0]) ? 'check' : 'bullet';
+      lastIndex = match.index + match[0].length;
+    }
+    lineParts.push({ marker: pendingMarker, text: trimmedLine.slice(lastIndex).trim() });
+
+    for (const part of lineParts) {
+      if (part.marker === null) {
+        for (const block of splitClassTraitPlainText(part.text)) blocks.push(block);
+        continue;
+      }
+      if (!part.text) continue;
+      pushListItem(part.marker === 'check' ? 'checkboxes' : 'bullets', part.text);
+    }
   }
-  return blocks;
+  // Drop any checkbox block left empty after filtering out status boxes.
+  return blocks.filter((block) => block.kind !== 'checkboxes' || block.items.length > 0);
 }
 
 /** Render text with `____` fill-in runs shown as blank underlines. */
@@ -3005,8 +3044,11 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
   // Namespace persisted checkbox state by playbook + position so saved marks
   // can't collide between same-labelled boxes or bleed into a different
   // playbook after a class switch.
+  // `v2` namespace: the parser block/item positions changed with the
+  // newline-aware + status-filtering rewrite, so old positional keys must not
+  // reattach to different labels.
   const checkKey = (blockIndex: number, itemIndex: number) =>
-    `${className}::cb-${blockIndex}-${itemIndex}`;
+    `${className}::cb-v2-${blockIndex}-${itemIndex}`;
   const toggle = (key: string) => setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
 
   if (blocks.length === 0) {
@@ -3099,7 +3141,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
             key={index}
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              gridTemplateColumns: '1fr 1fr',
               columnGap: 1.4,
               rowGap: 0.75,
             }}
