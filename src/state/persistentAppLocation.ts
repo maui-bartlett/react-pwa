@@ -112,12 +112,16 @@ function isStandalonePwa() {
 }
 
 function restorePersistentAppPathname() {
-  if (typeof window === 'undefined' || !isStandalonePwa()) return;
+  if (typeof window === 'undefined') return '/';
+  if (!isStandalonePwa()) return window.location.pathname;
 
   const savedPathname = readPersistentAppLocation().pathname;
-  if (!launchRoutes.has(window.location.pathname) || launchRoutes.has(savedPathname)) return;
+  if (!launchRoutes.has(window.location.pathname) || launchRoutes.has(savedPathname)) {
+    return window.location.pathname;
+  }
 
   window.history.replaceState(window.history.state, '', savedPathname);
+  return savedPathname;
 }
 
 export {

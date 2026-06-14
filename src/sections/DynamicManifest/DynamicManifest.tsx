@@ -1,13 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
 import { readIndexedDbCharacter } from '../../state/indexedDbCharacterStorage';
-import {
-  type AvatarTraining,
-  applyAvatarTrainingChrome,
-  avatarTrainingChrome,
-  toAvatarTraining,
-} from '../../theme/avatarTrainingChrome';
+import { applyRouteChrome, appChromeColorForRoute } from '../../theme/appChrome';
+import { type AvatarTraining, toAvatarTraining } from '../../theme/avatarTrainingChrome';
 
 /**
  * Mirrors the static `manifest.json` at the project root. Kept inline so
@@ -60,27 +56,6 @@ function siteIcons() {
 }
 
 /**
- * Map a pathname to the background color the PWA manifest should
- * advertise while the user is on that route.
- */
-function backgroundColorForRoute(
-  pathname: string,
-  avatarTraining: AvatarTraining = 'Waterbending',
-): string {
-  if (pathname === '/fab-u' || pathname.startsWith('/fab-u/')) {
-    // FabU page header / brand green.
-    return '#315c4d';
-  }
-  if (pathname === '/avatar-legends' || pathname.startsWith('/avatar-legends/')) {
-    return avatarTrainingChrome[avatarTraining];
-  }
-  if (pathname === '/' || pathname === '/home' || pathname.startsWith('/home/')) {
-    return '#182237';
-  }
-  return manifestBase.background_color;
-}
-
-/**
  * Runtime PWA manifest override. Serializes the manifest object to a
  * Blob URL on every route change and points the `<link rel="manifest">`
  * tag at it. Lets the installable PWA's `background_color` track the
@@ -94,8 +69,12 @@ function DynamicManifest() {
   const previousUrlRef = useRef<string | null>(null);
   const [avatarTraining, setAvatarTraining] = useState<AvatarTraining>('Waterbending');
 
+  useLayoutEffect(() => {
+    applyRouteChrome(pathname, avatarTraining);
+  }, [pathname, avatarTraining]);
+
   useEffect(() => {
-    const background = backgroundColorForRoute(pathname, avatarTraining);
+    const background = appChromeColorForRoute(pathname, avatarTraining);
     const next = {
       ...manifestBase,
       background_color: background,
@@ -117,30 +96,6 @@ function DynamicManifest() {
       document.head.appendChild(link);
     }
     link.setAttribute('href', url);
-
-    // Also track the body background and the <meta name="theme-color">
-    // tag in lockstep — the manifest `background_color` is mostly used
-    // by the installed-PWA splash screen (and even there iOS often
-    // caches it at install time). The body bg + theme-color update
-    // immediately and cover the visible chrome surfaces (safe-area
-    // tint, mobile address-bar tint, the strip outside the app card).
-    document.documentElement.style.setProperty('--app-chrome-color', background);
-    document.documentElement.style.background = background;
-    document.documentElement.style.backgroundColor = background;
-    document.body.style.background = background;
-    document.body.style.backgroundColor = background;
-    const root = document.querySelector<HTMLElement>('#root');
-    if (root) {
-      root.style.background = background;
-      root.style.backgroundColor = background;
-    }
-    let themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (!themeMeta) {
-      themeMeta = document.createElement('meta');
-      themeMeta.name = 'theme-color';
-      document.head.appendChild(themeMeta);
-    }
-    themeMeta.setAttribute('content', background);
 
     let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!favicon) {
@@ -170,17 +125,14 @@ function DynamicManifest() {
     const refresh = (event?: Event) => {
       const candidate = (event as CustomEvent<unknown> | undefined)?.detail;
       if (typeof candidate === 'string') {
-        applyAvatarTrainingChrome(candidate);
         setAvatarTraining(toAvatarTraining(candidate));
         return;
       }
       void getStoredAvatarTraining().then((training) => {
-        applyAvatarTrainingChrome(training);
         setAvatarTraining(training);
       });
     };
     void getStoredAvatarTraining().then((training) => {
-      applyAvatarTrainingChrome(training);
       setAvatarTraining(training);
     });
     window.addEventListener('avatar-legends-primary-training-change', refresh);

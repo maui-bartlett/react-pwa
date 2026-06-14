@@ -1,9 +1,10 @@
 import { restorePersistentAppPathname } from '@/state/persistentAppLocation';
+import { applyRouteChrome } from '@/theme/appChrome';
 import welcome from '@/utils/welcome';
 
 import './index.css';
 
-restorePersistentAppPathname();
+applyRouteChrome(restorePersistentAppPathname());
 
 // `root` contains the main dependencies and providers of the base app
 //  - React, ReactDom, Jotai, ThemeProvider, etc.)
