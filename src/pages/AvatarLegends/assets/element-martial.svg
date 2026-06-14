@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Index finger -->
+  <rect x="7" y="3" width="3.2" height="9" rx="1.6" fill="white"/>
+  <!-- Middle finger (tallest) -->
+  <rect x="10.4" y="1" width="3.2" height="11" rx="1.6" fill="white"/>
+  <!-- Ring finger -->
+  <rect x="13.8" y="3" width="3" height="9" rx="1.5" fill="white"/>
+  <!-- Pinky finger -->
+  <rect x="16.8" y="5" width="2.2" height="7" rx="1.1" fill="white"/>
+  <!-- Thumb (left side) -->
+  <rect x="2" y="9" width="4" height="7" rx="2" fill="white"/>
+  <!-- Palm -->
+  <rect x="5" y="11" width="14" height="9" rx="2" fill="white"/>
+  <!-- Wrist/base -->
+  <rect x="7" y="19" width="10" height="3" rx="1.5" fill="white"/>
+</svg>

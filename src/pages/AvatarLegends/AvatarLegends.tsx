@@ -34,7 +34,7 @@ import elementAir from './assets/airbending-symbol.png';
 import elementEarth from './assets/earthbending-symbol.png';
 import fireBorderMask from './assets/fire-border-mask.png';
 import elementFire from './assets/firebending-symbol.png';
-import elementMartial from './assets/element-martial.png';
+import elementMartial from './assets/element-martial.svg';
 import principleBg from './assets/principle-bg.png';
 import principleFg from './assets/principle-fg.png';
 import elementTech from './assets/technology-symbol.png';
