@@ -6098,8 +6098,8 @@ function FatigueCard({
           ]}
         >
           <Panel noNotch>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-              <Stack spacing={0.3}>
+            <Stack spacing={0.5}>
+              <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1}>
                 <SectionTitle>Fatigue</SectionTitle>
                 {tempFatigue.length > 0 ? (
                   <Typography
@@ -6113,7 +6113,7 @@ function FatigueCard({
                   </Typography>
                 ) : null}
               </Stack>
-              <Stack direction="row" gap={0.7}>
+              <Stack direction="row" flexWrap="wrap" gap={0.7}>
                 {tempFatigue.map((filled, index) => (
                   <FatigueDiamond
                     key={`temp-${index}`}
