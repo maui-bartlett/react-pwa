@@ -4734,10 +4734,10 @@ function TechniqueAccordion({
   techColor,
   frameColor,
   isBasic = false,
-  custom = false,
+  editing = false,
   onUpdate,
   onLevelChange,
-  onDelete,
+  onEndEditing,
 }: {
   approach: TechniqueCategory;
   name: string;
@@ -4754,22 +4754,34 @@ function TechniqueAccordion({
    * filter selector) instead of the element image badge.
    */
   isBasic?: boolean;
-  custom?: boolean;
+  /** Controlled edit-mode flag. The Edit trigger lives in the parent's
+   *  SwipeableCard channel; entering edit mode just flips this prop. */
+  editing?: boolean;
   onUpdate?: (next: Pick<Technique, 'approach' | 'name' | 'summary' | 'description'>) => void;
   /** Set the character's proficiency level for this technique. Available
    *  on every technique (canon, class, and custom), not just custom ones. */
   onLevelChange?: (level: TechniqueLevel) => void;
-  onDelete?: () => void;
+  /** Called when the card leaves edit mode (Save or Cancel) so the parent
+   *  can clear its "which card is editing" state. */
+  onEndEditing?: () => void;
 }) {
   const { isDarkMode } = useThemeMode();
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({ approach, name, summary, description, level });
+  // Snapshot the latest displayed values so the effect below can seed the
+  // draft when edit mode opens without re-running on every prop change.
+  const latestValues = useRef({ approach, name, summary, description, level });
+  latestValues.current = { approach, name, summary, description, level };
+  // Edit mode is driven by the parent (the Edit button now lives in the
+  // swipe channel). Seed the draft and expand the card whenever it opens.
+  useEffect(() => {
+    if (editing) {
+      setDraft(latestValues.current);
+      setOpen(true);
+    }
+  }, [editing]);
   const categoryColor = techniqueCategoryColor(approach, isDarkMode);
   const fatigueAccentColor = bookAccent;
-  // Edit mode is available whenever the card can mutate either its content
-  // (custom techniques) or its proficiency level (all techniques).
-  const editable = Boolean(onUpdate) || Boolean(onLevelChange);
   const displayedFatigue = editing
     ? deriveTechniqueFatigue(draft.description, draft.approach)
     : fatigue;
@@ -4784,7 +4796,7 @@ function TechniqueAccordion({
       description: draft.description.trim(),
     });
     if (draft.level !== level) onLevelChange?.(draft.level);
-    setEditing(false);
+    onEndEditing?.();
   }
   return (
     <Panel>
@@ -4794,6 +4806,8 @@ function TechniqueAccordion({
           type="button"
           onClick={(event) => {
             event.stopPropagation();
+            // Keep the card expanded while editing so the form stays visible.
+            if (editing) return;
             setOpen((value) => !value);
           }}
           aria-expanded={open}
@@ -5066,66 +5080,33 @@ function TechniqueAccordion({
             )}
           </>
         ) : null}
-        {editable ? (
+        {editing ? (
           <Stack spacing={0.75} sx={{ pt: 0.25 }}>
-            {editing && onLevelChange ? (
+            {onLevelChange ? (
               <TechniqueLevelSelector
                 value={draft.level}
-                onChange={(nextLevel) =>
-                  setDraft((prev) => ({ ...prev, level: nextLevel }))
-                }
+                onChange={(nextLevel) => setDraft((prev) => ({ ...prev, level: nextLevel }))}
               />
             ) : null}
             <Stack direction="row" gap={1} justifyContent="flex-end">
-              {editing ? (
-                <>
-                  <Button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setEditing(false);
-                    }}
-                    sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      saveEdit();
-                    }}
-                    sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
-                  >
-                    Save
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setDraft({ approach, name, summary, description, level });
-                      setOpen(true);
-                      setEditing(true);
-                    }}
-                    startIcon={<Pencil size={14} />}
-                    sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
-                  >
-                    Edit
-                  </Button>
-                  {custom ? (
-                    <Button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onDelete?.();
-                      }}
-                      startIcon={<Trash2 size={14} />}
-                      sx={{ color: passionRed, textTransform: 'none', fontWeight: 800 }}
-                    >
-                      Delete
-                    </Button>
-                  ) : null}
-                </>
-              )}
+              <Button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEndEditing?.();
+                }}
+                sx={{ color: brown, textTransform: 'none', fontWeight: 800 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  saveEdit();
+                }}
+                sx={{ color: bookAccent, textTransform: 'none', fontWeight: 800 }}
+              >
+                Save
+              </Button>
             </Stack>
           </Stack>
         ) : null}
@@ -5151,6 +5132,14 @@ function CombatPane() {
   const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElementFilter>('all');
   const [canonTechniqueName, setCanonTechniqueName] = useState('');
   const [pendingTechniqueDelete, setPendingTechniqueDelete] = useState<number | null>(null);
+  // Which technique cards are currently in edit mode (by index into the full
+  // techniques array). The Edit trigger lives in each card's swipe channel;
+  // cards edit independently so opening one never discards another's draft.
+  const [editingTechniqueIndices, setEditingTechniqueIndices] = useState<readonly number[]>([]);
+  const startEditingTechnique = (index: number) =>
+    setEditingTechniqueIndices((prev) => (prev.includes(index) ? prev : [...prev, index]));
+  const stopEditingTechnique = (index: number) =>
+    setEditingTechniqueIndices((prev) => prev.filter((value) => value !== index));
   // Techniques live on the character record (characterStateAtom) so
   // each character carries their own set of known techniques.
   const character = useAtomValue(characterStateAtom);
@@ -5281,6 +5270,13 @@ function CombatPane() {
             : [...currentDeletedTechniqueKeys, deletedTechniqueKey],
       };
     });
+    // Deleting shifts list indices, so drop the removed card's edit state and
+    // shift any higher indices down by one to keep other drafts pointed right.
+    setEditingTechniqueIndices((prev) =>
+      prev
+        .filter((value) => value !== pendingTechniqueDelete)
+        .map((value) => (value > pendingTechniqueDelete ? value - 1 : value)),
+    );
     setPendingTechniqueDelete(null);
   };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
@@ -5353,6 +5349,9 @@ function CombatPane() {
               const visual = techniqueElementVisual(tech.type);
               const techniqueIndex = techniques.indexOf(tech);
               const requestDelete = () => setPendingTechniqueDelete(techniqueIndex);
+              // Editable when content (custom) or proficiency level (all
+              // non-basic techniques) can change. Drives the channel Edit button.
+              const editable = tech.custom || !isBasic;
               return (
                 <SwipeableCard
                   key={
@@ -5360,6 +5359,16 @@ function CombatPane() {
                     `${tech.custom ? 'custom' : tech.classTechnique ? 'class' : 'tech'}-${tech.type}-${tech.level}-${tech.name}-${index}`
                   }
                   actions={[
+                    // Edit sits to the left of Delete in the revealed channel,
+                    // styled like the other channel Edit buttons (gold pencil).
+                    editable
+                      ? {
+                          icon: <Pencil size={18} />,
+                          color: bookAccent,
+                          ariaLabel: `Edit ${tech.name}`,
+                          onClick: () => startEditingTechnique(techniqueIndex),
+                        }
+                      : null,
                     {
                       icon: <Trash2 size={18} />,
                       color: passionRed,
@@ -5377,7 +5386,7 @@ function CombatPane() {
                     description={tech.description}
                     fatigue={tech.fatigue}
                     level={tech.level}
-                    custom={tech.custom}
+                    editing={editingTechniqueIndices.includes(techniqueIndex)}
                     onUpdate={
                       tech.custom
                         ? (next) =>
@@ -5406,7 +5415,7 @@ function CombatPane() {
                               ),
                             }))
                     }
-                    onDelete={tech.custom ? requestDelete : undefined}
+                    onEndEditing={() => stopEditingTechnique(techniqueIndex)}
                     isBasic={isBasic}
                     // src is only used when isBasic=false (image badge path).
                     src={visual.src}
