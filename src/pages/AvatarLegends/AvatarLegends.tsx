@@ -2760,8 +2760,6 @@ function HistorySection({ questions }: { questions: string[] }) {
       spacing={0.6}
       sx={{
         py: 0.65,
-        minHeight: 44,
-        justifyContent: 'center',
       }}
     >
       <Box
@@ -2773,8 +2771,10 @@ function HistorySection({ questions }: { questions: string[] }) {
         }}
         aria-expanded={open}
         sx={{
+          // Fixed-height heading row so the title doesn't shift on toggle.
           display: 'flex',
           alignItems: 'center',
+          minHeight: 30,
           width: '100%',
           gap: 0.7,
           py: 0,
@@ -2956,11 +2956,13 @@ function CharacterInfoSection({
       sx={{
         cursor: 'pointer',
         py: 0.65,
-        minHeight: 44,
-        justifyContent: 'center',
       }}
     >
-      <Box sx={{ position: 'relative', pr: 2.2 }}>
+      {/* Fixed-height heading row so the title stays put when the body opens
+          (vertically centering the whole Stack would shift it on toggle). */}
+      <Box
+        sx={{ position: 'relative', pr: 2.2, minHeight: 30, display: 'flex', alignItems: 'center' }}
+      >
         <SectionTitle>{title}</SectionTitle>
         <Box
           component={ChevronRight}
@@ -4677,7 +4679,15 @@ function TechniqueLevelSelector({
       >
         Proficiency
       </Typography>
-      <Stack direction="row" gap={0.5} role="group" aria-label="Technique proficiency">
+      {/* Inset the pill group so there's breathing room on the left and right,
+          and give the buttons a taller tap target. */}
+      <Stack
+        direction="row"
+        gap={0.5}
+        role="group"
+        aria-label="Technique proficiency"
+        sx={{ px: 3 }}
+      >
         {techniqueLevelOptions.map((option) => {
           const active = value === option;
           return (
@@ -4693,7 +4703,7 @@ function TechniqueLevelSelector({
               }}
               sx={{
                 flex: 1,
-                minHeight: 30,
+                minHeight: 40,
                 px: 0.5,
                 borderRadius: '3px',
                 border: `1px solid ${active ? bookAccent : alpha(border, 0.75)}`,
@@ -4782,7 +4792,11 @@ function TechniqueAccordion({
   }, [editing]);
   const categoryColor = techniqueCategoryColor(approach, isDarkMode);
   const fatigueAccentColor = bookAccent;
-  const displayedFatigue = editing
+  // Only custom techniques expose content editing (approach / name / summary /
+  // description). Canon and class techniques are rulebook text, so in edit mode
+  // they show the read-only display and only the proficiency level is editable.
+  const canEditContent = Boolean(onUpdate);
+  const displayedFatigue = editing && canEditContent
     ? deriveTechniqueFatigue(draft.description, draft.approach)
     : fatigue;
   const selfFatigueCount = displayedFatigue.self.mark + displayedFatigue.self.clear;
@@ -4818,8 +4832,10 @@ function TechniqueAccordion({
             // middle of the title / summary text block.
             alignItems: 'center',
             width: '100%',
-            height: open ? 'auto' : 92,
-            minHeight: open ? 92 : undefined,
+            // Taller collapsed card so the stacked proficiency pill + approach
+            // eyebrow + title + summary all get vertical breathing room.
+            height: open ? 'auto' : 108,
+            minHeight: open ? 108 : undefined,
             gap: 0.9,
             pt: 0.75,
             pr: 3.2,
@@ -4860,8 +4876,10 @@ function TechniqueAccordion({
             />
           )}
           <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0, pr: 1.25 }}>
-            {/* Approach eyebrow — color keyed to the technique's approach. */}
-            {editing ? (
+            {/* Approach eyebrow — color keyed to the technique's approach.
+                Only custom techniques edit their content; canon/class show the
+                read-only display (the proficiency level stays editable below). */}
+            {editing && canEditContent ? (
               <>
                 <Box
                   component="select"
@@ -4924,12 +4942,11 @@ function TechniqueAccordion({
               </>
             ) : (
               <>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  gap={0.6}
-                  sx={{ flexWrap: 'wrap', rowGap: 0.25 }}
-                >
+                {/* Proficiency pill sits on its own line above the approach
+                    text, with breathing room between the two. Basic techniques
+                    have no mastery progression, so they skip the pill. */}
+                <Stack alignItems="flex-start" spacing={0.5} sx={{ pb: 0.3 }}>
+                  {isBasic ? null : <TechniqueLevelPill level={level} />}
                   <Typography
                     sx={{
                       color: categoryColor,
@@ -4943,9 +4960,6 @@ function TechniqueAccordion({
                   >
                     {approach}
                   </Typography>
-                  {/* Basic techniques are always available and have no mastery
-                      progression, so they skip the proficiency badge. */}
-                  {isBasic ? null : <TechniqueLevelPill level={level} />}
                 </Stack>
                 <Typography
                   sx={{
@@ -5044,7 +5058,7 @@ function TechniqueAccordion({
                 background: `linear-gradient(90deg, transparent 0%, ${alpha(accent, 0.6)} 12%, ${alpha(accent, 0.6)} 88%, transparent 100%)`,
               }}
             />
-            {editing ? (
+            {editing && canEditContent ? (
               <InputBase
                 value={draft.description}
                 multiline

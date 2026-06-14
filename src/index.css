@@ -36,3 +36,24 @@ body {
     }
   }
 }
+
+/* Mobile Safari auto-zooms when a focused editable control has a font-size
+   below 16px. Pin every editable control to 16px so that never triggers, then
+   visually scale it back so the apparent text size is unchanged. `transform`
+   (not `zoom`) is used on purpose: it leaves the CSS font-size the browser
+   reads at 16px while shrinking only the rendering, and it doesn't reflow the
+   layout box, so the left text position stays put.
+
+   Scoped to iOS via @supports (-webkit-touch-callout: none) — the focus-zoom
+   behavior is iOS-Safari-only, so desktop and Android keep their native input
+   sizing untouched. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='button']):not([type='submit']):not([type='reset']):not([type='image']),
+  textarea,
+  select,
+  [contenteditable]:not([contenteditable='false']) {
+    font-size: 16px !important;
+    transform: scale(0.875);
+    transform-origin: left center;
+  }
+}
