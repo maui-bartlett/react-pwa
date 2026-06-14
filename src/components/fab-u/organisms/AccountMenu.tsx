@@ -37,6 +37,7 @@ import {
   CHARACTER_SCHEMA_VERSION,
   createRandomFabUCharacter,
 } from '@/domain/fabU/characterDefaults';
+import type { CharacterName } from '@/domain/fabU/characterTypes';
 import {
   deserializeCharacterFromBackend,
   serializeCharacterForBackend,
@@ -207,6 +208,14 @@ function getCharacterDisplayName(character: {
   }
 }
 
+function getFabUCharacterName(characterState: unknown): CharacterName {
+  try {
+    return deserializeCharacterFromBackend(characterState).name;
+  } catch {
+    return { firstName: '', lastName: '', nickName: undefined };
+  }
+}
+
 function getAvatarPrimaryTraining(characterState: unknown) {
   if (!characterState || typeof characterState !== 'object') return null;
   const character = (characterState as { character?: unknown }).character;
@@ -322,8 +331,14 @@ function AccountMenu({
   const [editingTarget, setEditingTarget] = useState<{
     kind: 'character' | 'campaign';
     id: string;
+    gameSystem?: string;
   } | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [editingFabUName, setEditingFabUName] = useState<CharacterName>({
+    firstName: '',
+    lastName: '',
+    nickName: undefined,
+  });
   // Pending-delete state drives the FabU-style ConfirmDeleteModal: the
   // delete action on a SwipeableCard stages the target here, the modal
   // opens, and confirm runs the archive mutation.
@@ -332,29 +347,63 @@ function AccountMenu({
     id: string;
   } | null>(null);
 
-  function beginEdit(kind: 'character' | 'campaign', id: string, currentName: string) {
-    setEditingTarget({ kind, id });
+  function beginEdit(
+    kind: 'character' | 'campaign',
+    id: string,
+    currentName: string,
+    options?: { characterState?: unknown; gameSystem?: string },
+  ) {
+    setEditingTarget({ kind, id, gameSystem: options?.gameSystem });
     setEditingName(currentName);
+    setEditingFabUName(
+      options?.gameSystem === 'fabula-ultima'
+        ? getFabUCharacterName(options.characterState)
+        : { firstName: '', lastName: '', nickName: undefined },
+    );
   }
 
   function cancelEdit() {
     setEditingTarget(null);
     setEditingName('');
+    setEditingFabUName({ firstName: '', lastName: '', nickName: undefined });
   }
 
   async function commitEdit() {
     if (!editingTarget) return;
-    const trimmed = editingName.trim();
-    if (!trimmed) {
-      cancelEdit();
-      return;
-    }
     if (editingTarget.kind === 'character') {
-      await renameCharacter({
-        characterId: editingTarget.id as Id<'characters'>,
-        name: trimmed,
-      });
+      if (editingTarget.gameSystem === 'fabula-ultima') {
+        const firstName = editingFabUName.firstName.trim();
+        const lastName = editingFabUName.lastName.trim();
+        const nickName = editingFabUName.nickName?.trim();
+        if (!firstName && !lastName && !nickName) {
+          cancelEdit();
+          return;
+        }
+        await renameCharacter({
+          characterId: editingTarget.id as Id<'characters'>,
+          nameParts: {
+            firstName,
+            lastName,
+            nickName: nickName || undefined,
+          },
+        });
+      } else {
+        const trimmed = editingName.trim();
+        if (!trimmed) {
+          cancelEdit();
+          return;
+        }
+        await renameCharacter({
+          characterId: editingTarget.id as Id<'characters'>,
+          name: trimmed,
+        });
+      }
     } else {
+      const trimmed = editingName.trim();
+      if (!trimmed) {
+        cancelEdit();
+        return;
+      }
       await updateCampaign({
         campaignId: editingTarget.id as Id<'campaigns'>,
         name: trimmed,
@@ -803,6 +852,8 @@ function AccountMenu({
                 ) : user && characters && characters.length > 0 ? (
                   characters.map((character) => {
                     const displayName = getCharacterDisplayName(character);
+                    const characterGameSystem = character.meta?.gameSystem ?? gameSystem;
+                    const isFabUCharacter = characterGameSystem === 'fabula-ultima';
                     const isEditing =
                       editingTarget?.kind === 'character' && editingTarget.id === character._id;
                     return (
@@ -826,11 +877,124 @@ function AccountMenu({
                             // dialog is rendered against.
                             color: fabUTokens.color.brand,
                             ariaLabel: 'Rename character',
-                            onClick: () => beginEdit('character', character._id, displayName),
+                            onClick: () =>
+                              beginEdit('character', character._id, displayName, {
+                                characterState: character.characterState,
+                                gameSystem: characterGameSystem,
+                              }),
                           },
                         ]}
                       >
-                        {isEditing ? (
+                        {isEditing && isFabUCharacter ? (
+                          <Stack
+                            spacing={0.85}
+                            sx={{
+                              border: `1px solid ${fabUTokens.color.border}`,
+                              borderRadius: '9px',
+                              bgcolor: fabUTokens.color.surface,
+                              px: 1,
+                              py: 0.95,
+                            }}
+                          >
+                            <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                              {displayName}
+                            </Typography>
+                            <Stack spacing={0.65}>
+                              {(
+                                [
+                                  ['First name', 'firstName'],
+                                  ['Last name', 'lastName'],
+                                  ['Nickname', 'nickName'],
+                                ] as const
+                              ).map(([label, key], index) => (
+                                <Stack key={key} spacing={0.25}>
+                                  <Typography
+                                    sx={{
+                                      color: fabUTokens.color.textSecondary,
+                                      fontSize: '0.58rem',
+                                      fontWeight: 800,
+                                      letterSpacing: '0.06em',
+                                      textTransform: 'uppercase',
+                                    }}
+                                  >
+                                    {label}
+                                  </Typography>
+                                  <InputBase
+                                    value={editingFabUName[key] ?? ''}
+                                    autoFocus={index === 0}
+                                    onChange={(event) =>
+                                      setEditingFabUName((current) => ({
+                                        ...current,
+                                        [key]: event.target.value,
+                                      }))
+                                    }
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter') void commitEdit();
+                                      if (event.key === 'Escape') cancelEdit();
+                                    }}
+                                    sx={{
+                                      minHeight: 34,
+                                      borderRadius: '7px',
+                                      border: `1px solid ${fabUTokens.color.border}`,
+                                      bgcolor: fabUTokens.color.pillSurface,
+                                      color: fabUTokens.color.textPrimary,
+                                      px: 1,
+                                      fontSize: '0.82rem',
+                                      fontWeight: 700,
+                                      '& input': {
+                                        p: 0,
+                                        height: 34,
+                                      },
+                                    }}
+                                  />
+                                </Stack>
+                              ))}
+                            </Stack>
+                            <Typography
+                              sx={{
+                                color: fabUTokens.color.textSecondary,
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                              }}
+                            >
+                              Preview:{' '}
+                              {[
+                                editingFabUName.firstName.trim(),
+                                editingFabUName.nickName?.trim()
+                                  ? `"${editingFabUName.nickName.trim()}"`
+                                  : '',
+                                editingFabUName.lastName.trim(),
+                              ]
+                                .filter(Boolean)
+                                .join(' ') || 'Unnamed character'}
+                            </Typography>
+                            <Stack direction="row" spacing={0.6} justifyContent="flex-end">
+                              <Button
+                                onClick={cancelEdit}
+                                size="small"
+                                sx={{
+                                  textTransform: 'none',
+                                  color: fabUTokens.color.textSecondary,
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={() => void commitEdit()}
+                                size="small"
+                                variant="contained"
+                                sx={{
+                                  textTransform: 'none',
+                                  bgcolor: fabUTokens.color.highlight,
+                                  color: fabUTokens.color.highlightFg,
+                                  '&:hover': { bgcolor: fabUTokens.color.highlight },
+                                }}
+                              >
+                                Save
+                              </Button>
+                            </Stack>
+                          </Stack>
+                        ) : isEditing ? (
                           <Stack
                             direction="row"
                             spacing={0.6}

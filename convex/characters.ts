@@ -311,12 +311,20 @@ export const updateMetadata = mutation({
  * `characterState.character`. The exact field is per-app:
  *   - avatar-legends: a flat `name: string`
  *   - fabula-ultima:  a nested `name: { firstName, lastName, nickName }`
- *     where the dialog rename targets the `nickName` (the most
- *     "identity" slot users tend to edit).
  * Anything else just no-ops gracefully.
  */
 export const renameCharacter = mutation({
-  args: { characterId: v.id('characters'), name: v.string() },
+  args: {
+    characterId: v.id('characters'),
+    name: v.optional(v.string()),
+    nameParts: v.optional(
+      v.object({
+        firstName: v.string(),
+        lastName: v.string(),
+        nickName: v.optional(v.string()),
+      }),
+    ),
+  },
   handler: async (ctx, args) => {
     const character = await requireCharacterOwner(ctx, args.characterId);
     const state =
@@ -329,14 +337,22 @@ export const renameCharacter = mutation({
         : null;
     if (!inner) return;
     const gameSystem = character.meta?.gameSystem;
-    const trimmed = args.name.trim();
+    const trimmed = args.name?.trim() ?? '';
     let nextInner: Record<string, unknown> = inner;
     if (gameSystem === 'fabula-ultima') {
       const existingName =
         inner.name && typeof inner.name === 'object' ? (inner.name as Record<string, unknown>) : {};
-      nextInner = { ...inner, name: { ...existingName, nickName: trimmed } };
+      const nextName = args.nameParts
+        ? {
+            firstName: args.nameParts.firstName.trim(),
+            lastName: args.nameParts.lastName.trim(),
+            nickName: args.nameParts.nickName?.trim() || undefined,
+          }
+        : { ...existingName, nickName: trimmed };
+      nextInner = { ...inner, name: nextName };
     } else {
       // Default (covers avatar-legends + any future flat-name schemas).
+      if (!trimmed) return;
       nextInner = { ...inner, name: trimmed };
     }
     await ctx.db.patch(args.characterId, {
@@ -884,7 +900,8 @@ export const cleanupLegacyFields = internalMutation({
         // Re-write characterState without the redundant top-level
         // statusEffects (the canonical copy lives under
         // characterState.character.statusEffects).
-        const { statusEffects: _stripped, ...rest } = state as Record<string, unknown>;
+        const rest = { ...(state as Record<string, unknown>) };
+        delete rest.statusEffects;
         patch.characterState = rest;
       }
 
