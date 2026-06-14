@@ -632,6 +632,9 @@ const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 // ---------- Character data shapes ----------
 type Connection = { id?: string; name: string; role: string; note: string };
 type JournalEntry = { type: string; name: string; description: string };
+/** Class-trait state for one playbook: checkbox selections and write-in
+ *  fields, each keyed by a stable position id within the trait content. */
+type ClassTraitData = { checks: Record<string, boolean>; writeIns: Record<string, string> };
 type Technique = {
   /** Elemental category (waterbending / earthbending / firebending /
    *  airbending / weapons / technology / universal / group /
@@ -681,9 +684,9 @@ type CharacterState = {
   tempFatigue: boolean[];
   backgrounds: Record<string, boolean>;
   historyAnswers: Record<string, string>;
-  /** Checked state for the markable boxes (drives, destiny details, etc.) in
-   *  the class-trait card, keyed by the box's label text. */
-  classTraitChecks: Record<string, boolean>;
+  /** Per-playbook class-trait state — checkbox selections and write-in field
+   *  values — keyed by class name so each playbook's data is kept separate. */
+  classTrait: Record<string, ClassTraitData>;
   connections: Connection[];
   classMoves: MoveEntry[];
   techniques: Technique[];
@@ -800,7 +803,7 @@ const defaultCharacter: CharacterState = {
   tempFatigue: [],
   backgrounds: { Urban: true, Privileged: true },
   historyAnswers: {},
-  classTraitChecks: {},
+  classTrait: {},
   connections: [],
   classMoves: [],
   techniques: defaultBasicTechniques,
@@ -1197,21 +1200,48 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
             .map(([key, value]) => [key, value]),
         )
       : defaultCharacter.historyAnswers;
-  const rawClassTraitChecks = innerCandidate.classTraitChecks;
-  const classTraitChecks =
-    rawClassTraitChecks && typeof rawClassTraitChecks === 'object'
+  const rawClassTrait = innerCandidate.classTrait;
+  const classTrait =
+    rawClassTrait && typeof rawClassTrait === 'object' && !Array.isArray(rawClassTrait)
       ? Object.fromEntries(
-          Object.entries(rawClassTraitChecks as Record<string, unknown>)
-            .filter((entry): entry is [string, boolean] => typeof entry[1] === 'boolean')
-            .map(([key, value]) => [key, value]),
+          Object.entries(rawClassTrait as Record<string, unknown>)
+            .filter(
+              (entry): entry is [string, Record<string, unknown>] =>
+                Boolean(entry[1]) && typeof entry[1] === 'object' && !Array.isArray(entry[1]),
+            )
+            .map(([className, value]) => {
+              const checksRaw = (value as { checks?: unknown }).checks;
+              const writeInsRaw = (value as { writeIns?: unknown }).writeIns;
+              const checks =
+                checksRaw && typeof checksRaw === 'object'
+                  ? Object.fromEntries(
+                      Object.entries(checksRaw as Record<string, unknown>).filter(
+                        (e): e is [string, boolean] => typeof e[1] === 'boolean',
+                      ),
+                    )
+                  : {};
+              const writeIns =
+                writeInsRaw && typeof writeInsRaw === 'object'
+                  ? Object.fromEntries(
+                      Object.entries(writeInsRaw as Record<string, unknown>).filter(
+                        (e): e is [string, string] => typeof e[1] === 'string',
+                      ),
+                    )
+                  : {};
+              return [className, { checks, writeIns } satisfies ClassTraitData];
+            }),
         )
-      : defaultCharacter.classTraitChecks;
+      : defaultCharacter.classTrait;
   const rest = { ...innerCandidate } as Partial<CharacterState> & {
     classTraitBody?: unknown;
     classTraitTitle?: unknown;
+    classTraitChecks?: unknown;
   };
   delete rest.classTraitBody;
   delete rest.classTraitTitle;
+  // Drop the superseded flat checkbox map so old saves don't linger as a
+  // stale property (state now lives under classTrait, keyed by class).
+  delete rest.classTraitChecks;
   delete rest.balance;
 
   return {
@@ -1221,7 +1251,7 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     primaryTraining,
     balance: normalizeBalanceState(innerCandidate.balance),
     historyAnswers,
-    classTraitChecks,
+    classTrait,
     techniques,
     deletedTechniqueKeys,
     inventory,
@@ -1326,7 +1356,7 @@ const fatigueAtom = sliceAtom('fatigue');
 const tempFatigueAtom = sliceAtom('tempFatigue');
 const backgroundsAtom = sliceAtom('backgrounds');
 const historyAnswersAtom = sliceAtom('historyAnswers');
-const classTraitChecksAtom = sliceAtom('classTraitChecks');
+const classTraitAtom = sliceAtom('classTrait');
 const notesAtom = sliceAtom('notes');
 const inventoryAtom = sliceAtom('inventory');
 
@@ -3030,6 +3060,9 @@ function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
     .replace(/\r\n?/g, '\n')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{2,}/g, '\n')
+    // Drop the dash right after "earn 1" / "spend 1" (e.g. "Earn 1-Team" →
+    // "Earn 1 Team") across all class traits.
+    .replace(/\b(earn 1|spend 1)-/gi, '$1 ')
     .trim();
   if (!normalized) return [];
   // Line-structured (cleaned) text enables label/section-heading detection.
@@ -3088,44 +3121,122 @@ function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
   );
 }
 
-/** Render text with `____` fill-in runs shown as blank underlines. */
-function renderClassTraitText(text: string): React.ReactNode {
-  return text.split(/(_{3,})/).map((segment, index) =>
-    /^_{3,}$/.test(segment) ? (
+type ClassTraitWriteIn = {
+  keyPrefix: string;
+  getValue: (id: string) => string;
+  setValue: (id: string, value: string) => void;
+};
+
+/**
+ * Render text, turning each `____` fill-in run into a functional, persisted
+ * text input styled to look like a single underline you can write on. Without
+ * a `writeIn` context (fallback render) the blanks stay static underlines.
+ */
+function renderClassTraitText(text: string, writeIn?: ClassTraitWriteIn): React.ReactNode {
+  const segments = text.split(/(_{3,})/);
+  let blankIndex = 0;
+  return segments.map((segment, index) => {
+    if (!/^_{3,}$/.test(segment)) return <Fragment key={index}>{segment}</Fragment>;
+    if (!writeIn) {
+      return (
+        <Box
+          key={index}
+          component="span"
+          sx={{
+            display: 'inline-block',
+            minWidth: 64,
+            mx: 0.4,
+            borderBottom: `1px solid ${alpha(brown, 0.55)}`,
+            transform: 'translateY(2px)',
+          }}
+        />
+      );
+    }
+    const id = `${writeIn.keyPrefix}-wi${blankIndex}`;
+    blankIndex += 1;
+    // Width tracks the original blank length so the line keeps its proportions.
+    const widthCh = Math.min(Math.max(segment.length, 8), 36);
+    return (
       <Box
         key={index}
-        component="span"
+        component="input"
+        type="text"
+        // ios-zoom-keep + 16px keeps mobile Safari from zooming on focus.
+        className="ios-zoom-keep"
+        value={writeIn.getValue(id)}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          writeIn.setValue(id, event.target.value)
+        }
+        onClick={(event: React.MouseEvent) => event.stopPropagation()}
         sx={{
           display: 'inline-block',
-          minWidth: 64,
+          width: `${widthCh}ch`,
+          maxWidth: '100%',
           mx: 0.4,
+          p: 0,
+          border: 'none',
           borderBottom: `1px solid ${alpha(brown, 0.55)}`,
-          transform: 'translateY(2px)',
+          background: 'transparent',
+          color: ink,
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontSize: '1rem',
+          lineHeight: 1.4,
+          outline: 'none',
+          '&:focus': { borderBottomColor: deepInk },
         }}
       />
-    ) : (
-      <Fragment key={index}>{segment}</Fragment>
-    ),
-  );
+    );
+  });
+}
+
+/**
+ * Stable id derived from a field's text so persisted checkbox / write-in
+ * answers follow their item across reorders or parser tweaks (positional ids
+ * would remap saves onto the wrong field).
+ */
+function classTraitFieldId(text: string): string {
+  const normalized = text.trim().toLowerCase().replace(/\s+/g, ' ');
+  let hash = 5381;
+  for (let index = 0; index < normalized.length; index += 1) {
+    hash = (hash * 33 + normalized.charCodeAt(index)) | 0;
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/** Break heading text onto a new line per sentence (rendered with pre-line). */
+function splitHeadingSentences(text: string): string {
+  return text
+    .split(/(?<=[.!?…])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .join('\n');
 }
 
 /**
  * Renders parsed class-trait content: paragraphs, section headers, bullet
- * lists, and a grid of markable checkboxes whose checked state persists on the
- * character record (keyed by the box label).
+ * lists, write-in fields, and grids of markable checkboxes. All checkbox and
+ * write-in state persists on the character under `classTrait`, keyed by class.
  */
 function ClassTraitContent({ text, className }: { text: string; className: string }) {
   const blocks = useMemo(() => parseClassTraitContent(text), [text]);
-  const [checks, setChecks] = useAtom(classTraitChecksAtom);
-  // Namespace persisted checkbox state by playbook + position so saved marks
-  // can't collide between same-labelled boxes or bleed into a different
-  // playbook after a class switch.
-  // `v2` namespace: the parser block/item positions changed with the
-  // newline-aware + status-filtering rewrite, so old positional keys must not
-  // reattach to different labels.
-  const checkKey = (blockIndex: number, itemIndex: number) =>
-    `${className}::cb-v3-${blockIndex}-${itemIndex}`;
-  const toggle = (key: string) => setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
+  const [classTraitState, setClassTraitState] = useAtom(classTraitAtom);
+  // All checkbox + write-in state for this playbook lives under classTrait,
+  // keyed by class name, and each value is keyed by its position in the parsed
+  // content (so same-labelled fields don't collide and nothing bleeds across a
+  // class switch). cb-v3 reflects the current parser block/item positions.
+  const entry = classTraitState[className] ?? { checks: {}, writeIns: {} };
+  const setEntry = (next: ClassTraitData) =>
+    setClassTraitState((prev) => ({ ...prev, [className]: next }));
+  // Text-derived (not positional) ids so reordering items doesn't remap saves.
+  const checkKey = (item: string) => `cb-${classTraitFieldId(item)}`;
+  const toggle = (key: string) =>
+    setEntry({ ...entry, checks: { ...entry.checks, [key]: !entry.checks[key] } });
+  const writeInFor = (keyPrefix: string): ClassTraitWriteIn => ({
+    keyPrefix,
+    getValue: (id) => entry.writeIns[id] ?? '',
+    setValue: (id, value) => setEntry({ ...entry, writeIns: { ...entry.writeIns, [id]: value } }),
+  });
+  const checks = entry.checks;
 
   if (blocks.length === 0) {
     return (
@@ -3140,7 +3251,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
           pb: 2,
         }}
       >
-        {text}
+        {renderClassTraitText(text, writeInFor(`wi-${classTraitFieldId(text)}`))}
       </Typography>
     );
   }
@@ -3159,10 +3270,13 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                 fontWeight: 900,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                mt: index === 0 ? 0 : 0.4,
+                lineHeight: 1.3,
+                // Heading text breaks onto a new line per sentence.
+                whiteSpace: 'pre-line',
+                mt: index === 0 ? 0.2 : 1.3,
               }}
             >
-              {block.text}
+              {splitHeadingSentences(block.text)}
             </Typography>
           );
         }
@@ -3177,7 +3291,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                 lineHeight: 1.5,
               }}
             >
-              {renderClassTraitText(block.text)}
+              {renderClassTraitText(block.text, writeInFor(`wi-${classTraitFieldId(block.text)}`))}
             </Typography>
           );
         }
@@ -3204,7 +3318,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                       lineHeight: 1.5,
                     }}
                   >
-                    {renderClassTraitText(item)}
+                    {renderClassTraitText(item, writeInFor(`wi-${classTraitFieldId(item)}`))}
                   </Typography>
                 </Stack>
               ))}
@@ -3218,7 +3332,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
               direction="row"
               alignItems="center"
               gap={1}
-              sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: index === 0 ? 0 : 0.4 }}
+              sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: index === 0 ? 0.2 : 1.3 }}
             >
               <Typography
                 sx={{
@@ -3234,7 +3348,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
               </Typography>
               <Stack direction="row" gap={0.6} alignItems="center">
                 {Array.from({ length: block.count }).map((_, boxIndex) => {
-                  const key = `${className}::track-${index}-${boxIndex}`;
+                  const key = `track-${classTraitFieldId(block.text)}-${boxIndex}`;
                   const checked = Boolean(checks[key]);
                   return (
                     <Box
@@ -3280,7 +3394,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
             }
           >
             {block.items.map((item, itemIndex) => {
-              const key = checkKey(index, itemIndex);
+              const key = checkKey(item);
               const checked = Boolean(checks[key]);
               return (
                 <Box
@@ -3325,7 +3439,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                       lineHeight: 1.4,
                     }}
                   >
-                    {renderClassTraitText(item)}
+                    {renderClassTraitText(item, writeInFor(`wi-${classTraitFieldId(item)}`))}
                   </Typography>
                 </Box>
               );

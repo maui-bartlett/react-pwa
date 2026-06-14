@@ -728,7 +728,9 @@ function DiceRoller() {
         sx={{
           position: 'fixed',
           right: { xs: 15, sm: 34 },
-          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 70px)', sm: 22 },
+          // Sit clear of the bottom nav on mobile — at +70px the collapsed FAB
+          // overlapped the right-most nav tab (Notes) and intercepted taps.
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 128px)', sm: 22 },
           zIndex: theme.zIndex.tooltip + 20,
           display: 'flex',
           flexDirection: 'column',
