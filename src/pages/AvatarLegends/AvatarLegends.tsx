@@ -4670,9 +4670,11 @@ function TechniqueLevelSelector({
     <Stack spacing={0.45}>
       <Typography
         sx={{
+          // Indent to left-align with the card's description text (px: 2).
+          pl: 2,
           color: brown,
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.55rem',
+          fontSize: '0.65rem',
           fontWeight: 900,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
@@ -4687,7 +4689,7 @@ function TechniqueLevelSelector({
         gap={0.5}
         role="group"
         aria-label="Technique proficiency"
-        sx={{ px: 3 }}
+        sx={{ px: 3, mb: 0.5 }}
       >
         {techniqueLevelOptions.map((option) => {
           const active = value === option;
@@ -4704,7 +4706,7 @@ function TechniqueLevelSelector({
               }}
               sx={{
                 flex: 1,
-                minHeight: 40,
+                minHeight: 46,
                 px: 0.5,
                 borderRadius: '3px',
                 border: `1px solid ${active ? bookAccent : alpha(border, 0.75)}`,
@@ -4835,8 +4837,8 @@ function TechniqueAccordion({
             width: '100%',
             // Taller collapsed card so the stacked proficiency pill + approach
             // eyebrow + title + summary all get vertical breathing room.
-            height: open ? 'auto' : 108,
-            minHeight: open ? 108 : undefined,
+            height: open ? 'auto' : 116,
+            minHeight: open ? 116 : undefined,
             gap: 0.9,
             pt: 0.75,
             pr: 3.2,
@@ -4944,9 +4946,10 @@ function TechniqueAccordion({
             ) : (
               <>
                 {/* Proficiency pill sits on its own line above the approach
-                    text, with breathing room between the two. Basic techniques
-                    have no mastery progression, so they skip the pill. */}
-                <Stack alignItems="flex-start" spacing={0.5} sx={{ pb: 0.3 }}>
+                    text, with breathing room between the two and a little extra
+                    space below the approach text. Basic techniques have no
+                    mastery progression, so they skip the pill. */}
+                <Stack alignItems="flex-start" spacing={0.5} sx={{ pb: 0.65 }}>
                   {isBasic ? null : <TechniqueLevelPill level={level} />}
                   <Typography
                     sx={{

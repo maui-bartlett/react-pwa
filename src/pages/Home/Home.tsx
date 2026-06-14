@@ -12,12 +12,14 @@ function AvatarLegendsAppIcon() {
     <Box
       component="img"
       alt=""
-      src="/avatar-legends-pwa-192x192.png"
+      // Near-white-background variant (the installed PWA icon keeps its grey
+      // backdrop); sized to almost fill the button height.
+      src="/avatar-legends-button-icon.png"
       sx={{
         display: 'block',
-        width: 22,
-        height: 22,
-        borderRadius: '5px',
+        width: 42,
+        height: 42,
+        borderRadius: '8px',
       }}
     />
   );
@@ -413,6 +415,9 @@ function Home() {
                       sx={{
                         mt: 1,
                         minHeight: { xs: 50, md: 44 },
+                        // Avatar Legends uses a large app-icon that almost fills
+                        // the button, so trim the vertical padding to suit it.
+                        py: system.visual === 'avatar' ? 0.4 : undefined,
                         borderRadius: 1.4,
                         bgcolor: '#f8f4ec',
                         color: system.color,
