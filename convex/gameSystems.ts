@@ -496,6 +496,36 @@ const avatarLegendsBuiltInTechniquesWithoutFatigue = [
   ),
   technique(
     'earthbending',
+    'Defend & Maneuver',
+    'Pack Earth',
+    'Lift stone and dirt into the air and pack it together as tightly as possible to create a super-hard ball. Mark 1-fatigue. You may use Strike next exchange with this ball.',
+  ),
+  technique(
+    'earthbending',
+    'Evade & Observe',
+    'Quicksand',
+    'Turn the earth in an area to quicksand; all foes in the area become Impaired. If they don\'t free themselves by the end of the next exchange after becoming Impaired, they become Trapped. If they don\'t free themselves by the end of the next exchange after becoming Trapped, they become Doomed.',
+  ),
+  technique(
+    'earthbending',
+    'Defend & Maneuver',
+    'Rapid Tunneling',
+    'Dive into the earth. You become Empowered immediately and can use no other techniques in this exchange, but you cannot be targeted by any attacks or effects besides earthbending. You emerge next exchange in a place within reach thru the earth. Lose Empowered the following exchange.',
+  ),
+  technique(
+    'earthbending',
+    'Defend & Maneuver',
+    'Slice Stone',
+    'Cut a large stone or stone structure in two with a swipe of your hand. Mark 1-fatigue and clear the obstacle; become Prepared to lift the cut chunk of stone with your bending in the next exchange. If there are foes in reach, you may cut the stone so it falls atop them, inflicting 2-fatigue as they dive out of the way.',
+  ),
+  technique(
+    'earthbending',
+    'Defend & Maneuver',
+    'Subtle Misdirection',
+    'Subtly earthbend the ground under a foe to direct their next attack elsewhere. Mark 2-fatigue and target someone who attacked and advanced this exchange; you select the target for the first attack they make this exchange.',
+  ),
+  technique(
+    'earthbending',
     'Evade & Observe',
     'Thick Mud',
     'Transform the earth and stone around you into sticky, sucking mud. Any foes engaged with and acting against you in this exchange become stuck and Impaired; you may use Strike against each stuck foe in the next exchange, regardless of your chosen approach and in addition to your normal techniques.',
