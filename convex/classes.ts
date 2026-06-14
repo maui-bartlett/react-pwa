@@ -391,3 +391,63 @@ export const cleanPillarClassTrait = internalMutation({
     return { updated: true };
   },
 });
+
+// Cleaned "Bad Habits" trait text for The Rogue. Heading for the bad-habits
+// list, the habits as a checkbox grid, the "Any necessary skills…" line as its
+// own paragraph, and each move result (When you indulge / On a hit / On a miss)
+// as its own paragraph. Trailing status sidebar dropped.
+const ROGUE_CLASS_TRAIT_TEXT = `You’ve picked up some bad habits over the years. Most other people are pretty set on trying to get you to stop. But maybe you can bring your friends along for the ride…
+Choose 4 bad habits you indulge:
+□ Casual thievery and pickpocketing □ Vandalism or sabotage □ Trespassing □ Daredevil stunts □ “Charming” insults of dangerous people □ Cons □ Rabble-rousing □ Gambling
+Any necessary skills or talents related to your bad habits are considered to be part of your background.
+When you indulge a bad habit on your own, shift your balance toward Survival, and roll with Survival.
+On a hit, you pull it off and vent your frustrations; clear fatigue or conditions equal to your Survival (minimum 0). If you have no fatigue or conditions, mark growth. On a 10+, you also gain a windfall, a boon or opportunity—your bad habits paid off this time.
+On a miss, you’re caught by someone dangerous or powerful, and they complicate your life.
+When you indulge a bad habit with a friend, shift your balance toward Friendship, and roll with Friendship.
+On a hit, you and your friend pull it off and grow closer; each of you makes the other Inspired. On a 10+, you also obtain some useful resource or information, and become Prepared.
+On a miss, something goes terribly awry; you can either take the heat yourself, or shift your balance twice toward Survival and leave your friend in the lurch.`;
+
+/** One-off cleanup of The Rogue's class-trait text. Idempotent. */
+export const cleanRogueClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Rogue'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.text = ROGUE_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});
+
+/**
+ * Fix The Razor's balance principles. The class was imported with an empty
+ * opposingPrinciples array, so the sheet fell back to the default
+ * Tradition / Progress; The Razor's balance track is Control / Connection.
+ */
+export const fixRazorPrinciples = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Razor'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+    const classInfo = classDoc.class as Record<string, unknown>;
+    await ctx.db.patch(classDoc._id, {
+      class: { ...classInfo, opposingPrinciples: ['Control', 'Connection'] },
+    });
+    return { updated: true };
+  },
+});
