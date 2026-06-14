@@ -2895,7 +2895,10 @@ type ClassTraitBlock =
   | { kind: 'paragraph'; text: string }
   | { kind: 'header'; text: string }
   | { kind: 'checkboxes'; items: string[] }
-  | { kind: 'bullets'; items: string[] };
+  | { kind: 'bullets'; items: string[] }
+  // A heading with a row of bare (unlabelled) checkboxes beside it — e.g. a
+  // progress track. Encoded in the source as "Heading □ □ □ □ □".
+  | { kind: 'trackHeader'; text: string; count: number };
 
 const CHECKBOX_MARKERS = /[□▢☐]/;
 const CLASS_TRAIT_MARKER = /[□▢☐]|[•◦‣]/g;
@@ -2998,6 +3001,19 @@ function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
       lastIndex = match.index + match[0].length;
     }
     lineParts.push({ marker: pendingMarker, text: trimmedLine.slice(lastIndex).trim() });
+
+    // "Heading □ □ □ □ □" — a header followed only by bare checkboxes is a
+    // progress track: a heading with that many empty boxes beside it.
+    const [head, ...tail] = lineParts;
+    if (
+      head.marker === null &&
+      head.text &&
+      tail.length > 0 &&
+      tail.every((part) => part.marker === 'check' && part.text === '')
+    ) {
+      blocks.push({ kind: 'trackHeader', text: head.text, count: tail.length });
+      continue;
+    }
 
     for (const part of lineParts) {
       if (part.marker === null) {
@@ -3135,55 +3151,113 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
             </Stack>
           );
         }
-        // checkboxes — laid out in a responsive grid
+        if (block.kind === 'trackHeader') {
+          return (
+            <Stack
+              key={index}
+              direction="row"
+              alignItems="center"
+              gap={1}
+              sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: index === 0 ? 0 : 0.4 }}
+            >
+              <Typography
+                sx={{
+                  color: ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.74rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {block.text}
+              </Typography>
+              <Stack direction="row" gap={0.6} alignItems="center">
+                {Array.from({ length: block.count }).map((_, boxIndex) => {
+                  const key = `${className}::track-${index}-${boxIndex}`;
+                  const checked = Boolean(checks[key]);
+                  return (
+                    <Box
+                      key={boxIndex}
+                      component="button"
+                      type="button"
+                      aria-pressed={checked}
+                      aria-label={`${block.text} ${boxIndex + 1}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggle(key);
+                      }}
+                      sx={{
+                        p: 0,
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        lineHeight: 0,
+                      }}
+                    >
+                      <Checkbox checked={checked} size={18} />
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Stack>
+          );
+        }
+        // Checkboxes: short lists sit in a 2-col grid; long descriptive lists
+        // flow into balanced columns (CSS multicol) so there's no row-height
+        // empty space between mismatched items.
+        const longItems = block.items.some((item) => item.length > 60);
         return (
           <Box
             key={index}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              columnGap: 1.4,
-              rowGap: 0.75,
-            }}
+            sx={
+              longItems
+                ? { columnCount: 2, columnGap: 2 }
+                : { display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 1.4, rowGap: 0.75 }
+            }
           >
             {block.items.map((item, itemIndex) => {
               const key = checkKey(index, itemIndex);
               const checked = Boolean(checks[key]);
               return (
-              <Box
-                key={`${item}-${itemIndex}`}
-                component="button"
-                type="button"
-                aria-pressed={checked}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  toggle(key);
-                }}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 0.7,
-                  p: 0,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <Box sx={{ mt: '1px', flex: '0 0 auto' }}>
-                  <Checkbox checked={checked} size={16} />
-                </Box>
-                <Typography
+                <Box
+                  key={`${item}-${itemIndex}`}
+                  component="button"
+                  type="button"
+                  aria-pressed={checked}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggle(key);
+                  }}
                   sx={{
-                    color: brown,
-                    fontFamily: 'Georgia, "Times New Roman", serif',
-                    fontSize: '0.84rem',
-                    lineHeight: 1.4,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 0.7,
+                    p: 0,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                    ...(longItems
+                      ? { breakInside: 'avoid', WebkitColumnBreakInside: 'avoid', mb: 0.85 }
+                      : {}),
                   }}
                 >
-                  {renderClassTraitText(item)}
-                </Typography>
-              </Box>
+                  <Box sx={{ mt: '1px', flex: '0 0 auto' }}>
+                    <Checkbox checked={checked} size={16} />
+                  </Box>
+                  <Typography
+                    sx={{
+                      color: brown,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: '0.84rem',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {renderClassTraitText(item)}
+                  </Typography>
+                </Box>
               );
             })}
           </Box>

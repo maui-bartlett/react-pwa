@@ -271,3 +271,43 @@ export const cleanSuccessorClassTrait = internalMutation({
     return { updated: true };
   },
 });
+
+// Cleaned "Marked by Fate" trait text for The Destined. Drops the status /
+// condition sidebar and stray rulebook labels, and line-structures the
+// content so the sheet renders headings, paragraphs, a bullet list, a Destiny
+// Track (a heading with five boxes, encoded as "Destiny Track □ □ □ □ □"), and
+// the five Destiny Sign checkboxes.
+const DESTINED_CLASS_TRAIT_TEXT = `You have been touched by something beyond—something spiritual and otherworldly. (See “My Destiny”). At character creation, fill in one detail and take one destiny sign below.
+Destiny Details
+Fill these in as your destiny is revealed to you, either in visions or through the insights of spiritually attuned NPCs. When you act to bring about one of these details, you may live up to your Determination without marking fatigue. When you and the GM agree one of the details is fully explored or fulfilled, mark growth.
+• I will bring great change to ______ • I will weather betrayal by ______ • I will lose ______ • I will need the help of ______ • I will learn a crucial truth from ______ • I will defend or save ______
+Destiny Track □ □ □ □ □
+Whenever you lose your balance, get taken out, or are otherwise instructed to, mark your Destiny Track. When your destiny track fills, clear it and take a destiny sign. If you have already taken the other five, you must take “meet your fate.”
+Destiny Signs
+□ Otherworldly Visions: Mark your destiny track to have a vision about the situation at hand. Ask the GM one question and get an honest answer. □ Tremble Before Me: Mark your destiny track and reveal a glimpse of your otherworldly aspect to intimidate an NPC as if you rolled a 10+. Afterward, their fear and mistrust of you knows no bounds; you cannot guide and comfort or plead with that NPC until you have earned their trust. □ Self-sacrificing: Once per scene, mark your destiny track to supernaturally absorb an incoming blow aimed at an ally within view; cancel all fatigue, conditions, or balance shifts that would have been inflicted. □ Inner Strength: Once per session, mark destiny twice to clear all conditions. □ Meet Your Fate: Your destiny arrives and you are changed utterly by it. If you survive in human form, change playbooks.`;
+
+/**
+ * One-off cleanup: replace The Destined's class-trait text with the cleaned,
+ * line-structured version above. Idempotent — safe to re-run.
+ */
+export const cleanDestinedClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Destined'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.text = DESTINED_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});
