@@ -2367,6 +2367,7 @@ function PrimaryTrainingSelect() {
       </Typography>
       <Box
         component="select"
+        className="ios-zoom-center"
         value={currentTraining}
         aria-label="Primary training"
         onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -2434,12 +2435,12 @@ function CharacterEditField({
   onChange: (value: string) => void;
 }) {
   return (
-    <Stack spacing={0.35}>
+    <Stack spacing={0.4}>
       <Typography
         sx={{
           color: alpha(brown, 0.76),
           fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-          fontSize: '0.56rem',
+          fontSize: '0.72rem',
           fontWeight: 900,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
@@ -2451,15 +2452,19 @@ function CharacterEditField({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        // 16px keeps mobile Safari from auto-zooming on focus; `ios-zoom-keep`
+        // on the input opts it out of the global scale-down so it renders at a
+        // true 16px (also the larger size requested for these fields).
+        inputProps={{ className: 'ios-zoom-keep' }}
         sx={{
-          minHeight: 34,
+          minHeight: 42,
           borderRadius: '4px',
           border: `1px solid ${alpha(accent, 0.72)}`,
           bgcolor: alpha(parchmentLight, 0.72),
           color: ink,
           px: 1,
           fontFamily: 'Georgia, "Times New Roman", serif',
-          fontSize: '0.86rem',
+          fontSize: '1rem',
           '& input': { p: 0 },
         }}
       />
@@ -2967,6 +2972,47 @@ function splitClassTraitPlainText(text: string): ClassTraitBlock[] {
   return blocks;
 }
 
+// Avatar Legends moves end with a "On a miss …" result; the rulebook prints it
+// on its own line, so split it off into a fresh paragraph wherever it trails a
+// paragraph or the last item of a list.
+function splitOffOnAMiss(text: string): [string, string | null] {
+  const match = /\bOn a miss\b/i.exec(text);
+  if (!match || match.index === 0) return [text, null];
+  const before = text.slice(0, match.index).trim();
+  const miss = text.slice(match.index).trim();
+  if (!before || !miss) return [text, null];
+  return [before, miss];
+}
+
+function applyOnAMissBreaks(blocks: ClassTraitBlock[]): ClassTraitBlock[] {
+  const result: ClassTraitBlock[] = [];
+  for (const block of blocks) {
+    if (block.kind === 'paragraph') {
+      const [before, miss] = splitOffOnAMiss(block.text);
+      result.push({ kind: 'paragraph', text: before });
+      if (miss) result.push({ kind: 'paragraph', text: miss });
+      continue;
+    }
+    if (block.kind === 'checkboxes' || block.kind === 'bullets') {
+      const items = [...block.items];
+      const lastIndex = items.length - 1;
+      let trailing: string | null = null;
+      if (lastIndex >= 0) {
+        const [before, miss] = splitOffOnAMiss(items[lastIndex]);
+        if (miss) {
+          items[lastIndex] = before;
+          trailing = miss;
+        }
+      }
+      result.push({ ...block, items });
+      if (trailing) result.push({ kind: 'paragraph', text: trailing });
+      continue;
+    }
+    result.push(block);
+  }
+  return result;
+}
+
 function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
   // Keep newlines as hard block boundaries (collapse only spaces/tabs and
   // runs of blank lines). Cleaned trait text uses line breaks to separate
@@ -3024,8 +3070,11 @@ function parseClassTraitContent(rawText: string): ClassTraitBlock[] {
       pushListItem(part.marker === 'check' ? 'checkboxes' : 'bullets', part.text);
     }
   }
-  // Drop any checkbox block left empty after filtering out status boxes.
-  return blocks.filter((block) => block.kind !== 'checkboxes' || block.items.length > 0);
+  // Break "On a miss …" onto its own paragraph, then drop any checkbox block
+  // left empty after filtering out status boxes.
+  return applyOnAMissBreaks(blocks).filter(
+    (block) => block.kind !== 'checkboxes' || block.items.length > 0,
+  );
 }
 
 /** Render text with `____` fill-in runs shown as blank underlines. */
@@ -3064,7 +3113,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
   // newline-aware + status-filtering rewrite, so old positional keys must not
   // reattach to different labels.
   const checkKey = (blockIndex: number, itemIndex: number) =>
-    `${className}::cb-v2-${blockIndex}-${itemIndex}`;
+    `${className}::cb-v3-${blockIndex}-${itemIndex}`;
   const toggle = (key: string) => setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
 
   if (blocks.length === 0) {
@@ -3204,9 +3253,12 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
           );
         }
         // Checkboxes: short lists sit in a 2-col grid; long descriptive lists
-        // flow into balanced columns (CSS multicol) so there's no row-height
-        // empty space between mismatched items.
+        // flow into two columns (CSS multicol) so there's no row-height empty
+        // space between mismatched items. Force the column break at the
+        // midpoint so the split is deterministic column-major (source order
+        // fills the left column top-to-bottom, then the right column).
         const longItems = block.items.some((item) => item.length > 60);
+        const columnBreakIndex = Math.ceil(block.items.length / 2) - 1;
         return (
           <Box
             key={index}
@@ -3240,7 +3292,14 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                     textAlign: 'left',
                     width: '100%',
                     ...(longItems
-                      ? { breakInside: 'avoid', WebkitColumnBreakInside: 'avoid', mb: 0.85 }
+                      ? {
+                          breakInside: 'avoid',
+                          WebkitColumnBreakInside: 'avoid',
+                          mb: 0.85,
+                          ...(itemIndex === columnBreakIndex
+                            ? { breakAfter: 'column', WebkitColumnBreakAfter: 'always' }
+                            : {}),
+                        }
                       : {}),
                   }}
                 >
@@ -4387,7 +4446,7 @@ function CharacterPane() {
             underline of the playbook and the character's facts below. */}
         <Stack alignItems="center" spacing={0.55} sx={{ position: 'relative', py: 0.8, px: 0.6 }}>
           {editingIdentity ? (
-            <Stack spacing={0.8} sx={{ width: '100%' }}>
+            <Stack spacing={1.5} sx={{ width: '100%' }}>
               <CharacterEditField
                 label="Name"
                 value={identityDraft.name}
@@ -4411,12 +4470,12 @@ function CharacterPane() {
                 value={identityDraft.origin}
                 onChange={(value) => setIdentityDraft((prev) => ({ ...prev, origin: value }))}
               />
-              <Stack spacing={0.35}>
+              <Stack spacing={0.4} sx={{ mb: 0.8 }}>
                 <Typography
                   sx={{
                     color: alpha(brown, 0.76),
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.56rem',
+                    fontSize: '0.72rem',
                     fontWeight: 900,
                     letterSpacing: '0.12em',
                     textTransform: 'uppercase',
@@ -4426,11 +4485,15 @@ function CharacterPane() {
                 </Typography>
                 <Box
                   component="select"
+                  // True 16px (no scale-down) so it sits flush-left under its
+                  // label and Safari doesn't zoom; see index.css ios-zoom-keep.
+                  className="ios-zoom-keep"
                   value={identityDraft.className}
                   onChange={(event: React.ChangeEvent<HTMLSelectElement>) =>
                     setIdentityDraft((prev) => ({ ...prev, className: event.target.value }))
                   }
                   sx={{
+                    width: '100%',
                     minHeight: 48,
                     borderRadius: '4px',
                     border: `1px solid ${alpha(accent, 0.72)}`,
@@ -4439,7 +4502,7 @@ function CharacterPane() {
                     px: 1.25,
                     py: 1,
                     fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                    fontSize: '0.82rem',
+                    fontSize: '1rem',
                     fontWeight: 900,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
@@ -7292,10 +7355,11 @@ function AvatarLegends() {
               xs: 'none',
               sm: `0 26px 70px ${alpha(deepInk, 0.55)}, 0 0 0 1px ${alpha(border, 0.45)}`,
             },
-            '& input, & textarea': {
-              fontSize: '16px !important',
-              zoom: 0.875,
-            },
+            // Note: iOS focus-zoom prevention is handled globally in index.css
+            // (font-size 16px + transform scale, which keeps the CSS font-size
+            // at 16px). A `zoom: 0.875` here used to shrink the rendered size
+            // below 16px, which actually re-triggered the zoom and overrode the
+            // `.ios-zoom-keep` opt-out — so it was removed.
           }}
         >
           <Box

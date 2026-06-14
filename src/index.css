@@ -57,11 +57,10 @@ body {
     transform-origin: left center;
   }
 
-  /* Selects are centered (or full-width) here, so scale them from the center
-     to keep them visually centered — `left center` would inset only the right
-     edge and make a centered control look off-center. Text inputs keep
-     `left center` so their left-aligned text stays put. */
-  select:not(.ios-zoom-keep) {
+  /* Center-aligned selects opt in with `.ios-zoom-center` so they scale from
+     the center and stay visually centered; left-aligned selects keep the
+     default `left center` so they stay flush with their label. */
+  select.ios-zoom-center:not(.ios-zoom-keep) {
     transform-origin: center;
   }
 }
