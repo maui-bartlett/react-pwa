@@ -459,6 +459,8 @@ const elementFilterFrames: Record<Exclude<TechniqueElementFilter, 'all' | 'basic
   universal: '#173755',
   group: '#5b5368',
   martial: '#4a2c12',
+  // Class (playbook) techniques share the muted-gold "C" frame.
+  class: '#4a3c12',
 };
 const primaryTrainingOptions: PrimaryTraining[] = [
   'Waterbending',
@@ -626,7 +628,10 @@ const backpackSubTabAtom = atom(0);
 const techniqueFilterAtom = atom(0);
 // Element filter for the Techniques sub-tab. 'all' shows every card;
 // otherwise only techniques whose `element` matches are visible.
-type TechniqueElementFilter = TechniqueElement | 'all';
+// 'class' is a cross-cutting filter (any element) for playbook/class
+// techniques, which carry the `classTechnique` flag rather than a distinct
+// element type.
+type TechniqueElementFilter = TechniqueElement | 'all' | 'class';
 const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 
 // ---------- Character data shapes ----------
@@ -3852,7 +3857,10 @@ function ElementMark({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: ink,
+        // U / G / C (and any first-letter fallback) sit on a dark element
+        // frame, so render the letter in solid white for legibility — no
+        // dimmed ink and no translucent overlay washing over the glyph.
+        color: '#ffffff',
         fontFamily: '"IM Fell English", Georgia, serif',
         fontWeight: 900,
         fontSize: size * 0.42,
@@ -3882,15 +3890,21 @@ function ElementMark({
   );
 }
 
-function getTechniqueElementFilters(): Array<{
+function getTechniqueElementFilters(options: { includeClass?: boolean } = {}): Array<{
   key: TechniqueElementFilter;
   label: string;
   color: string;
   src: string | null;
 }> {
+  const { includeClass = true } = options;
   return [
     { key: 'all', label: 'All', color: ink, src: null },
     { key: 'basic', label: 'Basic', color: ink, src: null },
+    // Class is only meaningful for the character's own techniques, not the
+    // canon picker (canon techniques never carry the class flag).
+    ...(includeClass
+      ? [{ key: 'class' as const, label: 'Class', color: bookAccent, src: null }]
+      : []),
     { key: 'universal', label: 'Universal', color: ink, src: null },
     { key: 'group', label: 'Group', color: brown, src: null },
     { key: 'waterbending', label: 'Water', color: water, src: elementWater },
@@ -3906,9 +3920,12 @@ function getTechniqueElementFilters(): Array<{
 function TechniqueElementFilterRow({
   value,
   onChange,
+  includeClass = true,
 }: {
   value: TechniqueElementFilter;
   onChange: (next: TechniqueElementFilter) => void;
+  /** Show the cross-cutting "Class" chip. Off for the canon picker. */
+  includeClass?: boolean;
 }) {
   const { isDarkMode } = useThemeMode();
   return (
@@ -3930,7 +3947,7 @@ function TechniqueElementFilterRow({
           '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
-        {getTechniqueElementFilters().map((entry) => {
+        {getTechniqueElementFilters({ includeClass }).map((entry) => {
           const isActive = value === entry.key;
           const frameColor =
             entry.key === 'all' || entry.key === 'basic' ? deepInk : elementFilterFrames[entry.key];
@@ -4361,6 +4378,7 @@ function CanonTechniquePickerDialog({
           </Typography>
           <TechniqueElementFilterRow
             value={filter}
+            includeClass={false}
             onChange={(next) => {
               onFilterChange(next);
               onSelectTechniqueName('');
@@ -5887,7 +5905,12 @@ function CombatPane() {
     const targetLevel: TechniqueLevel | null =
       techFilter === 0 ? null : (['learned', 'practiced', 'mastered'] as const)[techFilter - 1];
     return techniques.filter((tech) => {
-      const elementOk = elementFilter === 'all' || tech.type === elementFilter;
+      const elementOk =
+        elementFilter === 'all'
+          ? true
+          : elementFilter === 'class'
+            ? Boolean(tech.classTechnique)
+            : tech.type === elementFilter;
       const levelOk = targetLevel === null || tech.level === targetLevel;
       return elementOk && levelOk;
     });
@@ -5929,7 +5952,7 @@ function CombatPane() {
   const addCustomTechnique = () => {
     setCharacterState((prev) => {
       const nextType =
-        elementFilter !== 'all' && elementFilter !== 'basic'
+        elementFilter !== 'all' && elementFilter !== 'basic' && elementFilter !== 'class'
           ? elementFilter
           : trainingToTechniqueType(prev.primaryTraining);
       return {

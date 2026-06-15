@@ -7,20 +7,31 @@ import { deriveTechniqueFatigue, withTechniqueFatigue } from './lib/avatarTechni
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 
+/** Short collapsed-card blurb: the first sentence of the rules text, falling
+ *  back to a clipped prefix. Mirrors the client's `summarizeTechnique` so the
+ *  accordion's collapsed summary differs from the expanded full description. */
+function summarizeTechnique(text: string) {
+  const firstSentence = text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim();
+  return firstSentence && firstSentence.length <= 150
+    ? firstSentence
+    : `${text.slice(0, 118).trim()}${text.length > 118 ? '...' : ''}`;
+}
+
 function technique(
   type: string,
   approach: string,
   name: string,
   description: string,
-  options: { rare?: boolean; tags?: string[] } = {},
+  options: { rare?: boolean; tags?: string[]; summary?: string } = {},
 ) {
+  const { summary, ...rest } = options;
   return {
     type,
     approach,
     name,
-    summary: description,
+    summary: summary ?? summarizeTechnique(description),
     description,
-    ...options,
+    ...rest,
   };
 }
 
