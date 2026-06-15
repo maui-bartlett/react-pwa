@@ -451,3 +451,112 @@ export const fixRazorPrinciples = internalMutation({
     return { updated: true };
   },
 });
+
+// "Bringing Them Down" trait text for The Hammer, transcribed from the
+// rulebook screenshot (the imported data had an empty trait text).
+const HAMMER_CLASS_TRAIT_TEXT = `You always have an adversary, one who represents the things you’re trying to smash through—tyranny, inequality, war; larger and more dangerous concepts that, to you at least, this one person embodies. Your adversary is someone significant and powerful—someone who actually deserves the amount of force you can bring to bear.
+Name your adversary: _______________________________
+Choose a goal you have for your adversary:
+□ Capture them □ Depose them □ Expose them □ Discredit them □ Restrain them □ Exile them
+Take -1 ongoing to plead with, trick, or guide and comfort your adversary.
+Changing Your Adversary
+You can change your adversary any time you mark a condition, or at the end of each session. When you do, choose an appropriate goal, and the GM shifts your balance twice to match your new adversary and your new goal.
+When you successfully accomplish your goal and defeat your adversary, take a growth advancement and choose a new adversary.
+Fighting Your Adversary
+When you enter into a fight against your adversary, clear all fatigue and become Inspired. When you select any combat approach against your adversary, mark fatigue to roll with conditions marked instead of your normal stat.`;
+
+/** One-off creation of The Hammer's class-trait text. Idempotent. */
+export const cleanHammerClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Hammer'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.text = HAMMER_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});
+
+// "Extraordinary Skill" trait text for The Prodigy, transcribed from the
+// rulebook screenshot (the imported data held only status-sidebar noise).
+const PRODIGY_CLASS_TRAIT_TEXT = `You aren’t just capable in your area of skill and training; you’re astonishing. A true prodigy, excelling and learning far more quickly than anyone would expect. You start play with one additional mastered technique.
+Choose two areas in which your mastery is particularly impressive:
+□ Shaping □ Maneuvering □ Breaking □ Sensing □ Forcing □ Guarding
+When you rely on skills and training, use a combat stance, or otherwise trigger a move while using your mastery, ignore penalties from conditions or statuses.
+When you see someone use an unknown technique, if it is available to your skills and training, you may mark fatigue to shift your balance towards Excellence and take the technique as learned. You can only do this if your balance is at +1 Excellence or higher. You must still get a mastery condition from a master of the technique in order to move the technique from practiced to mastered.
+When you study with a teacher to learn a new technique, shift your balance towards Community and automatically learn the technique at the practiced level (skipping learned). You cannot learn techniques by studying with a teacher if your Balance is +0 Community or lower.
+When you spend time teaching a fellow companion a technique available to their skills and training, roll with Community. On a hit, you teach well enough; they learn the technique. On a 7–9, you get impatient or frustrated; choose to either take it out on them and inflict 2 conditions, or take it out on yourself and suffer 2 conditions. On a miss, you get too frustrated with their inadequacies; both of you suffer 2 conditions, and you can never try to teach them this technique again.`;
+
+/** One-off creation of The Prodigy's class-trait text. Idempotent. */
+export const cleanProdigyClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Prodigy'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.text = PRODIGY_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});
+
+// "Making Amends" trait for The Razor, transcribed from the rulebook
+// screenshot. The imported data was partial and mis-named the trait
+// "Disconnected" (actually a sub-section), so this also fixes the name.
+const RAZOR_CLASS_TRAIT_TEXT = `You were once the weapon of powerful figures—your masters. In your time as your masters’ weapon, you hurt people, even those who looked to you for friendship, leadership, protection, or support. You must make amends. Choose four mistakes you’re trying to make up for (on the back of the sheet).
+Once per session, when you have tried your best to prove that you are a different, better person now through your actions, roll, taking +1 for each “yes” to the following questions:
+• Did you make amends directly to a person you harmed? • Are you at your center? • Did someone honestly thank you for your efforts or forgive you for your mistakes?
+On a hit, you feel the spark of hope—you’re making progress. On a 7-9, choose 1. On a 10+, choose 2 (you can choose the same option twice), or unlock the next Connection balance track space (see Disconnected).
+• Clear a condition • Mark growth • Shift your Balance toward Connection
+On a miss, something’s off—you don’t feel you’ve changed. Choose someone here to ask what more you can do—they will tell you, and the GM will shift your balance twice based on what they say.
+Disconnected
+Your Balance begins play at +2 Control; you can still shift it by one step when you make your character.
+Your Connection principle starts play locked—you cannot shift your balance higher than +0 Connection. If you would shift your balance to a locked value, you lose your balance, but your center cannot shift higher than the highest unlocked Connection value. When you unlock Connection +3, treat your balance track as normal.
+When you shift your center to +1, +2, and +3 Connection for the first time, choose a companion to whom you have connected. They give you one move from their playbook (ignoring advancement limits).
+Honed
+When you sublimate your feelings to be effective, clear conditions equal to one plus your Control and cross off one unmarked condition—you can no longer mark that condition for any reason. When you shift your center toward Connection, you may restore all crossed off conditions.
+You may live up to your Control principle by shifting balance toward Control instead of marking fatigue.`;
+
+/** One-off creation of The Razor's class-trait text + name. Idempotent. */
+export const cleanRazorClassTrait = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classDoc = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Razor'),
+      )
+      .unique();
+    if (!classDoc) return { updated: false };
+    const classInfo = classDoc.class as Record<string, unknown>;
+    const classTrait =
+      classInfo.classTrait && typeof classInfo.classTrait === 'object'
+        ? { ...(classInfo.classTrait as Record<string, unknown>) }
+        : {};
+    classTrait.name = 'Making Amends';
+    classTrait.text = RAZOR_CLASS_TRAIT_TEXT;
+    await ctx.db.patch(classDoc._id, { class: { ...classInfo, classTrait } });
+    return { updated: true };
+  },
+});

@@ -2983,11 +2983,17 @@ function splitClassTraitPlainText(text: string, allowLabelHeaders: boolean): Cla
   const trimmed = text.trim();
   if (!trimmed) return [];
 
-  // In line-structured (cleaned) text, a standalone line ending in a colon or
-  // ellipsis is a list label / section heading ("Choose where your team is
-  // without you:", "Earn 1-Team when…"). Only when the source uses line breaks,
-  // so an un-cleaned class's long colon-ending intro isn't turned into a header.
-  if (allowLabelHeaders && /(:|…|\.\.\.)$/.test(trimmed) && /^[A-Z(]/.test(trimmed)) {
+  // In line-structured (cleaned) text, a short standalone line ending in a
+  // colon or ellipsis is a list label / section heading ("Choose where your
+  // team is without you:", "Earn 1-Team when…"). The word cap keeps a long
+  // colon-ending lead-in sentence (e.g. "…to the following questions:") a
+  // paragraph rather than a giant uppercase header.
+  if (
+    allowLabelHeaders &&
+    /(:|…|\.\.\.)$/.test(trimmed) &&
+    /^[A-Z(]/.test(trimmed) &&
+    trimmed.split(/\s+/).length <= 14
+  ) {
     return [{ kind: 'header', text: trimmed }];
   }
 
