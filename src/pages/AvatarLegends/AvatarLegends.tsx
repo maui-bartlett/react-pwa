@@ -7001,17 +7001,10 @@ function FatigueCard({
                   </Typography>
                 ) : null}
               </Stack>
+              {/* Base diamonds first (left), then temp diamonds expand to the
+                  right, so the bar grows rightward as temporary capacity is
+                  added. */}
               <Stack direction="row" flexWrap="wrap" gap={0.7}>
-                {tempFatigue.map((filled, index) => (
-                  <FatigueDiamond
-                    key={`temp-${index}`}
-                    filled={filled}
-                    color={tempFatigueColor}
-                    size={28}
-                    ariaLabel={`Toggle temporary fatigue ${index + 1}`}
-                    onToggle={() => toggleTempFatigue(index)}
-                  />
-                ))}
                 {Array.from({ length: baseFatigue.length }).map((_, index) => (
                   <FatigueDiamond
                     key={`base-${index}`}
@@ -7020,6 +7013,16 @@ function FatigueCard({
                     size={28}
                     ariaLabel={`Toggle base fatigue ${index + 1}`}
                     onToggle={() => toggleBaseFatigue(index)}
+                  />
+                ))}
+                {tempFatigue.map((filled, index) => (
+                  <FatigueDiamond
+                    key={`temp-${index}`}
+                    filled={filled}
+                    color={tempFatigueColor}
+                    size={28}
+                    ariaLabel={`Toggle temporary fatigue ${index + 1}`}
+                    onToggle={() => toggleTempFatigue(index)}
                   />
                 ))}
               </Stack>
