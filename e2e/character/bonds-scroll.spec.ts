@@ -31,6 +31,11 @@ test.describe('Bond row — vertical scroll pass-through', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+    // Wait for the seeded bond row itself to mount — not just the overview
+    // metric. The synthetic-event test reads it immediately via evaluate(),
+    // and under CI load the BondsCard can render a beat after the metrics,
+    // causing intermittent "bond row not found" / no-preventDefault failures.
+    await page.locator('[data-pw="bond-add-jelena"]').waitFor();
   });
 
   // ── Direction gate (synthetic events) ──────────────────────────────────────
