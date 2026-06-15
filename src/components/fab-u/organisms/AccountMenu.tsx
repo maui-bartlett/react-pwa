@@ -16,13 +16,16 @@ import { alpha } from '@mui/material/styles';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useAtomValue } from 'jotai';
 import {
+  Check,
   CheckCircle,
   ChevronLeft,
+  Copy,
   KeyRound,
   LogOut,
   Moon,
   Pencil,
   Plus,
+  RefreshCw,
   Settings,
   ShieldCheck,
   Sun,
@@ -222,6 +225,165 @@ function getAvatarPrimaryTraining(characterState: unknown) {
   if (!character || typeof character !== 'object') return null;
   const primaryTraining = (character as { primaryTraining?: unknown }).primaryTraining;
   return typeof primaryTraining === 'string' ? primaryTraining : null;
+}
+
+/** Base origin for shareable links: the configured site URL when present
+ *  (production), otherwise wherever the app is currently served. */
+function inviteLinkOrigin() {
+  const configured = import.meta.env.VITE_SITE_URL;
+  if (configured && configured.trim()) return configured.trim().replace(/\/+$/, '');
+  return typeof window === 'undefined' ? '' : window.location.origin;
+}
+
+/** Invite section shown in a campaign's edit mode: a shareable deep link plus
+ *  copy and regenerate controls. The link routes to /join/:code, which opens
+ *  the installed PWA (or the website) and lets the recipient join. */
+function CampaignInviteSection({ campaignId }: { campaignId: Id<'campaigns'> }) {
+  const fabUTokens = useFabUTokens();
+  const inviteState = useQuery(api.campaigns.getInviteLink, { campaignId });
+  const createInviteLink = useMutation(api.campaigns.createInviteLink);
+  const regenerateInviteLink = useMutation(api.campaigns.regenerateInviteLink);
+  const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const link = inviteState?.link ?? null;
+
+  // Mint a link the first time the GM opens the invite section so a shareable
+  // link is always displayed. createInviteLink is idempotent (returns the
+  // existing active link), so this is safe under StrictMode double-invocation.
+  useEffect(() => {
+    if (!inviteState || !inviteState.canManage || inviteState.link !== null || busy) return;
+    setBusy(true);
+    void createInviteLink({ campaignId })
+      .catch(() => {})
+      .finally(() => setBusy(false));
+  }, [inviteState, busy, createInviteLink, campaignId]);
+
+  // Only the GM manages invites; players editing other fields see nothing here.
+  if (inviteState && !inviteState.canManage) return null;
+
+  const code = link?.code ?? null;
+  const url = code ? `${inviteLinkOrigin()}/join/${code}` : '';
+  const expiresLabel = link?.expiresAt
+    ? `Expires ${new Date(link.expiresAt).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      })}`
+    : '';
+
+  async function copyLink() {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  async function regenerate() {
+    setBusy(true);
+    setCopied(false);
+    try {
+      await regenerateInviteLink({ campaignId });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Box
+      sx={{
+        border: `1px solid ${fabUTokens.color.border}`,
+        borderRadius: '9px',
+        bgcolor: fabUTokens.color.surface,
+        px: 1,
+        py: 0.85,
+      }}
+    >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.6 }}>
+        <Typography
+          sx={{
+            fontSize: '0.7rem',
+            fontWeight: 800,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: fabUTokens.color.textSecondary,
+          }}
+        >
+          Invite
+        </Typography>
+        {expiresLabel ? (
+          <Typography sx={{ fontSize: '0.66rem', color: fabUTokens.color.textSecondary }}>
+            {expiresLabel}
+          </Typography>
+        ) : null}
+      </Stack>
+      <Stack direction="row" spacing={0.6} alignItems="center">
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            border: `1px solid ${fabUTokens.color.border}`,
+            borderRadius: '7px',
+            bgcolor: fabUTokens.color.surfaceMuted,
+            px: 0.9,
+            py: 0.6,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: '0.78rem',
+              color: fabUTokens.color.textPrimary,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {url || 'Generating link…'}
+          </Typography>
+        </Box>
+        <Button
+          onClick={() => void copyLink()}
+          disabled={!url}
+          size="small"
+          variant="contained"
+          startIcon={copied ? <Check size={15} /> : <Copy size={15} />}
+          sx={{
+            flexShrink: 0,
+            textTransform: 'none',
+            fontWeight: 800,
+            bgcolor: fabUTokens.color.highlight,
+            color: fabUTokens.color.highlightFg,
+            '&:hover': { bgcolor: fabUTokens.color.highlight },
+          }}
+        >
+          {copied ? 'Copied' : 'Copy'}
+        </Button>
+      </Stack>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 0.55 }}>
+        <Typography sx={{ fontSize: '0.66rem', color: fabUTokens.color.textSecondary }}>
+          Anyone with this link can join as a player.
+        </Typography>
+        <Button
+          onClick={() => void regenerate()}
+          disabled={busy}
+          size="small"
+          startIcon={<RefreshCw size={13} />}
+          sx={{
+            flexShrink: 0,
+            textTransform: 'none',
+            fontWeight: 700,
+            color: fabUTokens.color.textSecondary,
+            minWidth: 0,
+          }}
+        >
+          Regenerate
+        </Button>
+      </Stack>
+    </Box>
+  );
 }
 
 function AuthField({
@@ -1131,57 +1293,62 @@ function AccountMenu({
                         ]}
                       >
                         {isEditing ? (
-                          <Stack
-                            direction="row"
-                            spacing={0.6}
-                            sx={{
-                              minHeight: 54,
-                              border: `1px solid ${fabUTokens.color.border}`,
-                              borderRadius: '9px',
-                              bgcolor: fabUTokens.color.surface,
-                              px: 1,
-                              py: 0.8,
-                              alignItems: 'center',
-                            }}
-                          >
-                            <InputBase
-                              value={editingName}
-                              autoFocus
-                              onChange={(e) => setEditingName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') void commitEdit();
-                                if (e.key === 'Escape') cancelEdit();
-                              }}
+                          <Stack spacing={0.6}>
+                            <Stack
+                              direction="row"
+                              spacing={0.6}
                               sx={{
-                                flex: 1,
-                                fontSize: '0.86rem',
-                                fontWeight: 800,
-                                color: fabUTokens.color.textPrimary,
+                                minHeight: 54,
+                                border: `1px solid ${fabUTokens.color.border}`,
+                                borderRadius: '9px',
+                                bgcolor: fabUTokens.color.surface,
+                                px: 1,
+                                py: 0.8,
+                                alignItems: 'center',
                               }}
+                            >
+                              <InputBase
+                                value={editingName}
+                                autoFocus
+                                onChange={(e) => setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') void commitEdit();
+                                  if (e.key === 'Escape') cancelEdit();
+                                }}
+                                sx={{
+                                  flex: 1,
+                                  fontSize: '0.86rem',
+                                  fontWeight: 800,
+                                  color: fabUTokens.color.textPrimary,
+                                }}
+                              />
+                              <Button
+                                onClick={cancelEdit}
+                                size="small"
+                                sx={{
+                                  textTransform: 'none',
+                                  color: fabUTokens.color.textSecondary,
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={() => void commitEdit()}
+                                size="small"
+                                variant="contained"
+                                sx={{
+                                  textTransform: 'none',
+                                  bgcolor: fabUTokens.color.highlight,
+                                  color: fabUTokens.color.highlightFg,
+                                  '&:hover': { bgcolor: fabUTokens.color.highlight },
+                                }}
+                              >
+                                Save
+                              </Button>
+                            </Stack>
+                            <CampaignInviteSection
+                              campaignId={item.campaign._id as Id<'campaigns'>}
                             />
-                            <Button
-                              onClick={cancelEdit}
-                              size="small"
-                              sx={{
-                                textTransform: 'none',
-                                color: fabUTokens.color.textSecondary,
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={() => void commitEdit()}
-                              size="small"
-                              variant="contained"
-                              sx={{
-                                textTransform: 'none',
-                                bgcolor: fabUTokens.color.highlight,
-                                color: fabUTokens.color.highlightFg,
-                                '&:hover': { bgcolor: fabUTokens.color.highlight },
-                              }}
-                            >
-                              Save
-                            </Button>
                           </Stack>
                         ) : (
                           <Box

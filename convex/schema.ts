@@ -111,6 +111,9 @@ export default defineSchema({
   campaignJoinCodes: defineTable({
     campaignId: v.id('campaigns'),
     codeHash: v.string(),
+    // Plaintext invite code, stored so the GM's edit screen can re-display the
+    // shareable link. Invite codes are bearer tokens, not credentials.
+    code: v.optional(v.string()),
     createdByUserId: v.id('userProfiles'),
     roleGranted: v.union(v.literal('player'), v.literal('observer')),
     expiresAt: v.optional(v.number()),
@@ -119,7 +122,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index('by_campaignId', ['campaignId'])
-    .index('by_codeHash', ['codeHash']),
+    .index('by_codeHash', ['codeHash'])
+    .index('by_code', ['code']),
 
   campaignInvites: defineTable({
     campaignId: v.id('campaigns'),

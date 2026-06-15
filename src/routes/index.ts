@@ -37,6 +37,10 @@ const routes: Routes = [
     icon: AutoAwesomeIcon,
   },
   {
+    component: asyncComponentLoader(() => import('@/pages/Join')),
+    path: '/join/:code',
+  },
+  {
     component: asyncComponentLoader(() => import('@/pages/Page4')),
     path: '/page-4',
     title: 'Page 4',
