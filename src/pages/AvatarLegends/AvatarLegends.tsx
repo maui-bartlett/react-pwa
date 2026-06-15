@@ -2267,34 +2267,13 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
   }
   const statOptions = [-3, -2, -1, 0, 1, 2, 3];
 
-  // Detect when the sticky panel is actually pinned to the top of the scroll
-  // body. A zero-height sentinel sits just above the panel; once it scrolls out
-  // of the scroll container's top edge, the panel is "stuck" and we tighten the
-  // top margin by 15px (smoothly).
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const [stuck, setStuck] = useState(false);
-  useEffect(() => {
-    if (!sticky) return undefined;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return undefined;
-    const scrollRoot = sentinel.closest<HTMLElement>('[data-dice-tray-scroll-root]') ?? null;
-    // The panel pins at the scroll container's content edge (below its top
-    // padding), so shrink the observer's top by that padding — then the
-    // sentinel "leaves" exactly when the panel becomes pinned.
-    const padTop = scrollRoot ? parseFloat(getComputedStyle(scrollRoot).paddingTop) || 0 : 0;
-    const observer = new IntersectionObserver(([entry]) => setStuck(!entry.isIntersecting), {
-      root: scrollRoot,
-      rootMargin: `-${padTop}px 0px 0px 0px`,
-      threshold: [0],
-    });
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [sticky]);
-
-  const stickyInner = (
+  return (
     // When sticky, pin to the top of the scrolling tab body so the stats stay
-    // visible while scrolling Moves / Combat. zIndex keeps it above the cards
-    // that scroll underneath.
+    // visible while scrolling Moves / Combat. Must be a direct child of the
+    // scroll body's Stack — wrapping it in a tightly-fitting element gives the
+    // sticky box no scroll range, so it stops sticking. zIndex keeps it above
+    // the cards that scroll underneath; the negative top margin trims the gap
+    // above the panel.
     <Box
       sx={
         sticky
@@ -2302,9 +2281,7 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
               position: 'sticky',
               top: 0,
               zIndex: 4,
-              // Tighten the gap above the panel once it pins to the top.
-              mt: stuck ? '-15px' : 0,
-              transition: 'margin-top 0.2s ease',
+              mt: '-15px',
             }
           : undefined
       }
@@ -2389,20 +2366,6 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
           })}
         </Box>
       </Panel>
-    </Box>
-  );
-
-  if (!sticky) return stickyInner;
-
-  // Single wrapper so the parent Stack still sees one child (no extra gap). The
-  // sentinel sits in normal flow just above the sticky panel; it scrolls out of
-  // the container's top edge exactly when the panel pins.
-  return (
-    <Box>
-      {/* 1px (offset by -1px so it adds no visible space); a 0px sentinel can
-          confuse IntersectionObserver on mobile Safari. */}
-      <Box ref={sentinelRef} aria-hidden sx={{ height: '1px', mt: '-1px' }} />
-      {stickyInner}
     </Box>
   );
 }
