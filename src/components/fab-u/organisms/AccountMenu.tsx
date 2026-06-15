@@ -228,12 +228,15 @@ function getAvatarPrimaryTraining(characterState: unknown) {
   return typeof primaryTraining === 'string' ? primaryTraining : null;
 }
 
-/** Base origin for shareable links: the configured site URL when present
- *  (production), otherwise wherever the app is currently served. */
+/** Canonical origin for shareable invite links. Defaults to the production
+ *  domain so links generated on dev/preview (or an installed PWA pointed at a
+ *  preview) still resolve for recipients; `VITE_SITE_URL` can override it. */
+const DEFAULT_SITE_ORIGIN = 'https://table-top.online';
+
 function inviteLinkOrigin() {
   const configured = import.meta.env.VITE_SITE_URL;
   if (configured && configured.trim()) return configured.trim().replace(/\/+$/, '');
-  return typeof window === 'undefined' ? '' : window.location.origin;
+  return DEFAULT_SITE_ORIGIN;
 }
 
 /** Invite section shown in a campaign's edit mode: a shareable deep link plus
