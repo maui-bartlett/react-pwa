@@ -991,7 +991,12 @@ function coerceAdvancedTechnique(
     approach: coerceApproach(raw.approach),
     level: 'learned',
     name,
-    summary: summarizeTechnique(description),
+    // Prefer the hand-authored two-line summary stored on the class data;
+    // fall back to a first-sentence summary for any class not yet updated.
+    summary:
+      typeof raw.summary === 'string' && raw.summary.trim()
+        ? raw.summary
+        : summarizeTechnique(description),
     description,
     classTechnique: true,
   }) as Technique;
@@ -4448,6 +4453,7 @@ function CanonTechniquePickerDialog({
                             fontFamily: 'Georgia, "Times New Roman", serif',
                             fontSize: '0.82rem',
                             lineHeight: 1.4,
+                            whiteSpace: 'pre-line',
                           }}
                         >
                           {technique.summary}
@@ -4579,21 +4585,61 @@ function CharacterPane() {
   useEffect(() => {
     if (!avatarClass) return;
     const hasClassMoves = character.classMoves.some((move) => !move.custom);
-    const hasClassTechnique = character.techniques.some((technique) => technique.classTechnique);
     const expectedClassTechnique = coerceAdvancedTechnique(avatarClass, character.primaryTraining);
+    const expectedClassTechniqueKey = expectedClassTechnique
+      ? getTechniquePersistenceKey(expectedClassTechnique)
+      : null;
+    const existingClassTechnique = expectedClassTechniqueKey
+      ? character.techniques.find(
+          (technique) =>
+            technique.classTechnique &&
+            getTechniquePersistenceKey(technique) === expectedClassTechniqueKey,
+        )
+      : undefined;
     const classTechniqueDeleted =
       expectedClassTechnique !== null &&
       (character.deletedTechniqueKeys ?? []).includes(
         getTechniquePersistenceKey(expectedClassTechnique),
       );
-    if (hasClassMoves && (hasClassTechnique || classTechniqueDeleted)) return;
+    // Refresh an already-present class technique when the class data's text has
+    // drifted (e.g. the new two-line summary) so existing characters pick it up
+    // without waiting on the server migration.
+    const classTechniqueNeedsRefresh =
+      expectedClassTechnique !== null &&
+      existingClassTechnique !== undefined &&
+      (existingClassTechnique.summary !== expectedClassTechnique.summary ||
+        existingClassTechnique.description !== expectedClassTechnique.description ||
+        existingClassTechnique.approach !== expectedClassTechnique.approach ||
+        existingClassTechnique.type !== expectedClassTechnique.type);
+    if (
+      hasClassMoves &&
+      (classTechniqueDeleted || (existingClassTechnique && !classTechniqueNeedsRefresh))
+    )
+      return;
     setCharacter((prev) => {
       const hydrated = applyClassDataToCharacter(prev, avatarClass);
       return {
         ...prev,
         classMoves: hasClassMoves ? prev.classMoves : hydrated.classMoves,
-        techniques:
-          hasClassTechnique || classTechniqueDeleted ? prev.techniques : hydrated.techniques,
+        techniques: classTechniqueDeleted
+          ? prev.techniques
+          : existingClassTechnique && expectedClassTechnique && expectedClassTechniqueKey
+            ? prev.techniques.map((technique) =>
+                technique.classTechnique &&
+                getTechniquePersistenceKey(technique) === expectedClassTechniqueKey
+                  ? {
+                      ...technique,
+                      type: expectedClassTechnique.type,
+                      approach: expectedClassTechnique.approach,
+                      name: expectedClassTechnique.name,
+                      summary: expectedClassTechnique.summary,
+                      description: expectedClassTechnique.description,
+                      fatigue: expectedClassTechnique.fatigue,
+                      classTechnique: true,
+                    }
+                  : technique,
+              )
+            : hydrated.techniques,
       };
     });
   }, [
@@ -5679,6 +5725,9 @@ function TechniqueAccordion({
                     fontSize: '0.86rem',
                     lineHeight: 1.5,
                     pb: 0.45,
+                    // Summaries are written as a descriptive first line plus
+                    // condensed mechanical line(s); render the newlines.
+                    whiteSpace: 'pre-line',
                     ...(open
                       ? {}
                       : {

@@ -3,6 +3,8 @@ import { ConvexError, v } from 'convex/values';
 import type { Doc } from './_generated/dataModel';
 import type { QueryCtx } from './_generated/server';
 import { internalMutation, mutation, query } from './_generated/server';
+import { AVATAR_LEGENDS_CLASS_TECHNIQUE_SUMMARIES } from './classes';
+import { AVATAR_LEGENDS_TECHNIQUE_SUMMARIES } from './gameSystems';
 import {
   canReadCharacter,
   canWriteCanonicalCharacter,
@@ -913,24 +915,12 @@ export const cleanupLegacyFields = internalMutation({
 });
 
 /**
- * Short collapsed-card blurb: first sentence of the rules text, falling back to
- * a clipped prefix. Mirrors the client's `summarizeTechnique` and the builder
- * in convex/gameSystems.ts.
- */
-function summarizeTechniqueText(text: string) {
-  const firstSentence = text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim();
-  return firstSentence && firstSentence.length <= 150
-    ? firstSentence
-    : `${text.slice(0, 118).trim()}${text.length > 118 ? '...' : ''}`;
-}
-
-/**
- * One-shot migration: give every technique already stored on an Avatar Legends
- * character a distinct collapsed summary. Earlier canon techniques were saved
- * with `summary` equal to the full `description` (the old technique() default),
- * so the collapsed card showed the whole rules text. Backfill those (and any
- * missing summary) with a first-sentence summary. Custom and class techniques
- * already carry a distinct summary, so they're left untouched. Idempotent:
+ * One-shot migration: apply the hand-authored two-line summaries (descriptive
+ * line + condensed mechanics) to every canon and class technique already stored
+ * on an Avatar Legends character, matching the new summaries in
+ * gameSystems.ts (canon, keyed by type|name) and classes.ts (class, keyed by
+ * technique name). Custom techniques and any technique not in those maps are
+ * left untouched. Idempotent:
  *   npx convex run characters:backfillAvatarLegendsTechniqueSummaries
  */
 export const backfillAvatarLegendsTechniqueSummaries = internalMutation({
@@ -954,20 +944,20 @@ export const backfillAvatarLegendsTechniqueSummaries = internalMutation({
 
       let changed = false;
       const techniques = inner.techniques.map((technique) => {
-        if (!technique || typeof technique !== 'object' || Array.isArray(technique)) return technique;
+        if (!technique || typeof technique !== 'object' || Array.isArray(technique))
+          return technique;
         const candidate = technique as Record<string, unknown>;
-        const description = typeof candidate.description === 'string' ? candidate.description : '';
-        if (!description) return technique;
-        const summary = typeof candidate.summary === 'string' ? candidate.summary : '';
-        // Only backfill techniques without a distinct short summary: missing,
-        // or a verbatim copy of the full description. Custom/class summaries
-        // differ from the description, so they're preserved.
-        if (summary && summary !== description) return technique;
-        const nextSummary = summarizeTechniqueText(description);
-        if (nextSummary === summary) return technique;
+        const name = typeof candidate.name === 'string' ? candidate.name : '';
+        const type = typeof candidate.type === 'string' ? candidate.type : '';
+        // Custom techniques carry user-written summaries; never overwrite them.
+        if (candidate.custom === true || !name) return technique;
+        const authored = candidate.classTechnique
+          ? AVATAR_LEGENDS_CLASS_TECHNIQUE_SUMMARIES[name]
+          : AVATAR_LEGENDS_TECHNIQUE_SUMMARIES[`${type}|${name}`];
+        if (!authored || candidate.summary === authored) return technique;
         changed = true;
         techniquesUpdated += 1;
-        return { ...candidate, summary: nextSummary };
+        return { ...candidate, summary: authored };
       });
 
       if (!changed) continue;

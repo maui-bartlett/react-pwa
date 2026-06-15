@@ -210,6 +210,70 @@ export const listFabulaUltimaClasses = query({
   },
 });
 
+// Hand-authored collapsed-card summaries for each class's advanced technique,
+// keyed by the technique name. Descriptive first line + condensed mechanics,
+// matching the canon technique summaries in gameSystems.ts.
+export const AVATAR_LEGENDS_CLASS_TECHNIQUE_SUMMARIES: Record<string, string> = {
+  'Pinpoint Aim':
+    'Line up a perfect shot.\nBecome Prepared; next exchange if you A&A, roll with Focus or Passion. Strike costs no fatigue to choose what it inflicts.',
+  'Tag Team':
+    'Gang up on a foe with an ally.\nChoose an engaged foe and an ally; double the fatigue, conditions, or balance shifts that ally inflicts on that foe.',
+  Anticipate:
+    "Read where a foe's momentum is taking them.\nDeclare an approach; next exchange they must use it or mark a condition.",
+  Patience:
+    'Wait for the perfect moment.\nMark 1-fatigue, become Prepared, and use an A&A technique (pay costs). Mark another to let a companion engaged with that foe also use one.',
+  'Feel the Flow':
+    'Study how your opposition fights.\nBecome Favored. If they share your training, learn their principle. If you know it, clear 1-fatigue.',
+  Divert:
+    'Take blows meant for your allies.\nWhen an ally in reach is struck this exchange, suffer it for them. If you also use Retaliate, deal +1-fatigue each time.',
+  Overwhelm:
+    'Throw a punch with all your weight.\nMark 3-fatigue to inflict Stunned on an engaged foe.',
+  'Wall of Perfection':
+    'Raise a perfect wall of defense around you and adjacent allies.\nMark 1-fatigue to block a single attack on the wall or keep an enemy from breaking through.',
+  Disorient:
+    'Pummel an engaged foe with quick blows.\nMark 1-fatigue to shift their balance away from center.',
+  'Slide Around the Blow':
+    "Slip past strikes and command a foe's attention.\nAn engaged foe must stay engaged and can only target you next exchange. If none, slip in to engage a new foe (unblockable).",
+  'Steady Stance':
+    "Assume a strong, steady stance.\nEngaged foes who A&A'd mark 1-fatigue; negate the first condition/negative status on you. If none was inflicted, become Empowered next exchange.",
+  Lure: "Put a foe off-balance by luring them in.\nName a foe; if they don't try to harm you this exchange, they mark 2-fatigue. If they do, you become Favored next exchange.",
+  'Sweep the Leg':
+    'Strike where a foe is weakest.\nIf they have 3+ total fatigue and conditions, inflict 2-fatigue. If fewer, inflict 2-fatigue but mark fatigue yourself.',
+  Break:
+    "Target a foe's vulnerable equipment.\nRender it useless or broken—possibly inflicting or overcoming a fitting status (e.g., Impaired).",
+};
+
+// Apply the authored summaries onto each AL class's stored advanced technique
+// (keyed by technique name) so the sheet's collapsed card shows the new
+// two-line format. Idempotent.
+export const applyAdvancedTechniqueSummaries = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const classes = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem', (q) =>
+        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM),
+      )
+      .collect();
+    let updated = 0;
+    for (const doc of classes) {
+      const cls = (doc.class ?? {}) as Record<string, unknown>;
+      const at =
+        cls.advancedTechnique && typeof cls.advancedTechnique === 'object'
+          ? (cls.advancedTechnique as Record<string, unknown>)
+          : null;
+      if (!at || typeof at.techniqueName !== 'string') continue;
+      const summary = AVATAR_LEGENDS_CLASS_TECHNIQUE_SUMMARIES[at.techniqueName];
+      if (!summary || at.summary === summary) continue;
+      await ctx.db.patch(doc._id, {
+        class: { ...cls, advancedTechnique: { ...at, summary } },
+      });
+      updated += 1;
+    }
+    return { scanned: classes.length, updated };
+  },
+});
+
 export const getAvatarLegendsClassByName = query({
   args: { className: v.string() },
   handler: async (ctx, args) => {
@@ -296,7 +360,9 @@ export const cleanDestinedClassTrait = internalMutation({
     const classDoc = await ctx.db
       .query('classes')
       .withIndex('by_classMetaGameSystem_className', (q) =>
-        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Destined'),
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Destined'),
       )
       .unique();
     if (!classDoc) return { updated: false };
@@ -377,7 +443,9 @@ export const cleanPillarClassTrait = internalMutation({
     const classDoc = await ctx.db
       .query('classes')
       .withIndex('by_classMetaGameSystem_className', (q) =>
-        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Pillar'),
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Pillar'),
       )
       .unique();
     if (!classDoc) return { updated: false };
@@ -414,7 +482,9 @@ export const cleanRogueClassTrait = internalMutation({
     const classDoc = await ctx.db
       .query('classes')
       .withIndex('by_classMetaGameSystem_className', (q) =>
-        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Rogue'),
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Rogue'),
       )
       .unique();
     if (!classDoc) return { updated: false };
@@ -440,7 +510,9 @@ export const fixRazorPrinciples = internalMutation({
     const classDoc = await ctx.db
       .query('classes')
       .withIndex('by_classMetaGameSystem_className', (q) =>
-        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Razor'),
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Razor'),
       )
       .unique();
     if (!classDoc) return { updated: false };
@@ -472,7 +544,9 @@ export const cleanHammerClassTrait = internalMutation({
     const classDoc = await ctx.db
       .query('classes')
       .withIndex('by_classMetaGameSystem_className', (q) =>
-        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Hammer'),
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Hammer'),
       )
       .unique();
     if (!classDoc) return { updated: false };
@@ -545,7 +619,9 @@ export const cleanRazorClassTrait = internalMutation({
     const classDoc = await ctx.db
       .query('classes')
       .withIndex('by_classMetaGameSystem_className', (q) =>
-        q.eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM).eq('class.className', 'The Razor'),
+        q
+          .eq('class.meta.gameSystem', AVATAR_LEGENDS_GAME_SYSTEM)
+          .eq('class.className', 'The Razor'),
       )
       .unique();
     if (!classDoc) return { updated: false };
