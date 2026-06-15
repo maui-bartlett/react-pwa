@@ -36,6 +36,7 @@ import {
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 import ConfirmDeleteModal from '@/components/fab-u/atoms/ConfirmDeleteModal';
+import CampaignCharacterSheets from '@/components/fab-u/organisms/CampaignCharacterSheets';
 import {
   CHARACTER_SCHEMA_VERSION,
   createRandomFabUCharacter,
@@ -1347,6 +1348,9 @@ function AccountMenu({
                               </Button>
                             </Stack>
                             <CampaignInviteSection
+                              campaignId={item.campaign._id as Id<'campaigns'>}
+                            />
+                            <CampaignCharacterSheets
                               campaignId={item.campaign._id as Id<'campaigns'>}
                             />
                           </Stack>

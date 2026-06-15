@@ -290,6 +290,43 @@ export const listCharacters = query({
   },
 });
 
+/** GM: read-only sheets for every character in the campaign, with each
+ *  character's full persisted state. Non-GM members get `canManage: false`
+ *  and no sheets (rather than an error) so the edit UI can hide the section. */
+export const listCharacterSheets = query({
+  args: { campaignId: v.id('campaigns') },
+  handler: async (ctx, args) => {
+    const member = await requireCampaignMember(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!hasGameSystem(campaign)) throw new ConvexError('CAMPAIGN_NOT_FOUND');
+    if (member.role !== 'gm') return { canManage: false as const, sheets: [] };
+
+    const links = await ctx.db
+      .query('campaignCharacters')
+      .withIndex('by_campaignId', (q) => q.eq('campaignId', args.campaignId))
+      .collect();
+    const sheets = await Promise.all(
+      links
+        .filter((link) => !link.removedAt)
+        .map(async (link) => {
+          const character = await ctx.db.get(link.characterId);
+          if (!character || character.archivedAt) return null;
+          return {
+            campaignCharacterId: link._id,
+            characterId: link.characterId,
+            role: link.role,
+            gameSystem: character.meta?.gameSystem ?? '',
+            characterState: character.characterState,
+          };
+        }),
+    );
+    return {
+      canManage: true as const,
+      sheets: sheets.filter((sheet): sheet is NonNullable<typeof sheet> => sheet !== null),
+    };
+  },
+});
+
 export const updateCampaignCharacterState = mutation({
   args: {
     campaignCharacterId: v.id('campaignCharacters'),
