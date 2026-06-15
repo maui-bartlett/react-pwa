@@ -62,7 +62,31 @@ type DiceBoxInstance = {
   clear: () => unknown;
   hide: (className?: string) => unknown;
   show: () => unknown;
+  updateConfig: (config: Record<string, unknown>) => Promise<unknown> | unknown;
 };
+
+// Physics-box geometry, mirrored from @3d-dice/dice-box's internals so we can
+// pin where dice are thrown from. The box is `DICE_BOX_SIZE` deep; its width is
+// scaled by the canvas aspect ratio. Walls sit at left = -x, top = -z, so the
+// upper-left corner is (-size*aspect/2, _, -size/2), inset by an edge margin.
+const DICE_BOX_SIZE = 9.5;
+const DICE_BOX_EDGE_MARGIN = 0.5;
+const DICE_BOX_STARTING_HEIGHT = 4;
+
+function getUpperLeftStartPosition(): [number, number, number] {
+  let aspect = 1;
+  if (typeof document !== 'undefined') {
+    const canvas = document.querySelector<HTMLElement>('#tabletop-dice-box canvas');
+    const width = canvas?.clientWidth ?? 0;
+    const height = canvas?.clientHeight ?? 0;
+    if (width > 0 && height > 0) aspect = width / height;
+  }
+  return [
+    -(DICE_BOX_SIZE * aspect) / 2 + DICE_BOX_EDGE_MARGIN,
+    DICE_BOX_STARTING_HEIGHT,
+    -DICE_BOX_SIZE / 2 + DICE_BOX_EDGE_MARGIN,
+  ];
+}
 
 type DiceTrayStyle = {
   left: number;
@@ -560,12 +584,15 @@ function DiceRoller() {
           gravity: 2,
           mass: 1,
           friction: 0.8,
-          restitution: 0,
+          // Let dice rebound off the container walls instead of dead-stopping.
+          restitution: 0.45,
           linearDamping: 0.8,
           angularDamping: 0.8,
           spinForce: 2.8,
-          throwForce: 3.5,
-          startingHeight: 4,
+          // Higher ceiling on the (randomized) throw impulse so each roll lands
+          // with noticeably varying force as it travels from the upper-left.
+          throwForce: 5,
+          startingHeight: DICE_BOX_STARTING_HEIGHT,
           settleTimeout: 1600,
           delay: 10,
           offscreen: false,
@@ -661,6 +688,12 @@ function DiceRoller() {
       window.dispatchEvent(new Event('resize'));
       diceBoxRef.current.show();
       await waitForNextPaint();
+
+      // Pin the throw origin to the upper-left corner of the (now sized) tray.
+      // With newStartPoint:false the worker reuses this position instead of
+      // picking a random edge, so every roll launches from the same corner.
+      await diceBoxRef.current.updateConfig({ startPosition: getUpperLeftStartPosition() });
+      if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
 
       const results = await diceBoxRef.current.roll(notation, {
         themeColor: appAccent,

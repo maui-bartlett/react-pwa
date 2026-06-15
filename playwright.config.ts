@@ -64,6 +64,13 @@ export default defineConfig({
               name: 'table-top-last-seen-version',
               value: pwaVersion,
             },
+            {
+              // Suppress the Convex-driven update banner; it's a fixed top bar
+              // that overlays the header and would intercept header clicks when
+              // the test build trails the version published to Convex.
+              name: 'table-top-suppress-update-prompt',
+              value: '1',
+            },
           ],
         },
       ],

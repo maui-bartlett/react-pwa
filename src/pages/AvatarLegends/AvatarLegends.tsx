@@ -459,6 +459,8 @@ const elementFilterFrames: Record<Exclude<TechniqueElementFilter, 'all' | 'basic
   universal: '#173755',
   group: '#5b5368',
   martial: '#4a2c12',
+  // Class (playbook) techniques share the muted-gold "C" frame.
+  class: '#4a3c12',
 };
 const primaryTrainingOptions: PrimaryTraining[] = [
   'Waterbending',
@@ -626,7 +628,10 @@ const backpackSubTabAtom = atom(0);
 const techniqueFilterAtom = atom(0);
 // Element filter for the Techniques sub-tab. 'all' shows every card;
 // otherwise only techniques whose `element` matches are visible.
-type TechniqueElementFilter = TechniqueElement | 'all';
+// 'class' is a cross-cutting filter (any element) for playbook/class
+// techniques, which carry the `classTechnique` flag rather than a distinct
+// element type.
+type TechniqueElementFilter = TechniqueElement | 'all' | 'class';
 const techniqueElementAtom = atom<TechniqueElementFilter>('all');
 
 // ---------- Character data shapes ----------
@@ -986,7 +991,12 @@ function coerceAdvancedTechnique(
     approach: coerceApproach(raw.approach),
     level: 'learned',
     name,
-    summary: summarizeTechnique(description),
+    // Prefer the hand-authored two-line summary stored on the class data;
+    // fall back to a first-sentence summary for any class not yet updated.
+    summary:
+      typeof raw.summary === 'string' && raw.summary.trim()
+        ? raw.summary
+        : summarizeTechnique(description),
     description,
     classTechnique: true,
   }) as Technique;
@@ -2261,11 +2271,26 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
     setStats((prev) => ({ ...prev, [label]: clamped }));
   }
   const statOptions = [-3, -2, -1, 0, 1, 2, 3];
+
   return (
     // When sticky, pin to the top of the scrolling tab body so the stats stay
-    // visible while scrolling Moves / Combat. zIndex keeps it above the cards
-    // that scroll underneath.
-    <Box sx={sticky ? { position: 'sticky', top: 0, zIndex: 4 } : undefined}>
+    // visible while scrolling Moves / Combat. Must be a direct child of the
+    // scroll body's Stack — wrapping it in a tightly-fitting element gives the
+    // sticky box no scroll range, so it stops sticking. zIndex keeps it above
+    // the cards that scroll underneath; the negative top margin trims the gap
+    // above the panel.
+    <Box
+      sx={
+        sticky
+          ? {
+              position: 'sticky',
+              top: 0,
+              zIndex: 4,
+              mt: '-15px',
+            }
+          : undefined
+      }
+    >
       <Panel>
         <SectionTitle>Stats</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.8, mt: 0.9 }}>
@@ -2983,11 +3008,17 @@ function splitClassTraitPlainText(text: string, allowLabelHeaders: boolean): Cla
   const trimmed = text.trim();
   if (!trimmed) return [];
 
-  // In line-structured (cleaned) text, a standalone line ending in a colon or
-  // ellipsis is a list label / section heading ("Choose where your team is
-  // without you:", "Earn 1-Team when…"). Only when the source uses line breaks,
-  // so an un-cleaned class's long colon-ending intro isn't turned into a header.
-  if (allowLabelHeaders && /(:|…|\.\.\.)$/.test(trimmed) && /^[A-Z(]/.test(trimmed)) {
+  // In line-structured (cleaned) text, a short standalone line ending in a
+  // colon or ellipsis is a list label / section heading ("Choose where your
+  // team is without you:", "Earn 1-Team when…"). The word cap keeps a long
+  // colon-ending lead-in sentence (e.g. "…to the following questions:") a
+  // paragraph rather than a giant uppercase header.
+  if (
+    allowLabelHeaders &&
+    /(:|…|\.\.\.)$/.test(trimmed) &&
+    /^[A-Z(]/.test(trimmed) &&
+    trimmed.split(/\s+/).length <= 14
+  ) {
     return [{ kind: 'header', text: trimmed }];
   }
 
@@ -3795,7 +3826,10 @@ function ElementMark({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: ink,
+        // U / G / C (and any first-letter fallback) sit on a dark element
+        // frame, so render the letter in solid white for legibility — no
+        // dimmed ink and no translucent overlay washing over the glyph.
+        color: '#ffffff',
         fontFamily: '"IM Fell English", Georgia, serif',
         fontWeight: 900,
         fontSize: size * 0.42,
@@ -3825,15 +3859,21 @@ function ElementMark({
   );
 }
 
-function getTechniqueElementFilters(): Array<{
+function getTechniqueElementFilters(options: { includeClass?: boolean } = {}): Array<{
   key: TechniqueElementFilter;
   label: string;
   color: string;
   src: string | null;
 }> {
+  const { includeClass = true } = options;
   return [
     { key: 'all', label: 'All', color: ink, src: null },
     { key: 'basic', label: 'Basic', color: ink, src: null },
+    // Class is only meaningful for the character's own techniques, not the
+    // canon picker (canon techniques never carry the class flag).
+    ...(includeClass
+      ? [{ key: 'class' as const, label: 'Class', color: bookAccent, src: null }]
+      : []),
     { key: 'universal', label: 'Universal', color: ink, src: null },
     { key: 'group', label: 'Group', color: brown, src: null },
     { key: 'waterbending', label: 'Water', color: water, src: elementWater },
@@ -3849,9 +3889,12 @@ function getTechniqueElementFilters(): Array<{
 function TechniqueElementFilterRow({
   value,
   onChange,
+  includeClass = true,
 }: {
   value: TechniqueElementFilter;
   onChange: (next: TechniqueElementFilter) => void;
+  /** Show the cross-cutting "Class" chip. Off for the canon picker. */
+  includeClass?: boolean;
 }) {
   const { isDarkMode } = useThemeMode();
   return (
@@ -3873,7 +3916,7 @@ function TechniqueElementFilterRow({
           '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
-        {getTechniqueElementFilters().map((entry) => {
+        {getTechniqueElementFilters({ includeClass }).map((entry) => {
           const isActive = value === entry.key;
           const frameColor =
             entry.key === 'all' || entry.key === 'basic' ? deepInk : elementFilterFrames[entry.key];
@@ -4304,6 +4347,7 @@ function CanonTechniquePickerDialog({
           </Typography>
           <TechniqueElementFilterRow
             value={filter}
+            includeClass={false}
             onChange={(next) => {
               onFilterChange(next);
               onSelectTechniqueName('');
@@ -4409,6 +4453,7 @@ function CanonTechniquePickerDialog({
                             fontFamily: 'Georgia, "Times New Roman", serif',
                             fontSize: '0.82rem',
                             lineHeight: 1.4,
+                            whiteSpace: 'pre-line',
                           }}
                         >
                           {technique.summary}
@@ -4540,21 +4585,61 @@ function CharacterPane() {
   useEffect(() => {
     if (!avatarClass) return;
     const hasClassMoves = character.classMoves.some((move) => !move.custom);
-    const hasClassTechnique = character.techniques.some((technique) => technique.classTechnique);
     const expectedClassTechnique = coerceAdvancedTechnique(avatarClass, character.primaryTraining);
+    const expectedClassTechniqueKey = expectedClassTechnique
+      ? getTechniquePersistenceKey(expectedClassTechnique)
+      : null;
+    const existingClassTechnique = expectedClassTechniqueKey
+      ? character.techniques.find(
+          (technique) =>
+            technique.classTechnique &&
+            getTechniquePersistenceKey(technique) === expectedClassTechniqueKey,
+        )
+      : undefined;
     const classTechniqueDeleted =
       expectedClassTechnique !== null &&
       (character.deletedTechniqueKeys ?? []).includes(
         getTechniquePersistenceKey(expectedClassTechnique),
       );
-    if (hasClassMoves && (hasClassTechnique || classTechniqueDeleted)) return;
+    // Refresh an already-present class technique when the class data's text has
+    // drifted (e.g. the new two-line summary) so existing characters pick it up
+    // without waiting on the server migration.
+    const classTechniqueNeedsRefresh =
+      expectedClassTechnique !== null &&
+      existingClassTechnique !== undefined &&
+      (existingClassTechnique.summary !== expectedClassTechnique.summary ||
+        existingClassTechnique.description !== expectedClassTechnique.description ||
+        existingClassTechnique.approach !== expectedClassTechnique.approach ||
+        existingClassTechnique.type !== expectedClassTechnique.type);
+    if (
+      hasClassMoves &&
+      (classTechniqueDeleted || (existingClassTechnique && !classTechniqueNeedsRefresh))
+    )
+      return;
     setCharacter((prev) => {
       const hydrated = applyClassDataToCharacter(prev, avatarClass);
       return {
         ...prev,
         classMoves: hasClassMoves ? prev.classMoves : hydrated.classMoves,
-        techniques:
-          hasClassTechnique || classTechniqueDeleted ? prev.techniques : hydrated.techniques,
+        techniques: classTechniqueDeleted
+          ? prev.techniques
+          : existingClassTechnique && expectedClassTechnique && expectedClassTechniqueKey
+            ? prev.techniques.map((technique) =>
+                technique.classTechnique &&
+                getTechniquePersistenceKey(technique) === expectedClassTechniqueKey
+                  ? {
+                      ...technique,
+                      type: expectedClassTechnique.type,
+                      approach: expectedClassTechnique.approach,
+                      name: expectedClassTechnique.name,
+                      summary: expectedClassTechnique.summary,
+                      description: expectedClassTechnique.description,
+                      fatigue: expectedClassTechnique.fatigue,
+                      classTechnique: true,
+                    }
+                  : technique,
+              )
+            : hydrated.techniques,
       };
     });
   }, [
@@ -5011,6 +5096,9 @@ function MoveAccordion({
             width: '100%',
             gap: 0.9,
             p: 0,
+            // Give collapsed Moves cards a bit more vertical presence; when
+            // open the body content sets the height so no min is needed.
+            minHeight: open ? undefined : 34,
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -5637,6 +5725,9 @@ function TechniqueAccordion({
                     fontSize: '0.86rem',
                     lineHeight: 1.5,
                     pb: 0.45,
+                    // Summaries are written as a descriptive first line plus
+                    // condensed mechanical line(s); render the newlines.
+                    whiteSpace: 'pre-line',
                     ...(open
                       ? {}
                       : {
@@ -5827,7 +5918,12 @@ function CombatPane() {
     const targetLevel: TechniqueLevel | null =
       techFilter === 0 ? null : (['learned', 'practiced', 'mastered'] as const)[techFilter - 1];
     return techniques.filter((tech) => {
-      const elementOk = elementFilter === 'all' || tech.type === elementFilter;
+      const elementOk =
+        elementFilter === 'all'
+          ? true
+          : elementFilter === 'class'
+            ? Boolean(tech.classTechnique)
+            : tech.type === elementFilter;
       const levelOk = targetLevel === null || tech.level === targetLevel;
       return elementOk && levelOk;
     });
@@ -5869,7 +5965,7 @@ function CombatPane() {
   const addCustomTechnique = () => {
     setCharacterState((prev) => {
       const nextType =
-        elementFilter !== 'all' && elementFilter !== 'basic'
+        elementFilter !== 'all' && elementFilter !== 'basic' && elementFilter !== 'class'
           ? elementFilter
           : trainingToTechniqueType(prev.primaryTraining);
       return {
@@ -6954,17 +7050,10 @@ function FatigueCard({
                   </Typography>
                 ) : null}
               </Stack>
+              {/* Base diamonds first (left), then temp diamonds expand to the
+                  right, so the bar grows rightward as temporary capacity is
+                  added. */}
               <Stack direction="row" flexWrap="wrap" gap={0.7}>
-                {tempFatigue.map((filled, index) => (
-                  <FatigueDiamond
-                    key={`temp-${index}`}
-                    filled={filled}
-                    color={tempFatigueColor}
-                    size={28}
-                    ariaLabel={`Toggle temporary fatigue ${index + 1}`}
-                    onToggle={() => toggleTempFatigue(index)}
-                  />
-                ))}
                 {Array.from({ length: baseFatigue.length }).map((_, index) => (
                   <FatigueDiamond
                     key={`base-${index}`}
@@ -6973,6 +7062,16 @@ function FatigueCard({
                     size={28}
                     ariaLabel={`Toggle base fatigue ${index + 1}`}
                     onToggle={() => toggleBaseFatigue(index)}
+                  />
+                ))}
+                {tempFatigue.map((filled, index) => (
+                  <FatigueDiamond
+                    key={`temp-${index}`}
+                    filled={filled}
+                    color={tempFatigueColor}
+                    size={28}
+                    ariaLabel={`Toggle temporary fatigue ${index + 1}`}
+                    onToggle={() => toggleTempFatigue(index)}
                   />
                 ))}
               </Stack>
@@ -7791,10 +7890,12 @@ function AvatarLegends() {
                 // scroll over.
                 // Footer pb dropped by 8px (see below) — content reserve
                 // shrinks to match so the last row sits flush against the
-                // nav top.
-                pb: `calc(76px + ${bottomSafeAreaPadding})`,
+                // nav top. The +150px also clears the floating dice-roller FAB
+                // (which sits ~128px above the nav) so the last content isn't
+                // hidden under it.
+                pb: `calc(226px + ${bottomSafeAreaPadding})`,
                 '@supports (-moz-appearance: none)': {
-                  pb: `calc(76px + ${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
+                  pb: `calc(226px + ${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
                 },
               }}
             >

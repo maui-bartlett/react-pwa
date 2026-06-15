@@ -3,6 +3,8 @@ import { ConvexError, v } from 'convex/values';
 import type { Doc } from './_generated/dataModel';
 import type { QueryCtx } from './_generated/server';
 import { internalMutation, mutation, query } from './_generated/server';
+import { AVATAR_LEGENDS_CLASS_TECHNIQUE_SUMMARIES } from './classes';
+import { AVATAR_LEGENDS_TECHNIQUE_SUMMARIES } from './gameSystems';
 import {
   canReadCharacter,
   canWriteCanonicalCharacter,
@@ -909,5 +911,62 @@ export const cleanupLegacyFields = internalMutation({
       cleaned += 1;
     }
     return { scanned: rows.length, cleaned };
+  },
+});
+
+/**
+ * One-shot migration: apply the hand-authored two-line summaries (descriptive
+ * line + condensed mechanics) to every canon and class technique already stored
+ * on an Avatar Legends character, matching the new summaries in
+ * gameSystems.ts (canon, keyed by type|name) and classes.ts (class, keyed by
+ * technique name). Custom techniques and any technique not in those maps are
+ * left untouched. Idempotent:
+ *   npx convex run characters:backfillAvatarLegendsTechniqueSummaries
+ */
+export const backfillAvatarLegendsTechniqueSummaries = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let charactersUpdated = 0;
+    let techniquesUpdated = 0;
+    for (const row of rows) {
+      if (row.meta?.gameSystem !== 'avatar-legends') continue;
+      const state = row.characterState;
+      if (!state || typeof state !== 'object' || Array.isArray(state)) continue;
+      const stateObj = state as Record<string, unknown>;
+      const inner =
+        stateObj.character &&
+        typeof stateObj.character === 'object' &&
+        !Array.isArray(stateObj.character)
+          ? (stateObj.character as Record<string, unknown>)
+          : null;
+      if (!inner || !Array.isArray(inner.techniques)) continue;
+
+      let changed = false;
+      const techniques = inner.techniques.map((technique) => {
+        if (!technique || typeof technique !== 'object' || Array.isArray(technique))
+          return technique;
+        const candidate = technique as Record<string, unknown>;
+        const name = typeof candidate.name === 'string' ? candidate.name : '';
+        const type = typeof candidate.type === 'string' ? candidate.type : '';
+        // Custom techniques carry user-written summaries; never overwrite them.
+        if (candidate.custom === true || !name) return technique;
+        const authored = candidate.classTechnique
+          ? AVATAR_LEGENDS_CLASS_TECHNIQUE_SUMMARIES[name]
+          : AVATAR_LEGENDS_TECHNIQUE_SUMMARIES[`${type}|${name}`];
+        if (!authored || candidate.summary === authored) return technique;
+        changed = true;
+        techniquesUpdated += 1;
+        return { ...candidate, summary: authored };
+      });
+
+      if (!changed) continue;
+      await ctx.db.patch(row._id, {
+        characterState: { ...stateObj, character: { ...inner, techniques } },
+        updatedAt: Date.now(),
+      });
+      charactersUpdated += 1;
+    }
+    return { scanned: rows.length, charactersUpdated, techniquesUpdated };
   },
 });

@@ -14,6 +14,20 @@ import { api } from '../../../convex/_generated/api';
 // client was offline at the moment of the deploy).
 const UPDATE_POLL_MS = 60_000;
 
+// E2E kill-switch. The banner is a fixed top bar that overlays the header, so
+// when a newer build is advertised (common in CI, where the test build trails
+// the version real users have already published to Convex) it would intercept
+// clicks on header controls. Tests seed this localStorage flag to suppress it.
+const SUPPRESS_KEY = 'table-top-suppress-update-prompt';
+
+function isSuppressed() {
+  try {
+    return typeof window !== 'undefined' && window.localStorage.getItem(SUPPRESS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Numeric-aware comparison of two `YYYY.MM.DD.N` build versions. Positive when
  * `a` is newer than `b`. Mirrors the server-side compare in convex/appVersion.
@@ -94,7 +108,7 @@ function AppUpdatePrompt() {
     setDismissed(false);
   }, [serverVersion]);
 
-  if ((!serverAhead && !needRefresh) || dismissed) return null;
+  if (isSuppressed() || (!serverAhead && !needRefresh) || dismissed) return null;
 
   async function applyUpdate() {
     try {
