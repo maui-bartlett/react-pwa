@@ -7797,10 +7797,12 @@ function AvatarLegends() {
                 // scroll over.
                 // Footer pb dropped by 8px (see below) — content reserve
                 // shrinks to match so the last row sits flush against the
-                // nav top.
-                pb: `calc(76px + ${bottomSafeAreaPadding})`,
+                // nav top. The +150px also clears the floating dice-roller FAB
+                // (which sits ~128px above the nav) so the last content isn't
+                // hidden under it.
+                pb: `calc(226px + ${bottomSafeAreaPadding})`,
                 '@supports (-moz-appearance: none)': {
-                  pb: `calc(76px + ${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
+                  pb: `calc(226px + ${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
                 },
               }}
             >
