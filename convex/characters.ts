@@ -911,3 +911,72 @@ export const cleanupLegacyFields = internalMutation({
     return { scanned: rows.length, cleaned };
   },
 });
+
+/**
+ * Short collapsed-card blurb: first sentence of the rules text, falling back to
+ * a clipped prefix. Mirrors the client's `summarizeTechnique` and the builder
+ * in convex/gameSystems.ts.
+ */
+function summarizeTechniqueText(text: string) {
+  const firstSentence = text.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim();
+  return firstSentence && firstSentence.length <= 150
+    ? firstSentence
+    : `${text.slice(0, 118).trim()}${text.length > 118 ? '...' : ''}`;
+}
+
+/**
+ * One-shot migration: give every technique already stored on an Avatar Legends
+ * character a distinct collapsed summary. Earlier canon techniques were saved
+ * with `summary` equal to the full `description` (the old technique() default),
+ * so the collapsed card showed the whole rules text. Backfill those (and any
+ * missing summary) with a first-sentence summary. Custom and class techniques
+ * already carry a distinct summary, so they're left untouched. Idempotent:
+ *   npx convex run characters:backfillAvatarLegendsTechniqueSummaries
+ */
+export const backfillAvatarLegendsTechniqueSummaries = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('characters').collect();
+    let charactersUpdated = 0;
+    let techniquesUpdated = 0;
+    for (const row of rows) {
+      if (row.meta?.gameSystem !== 'avatar-legends') continue;
+      const state = row.characterState;
+      if (!state || typeof state !== 'object' || Array.isArray(state)) continue;
+      const stateObj = state as Record<string, unknown>;
+      const inner =
+        stateObj.character &&
+        typeof stateObj.character === 'object' &&
+        !Array.isArray(stateObj.character)
+          ? (stateObj.character as Record<string, unknown>)
+          : null;
+      if (!inner || !Array.isArray(inner.techniques)) continue;
+
+      let changed = false;
+      const techniques = inner.techniques.map((technique) => {
+        if (!technique || typeof technique !== 'object' || Array.isArray(technique)) return technique;
+        const candidate = technique as Record<string, unknown>;
+        const description = typeof candidate.description === 'string' ? candidate.description : '';
+        if (!description) return technique;
+        const summary = typeof candidate.summary === 'string' ? candidate.summary : '';
+        // Only backfill techniques without a distinct short summary: missing,
+        // or a verbatim copy of the full description. Custom/class summaries
+        // differ from the description, so they're preserved.
+        if (summary && summary !== description) return technique;
+        const nextSummary = summarizeTechniqueText(description);
+        if (nextSummary === summary) return technique;
+        changed = true;
+        techniquesUpdated += 1;
+        return { ...candidate, summary: nextSummary };
+      });
+
+      if (!changed) continue;
+      await ctx.db.patch(row._id, {
+        characterState: { ...stateObj, character: { ...inner, techniques } },
+        updatedAt: Date.now(),
+      });
+      charactersUpdated += 1;
+    }
+    return { scanned: rows.length, charactersUpdated, techniquesUpdated };
+  },
+});
