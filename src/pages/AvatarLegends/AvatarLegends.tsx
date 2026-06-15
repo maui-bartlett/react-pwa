@@ -2282,10 +2282,11 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
     // padding), so shrink the observer's top by that padding — then the
     // sentinel "leaves" exactly when the panel becomes pinned.
     const padTop = scrollRoot ? parseFloat(getComputedStyle(scrollRoot).paddingTop) || 0 : 0;
-    const observer = new IntersectionObserver(
-      ([entry]) => setStuck(!entry.isIntersecting),
-      { root: scrollRoot, rootMargin: `-${padTop}px 0px 0px 0px`, threshold: [0] },
-    );
+    const observer = new IntersectionObserver(([entry]) => setStuck(!entry.isIntersecting), {
+      root: scrollRoot,
+      rootMargin: `-${padTop}px 0px 0px 0px`,
+      threshold: [0],
+    });
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [sticky]);
