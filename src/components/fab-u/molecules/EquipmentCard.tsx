@@ -466,6 +466,7 @@ function EquipmentCard({
           return (
             <Box
               key={slot}
+              data-pw={`equip-slot-add-${slot.replace(/\s+/g, '-').toLowerCase()}`}
               onClick={() => onAddSlotItem?.(slot)}
               sx={{
                 border: `1px dashed ${fabUTokens.color.highlight}`,

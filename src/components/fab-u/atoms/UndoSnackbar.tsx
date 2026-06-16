@@ -51,7 +51,7 @@ function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000, colors }: UndoS
           // width 72; the 66px button centers at right+36), in the gap between
           // the dice button and the footer. Matches the dice button's size.
           right: { xs: 18, sm: 37 },
-          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 63px)', sm: 65 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 53px)', sm: 55 },
           width: 66,
           height: 66,
           bgcolor: colors.bg,
@@ -59,7 +59,7 @@ function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000, colors }: UndoS
           boxShadow: colors.shadow,
           // zIndex above MUI Dialog/Popover (1300), below tooltip (1500).
           zIndex: 1400,
-          border: `1px solid ${colors.border}`,
+          border: `2px solid ${colors.border}`,
           transition: 'transform 150ms ease, background-color 150ms ease',
           '&:hover': {
             bgcolor: bgStrong,

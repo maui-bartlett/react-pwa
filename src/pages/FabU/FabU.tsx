@@ -47,6 +47,11 @@ import {
   HeaderBar,
   type HpMpKind,
   HpMpManagementModal,
+  ItemPickerDialog,
+  type CatalogItem,
+  type EquipmentSlot,
+  catalogItemBackpackSubtitle,
+  catalogItemToEquipment,
   MobileScreen,
   PrimaryNavBar,
   SegmentedTabs,
@@ -1283,18 +1288,52 @@ function FabU() {
     }));
   };
 
-  const handleAddBackpackItem = () => {
-    setCharacter((prev) => ({
-      ...prev,
-      backpack: [...prev.backpack, { id: String(Date.now()), title: 'New Item', subtitle: '' }],
-    }));
+  // Item picker (catalog vs. custom). `slot === 'all'` targets the Backpack;
+  // otherwise it fills the named Equipment slot.
+  const [itemPicker, setItemPicker] = useState<{ slot: EquipmentSlot | 'all' } | null>(null);
+
+  const handleAddBackpackItem = () => setItemPicker({ slot: 'all' });
+
+  const handleAddEquipmentItem = (slot: string) =>
+    setItemPicker({ slot: slot as EquipmentSlot });
+
+  // Append a blank custom entry (preserves the prior "New Item" behavior).
+  const addCustomItem = () => {
+    const target = itemPicker?.slot;
+    if (target === 'all') {
+      setCharacter((prev) => ({
+        ...prev,
+        backpack: [...prev.backpack, { id: String(Date.now()), title: 'New Item', subtitle: '' }],
+      }));
+    } else if (target) {
+      setCharacter((prev) => ({
+        ...prev,
+        equipment: [...prev.equipment, { name: 'New Item', slot: target, description: '' }],
+      }));
+    }
   };
 
-  const handleAddEquipmentItem = (slot: string) => {
-    setCharacter((prev) => ({
-      ...prev,
-      equipment: [...prev.equipment, { name: 'New Item', slot, description: '' }],
-    }));
+  // Append a Fabula Ultima catalog item to the targeted slot/backpack.
+  const addCatalogItem = (item: CatalogItem) => {
+    const target = itemPicker?.slot;
+    if (target === 'all') {
+      setCharacter((prev) => ({
+        ...prev,
+        backpack: [
+          ...prev.backpack,
+          {
+            id: String(Date.now()),
+            title: item.name,
+            subtitle: catalogItemBackpackSubtitle(item),
+          },
+        ],
+      }));
+    } else if (target) {
+      setCharacter((prev) => ({
+        ...prev,
+        equipment: [...prev.equipment, catalogItemToEquipment(item, target)],
+      }));
+    }
   };
 
   const handleAddSpell = (className: string, spell: import('@/components/fab-u').SpellRow) =>
@@ -2879,10 +2918,17 @@ function FabU() {
         colors={{
           bg: fabUTokens.color.brand,
           fg: fabUTokens.color.brandFg,
-          border: fabUTokens.color.brandStrong,
+          border: '#ffffff',
           shadow: fabUTokens.shadow.card,
           bgStrong: fabUTokens.color.brandStrong,
         }}
+      />
+      <ItemPickerDialog
+        open={itemPicker !== null}
+        slot={itemPicker?.slot ?? 'all'}
+        onClose={() => setItemPicker(null)}
+        onSelectItem={addCatalogItem}
+        onAddCustom={addCustomItem}
       />
     </FabUThemeProvider>
   );
