@@ -45,4 +45,23 @@ test.describe('Class card surfaces lone custom skill name', () => {
     await expect(classRow).toContainText('Phantom Strike');
     await expect(classRow).not.toContainText('No skills recorded yet');
   });
+
+  test('class card shows actually-selected skills instead of curated subtitle', async ({
+    page,
+  }) => {
+    await page.goto('/fab-u');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+
+    // The default Tinkerer class is seeded with the curated subtitle
+    // "Emergency Item · improvised gear in conflict" but its only selected skill
+    // is "Emergency Item" — the card should now reflect the selected skill only.
+    const tinkererRow = page
+      .locator('[data-pw="detail-list-row"]')
+      .filter({ hasText: 'Tinkerer' })
+      .first();
+    await tinkererRow.scrollIntoViewIfNeeded();
+
+    await expect(tinkererRow).toContainText('Emergency Item');
+    await expect(tinkererRow).not.toContainText('improvised gear in conflict');
+  });
 });

@@ -1582,18 +1582,15 @@ function FabU() {
           onItemClick={navigateToClassSkills}
           onRemoveItem={removeClass}
           items={character.classes.map((cls) => {
-            // When a class has no curated subtitle yet (e.g. freshly added and a
-            // single custom skill was just recorded), surface the skill name(s)
-            // on the card instead of the "No skills recorded yet" placeholder.
+            // Show the class's actually-selected skills (dot-separated) in the
+            // subtitle. Fall back to the stored subtitle (curated text or the
+            // "No skills recorded yet" placeholder) only when none are selected.
             const skillNames =
               character.skillGroups
                 .find((g) => g.className === cls.name)
                 ?.skills.map((s) => s.name?.trim())
                 .filter(Boolean) ?? [];
-            const subtitle =
-              cls.subtitle === NO_SKILLS_SUBTITLE && skillNames.length > 0
-                ? skillNames.join(' · ')
-                : cls.subtitle;
+            const subtitle = skillNames.length > 0 ? skillNames.join(' · ') : cls.subtitle;
             return {
               title: cls.name,
               subtitle,
