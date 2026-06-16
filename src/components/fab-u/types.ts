@@ -41,6 +41,9 @@ export type StatPillData = {
   minHeight?: number | string;
   onChange?: (value: number) => void;
   onChangeSuffix?: (value: number | null) => void;
+  /** When set, clicking the pill runs this instead of inline editing — used to
+   *  open the HP/MP management modal. Takes precedence over onChange clicks. */
+  onManage?: () => void;
   valueSuffix?: string;
   valueGroupMinWidth?: string;
   /** When set, the committed value is clamped to [0, maxValue]. */

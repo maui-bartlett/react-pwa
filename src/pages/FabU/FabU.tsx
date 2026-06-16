@@ -45,6 +45,8 @@ import {
   FabUTab,
   FabUThemeProvider,
   HeaderBar,
+  type HpMpKind,
+  HpMpManagementModal,
   MobileScreen,
   PrimaryNavBar,
   SegmentedTabs,
@@ -756,6 +758,8 @@ function FabU() {
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
+  // Which HP/MP management modal is open (clicking an HP/MP pill opens it).
+  const [hpMpModal, setHpMpModal] = useState<HpMpKind | null>(null);
   useEffect(() => {
     if (!notEnoughMpToastOpen) return;
     const t = setTimeout(() => setNotEnoughMpToastOpen(false), 2400);
@@ -858,6 +862,8 @@ function FabU() {
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
+  const setHpBonus = (v: number) => setCharacter((c) => ({ ...c, hpBonus: v }));
+  const setMpBonus = (v: number) => setCharacter((c) => ({ ...c, mpBonus: v }));
   const setCurrentXP = (v: number) =>
     setCharacter((c) => {
       if (v <= c.totalXP) return { ...c, currentXP: v };
@@ -1504,7 +1510,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
-              onChange: setCurrentHP,
+              onManage: () => setHpMpModal('hp'),
               maxValue: totalHP,
               pw: 'ov-hp',
             },
@@ -1514,7 +1520,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onChange: setCurrentMP,
+              onManage: () => setHpMpModal('mp'),
               maxValue: totalMP,
               pw: 'ov-mp',
             },
@@ -1612,7 +1618,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
-              onChange: setCurrentHP,
+              onManage: () => setHpMpModal('hp'),
               maxValue: totalHP,
               pw: 'cb-hp',
             },
@@ -1622,7 +1628,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onChange: setCurrentMP,
+              onManage: () => setHpMpModal('mp'),
               maxValue: totalMP,
               pw: 'cb-mp',
             },
@@ -2338,7 +2344,7 @@ function FabU() {
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
               pw: 'hp',
-              onChange: setCurrentHP,
+              onManage: () => setHpMpModal('hp'),
               maxValue: totalHP,
               toneColor: fabUTokens.color.hp,
             },
@@ -2347,7 +2353,7 @@ function FabU() {
               value: String(character.currentMP),
               valueSuffix: ` / ${totalMP}`,
               pw: 'mp',
-              onChange: setCurrentMP,
+              onManage: () => setHpMpModal('mp'),
               maxValue: totalMP,
               toneColor: fabUTokens.color.mp,
             },
@@ -2853,6 +2859,18 @@ function FabU() {
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
+      {hpMpModal ? (
+        <HpMpManagementModal
+          open
+          kind={hpMpModal}
+          current={hpMpModal === 'hp' ? character.currentHP : character.currentMP}
+          max={hpMpModal === 'hp' ? totalHP : totalMP}
+          modifier={hpMpModal === 'hp' ? character.hpBonus : character.mpBonus}
+          onApply={hpMpModal === 'hp' ? setCurrentHP : setCurrentMP}
+          onChangeModifier={hpMpModal === 'hp' ? setHpBonus : setMpBonus}
+          onClose={() => setHpMpModal(null)}
+        />
+      ) : null}
       <UndoSnackbar
         open={undoOpen}
         onUndo={handleUndoFromSnackbar}
