@@ -155,7 +155,7 @@ function BondRow({ bond, onOpenMenu, onRemove, onRename }: BondRowProps) {
               transition: 'max-height 60ms ease-in 340ms',
             }
           : {
-              maxHeight: removing ? 0 : '200px',
+              maxHeight: removing ? 0 : 'none',
               opacity: removing ? 0 : 1,
               transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
             }),

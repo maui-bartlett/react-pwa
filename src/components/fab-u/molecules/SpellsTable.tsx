@@ -232,7 +232,7 @@ function SwipeableSpellRow({
             }
           : {
               overflow: removing ? 'hidden' : 'visible',
-              maxHeight: removing ? 0 : '300px',
+              maxHeight: removing ? 0 : 'none',
               opacity: removing ? 0 : 1,
               transition: removing ? 'max-height 0.32s ease 0.1s, opacity 0.22s ease 0.1s' : 'none',
             }),
