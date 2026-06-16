@@ -29,7 +29,9 @@ test.describe('HP / MP pills — Spells tab (mobile viewport)', () => {
     await page.locator('[data-pw="metric-hp"]').click();
     await expect(page.locator('[data-pw="hp-management-modal"]')).toBeVisible();
 
-    await page.locator('[data-pw="hp-management-amount-input"]').fill('10');
+    const amount = page.locator('[data-pw="hp-management-amount-input"]');
+    await amount.fill('10');
+    await expect(amount).toHaveValue('10');
     await page.locator('[data-pw="hp-management-subtract"]').click();
     await page.locator('[data-pw="hp-management-close"]').click();
 
@@ -40,7 +42,9 @@ test.describe('HP / MP pills — Spells tab (mobile viewport)', () => {
     await page.locator('[data-pw="metric-mp"]').click();
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeVisible();
 
-    await page.locator('[data-pw="mp-management-amount-input"]').fill('8');
+    const amount = page.locator('[data-pw="mp-management-amount-input"]');
+    await amount.fill('8');
+    await expect(amount).toHaveValue('8');
     await page.locator('[data-pw="mp-management-subtract"]').click();
     await page.locator('[data-pw="mp-management-close"]').click();
 
@@ -49,12 +53,16 @@ test.describe('HP / MP pills — Spells tab (mobile viewport)', () => {
 
   test('HP and MP changes persist across page reload', async ({ page }) => {
     await page.locator('[data-pw="metric-hp"]').click();
-    await page.locator('[data-pw="hp-management-amount-input"]').fill('25');
+    const hpAmount = page.locator('[data-pw="hp-management-amount-input"]');
+    await hpAmount.fill('25');
+    await expect(hpAmount).toHaveValue('25');
     await page.locator('[data-pw="hp-management-subtract"]').click();
     await page.locator('[data-pw="hp-management-close"]').click();
 
     await page.locator('[data-pw="metric-mp"]').click();
-    await page.locator('[data-pw="mp-management-amount-input"]').fill('41');
+    const mpAmount = page.locator('[data-pw="mp-management-amount-input"]');
+    await mpAmount.fill('41');
+    await expect(mpAmount).toHaveValue('41');
     await page.locator('[data-pw="mp-management-subtract"]').click();
     await page.locator('[data-pw="mp-management-close"]').click();
 

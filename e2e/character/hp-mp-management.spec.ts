@@ -26,14 +26,52 @@ test.describe('HP/MP management modal', () => {
 
   test('damage reduces current HP by the entered amount', async ({ page }) => {
     const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first();
-    const before = Number.parseInt((await hpValue.textContent()) ?? '0', 10);
+    await expect(hpValue).toHaveText('58'); // seeded at full HP; wait for hydration
+    const before = 58;
 
     await page.locator('[data-pw="statpill-ov-hp"]').click();
     await expect(page.locator('[data-pw="hp-management-modal"]')).toBeVisible();
-    await page.locator('[data-pw="hp-management-amount-input"]').fill('3');
+    const amount = page.locator('[data-pw="hp-management-amount-input"]');
+    await amount.fill('3');
+    await expect(amount).toHaveValue('3');
     await page.locator('[data-pw="hp-management-subtract"]').click();
     await page.locator('[data-pw="hp-management-close"]').click();
 
     await expect(hpValue).toHaveText(String(Math.max(0, before - 3)));
+  });
+
+  test('repeated damage clamps HP to 0 (never negative)', async ({ page }) => {
+    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first();
+    await expect(hpValue).toHaveText('58'); // seeded at full HP; wait for hydration
+    const max = 58;
+
+    await page.locator('[data-pw="statpill-ov-hp"]').click();
+    const amount = page.locator('[data-pw="hp-management-amount-input"]');
+    await amount.fill('40');
+    await expect(amount).toHaveValue('40');
+    await page.locator('[data-pw="hp-management-subtract"]').click();
+    await expect(hpValue).toHaveText(String(Math.max(0, max - 40)));
+    // Damaging past 0 clamps rather than going negative.
+    await page.locator('[data-pw="hp-management-subtract"]').click();
+    await expect(hpValue).toHaveText('0');
+  });
+
+  test('healing past max clamps HP to its maximum', async ({ page }) => {
+    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first();
+    await expect(hpValue).toHaveText('58'); // seeded at full HP; wait for hydration
+    const max = 58;
+
+    await page.locator('[data-pw="statpill-ov-hp"]').click();
+    const amount = page.locator('[data-pw="hp-management-amount-input"]');
+    // Drop below max, then heal more than the deficit — current clamps to max.
+    await amount.fill('20');
+    await expect(amount).toHaveValue('20');
+    await page.locator('[data-pw="hp-management-subtract"]').click();
+    await expect(hpValue).toHaveText(String(Math.max(0, max - 20)));
+
+    await amount.fill('40');
+    await expect(amount).toHaveValue('40');
+    await page.locator('[data-pw="hp-management-add"]').click();
+    await expect(hpValue).toHaveText(String(max));
   });
 });

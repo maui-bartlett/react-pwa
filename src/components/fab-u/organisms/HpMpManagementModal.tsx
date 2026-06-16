@@ -46,33 +46,40 @@ function NumberWheel({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const programmatic = useRef(false);
   const settleTimer = useRef<number | undefined>(undefined);
+  const guardTimer = useRef<number | undefined>(undefined);
   const numbers = useMemo(() => Array.from({ length: maxValue + 1 }, (_, i) => i), [maxValue]);
 
   // Keep the wheel aligned to the current value when it changes from elsewhere
-  // (the text input). Guard with `programmatic` so the resulting scroll event
-  // doesn't echo back into onChange.
+  // (the text input). Ignore scroll events for a short window afterward so the
+  // programmatic scroll can't echo a spurious onChange back into the amount.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const target = value * ROW_H;
     if (Math.abs(el.scrollTop - target) < 2) return;
     programmatic.current = true;
+    window.clearTimeout(guardTimer.current);
+    guardTimer.current = window.setTimeout(() => {
+      programmatic.current = false;
+    }, 250);
     el.scrollTo({ top: target });
   }, [value]);
 
-  // Clear any pending settle timer on unmount so it can't fire onChange after
-  // the modal closes.
-  useEffect(() => () => window.clearTimeout(settleTimer.current), []);
+  // Clear pending timers on unmount so they can't fire after the modal closes.
+  useEffect(
+    () => () => {
+      window.clearTimeout(settleTimer.current);
+      window.clearTimeout(guardTimer.current);
+    },
+    [],
+  );
 
   function handleScroll() {
+    if (programmatic.current) return;
     const el = scrollRef.current;
     if (!el) return;
     window.clearTimeout(settleTimer.current);
     settleTimer.current = window.setTimeout(() => {
-      if (programmatic.current) {
-        programmatic.current = false;
-        return;
-      }
       const idx = Math.max(0, Math.min(maxValue, Math.round(el.scrollTop / ROW_H)));
       if (idx !== value) onChange(idx);
     }, 90);
