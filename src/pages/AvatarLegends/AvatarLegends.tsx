@@ -13,7 +13,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
-import { atom, useAtom, useAtomValue } from 'jotai';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { Backpack, ChevronRight, HandFist, House, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
@@ -1075,6 +1075,14 @@ function createRandomAvatarLegendsBackendPayload(classData?: AvatarClassData | n
  *  surface reads from / writes to this atom (often via a derived slice). */
 const characterStateAtom = atom<CharacterState>(defaultCharacter);
 
+// Bumped after a destructive action to briefly reveal the Undo button (mirrors
+// FabU's after-delete undo). The value is just a change signal.
+const undoSignalAtom = atom(0);
+function useRequestUndoButton() {
+  const bump = useSetAtom(undoSignalAtom);
+  return () => bump((n) => n + 1);
+}
+
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
  *  shape of the AL `CharacterState` changes in a breaking way.
  *  v2: `age` is `number`, technique key is `type` (was `element`).
@@ -1336,12 +1344,27 @@ function ConvexCharacterSyncMount() {
     return () => window.removeEventListener('keydown', onKey);
   }, [historyControls]);
 
-  // Floating Undo button (matches FabU): visible whenever an undo is available,
-  // sitting in the gap beneath the dice FAB. Styled with AL's gold accent.
+  // Floating Undo button shown briefly after a destructive action (matches
+  // FabU), sitting in the gap beneath the dice FAB. Styled with AL's gold.
+  const undoSignal = useAtomValue(undoSignalAtom);
+  const [undoVisible, setUndoVisible] = useState(false);
+  // Only reveal for *new* bumps — a remount after a prior delete must not
+  // reopen a stale Undo (undoSignalAtom is never reset).
+  const lastUndoSignal = useRef(undoSignal);
+  useEffect(() => {
+    if (undoSignal === lastUndoSignal.current) return;
+    lastUndoSignal.current = undoSignal;
+    setUndoVisible(true);
+  }, [undoSignal]);
+
   return (
     <UndoSnackbar
-      open={historyControls.canUndo}
-      onUndo={historyControls.undo}
+      open={undoVisible}
+      onUndo={() => {
+        historyControls.undo();
+        setUndoVisible(false);
+      }}
+      onClose={() => setUndoVisible(false)}
       colors={{
         bg: bookAccent,
         fg: deepInk,
@@ -5310,6 +5333,7 @@ function MoveAccordion({
 
 function MovesPane() {
   const [subTab, setSubTab] = useAtom(movesSubTabAtom);
+  const requestUndo = useRequestUndoButton();
   // Basic + Balance lists come from the rulebook constants; class
   // moves come from the active character record so each character
   // can carry their own class-specific moves.
@@ -5344,11 +5368,13 @@ function MovesPane() {
           }
           onDelete={
             entry.custom
-              ? () =>
+              ? () => {
                   setCharacter((prev) => ({
                     ...prev,
                     classMoves: prev.classMoves.filter((move) => move !== entry),
-                  }))
+                  }));
+                  requestUndo();
+                }
               : undefined
           }
         />
@@ -6032,6 +6058,7 @@ function CombatPane() {
   const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
     setCharacterState((prev) => ({ ...prev, fatigue: base, tempFatigue: temp }));
   };
+  const requestUndo = useRequestUndoButton();
   const confirmTechniqueDelete = () => {
     if (pendingTechniqueDelete === null) return;
     setCharacterState((prev) => {
@@ -6058,6 +6085,7 @@ function CombatPane() {
         .map((value) => (value > pendingTechniqueDelete ? value - 1 : value)),
     );
     setPendingTechniqueDelete(null);
+    requestUndo();
   };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const toggleStatus = (label: string) =>
@@ -6079,6 +6107,7 @@ function CombatPane() {
     if (pendingInventoryDelete === null) return;
     setInventory((prev) => prev.filter((_, index) => index !== pendingInventoryDelete));
     setPendingInventoryDelete(null);
+    requestUndo();
   }
   // Conditions sub-tab mirrors Character tab conditions, with dark mode
   // using a deeper gold fill for a quieter active state.
@@ -6409,6 +6438,7 @@ function ConnectionsSection() {
   // Connections come from the active character record.
   const [character, setCharacter] = useAtom(characterStateAtom);
   const [pendingConnectionDelete, setPendingConnectionDelete] = useState<number | null>(null);
+  const requestUndo = useRequestUndoButton();
   const connections = character.connections;
   const addConnection = () =>
     setCharacter((prev) => ({
@@ -6457,6 +6487,7 @@ function ConnectionsSection() {
             connections: prev.connections.filter((_, index) => index !== pendingConnectionDelete),
           }));
           setPendingConnectionDelete(null);
+          requestUndo();
         }}
       />
     </Stack>
@@ -7273,6 +7304,7 @@ function BackpackPane() {
     list: 'notes' | 'inventory';
     index: number;
   } | null>(null);
+  const requestUndo = useRequestUndoButton();
 
   function addNote() {
     setNotes((prev) => [
@@ -7319,6 +7351,7 @@ function BackpackPane() {
     } else {
       setInventory((prev) => prev.filter((_, i) => i !== index));
     }
+    requestUndo();
   }
 
   const visibleNoteEntries = notes

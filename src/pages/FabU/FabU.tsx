@@ -800,6 +800,8 @@ function FabU() {
     cancel?: () => void;
     beforeConfirm?: () => void;
   } | null>(null);
+  // Undo button shows briefly after a confirmed destructive action.
+  const [undoOpen, setUndoOpen] = useState(false);
   const confirmDelete = (
     performDelete: () => void,
     onCancel?: () => void,
@@ -811,6 +813,7 @@ function FabU() {
     if (!pendingDelete) return;
     const { confirm, beforeConfirm } = pendingDelete;
     setPendingDelete(null);
+    setUndoOpen(true);
     if (beforeConfirm) {
       beforeConfirm();
       setTimeout(confirm, 500);
@@ -2867,8 +2870,12 @@ function FabU() {
         />
       ) : null}
       <UndoSnackbar
-        open={characterHistory.canUndo}
-        onUndo={() => characterHistory.undo()}
+        open={undoOpen}
+        onUndo={() => {
+          characterHistory.undo();
+          setUndoOpen(false);
+        }}
+        onClose={() => setUndoOpen(false)}
         colors={{
           bg: fabUTokens.color.brand,
           fg: fabUTokens.color.brandFg,
