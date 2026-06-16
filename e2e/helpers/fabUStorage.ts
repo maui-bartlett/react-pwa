@@ -81,4 +81,62 @@ async function activeFabUCharacterHasBond(page: Page, name: string): Promise<boo
   );
 }
 
-export { activeFabUCharacterHasBond, clearFabUCharacterStorage, readActiveFabUCharacter };
+/**
+ * Apply a JSON-serializable patch to the active FabU character slot in
+ * IndexedDB. The patch is shallow-merged into the stored character. Reload the
+ * page afterwards for the app to pick up the change.
+ */
+async function patchActiveFabUCharacter(
+  page: Page,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  await page.evaluate(async (patchArg) => {
+    const openRequest = indexedDB.open('tabletop-games-local', 1);
+    openRequest.onupgradeneeded = () => {
+      if (!openRequest.result.objectStoreNames.contains('characters')) {
+        openRequest.result.createObjectStore('characters');
+      }
+    };
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      openRequest.onsuccess = () => resolve(openRequest.result);
+      openRequest.onerror = () => reject(openRequest.error);
+    });
+
+    const readValue = (key: string) =>
+      new Promise<unknown>((resolve, reject) => {
+        const transaction = db.transaction('characters', 'readonly');
+        const request = transaction.objectStore('characters').get(key);
+        request.onsuccess = () => resolve(request.result ?? null);
+        request.onerror = () => reject(request.error);
+      });
+
+    const [slotsValue, activeIdValue] = await Promise.all([
+      readValue('local-characters:fabula-ultima'),
+      readValue('local-characters:fabula-ultima:active'),
+    ]);
+
+    const slots = Array.isArray(slotsValue)
+      ? (slotsValue as Array<{ id?: unknown; character?: Record<string, unknown> }>)
+      : [];
+    const activeId = typeof activeIdValue === 'string' ? activeIdValue : null;
+    const activeSlot = slots.find((slot) => slot.id === activeId) ?? slots[0];
+    if (activeSlot && activeSlot.character) {
+      activeSlot.character = { ...activeSlot.character, ...patchArg };
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction('characters', 'readwrite');
+      transaction.objectStore('characters').put(slots, 'local-characters:fabula-ultima');
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    db.close();
+  }, patch);
+}
+
+export {
+  activeFabUCharacterHasBond,
+  clearFabUCharacterStorage,
+  patchActiveFabUCharacter,
+  readActiveFabUCharacter,
+};

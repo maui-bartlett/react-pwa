@@ -103,6 +103,8 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 
 const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
+/** Placeholder subtitle for a class with no recorded skills yet. */
+const NO_SKILLS_SUBTITLE = 'No skills recorded yet';
 
 type ClassWithSpells = Character['classes'][number] & {
   spells?: SpellRow[];
@@ -1103,7 +1105,7 @@ function FabU() {
 
       return {
         ...c,
-        classes: [...c.classes, { name: className, level: 0, subtitle: 'No skills recorded yet' }],
+        classes: [...c.classes, { name: className, level: 0, subtitle: NO_SKILLS_SUBTITLE }],
         skillGroups: c.skillGroups.some((group) => group.className === className)
           ? c.skillGroups
           : [...c.skillGroups, { className, skills: [] }],
@@ -1580,11 +1582,25 @@ function FabU() {
           onAdd={canAddClass ? openClassPicker : undefined}
           onItemClick={navigateToClassSkills}
           onRemoveItem={removeClass}
-          items={character.classes.map((cls) => ({
-            title: cls.name,
-            subtitle: cls.subtitle,
-            trailing: `LVL ${skillLevelTotalsByClass[cls.name] ?? 0}`,
-          }))}
+          items={character.classes.map((cls) => {
+            // When a class has no curated subtitle yet (e.g. freshly added and a
+            // single custom skill was just recorded), surface the skill name(s)
+            // on the card instead of the "No skills recorded yet" placeholder.
+            const skillNames =
+              character.skillGroups
+                .find((g) => g.className === cls.name)
+                ?.skills.map((s) => s.name?.trim())
+                .filter(Boolean) ?? [];
+            const subtitle =
+              cls.subtitle === NO_SKILLS_SUBTITLE && skillNames.length > 0
+                ? skillNames.join(' · ')
+                : cls.subtitle;
+            return {
+              title: cls.name,
+              subtitle,
+              trailing: `LVL ${skillLevelTotalsByClass[cls.name] ?? 0}`,
+            };
+          })}
         />
 
         <BondsCard
