@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
+import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -19,7 +19,8 @@ const VISIBLE_ROWS = 5; // odd, so one row sits centered
 type HpMpKind = 'hp' | 'mp';
 
 type HpMpManagementModalProps = {
-  open: boolean;
+  /** The pill the popover anchors to; null keeps it closed. */
+  anchorEl: HTMLElement | null;
   kind: HpMpKind;
   current: number;
   max: number;
@@ -143,7 +144,7 @@ function NumberWheel({
 }
 
 function HpMpManagementModal({
-  open,
+  anchorEl,
   kind,
   current,
   max,
@@ -153,7 +154,10 @@ function HpMpManagementModal({
   onClose,
 }: HpMpManagementModalProps) {
   const fabUTokens = useFabUTokens();
+  const open = Boolean(anchorEl);
   const accent = kind === 'hp' ? fabUTokens.color.hp : fabUTokens.color.mp;
+  // Heal stays the success green; MP's Recover uses the MP blue.
+  const addColor = kind === 'mp' ? fabUTokens.color.mp : fabUTokens.color.success;
   const title = kind === 'hp' ? 'HP Management' : 'MP Management';
   const pointsLabel = kind === 'hp' ? 'Hit Points' : 'Mind Points';
   const addLabel = kind === 'hp' ? 'Heal' : 'Recover';
@@ -188,25 +192,26 @@ function HpMpManagementModal({
   }
 
   return (
-    <Dialog
+    <Popover
       open={open}
+      anchorEl={anchorEl}
       onClose={onClose}
-      fullWidth
-      maxWidth="xs"
-      data-pw={`${kind}-management-modal`}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+      marginThreshold={12}
       PaperProps={{
+        'data-pw': `${kind}-management-modal`,
         sx: {
+          mt: '6px',
+          p: 2,
+          width: 'min(92vw, 340px)',
+          maxWidth: 'min(92vw, 340px)',
           bgcolor: fabUTokens.color.surface,
           backgroundImage: 'none',
           border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
-          borderRadius: '16px',
+          borderRadius: '14px',
           boxShadow: fabUTokens.shadow.soft,
-          m: 2,
-          p: 2,
         },
-      }}
-      slotProps={{
-        backdrop: { sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 } },
       }}
     >
       {/* Header */}
@@ -307,12 +312,12 @@ function HpMpManagementModal({
             variant="contained"
             disableElevation
             sx={{
-              bgcolor: fabUTokens.color.success,
+              bgcolor: addColor,
               color: '#ffffff',
               fontWeight: 800,
               textTransform: 'none',
               py: 1,
-              '&:hover': { bgcolor: fabUTokens.color.success },
+              '&:hover': { bgcolor: addColor },
             }}
           >
             {addLabel}
@@ -365,7 +370,7 @@ function HpMpManagementModal({
           <NumberWheel value={amount} maxValue={wheelMax} accent={accent} onChange={setAmount} />
         </Box>
       </Box>
-    </Dialog>
+    </Popover>
   );
 }
 

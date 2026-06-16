@@ -758,8 +758,10 @@ function FabU() {
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
-  // Which HP/MP management modal is open (clicking an HP/MP pill opens it).
-  const [hpMpModal, setHpMpModal] = useState<HpMpKind | null>(null);
+  // HP/MP management popover: which kind, and the pill it anchors to.
+  const [hpMpModal, setHpMpModal] = useState<{ kind: HpMpKind; anchorEl: HTMLElement } | null>(
+    null,
+  );
   useEffect(() => {
     if (!notEnoughMpToastOpen) return;
     const t = setTimeout(() => setNotEnoughMpToastOpen(false), 2400);
@@ -1510,7 +1512,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
-              onManage: () => setHpMpModal('hp'),
+              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               pw: 'ov-hp',
             },
@@ -1520,7 +1522,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onManage: () => setHpMpModal('mp'),
+              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               pw: 'ov-mp',
             },
@@ -1618,7 +1620,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
-              onManage: () => setHpMpModal('hp'),
+              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               pw: 'cb-hp',
             },
@@ -1628,7 +1630,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onManage: () => setHpMpModal('mp'),
+              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               pw: 'cb-mp',
             },
@@ -2344,7 +2346,7 @@ function FabU() {
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
               pw: 'hp',
-              onManage: () => setHpMpModal('hp'),
+              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               toneColor: fabUTokens.color.hp,
             },
@@ -2353,7 +2355,7 @@ function FabU() {
               value: String(character.currentMP),
               valueSuffix: ` / ${totalMP}`,
               pw: 'mp',
-              onManage: () => setHpMpModal('mp'),
+              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               toneColor: fabUTokens.color.mp,
             },
@@ -2861,13 +2863,13 @@ function FabU() {
       />
       {hpMpModal ? (
         <HpMpManagementModal
-          open
-          kind={hpMpModal}
-          current={hpMpModal === 'hp' ? character.currentHP : character.currentMP}
-          max={hpMpModal === 'hp' ? totalHP : totalMP}
-          modifier={hpMpModal === 'hp' ? character.hpBonus : character.mpBonus}
-          onApply={hpMpModal === 'hp' ? setCurrentHP : setCurrentMP}
-          onChangeModifier={hpMpModal === 'hp' ? setHpBonus : setMpBonus}
+          anchorEl={hpMpModal.anchorEl}
+          kind={hpMpModal.kind}
+          current={hpMpModal.kind === 'hp' ? character.currentHP : character.currentMP}
+          max={hpMpModal.kind === 'hp' ? totalHP : totalMP}
+          modifier={hpMpModal.kind === 'hp' ? character.hpBonus : character.mpBonus}
+          onApply={hpMpModal.kind === 'hp' ? setCurrentHP : setCurrentMP}
+          onChangeModifier={hpMpModal.kind === 'hp' ? setHpBonus : setMpBonus}
           onClose={() => setHpMpModal(null)}
         />
       ) : null}

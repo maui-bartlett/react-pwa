@@ -23,8 +23,9 @@ type SummaryMetric = {
   /** When provided the pill is editable; called with the committed integer value */
   onChange?: (value: number) => void;
   /** When set, clicking the pill runs this instead of inline editing (opens the
-   *  HP/MP management modal). Takes precedence over onChange clicks. */
-  onManage?: () => void;
+   *  HP/MP management popover, anchored to the pill element). Takes precedence
+   *  over onChange clicks. */
+  onManage?: (anchorEl: HTMLElement) => void;
   /** When set, the committed value is clamped to [0, maxValue]. */
   maxValue?: number;
   /** Optional icon rendered at the trailing (right) edge of the pill */
@@ -91,9 +92,9 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
             <Box
               key={metric.label}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
-              onClick={() => {
+              onClick={(e) => {
                 if (metric.onManage) {
-                  metric.onManage();
+                  metric.onManage(e.currentTarget);
                   return;
                 }
                 if (!isEditing) openEdit(metric);

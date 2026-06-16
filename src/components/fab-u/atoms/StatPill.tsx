@@ -180,7 +180,7 @@ function StatPill({
         data-pw={pw ? `statpill-${pw}` : undefined}
         onClick={(e) => {
           if (onManage) {
-            onManage();
+            onManage(e.currentTarget);
             return;
           }
           if (hasBaseTempEditor) {
