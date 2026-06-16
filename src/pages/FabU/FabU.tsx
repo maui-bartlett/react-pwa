@@ -38,20 +38,18 @@ import {
   AttributesStatsCard,
   BondType,
   BondsCard,
+  type CatalogItem,
   CombatSubTab,
   ConfirmDeleteModal,
   DetailListCard,
   EquipmentCard,
+  type EquipmentSlot,
   FabUTab,
   FabUThemeProvider,
   HeaderBar,
   type HpMpKind,
   HpMpManagementModal,
   ItemPickerDialog,
-  type CatalogItem,
-  type EquipmentSlot,
-  catalogItemBackpackSubtitle,
-  catalogItemToEquipment,
   MobileScreen,
   PrimaryNavBar,
   SegmentedTabs,
@@ -64,6 +62,8 @@ import {
   SurfaceCard,
   TabOption,
   UndoSnackbar,
+  catalogItemBackpackSubtitle,
+  catalogItemToEquipment,
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
   useFabUTokens,
@@ -1296,8 +1296,7 @@ function FabU() {
 
   const handleAddBackpackItem = () => setItemPicker({ slot: 'all' });
 
-  const handleAddEquipmentItem = (slot: string) =>
-    setItemPicker({ slot: slot as EquipmentSlot });
+  const handleAddEquipmentItem = (slot: string) => setItemPicker({ slot: slot as EquipmentSlot });
 
   // Append a blank custom entry (preserves the prior "New Item" behavior).
   const addCustomItem = () => {

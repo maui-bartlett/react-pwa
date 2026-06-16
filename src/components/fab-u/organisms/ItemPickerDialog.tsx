@@ -32,7 +32,13 @@ type ItemPickerDialogProps = {
   onAddCustom: () => void;
 };
 
-function ItemPickerDialog({ open, slot, onClose, onSelectItem, onAddCustom }: ItemPickerDialogProps) {
+function ItemPickerDialog({
+  open,
+  slot,
+  onClose,
+  onSelectItem,
+  onAddCustom,
+}: ItemPickerDialogProps) {
   const fabUTokens = useFabUTokens();
   const [search, setSearch] = useState('');
   const items = useQuery(
@@ -80,7 +86,9 @@ function ItemPickerDialog({ open, slot, onClose, onSelectItem, onAddCustom }: It
       <Stack sx={{ maxHeight: 'min(80vh, 640px)' }}>
         <Stack spacing={1.1} sx={{ p: 1.5, pb: 1 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: fabUTokens.color.textPrimary }}>
+            <Typography
+              sx={{ fontWeight: 800, fontSize: '1rem', color: fabUTokens.color.textPrimary }}
+            >
               {heading}
             </Typography>
             <Box
@@ -190,7 +198,12 @@ function ItemPickerDialog({ open, slot, onClose, onSelectItem, onAddCustom }: It
                   }}
                 >
                   <Stack spacing={0.3}>
-                    <Stack direction="row" justifyContent="space-between" gap={1} alignItems="baseline">
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      gap={1}
+                      alignItems="baseline"
+                    >
                       <Typography
                         sx={{
                           fontWeight: 800,

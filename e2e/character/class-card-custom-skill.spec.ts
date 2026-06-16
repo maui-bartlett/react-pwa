@@ -24,11 +24,12 @@ test.describe('Class card surfaces lone custom skill name', () => {
     const newClasses = classes.map((cls, i) =>
       i === 0 ? { ...cls, subtitle: 'No skills recorded yet' } : cls,
     );
-    const skillGroups = (character.skillGroups as Array<{ className: string; skills: unknown[] }>).map(
-      (group) =>
-        group.className === className
-          ? { className, skills: [{ name: 'Phantom Strike', level: '0' }] }
-          : group,
+    const skillGroups = (
+      character.skillGroups as Array<{ className: string; skills: unknown[] }>
+    ).map((group) =>
+      group.className === className
+        ? { className, skills: [{ name: 'Phantom Strike', level: '0' }] }
+        : group,
     );
 
     await patchActiveFabUCharacter(page, { classes: newClasses, skillGroups });

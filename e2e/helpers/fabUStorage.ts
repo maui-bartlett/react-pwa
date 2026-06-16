@@ -86,10 +86,7 @@ async function activeFabUCharacterHasBond(page: Page, name: string): Promise<boo
  * IndexedDB. The patch is shallow-merged into the stored character. Reload the
  * page afterwards for the app to pick up the change.
  */
-async function patchActiveFabUCharacter(
-  page: Page,
-  patch: Record<string, unknown>,
-): Promise<void> {
+async function patchActiveFabUCharacter(page: Page, patch: Record<string, unknown>): Promise<void> {
   await page.evaluate(async (patchArg) => {
     const openRequest = indexedDB.open('tabletop-games-local', 1);
     openRequest.onupgradeneeded = () => {

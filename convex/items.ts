@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 
-import { FABULA_ULTIMA_ITEMS } from './data/fabulaUltimaItems';
 import { internalMutation, query } from './_generated/server';
+import { FABULA_ULTIMA_ITEMS } from './data/fabulaUltimaItems';
 
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
 

@@ -33,9 +33,7 @@ test.describe('Skill description accordion grows with content', () => {
       g.className === targetGroup!.className
         ? {
             ...g,
-            skills: g.skills.map((s, i) =>
-              i === 0 ? { ...s, description: LONG_DESCRIPTION } : s,
-            ),
+            skills: g.skills.map((s, i) => (i === 0 ? { ...s, description: LONG_DESCRIPTION } : s)),
           }
         : g,
     );
