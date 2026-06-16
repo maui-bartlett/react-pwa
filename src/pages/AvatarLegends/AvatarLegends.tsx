@@ -17,6 +17,7 @@ import { atom, useAtom, useAtomValue } from 'jotai';
 import { Backpack, ChevronRight, HandFist, House, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
+import UndoSnackbar from '@/components/fab-u/atoms/UndoSnackbar';
 import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
 import type { FabUTokens } from '@/components/fab-u/tokens';
 import AccountSettings from '@/sections/AccountSettings';
@@ -1335,7 +1336,20 @@ function ConvexCharacterSyncMount() {
     return () => window.removeEventListener('keydown', onKey);
   }, [historyControls]);
 
-  return null;
+  // Floating Undo button (matches FabU): visible whenever an undo is available,
+  // sitting in the gap beneath the dice FAB. Styled with AL's gold accent.
+  return (
+    <UndoSnackbar
+      open={historyControls.canUndo}
+      onUndo={historyControls.undo}
+      colors={{
+        bg: bookAccent,
+        fg: deepInk,
+        border: alpha(deepInk, 0.4),
+        shadow: `0 8px 20px ${alpha(deepInk, 0.35)}`,
+      }}
+    />
+  );
 }
 
 // Helper: derive a get/set slice atom from a single field on

@@ -13,7 +13,7 @@ import { X } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 
-const ROW_H = 40;
+const ROW_H = 32;
 const VISIBLE_ROWS = 5; // odd, so one row sits centered
 
 type HpMpKind = 'hp' | 'mp';
@@ -129,7 +129,7 @@ function NumberWheel({
           <Typography
             sx={{
               fontWeight: n === value ? 800 : 600,
-              fontSize: n === value ? '1.25rem' : '1.05rem',
+              fontSize: n === value ? '1.05rem' : '0.9rem',
               color: n === value ? accent : alpha(fabUTokens.color.textSecondary, 0.7),
               transition: 'color 120ms ease, font-size 120ms ease',
             }}
@@ -167,13 +167,15 @@ function HpMpManagementModal({
   const [amount, setAmount] = useState(0);
   const [modifierDraft, setModifierDraft] = useState(String(modifier));
 
-  // Reset the working amount and sync the modifier field each time the modal
-  // opens (so stale state from a prior session doesn't linger).
+  // Reset the working amount only when the modal opens (so stale state from a
+  // prior session doesn't linger) — not when the modifier is committed.
   useEffect(() => {
-    if (open) {
-      setAmount(0);
-      setModifierDraft(String(modifier));
-    }
+    if (open) setAmount(0);
+  }, [open]);
+
+  // Keep the modifier field in sync when it changes externally or on open.
+  useEffect(() => {
+    if (open) setModifierDraft(String(modifier));
   }, [open, modifier]);
 
   const wheelMax = Math.max(max, 30);
@@ -203,9 +205,9 @@ function HpMpManagementModal({
         'data-pw': `${kind}-management-modal`,
         sx: {
           mt: '6px',
-          p: 2,
-          width: 'min(92vw, 340px)',
-          maxWidth: 'min(92vw, 340px)',
+          p: 1.4,
+          width: 'min(88vw, 268px)',
+          maxWidth: 'min(88vw, 268px)',
           bgcolor: fabUTokens.color.surface,
           backgroundImage: 'none',
           border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
@@ -215,26 +217,26 @@ function HpMpManagementModal({
       }}
     >
       {/* Header */}
-      <Stack direction="row" alignItems="center" sx={{ mb: 1.5 }}>
+      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
         <IconButton
           onClick={onClose}
           data-pw={`${kind}-management-close`}
           sx={{
             color: fabUTokens.color.textPrimary,
             border: `1px solid ${fabUTokens.color.border}`,
-            width: 36,
-            height: 36,
+            width: 30,
+            height: 30,
           }}
         >
-          <X size={18} />
+          <X size={16} />
         </IconButton>
         <Typography
           sx={{
             flex: 1,
             textAlign: 'center',
-            mr: '36px',
+            mr: '30px',
             fontWeight: 800,
-            fontSize: '1.05rem',
+            fontSize: '0.95rem',
             color: fabUTokens.color.textPrimary,
           }}
         >
@@ -243,10 +245,10 @@ function HpMpManagementModal({
       </Stack>
 
       {/* Current readout */}
-      <Stack alignItems="center" sx={{ mb: 1.75 }}>
+      <Stack alignItems="center" sx={{ mb: 1 }}>
         <Typography
           sx={{
-            fontSize: '0.66rem',
+            fontSize: '0.6rem',
             fontWeight: 800,
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
@@ -255,11 +257,11 @@ function HpMpManagementModal({
         >
           {pointsLabel}
         </Typography>
-        <Typography sx={{ fontSize: '2rem', fontWeight: 800, color: accent, lineHeight: 1.1 }}>
+        <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: accent, lineHeight: 1.1 }}>
           {current}
           <Typography
             component="span"
-            sx={{ fontSize: '1.2rem', fontWeight: 700, color: fabUTokens.color.textSecondary }}
+            sx={{ fontSize: '1rem', fontWeight: 700, color: fabUTokens.color.textSecondary }}
           >
             {' / '}
             {max}
@@ -267,13 +269,13 @@ function HpMpManagementModal({
         </Typography>
       </Stack>
 
-      {/* Max modifier */}
-      <Stack spacing={0.5} sx={{ mb: 1.75 }}>
+      {/* Max modifier — sized to the left (Heal/Damage) column width. */}
+      <Stack spacing={0.4} sx={{ mb: 1, width: 'calc(50% - 4px)' }}>
         <Typography
           sx={{
-            fontSize: '0.62rem',
+            fontSize: '0.58rem',
             fontWeight: 800,
-            letterSpacing: '0.05em',
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             color: fabUTokens.color.textSecondary,
           }}
@@ -294,18 +296,18 @@ function HpMpManagementModal({
           }}
           sx={{
             border: `1px solid ${fabUTokens.color.border}`,
-            borderRadius: '9px',
+            borderRadius: '8px',
             bgcolor: fabUTokens.color.pillSurface,
-            height: 44,
-            px: 1,
+            height: 34,
+            px: 0.75,
             color: fabUTokens.color.textPrimary,
           }}
         />
       </Stack>
 
       {/* Amount controls + wheel */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, alignItems: 'center' }}>
-        <Stack spacing={1}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, alignItems: 'center' }}>
+        <Stack spacing={0.7}>
           <Button
             onClick={() => applyDelta(1)}
             data-pw={`${kind}-management-add`}
@@ -315,8 +317,10 @@ function HpMpManagementModal({
               bgcolor: addColor,
               color: '#ffffff',
               fontWeight: 800,
+              fontSize: '0.82rem',
               textTransform: 'none',
-              py: 1,
+              py: 0.55,
+              minWidth: 0,
               '&:hover': { bgcolor: addColor },
             }}
           >
@@ -327,7 +331,7 @@ function HpMpManagementModal({
             inputProps={{
               inputMode: 'numeric',
               'data-pw': `${kind}-management-amount-input`,
-              style: { textAlign: 'center', fontWeight: 800, fontSize: '1.1rem', padding: 0 },
+              style: { textAlign: 'center', fontWeight: 800, fontSize: '1rem', padding: 0 },
             }}
             onChange={(e) => {
               const cleaned = e.target.value.replace(/[^0-9]/g, '');
@@ -336,9 +340,9 @@ function HpMpManagementModal({
             }}
             sx={{
               border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '9px',
+              borderRadius: '8px',
               bgcolor: fabUTokens.color.pillSurface,
-              height: 48,
+              height: 38,
               color: fabUTokens.color.textPrimary,
             }}
           />
@@ -351,8 +355,10 @@ function HpMpManagementModal({
               bgcolor: fabUTokens.color.danger,
               color: '#ffffff',
               fontWeight: 800,
+              fontSize: '0.82rem',
               textTransform: 'none',
-              py: 1,
+              py: 0.55,
+              minWidth: 0,
               '&:hover': { bgcolor: fabUTokens.color.danger },
             }}
           >

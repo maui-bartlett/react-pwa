@@ -800,7 +800,6 @@ function FabU() {
     cancel?: () => void;
     beforeConfirm?: () => void;
   } | null>(null);
-  const [undoOpen, setUndoOpen] = useState(false);
   const confirmDelete = (
     performDelete: () => void,
     onCancel?: () => void,
@@ -812,7 +811,6 @@ function FabU() {
     if (!pendingDelete) return;
     const { confirm, beforeConfirm } = pendingDelete;
     setPendingDelete(null);
-    setUndoOpen(true);
     if (beforeConfirm) {
       beforeConfirm();
       setTimeout(confirm, 500);
@@ -824,11 +822,6 @@ function FabU() {
     pendingDelete?.cancel?.();
     setPendingDelete(null);
   };
-  const handleUndoFromSnackbar = () => {
-    characterHistory.undo();
-    setUndoOpen(false);
-  };
-
   // Keyboard shortcuts: Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z = redo.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -2874,9 +2867,15 @@ function FabU() {
         />
       ) : null}
       <UndoSnackbar
-        open={undoOpen}
-        onUndo={handleUndoFromSnackbar}
-        onClose={() => setUndoOpen(false)}
+        open={characterHistory.canUndo}
+        onUndo={() => characterHistory.undo()}
+        colors={{
+          bg: fabUTokens.color.brand,
+          fg: fabUTokens.color.brandFg,
+          border: fabUTokens.color.brandStrong,
+          shadow: fabUTokens.shadow.card,
+          bgStrong: fabUTokens.color.brandStrong,
+        }}
       />
     </FabUThemeProvider>
   );
