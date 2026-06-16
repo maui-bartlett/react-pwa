@@ -34,6 +34,16 @@ const SNAP_THRESHOLD = 50;
 const DELETE_RED = '#a84e49';
 const NEGATIVE_BOND_TYPES = new Set<BondType>(['Inferiority', 'Mistrust', 'Hatred']);
 
+// Mutually exclusive bond-type pairs: selecting one disables the other.
+const OPPOSITE_BOND_TYPE: Partial<Record<BondType, BondType>> = {
+  Admiration: 'Inferiority',
+  Inferiority: 'Admiration',
+  Loyalty: 'Mistrust',
+  Mistrust: 'Loyalty',
+  Affection: 'Hatred',
+  Hatred: 'Affection',
+};
+
 function isNegativeBondType(type: BondType) {
   return NEGATIVE_BOND_TYPES.has(type);
 }
@@ -362,8 +372,9 @@ function BondsCard({
 
   function handleToggle(type: BondType) {
     if (!menuAnchor) return;
+    // Keep the menu open so multiple bond types can be added in one pass; it
+    // closes when the user taps off it (the Menu's onClose / backdrop).
     onToggleType(menuAnchor.bondId, type);
-    closeMenu();
   }
 
   function startAdding() {
@@ -509,6 +520,11 @@ function BondsCard({
       >
         {ALL_BOND_TYPES.map((type) => {
           const selected = activeBond?.types.includes(type) ?? false;
+          const opposite = OPPOSITE_BOND_TYPE[type];
+          // Gray out (and block) this type when its mutually-exclusive pair is
+          // already selected on this bond.
+          const blockedByOpposite =
+            !selected && !!opposite && (activeBond?.types.includes(opposite) ?? false);
           const selectedColor = isNegativeBondType(type)
             ? fabUTokens.color.hp
             : fabUTokens.isDark
@@ -519,6 +535,8 @@ function BondsCard({
               key={type}
               data-pw={`bond-type-${type.toLowerCase()}`}
               data-selected={selected}
+              data-disabled={blockedByOpposite}
+              disabled={blockedByOpposite}
               onClick={() => handleToggle(type)}
               sx={{
                 fontSize: '0.82rem',
