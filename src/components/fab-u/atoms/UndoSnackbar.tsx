@@ -48,11 +48,12 @@ function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000, colors }: UndoS
         sx={{
           position: 'fixed',
           // Centered horizontally under the dice FAB (right: {xs:15, sm:34},
-          // width 72), in the gap between the dice button and the footer.
-          right: { xs: 29, sm: 48 },
-          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 88px)', sm: 90 },
-          width: 40,
-          height: 40,
+          // width 72; the 66px button centers at right+36), in the gap between
+          // the dice button and the footer. Matches the dice button's size.
+          right: { xs: 18, sm: 37 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 63px)', sm: 65 },
+          width: 66,
+          height: 66,
           bgcolor: colors.bg,
           color: colors.fg,
           boxShadow: colors.shadow,
@@ -69,7 +70,7 @@ function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000, colors }: UndoS
           },
         }}
       >
-        <Undo2 size={20} strokeWidth={2.25} />
+        <Undo2 size={32} strokeWidth={2.25} />
       </IconButton>
     </Fade>
   );
