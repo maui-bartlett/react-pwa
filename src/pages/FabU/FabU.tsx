@@ -820,17 +820,6 @@ function FabU() {
     }));
   };
 
-  useEffect(() => {
-    if (!battleActionPopover) return;
-    const scrollViewport = contentScrollRef.current;
-    if (!scrollViewport) return;
-    const previousOverflowY = scrollViewport.style.overflowY;
-    scrollViewport.style.overflowY = 'hidden';
-    return () => {
-      scrollViewport.style.overflowY = previousOverflowY;
-    };
-  }, [battleActionPopover]);
-
   // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
   // deferred mutation; clicking Delete runs it then pops the undo button.
   const [pendingDelete, setPendingDelete] = useState<{
@@ -1956,7 +1945,10 @@ function FabU() {
             { name: 'flip', options: { padding: 12 } },
             { name: 'preventOverflow', options: { padding: 12 } },
           ]}
-          sx={{ zIndex: (theme) => theme.zIndex.modal }}
+          sx={{
+            zIndex: (theme) => theme.zIndex.modal,
+            pointerEvents: 'none',
+          }}
         >
           <ClickAwayListener onClickAway={() => setBattleActionPopover(null)}>
             <Paper
@@ -1966,6 +1958,7 @@ function FabU() {
                 width: 'min(330px, calc(100vw - 24px))',
                 maxHeight: 'min(520px, calc(100vh - 32px))',
                 overflowY: 'auto',
+                pointerEvents: 'auto',
                 bgcolor: fabUTokens.color.surface,
                 backgroundImage: 'none',
                 border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
