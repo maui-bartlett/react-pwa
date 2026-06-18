@@ -787,6 +787,8 @@ function FabU() {
     type: BattleActionPopoverType;
     anchorEl: HTMLElement;
   } | null>(null);
+  const battleActionPopoverActionsRef = useRef<{ updatePosition: () => void } | null>(null);
+  const battleActionPopoverPaperRef = useRef<HTMLDivElement | null>(null);
   const [pendingCombatSubTabScroll, setPendingCombatSubTabScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
   const fabulaUltimaClassDocs = useQuery(api.classes.listFabulaUltimaClasses) as
@@ -816,6 +818,67 @@ function FabU() {
       statusEffects: { ...c.statusEffects, [id]: !c.statusEffects[id] },
     }));
   };
+
+  useEffect(() => {
+    if (!battleActionPopover) return;
+    const scrollViewport = contentScrollRef.current;
+    if (!scrollViewport) return;
+
+    let frameId = 0;
+    const updatePosition = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        battleActionPopoverActionsRef.current?.updatePosition();
+      });
+    };
+
+    scrollViewport.addEventListener('scroll', updatePosition, { passive: true });
+    window.addEventListener('resize', updatePosition);
+    updatePosition();
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      scrollViewport.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [battleActionPopover]);
+
+  useEffect(() => {
+    if (!battleActionPopover) return;
+
+    let pointerStart: { id: number; x: number; y: number } | null = null;
+    const isInsidePopover = (target: EventTarget | null) =>
+      target instanceof Node && Boolean(battleActionPopoverPaperRef.current?.contains(target));
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (isInsidePopover(event.target)) return;
+      pointerStart = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+      };
+    };
+    const handlePointerUp = (event: PointerEvent) => {
+      const start = pointerStart;
+      pointerStart = null;
+      if (!start || start.id !== event.pointerId || isInsidePopover(event.target)) return;
+      const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+      if (distance <= 8) setBattleActionPopover(null);
+    };
+    const clearPointerStart = () => {
+      pointerStart = null;
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('pointerup', handlePointerUp, true);
+    document.addEventListener('pointercancel', clearPointerStart, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('pointerup', handlePointerUp, true);
+      document.removeEventListener('pointercancel', clearPointerStart, true);
+    };
+  }, [battleActionPopover]);
   // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
   // deferred mutation; clicking Delete runs it then pops the undo button.
   const [pendingDelete, setPendingDelete] = useState<{
@@ -1767,6 +1830,7 @@ function FabU() {
                   return (
                     <Button
                       key={action}
+                      data-pw={`battle-action-${action.toLowerCase()}`}
                       variant="contained"
                       onClick={(event) => {
                         if (action === 'Attack') {
@@ -1932,6 +1996,7 @@ function FabU() {
         </SurfaceCard>
 
         <Popover
+          action={battleActionPopoverActionsRef}
           open={Boolean(battleActionPopover)}
           anchorEl={battleActionPopover?.anchorEl}
           onClose={() => setBattleActionPopover(null)}
@@ -1948,6 +2013,8 @@ function FabU() {
             },
           }}
           PaperProps={{
+            ref: battleActionPopoverPaperRef,
+            'data-pw': 'battle-action-popover-paper',
             sx: {
               mt: '5px',
               p: 1.2,
