@@ -17,6 +17,40 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="hp-management-modal"]')).toBeHidden();
   });
 
+  test('HP management uses a compact aligned non-modal popper', async ({ page }) => {
+    await page.locator('[data-pw="statpill-ov-hp"]').click();
+    const popper = page.locator('[data-pw="hp-management-modal"]');
+    await expect(popper).toBeVisible();
+    await expect(page.locator('[data-pw="mobile-screen"]')).not.toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+
+    const modifier = await page.locator('[data-pw="hp-management-modifier-control"]').boundingBox();
+    const heal = await page.locator('[data-pw="hp-management-add"]').boundingBox();
+    const amount = await page.locator('[data-pw="hp-management-amount-control"]').boundingBox();
+    const damage = await page.locator('[data-pw="hp-management-subtract"]').boundingBox();
+    const wheel = await page.locator('[data-pw="hp-management-number-wheel"]').boundingBox();
+    const paper = await popper.boundingBox();
+    if (!modifier || !heal || !amount || !damage || !wheel || !paper) {
+      throw new Error('HP management controls are not visible');
+    }
+
+    expect(Math.abs(wheel.y - modifier.y)).toBeLessThan(1);
+    const gaps = [
+      heal.y - (modifier.y + modifier.height),
+      amount.y - (heal.y + heal.height),
+      damage.y - (amount.y + amount.height),
+    ];
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThan(1);
+    expect(
+      paper.y + paper.height - Math.max(wheel.y + wheel.height, damage.y + damage.height),
+    ).toBeLessThan(16);
+
+    await page.mouse.click(12, 12);
+    await expect(popper).toBeHidden();
+  });
+
   test('clicking the MP pill opens the MP management modal', async ({ page }) => {
     await page.locator('[data-pw="statpill-ov-mp"]').click();
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeVisible();

@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
-import Popover from '@mui/material/Popover';
+import Paper from '@mui/material/Paper';
+import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -194,189 +196,226 @@ function HpMpManagementModal({
   }
 
   return (
-    <Popover
+    <Popper
       open={open}
       anchorEl={anchorEl}
-      onClose={onClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'center' }}
-      marginThreshold={12}
-      PaperProps={{
-        'data-pw': `${kind}-management-modal`,
-        sx: {
-          mt: '6px',
-          p: 1.4,
-          width: 'min(88vw, 268px)',
-          maxWidth: 'min(88vw, 268px)',
-          bgcolor: fabUTokens.color.surface,
-          backgroundImage: 'none',
-          border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
-          borderRadius: '14px',
-          boxShadow: fabUTokens.shadow.soft,
-        },
-      }}
+      placement="bottom"
+      modifiers={[
+        { name: 'offset', options: { offset: [0, 6] } },
+        { name: 'flip', options: { padding: 12 } },
+        { name: 'preventOverflow', options: { padding: 12 } },
+      ]}
+      sx={{ zIndex: (theme) => theme.zIndex.modal }}
     >
-      {/* Header */}
-      <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
-        <IconButton
-          onClick={onClose}
-          data-pw={`${kind}-management-close`}
+      <ClickAwayListener onClickAway={onClose}>
+        <Paper
+          data-pw={`${kind}-management-modal`}
           sx={{
-            color: fabUTokens.color.textPrimary,
-            border: `1px solid ${fabUTokens.color.border}`,
-            width: 30,
-            height: 30,
+            p: 1.4,
+            width: 'min(88vw, 268px)',
+            maxWidth: 'min(88vw, 268px)',
+            bgcolor: fabUTokens.color.surface,
+            backgroundImage: 'none',
+            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
+            borderRadius: '14px',
+            boxShadow: fabUTokens.shadow.soft,
           }}
         >
-          <X size={16} />
-        </IconButton>
-        <Typography
-          sx={{
-            flex: 1,
-            textAlign: 'center',
-            mr: '30px',
-            fontWeight: 800,
-            fontSize: '0.95rem',
-            color: fabUTokens.color.textPrimary,
-          }}
-        >
-          {title}
-        </Typography>
-      </Stack>
+          {/* Header */}
+          <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+            <IconButton
+              onClick={onClose}
+              data-pw={`${kind}-management-close`}
+              sx={{
+                color: fabUTokens.color.textPrimary,
+                border: `1px solid ${fabUTokens.color.border}`,
+                width: 30,
+                height: 30,
+              }}
+            >
+              <X size={16} />
+            </IconButton>
+            <Typography
+              sx={{
+                flex: 1,
+                textAlign: 'center',
+                mr: '30px',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                color: fabUTokens.color.textPrimary,
+              }}
+            >
+              {title}
+            </Typography>
+          </Stack>
 
-      {/* Current readout */}
-      <Stack alignItems="center" sx={{ mb: 1 }}>
-        <Typography
-          sx={{
-            fontSize: '0.6rem',
-            fontWeight: 800,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: fabUTokens.color.textSecondary,
-          }}
-        >
-          {pointsLabel}
-        </Typography>
-        <Typography sx={{ fontSize: '1.6rem', fontWeight: 800, color: accent, lineHeight: 1.1 }}>
-          {current}
-          <Typography
-            component="span"
-            sx={{ fontSize: '1rem', fontWeight: 700, color: fabUTokens.color.textSecondary }}
-          >
-            {' / '}
-            {max}
-          </Typography>
-        </Typography>
-      </Stack>
+          {/* Current readout */}
+          <Stack alignItems="center" sx={{ mb: 1 }}>
+            <Typography
+              sx={{
+                fontSize: '0.6rem',
+                fontWeight: 800,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: fabUTokens.color.textSecondary,
+              }}
+            >
+              {pointsLabel}
+            </Typography>
+            <Typography
+              sx={{ fontSize: '1.6rem', fontWeight: 800, color: accent, lineHeight: 1.1 }}
+            >
+              {current}
+              <Typography
+                component="span"
+                sx={{ fontSize: '1rem', fontWeight: 700, color: fabUTokens.color.textSecondary }}
+              >
+                {' / '}
+                {max}
+              </Typography>
+            </Typography>
+          </Stack>
 
-      {/* Max modifier — sized to the left (Heal/Damage) column width. */}
-      <Stack spacing={0.4} sx={{ mb: 1, width: 'calc(50% - 4px)' }}>
-        <Typography
-          sx={{
-            fontSize: '0.58rem',
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            color: fabUTokens.color.textSecondary,
-          }}
-        >
-          {modifierLabel}
-        </Typography>
-        <InputBase
-          value={modifierDraft}
-          inputProps={{
-            inputMode: 'numeric',
-            'data-pw': `${kind}-management-modifier-input`,
-            style: { textAlign: 'center', fontWeight: 700, padding: 0 },
-          }}
-          onChange={(e) => setModifierDraft(e.target.value.replace(/[^0-9-]/g, ''))}
-          onBlur={(e) => commitModifier(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-          }}
-          sx={{
-            border: `1px solid ${fabUTokens.color.border}`,
-            borderRadius: '8px',
-            bgcolor: fabUTokens.color.pillSurface,
-            height: 34,
-            px: 0.75,
-            color: fabUTokens.color.textPrimary,
-          }}
-        />
-      </Stack>
-
-      {/* Amount controls + wheel */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, alignItems: 'center' }}>
-        <Stack spacing={0.7}>
-          <Button
-            onClick={() => applyDelta(1)}
-            data-pw={`${kind}-management-add`}
-            variant="contained"
-            disableElevation
+          {/* Compact controls: modifier and actions left, number wheel right. */}
+          <Box
             sx={{
-              bgcolor: addColor,
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              textTransform: 'none',
-              py: 0.55,
-              minWidth: 0,
-              '&:hover': { bgcolor: addColor },
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: 'auto 34px 32px 38px 32px',
+              columnGap: 1,
+              rowGap: 0.7,
+              alignItems: 'stretch',
             }}
           >
-            {addLabel}
-          </Button>
-          <InputBase
-            value={String(amount)}
-            inputProps={{
-              inputMode: 'numeric',
-              'data-pw': `${kind}-management-amount-input`,
-              style: { textAlign: 'center', fontWeight: 800, fontSize: '1rem', padding: 0 },
-            }}
-            onChange={(e) => {
-              const cleaned = e.target.value.replace(/[^0-9]/g, '');
-              const parsed = Number.parseInt(cleaned, 10);
-              setAmount(Number.isNaN(parsed) ? 0 : Math.min(wheelMax, parsed));
-            }}
-            sx={{
-              border: `1px solid ${fabUTokens.color.border}`,
-              borderRadius: '8px',
-              bgcolor: fabUTokens.color.pillSurface,
-              height: 38,
-              color: fabUTokens.color.textPrimary,
-            }}
-          />
-          <Button
-            onClick={() => applyDelta(-1)}
-            data-pw={`${kind}-management-subtract`}
-            variant="contained"
-            disableElevation
-            sx={{
-              bgcolor: fabUTokens.color.danger,
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              textTransform: 'none',
-              py: 0.55,
-              minWidth: 0,
-              '&:hover': { bgcolor: fabUTokens.color.danger },
-            }}
-          >
-            {subtractLabel}
-          </Button>
-        </Stack>
-        <Box
-          sx={{
-            border: `1px solid ${fabUTokens.color.border}`,
-            borderRadius: '12px',
-            bgcolor: fabUTokens.color.pillSurface,
-            overflow: 'hidden',
-          }}
-        >
-          <NumberWheel value={amount} maxValue={wheelMax} accent={accent} onChange={setAmount} />
-        </Box>
-      </Box>
-    </Popover>
+            <Typography
+              data-pw={`${kind}-management-modifier-label`}
+              sx={{
+                gridColumn: 1,
+                gridRow: 1,
+                mb: -0.3,
+                fontSize: '0.58rem',
+                fontWeight: 800,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                color: fabUTokens.color.textSecondary,
+              }}
+            >
+              {modifierLabel}
+            </Typography>
+            <InputBase
+              data-pw={`${kind}-management-modifier-control`}
+              value={modifierDraft}
+              inputProps={{
+                inputMode: 'numeric',
+                'data-pw': `${kind}-management-modifier-input`,
+                style: { textAlign: 'center', fontWeight: 700, padding: 0 },
+              }}
+              onChange={(e) => setModifierDraft(e.target.value.replace(/[^0-9-]/g, ''))}
+              onBlur={(e) => commitModifier(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+              }}
+              sx={{
+                gridColumn: 1,
+                gridRow: 2,
+                border: `1px solid ${fabUTokens.color.border}`,
+                borderRadius: '8px',
+                bgcolor: fabUTokens.color.pillSurface,
+                height: 34,
+                px: 0.75,
+                color: fabUTokens.color.textPrimary,
+              }}
+            />
+
+            <Button
+              onClick={() => applyDelta(1)}
+              data-pw={`${kind}-management-add`}
+              variant="contained"
+              disableElevation
+              sx={{
+                gridColumn: 1,
+                gridRow: 3,
+                bgcolor: addColor,
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                textTransform: 'none',
+                py: 0.55,
+                minWidth: 0,
+                '&:hover': { bgcolor: addColor },
+              }}
+            >
+              {addLabel}
+            </Button>
+            <InputBase
+              data-pw={`${kind}-management-amount-control`}
+              value={String(amount)}
+              inputProps={{
+                inputMode: 'numeric',
+                'data-pw': `${kind}-management-amount-input`,
+                style: { textAlign: 'center', fontWeight: 800, fontSize: '1rem', padding: 0 },
+              }}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                const parsed = Number.parseInt(cleaned, 10);
+                setAmount(Number.isNaN(parsed) ? 0 : Math.min(wheelMax, parsed));
+              }}
+              sx={{
+                gridColumn: 1,
+                gridRow: 4,
+                border: `1px solid ${fabUTokens.color.border}`,
+                borderRadius: '8px',
+                bgcolor: fabUTokens.color.pillSurface,
+                height: 38,
+                minHeight: 38,
+                alignSelf: 'stretch',
+                boxSizing: 'border-box',
+                color: fabUTokens.color.textPrimary,
+              }}
+            />
+            <Button
+              onClick={() => applyDelta(-1)}
+              data-pw={`${kind}-management-subtract`}
+              variant="contained"
+              disableElevation
+              sx={{
+                gridColumn: 1,
+                gridRow: 5,
+                bgcolor: fabUTokens.color.danger,
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                textTransform: 'none',
+                py: 0.55,
+                minWidth: 0,
+                '&:hover': { bgcolor: fabUTokens.color.danger },
+              }}
+            >
+              {subtractLabel}
+            </Button>
+            <Box
+              data-pw={`${kind}-management-number-wheel`}
+              sx={{
+                gridColumn: 2,
+                gridRow: '2 / 6',
+                alignSelf: 'start',
+                border: `1px solid ${fabUTokens.color.border}`,
+                borderRadius: '12px',
+                bgcolor: fabUTokens.color.pillSurface,
+                overflow: 'hidden',
+              }}
+            >
+              <NumberWheel
+                value={amount}
+                maxValue={wheelMax}
+                accent={accent}
+                onChange={setAmount}
+              />
+            </Box>
+          </Box>
+        </Paper>
+      </ClickAwayListener>
+    </Popper>
   );
 }
 
