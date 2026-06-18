@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
@@ -72,6 +73,7 @@ function ItemPickerDialog({
       maxWidth="xs"
       data-pw="item-picker-dialog"
       PaperProps={{
+        'data-pw': 'item-picker-paper',
         sx: {
           bgcolor: fabUTokens.color.surface,
           backgroundImage: 'none',
@@ -79,12 +81,15 @@ function ItemPickerDialog({
           borderRadius: '14px',
           boxShadow: fabUTokens.shadow.soft,
           m: 1.5,
+          height: 'min(80vh, 640px)',
+          maxHeight: 'min(80vh, 640px)',
+          overflow: 'hidden',
         },
       }}
       slotProps={{ backdrop: { sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 } } }}
     >
-      <Stack sx={{ maxHeight: 'min(80vh, 640px)' }}>
-        <Stack spacing={1.1} sx={{ p: 1.5, pb: 1 }}>
+      <Stack sx={{ height: '100%', minHeight: 0 }}>
+        <Stack spacing={1.1} sx={{ p: 1.5, pb: 1, flexShrink: 0 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography
               sx={{ fontWeight: 800, fontSize: '1rem', color: fabUTokens.color.textPrimary }}
@@ -156,6 +161,8 @@ function ItemPickerDialog({
         <Stack
           spacing={0.6}
           sx={{
+            flex: 1,
+            minHeight: 0,
             px: 1.5,
             pb: 1.5,
             overflowY: 'auto',
@@ -164,9 +171,25 @@ function ItemPickerDialog({
           }}
         >
           {items === undefined ? (
-            <Typography sx={{ fontSize: '0.84rem', color: fabUTokens.color.textSecondary, py: 1 }}>
-              Loading items…
-            </Typography>
+            <Box
+              role="status"
+              aria-label="Loading items"
+              data-pw="item-picker-loading"
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 3,
+              }}
+            >
+              <CircularProgress
+                size={28}
+                thickness={4}
+                sx={{ color: fabUTokens.color.highlight }}
+              />
+            </Box>
           ) : filtered.length === 0 ? (
             <Typography sx={{ fontSize: '0.84rem', color: fabUTokens.color.textSecondary, py: 1 }}>
               No matching items.

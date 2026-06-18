@@ -1939,6 +1939,14 @@ function FabU() {
           transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           marginThreshold={12}
           disableRestoreFocus
+          disableScrollLock
+          slotProps={{
+            root: {
+              sx: {
+                pointerEvents: 'none',
+              },
+            },
+          }}
           PaperProps={{
             sx: {
               mt: '5px',
@@ -1946,6 +1954,7 @@ function FabU() {
               width: 'min(330px, calc(100vw - 24px))',
               maxHeight: 'min(520px, calc(100vh - 32px))',
               overflowY: 'auto',
+              pointerEvents: 'auto',
               bgcolor: fabUTokens.color.surface,
               backgroundImage: 'none',
               border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,

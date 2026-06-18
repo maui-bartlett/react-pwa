@@ -18,6 +18,9 @@ test.describe('Item picker — Equipment + Backpack (mobile viewport)', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('Add to Armor');
     await expect(page.locator('[data-pw="item-picker-custom"]')).toBeVisible();
+    const dialogBox = await page.locator('[data-pw="item-picker-paper"]').boundingBox();
+    const viewport = page.viewportSize();
+    expect(dialogBox?.height).toBeCloseTo(Math.min((viewport?.height ?? 0) * 0.8, 640), 0);
   });
 
   test('Custom Item still adds a blank equipment entry', async ({ page }) => {

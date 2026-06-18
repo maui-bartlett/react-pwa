@@ -46,3 +46,20 @@ test('Objective explains when no shared campaign clock is available', async ({ p
     'No objective clock has been set',
   );
 });
+
+test('scroll gestures outside a Battle Actions popover reach the app content', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 500 });
+  const contentArea = page.locator('[data-pw="content-area"]');
+  await contentArea.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await page.getByRole('button', { name: 'Hinder' }).click();
+  await expect(page.locator('[data-pw="hinder-popover"]')).toBeVisible();
+
+  const contentBox = await contentArea.boundingBox();
+  if (!contentBox) throw new Error('FabU content area is not visible');
+  await page.mouse.move(contentBox.x + 12, contentBox.y + 220);
+  await page.mouse.wheel(0, 400);
+
+  await expect.poll(() => contentArea.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+});
