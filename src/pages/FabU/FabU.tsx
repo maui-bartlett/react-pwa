@@ -6,11 +6,14 @@ import { useSwipeable } from 'react-swipeable';
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Collapse from '@mui/material/Collapse';
 import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
+import Paper from '@mui/material/Paper';
 import Popover from '@mui/material/Popover';
+import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -787,8 +790,6 @@ function FabU() {
     type: BattleActionPopoverType;
     anchorEl: HTMLElement;
   } | null>(null);
-  const battleActionPopoverActionsRef = useRef<{ updatePosition: () => void } | null>(null);
-  const battleActionPopoverPaperRef = useRef<HTMLDivElement | null>(null);
   const [pendingCombatSubTabScroll, setPendingCombatSubTabScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
   const fabulaUltimaClassDocs = useQuery(api.classes.listFabulaUltimaClasses) as
@@ -823,62 +824,13 @@ function FabU() {
     if (!battleActionPopover) return;
     const scrollViewport = contentScrollRef.current;
     if (!scrollViewport) return;
-
-    let frameId = 0;
-    const updatePosition = () => {
-      cancelAnimationFrame(frameId);
-      frameId = requestAnimationFrame(() => {
-        battleActionPopoverActionsRef.current?.updatePosition();
-      });
-    };
-
-    scrollViewport.addEventListener('scroll', updatePosition, { passive: true });
-    window.addEventListener('resize', updatePosition);
-    updatePosition();
-
+    const previousOverflowY = scrollViewport.style.overflowY;
+    scrollViewport.style.overflowY = 'hidden';
     return () => {
-      cancelAnimationFrame(frameId);
-      scrollViewport.removeEventListener('scroll', updatePosition);
-      window.removeEventListener('resize', updatePosition);
+      scrollViewport.style.overflowY = previousOverflowY;
     };
   }, [battleActionPopover]);
 
-  useEffect(() => {
-    if (!battleActionPopover) return;
-
-    let pointerStart: { id: number; x: number; y: number } | null = null;
-    const isInsidePopover = (target: EventTarget | null) =>
-      target instanceof Node && Boolean(battleActionPopoverPaperRef.current?.contains(target));
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (isInsidePopover(event.target)) return;
-      pointerStart = {
-        id: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-      };
-    };
-    const handlePointerUp = (event: PointerEvent) => {
-      const start = pointerStart;
-      pointerStart = null;
-      if (!start || start.id !== event.pointerId || isInsidePopover(event.target)) return;
-      const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-      if (distance <= 8) setBattleActionPopover(null);
-    };
-    const clearPointerStart = () => {
-      pointerStart = null;
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    document.addEventListener('pointerup', handlePointerUp, true);
-    document.addEventListener('pointercancel', clearPointerStart, true);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true);
-      document.removeEventListener('pointerup', handlePointerUp, true);
-      document.removeEventListener('pointercancel', clearPointerStart, true);
-    };
-  }, [battleActionPopover]);
   // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
   // deferred mutation; clicking Delete runs it then pops the undo button.
   const [pendingDelete, setPendingDelete] = useState<{
@@ -1995,216 +1947,213 @@ function FabU() {
           </Stack>
         </SurfaceCard>
 
-        <Popover
-          action={battleActionPopoverActionsRef}
+        <Popper
           open={Boolean(battleActionPopover)}
           anchorEl={battleActionPopover?.anchorEl}
-          onClose={() => setBattleActionPopover(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          marginThreshold={12}
-          disableRestoreFocus
-          disableScrollLock
-          slotProps={{
-            root: {
-              sx: {
-                pointerEvents: 'none',
-              },
-            },
-          }}
-          PaperProps={{
-            ref: battleActionPopoverPaperRef,
-            'data-pw': 'battle-action-popover-paper',
-            sx: {
-              mt: '5px',
-              p: 1.2,
-              width: 'min(330px, calc(100vw - 24px))',
-              maxHeight: 'min(520px, calc(100vh - 32px))',
-              overflowY: 'auto',
-              pointerEvents: 'auto',
-              bgcolor: fabUTokens.color.surface,
-              backgroundImage: 'none',
-              border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
-              borderRadius: '10px',
-              boxShadow: fabUTokens.shadow.soft,
-            },
-          }}
+          placement="bottom-end"
+          modifiers={[
+            { name: 'offset', options: { offset: [0, 5] } },
+            { name: 'flip', options: { padding: 12 } },
+            { name: 'preventOverflow', options: { padding: 12 } },
+          ]}
+          sx={{ zIndex: (theme) => theme.zIndex.modal }}
         >
-          {battleActionPopover?.type === 'hinder' ? (
-            <Stack spacing={0.9} data-pw="hinder-popover">
-              <Typography
-                sx={{
-                  fontSize: '0.78rem',
-                  fontWeight: 800,
-                  color: fabUTokens.color.textPrimary,
-                }}
-              >
-                Choose a status effect
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
-                {[
-                  { label: 'Slow', color: '#d8a24b' },
-                  { label: 'Dazed', color: '#7da06f' },
-                  { label: 'Weak', color: '#c56a60' },
-                  { label: 'Shaken', color: '#7292d4' },
-                ].map((status) => (
-                  <Button
-                    key={status.label}
-                    variant="contained"
-                    onClick={() => setBattleActionPopover(null)}
-                    sx={{
-                      minHeight: 42,
-                      bgcolor: status.color,
-                      color: '#ffffff',
-                      textTransform: 'none',
-                      fontWeight: 800,
-                      '&:hover': { bgcolor: status.color, filter: 'brightness(0.9)' },
-                    }}
-                  >
-                    {status.label}
-                  </Button>
-                ))}
-              </Box>
-            </Stack>
-          ) : battleActionPopover?.type === 'study' ? (
-            <Stack spacing={0.9} data-pw="study-popover">
-              <Typography
-                sx={{ fontSize: '0.88rem', fontWeight: 800, color: fabUTokens.color.textPrimary }}
-              >
-                Make an [INS + INS] check
-              </Typography>
-              {[
-                ['7–9', 'Basic information'],
-                ['10–12', 'Complete information with no room for doubt'],
-                [
-                  '13–15',
-                  'Detailed information — a complete answer and a useful additional detail',
-                ],
-                ['16+', 'Encyclopedic — anything and everything your character could learn'],
-              ].map(([range, result]) => (
-                <Stack
-                  key={range}
-                  direction="row"
-                  spacing={0.9}
-                  sx={{
-                    borderTop: `1px solid ${fabUTokens.color.border}`,
-                    pt: 0.75,
-                  }}
-                >
+          <ClickAwayListener onClickAway={() => setBattleActionPopover(null)}>
+            <Paper
+              data-pw="battle-action-popover-paper"
+              sx={{
+                p: 1.2,
+                width: 'min(330px, calc(100vw - 24px))',
+                maxHeight: 'min(520px, calc(100vh - 32px))',
+                overflowY: 'auto',
+                bgcolor: fabUTokens.color.surface,
+                backgroundImage: 'none',
+                border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
+                borderRadius: '10px',
+                boxShadow: fabUTokens.shadow.soft,
+              }}
+            >
+              {battleActionPopover?.type === 'hinder' ? (
+                <Stack spacing={0.9} data-pw="hinder-popover">
                   <Typography
                     sx={{
-                      minWidth: 48,
-                      fontSize: '0.76rem',
-                      fontWeight: 900,
-                      color: fabUTokens.color.highlight,
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      color: fabUTokens.color.textPrimary,
                     }}
                   >
-                    {range}
+                    Choose a status effect
                   </Typography>
-                  <Typography sx={{ fontSize: '0.76rem', color: fabUTokens.color.textPrimary }}>
-                    {result}
-                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+                    {[
+                      { label: 'Slow', color: '#d8a24b' },
+                      { label: 'Dazed', color: '#7da06f' },
+                      { label: 'Weak', color: '#c56a60' },
+                      { label: 'Shaken', color: '#7292d4' },
+                    ].map((status) => (
+                      <Button
+                        key={status.label}
+                        variant="contained"
+                        onClick={() => setBattleActionPopover(null)}
+                        sx={{
+                          minHeight: 42,
+                          bgcolor: status.color,
+                          color: '#ffffff',
+                          textTransform: 'none',
+                          fontWeight: 800,
+                          '&:hover': { bgcolor: status.color, filter: 'brightness(0.9)' },
+                        }}
+                      >
+                        {status.label}
+                      </Button>
+                    ))}
+                  </Box>
                 </Stack>
-              ))}
-            </Stack>
-          ) : battleActionPopover?.type === 'guard' ? (
-            <Stack spacing={0.85} data-pw="guard-popover">
-              <Typography
-                sx={{ fontSize: '0.88rem', fontWeight: 800, color: fabUTokens.color.textPrimary }}
-              >
-                Guard
-              </Typography>
-              {[
-                'Gain Resistance.',
-                '+2 on all opposed actions.',
-                'You can cover another character who is not currently covering someone else.',
-                'A covered character cannot be targeted by a melee attack.',
-              ].map((line) => (
-                <Typography
-                  key={line}
-                  sx={{
-                    fontSize: '0.78rem',
-                    lineHeight: 1.45,
-                    color: fabUTokens.color.textPrimary,
-                  }}
-                >
-                  {line}
-                </Typography>
-              ))}
-              <Box
-                sx={{
-                  border: `1px solid ${fabUTokens.color.warning}`,
-                  borderRadius: '8px',
-                  bgcolor: alpha(fabUTokens.color.warning, 0.1),
-                  px: 1,
-                  py: 0.75,
-                }}
-              >
-                <Typography
-                  sx={{ fontSize: '0.76rem', fontWeight: 800, color: fabUTokens.color.warning }}
-                >
-                  Guard can be used only once per turn.
-                </Typography>
-              </Box>
-            </Stack>
-          ) : battleActionPopover?.type === 'objective' ? (
-            <Stack spacing={1.2} alignItems="center" data-pw="objective-popover">
-              {objectiveClocks === undefined && activeRemoteCharacter ? (
-                <Typography sx={{ fontSize: '0.78rem', color: fabUTokens.color.textSecondary }}>
-                  Loading objectives...
-                </Typography>
-              ) : objectiveClocks && objectiveClocks.length > 0 ? (
-                objectiveClocks.map(({ campaignId, campaignName, clock }) => (
-                  <Stack
-                    key={campaignId}
-                    spacing={0.8}
-                    alignItems="center"
-                    sx={{ width: '100%', pb: 2.5 }}
+              ) : battleActionPopover?.type === 'study' ? (
+                <Stack spacing={0.9} data-pw="study-popover">
+                  <Typography
+                    sx={{
+                      fontSize: '0.88rem',
+                      fontWeight: 800,
+                      color: fabUTokens.color.textPrimary,
+                    }}
                   >
-                    <Typography
+                    Make an [INS + INS] check
+                  </Typography>
+                  {[
+                    ['7–9', 'Basic information'],
+                    ['10–12', 'Complete information with no room for doubt'],
+                    [
+                      '13–15',
+                      'Detailed information — a complete answer and a useful additional detail',
+                    ],
+                    ['16+', 'Encyclopedic — anything and everything your character could learn'],
+                  ].map(([range, result]) => (
+                    <Stack
+                      key={range}
+                      direction="row"
+                      spacing={0.9}
                       sx={{
-                        fontSize: '0.68rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        color: fabUTokens.color.textSecondary,
+                        borderTop: `1px solid ${fabUTokens.color.border}`,
+                        pt: 0.75,
                       }}
                     >
-                      {campaignName}
-                    </Typography>
+                      <Typography
+                        sx={{
+                          minWidth: 48,
+                          fontSize: '0.76rem',
+                          fontWeight: 900,
+                          color: fabUTokens.color.highlight,
+                        }}
+                      >
+                        {range}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.76rem', color: fabUTokens.color.textPrimary }}>
+                        {result}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              ) : battleActionPopover?.type === 'guard' ? (
+                <Stack spacing={0.85} data-pw="guard-popover">
+                  <Typography
+                    sx={{
+                      fontSize: '0.88rem',
+                      fontWeight: 800,
+                      color: fabUTokens.color.textPrimary,
+                    }}
+                  >
+                    Guard
+                  </Typography>
+                  {[
+                    'Gain Resistance.',
+                    '+2 on all opposed actions.',
+                    'You can cover another character who is not currently covering someone else.',
+                    'A covered character cannot be targeted by a melee attack.',
+                  ].map((line) => (
                     <Typography
+                      key={line}
                       sx={{
-                        fontSize: '0.9rem',
-                        fontWeight: 900,
-                        textAlign: 'center',
+                        fontSize: '0.78rem',
+                        lineHeight: 1.45,
                         color: fabUTokens.color.textPrimary,
                       }}
                     >
-                      {clock.title}
+                      {line}
                     </Typography>
-                    <ObjectiveClock
-                      segments={clock.segments}
-                      filled={clock.filled}
-                      label={clock.title}
-                    />
-                  </Stack>
-                ))
-              ) : (
-                <Typography
-                  sx={{
-                    py: 1,
-                    fontSize: '0.8rem',
-                    lineHeight: 1.45,
-                    textAlign: 'center',
-                    color: fabUTokens.color.textSecondary,
-                  }}
-                >
-                  No objective clock has been set for this character’s campaigns.
-                </Typography>
-              )}
-            </Stack>
-          ) : null}
-        </Popover>
+                  ))}
+                  <Box
+                    sx={{
+                      border: `1px solid ${fabUTokens.color.warning}`,
+                      borderRadius: '8px',
+                      bgcolor: alpha(fabUTokens.color.warning, 0.1),
+                      px: 1,
+                      py: 0.75,
+                    }}
+                  >
+                    <Typography
+                      sx={{ fontSize: '0.76rem', fontWeight: 800, color: fabUTokens.color.warning }}
+                    >
+                      Guard can be used only once per turn.
+                    </Typography>
+                  </Box>
+                </Stack>
+              ) : battleActionPopover?.type === 'objective' ? (
+                <Stack spacing={1.2} alignItems="center" data-pw="objective-popover">
+                  {objectiveClocks && objectiveClocks.length > 0 ? (
+                    objectiveClocks.map(({ campaignId, campaignName, clock }) => (
+                      <Stack
+                        key={campaignId}
+                        spacing={0.8}
+                        alignItems="center"
+                        sx={{ width: '100%', pb: 2.5 }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                            color: fabUTokens.color.textSecondary,
+                          }}
+                        >
+                          {campaignName}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: '0.9rem',
+                            fontWeight: 900,
+                            textAlign: 'center',
+                            color: fabUTokens.color.textPrimary,
+                          }}
+                        >
+                          {clock.title}
+                        </Typography>
+                        <ObjectiveClock
+                          segments={clock.segments}
+                          filled={clock.filled}
+                          label={clock.title}
+                        />
+                      </Stack>
+                    ))
+                  ) : (
+                    <Typography
+                      sx={{
+                        py: 1,
+                        fontSize: '0.8rem',
+                        lineHeight: 1.45,
+                        textAlign: 'center',
+                        color: fabUTokens.color.textSecondary,
+                      }}
+                    >
+                      No objective set
+                    </Typography>
+                  )}
+                </Stack>
+              ) : null}
+            </Paper>
+          </ClickAwayListener>
+        </Popper>
 
         <Popover
           open={Boolean(inventoryAnchorEl)}
