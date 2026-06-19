@@ -14,9 +14,11 @@ import { alpha } from '@mui/material/styles';
 import { X } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
+import useFabUPopperScrollLock from '../useFabUPopperScrollLock';
 
 const ROW_H = 32;
-const VISIBLE_ROWS = 5; // odd, so one row sits centered
+const WHEEL_HEIGHT = 150.8;
+const WHEEL_PADDING = (WHEEL_HEIGHT - ROW_H) / 2;
 
 type HpMpKind = 'hp' | 'mp';
 
@@ -94,7 +96,7 @@ function NumberWheel({
       onScroll={handleScroll}
       sx={{
         position: 'relative',
-        height: ROW_H * VISIBLE_ROWS,
+        height: WHEEL_HEIGHT,
         overflowY: 'auto',
         scrollSnapType: 'y mandatory',
         WebkitOverflowScrolling: 'touch',
@@ -105,7 +107,7 @@ function NumberWheel({
           content: '""',
           position: 'sticky',
           display: 'block',
-          top: ROW_H * Math.floor(VISIBLE_ROWS / 2),
+          top: WHEEL_PADDING,
           height: ROW_H,
           marginBottom: `-${ROW_H}px`,
           borderRadius: '999px',
@@ -114,7 +116,7 @@ function NumberWheel({
         },
       }}
     >
-      <Box sx={{ height: ROW_H * Math.floor(VISIBLE_ROWS / 2) }} />
+      <Box sx={{ height: WHEEL_PADDING }} />
       {numbers.map((n) => (
         <Box
           key={n}
@@ -140,7 +142,7 @@ function NumberWheel({
           </Typography>
         </Box>
       ))}
-      <Box sx={{ height: ROW_H * Math.floor(VISIBLE_ROWS / 2) }} />
+      <Box sx={{ height: WHEEL_PADDING }} />
     </Box>
   );
 }
@@ -168,6 +170,7 @@ function HpMpManagementModal({
 
   const [amount, setAmount] = useState(0);
   const [modifierDraft, setModifierDraft] = useState(String(modifier));
+  useFabUPopperScrollLock(open);
 
   // Reset the working amount only when the modal opens (so stale state from a
   // prior session doesn't linger) — not when the modifier is committed.

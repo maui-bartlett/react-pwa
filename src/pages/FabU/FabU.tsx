@@ -70,6 +70,7 @@ import {
   catalogItemToEquipment,
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
+  useFabUPopperScrollLock,
   useFabUTokens,
 } from '@/components/fab-u';
 import type { SkillRow, SpellRow } from '@/components/fab-u';
@@ -813,6 +814,7 @@ function FabU() {
     migrate: migrateFabULocalCharacter,
   });
   const statusEffects = character.statusEffects;
+  useFabUPopperScrollLock(Boolean(battleActionPopover));
   const handleToggleEffect = (id: string) => {
     setCharacter((c) => ({
       ...c,

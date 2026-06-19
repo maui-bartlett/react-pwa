@@ -45,7 +45,7 @@ test('Objective explains when no shared campaign clock is available', async ({ p
   await expect(page.locator('[data-pw="objective-popover"]')).toContainText('No objective set');
 });
 
-test('Battle Actions poppers allow background scrolling and close on click-away', async ({
+test('Battle Actions poppers prevent background scrolling and close on click-away', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 500 });
@@ -53,35 +53,11 @@ test('Battle Actions poppers allow background scrolling and close on click-away'
   await page.getByRole('button', { name: 'Hinder' }).click();
   const popover = page.locator('[data-pw="hinder-popover"]');
   await expect(popover).toBeVisible();
-  await expect(contentArea).toHaveCSS('overflow-y', 'auto');
+  await expect(contentArea).toHaveCSS('overflow-y', 'hidden');
   await expect(page.locator('[data-pw="mobile-screen"]')).not.toHaveAttribute(
     'aria-hidden',
     'true',
   );
-  await contentArea.evaluate((element) => {
-    element.scrollTop = 0;
-  });
-
-  const scrollPoint = await page.evaluate(() => {
-    const content = document.querySelector('[data-pw="content-area"]');
-    const popper = document.querySelector('[data-pw="battle-action-popover-paper"]');
-    if (!(content instanceof HTMLElement)) return null;
-    const rect = content.getBoundingClientRect();
-    for (let y = rect.top + 20; y < rect.bottom - 20; y += 20) {
-      for (let x = rect.left + 10; x < rect.right - 10; x += 20) {
-        const target = document.elementFromPoint(x, y);
-        if (target && content.contains(target) && !popper?.contains(target)) return { x, y };
-      }
-    }
-    return null;
-  });
-  if (!scrollPoint) throw new Error('No uncovered FabU content point is visible');
-  await page.mouse.move(scrollPoint.x, scrollPoint.y);
-  await page.mouse.wheel(0, 400);
-
-  await expect.poll(() => contentArea.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-  await expect(popover).toBeVisible();
-
   await page.mouse.click(20, 420);
   await expect(popover).not.toBeVisible();
 });

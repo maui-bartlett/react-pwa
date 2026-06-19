@@ -43,9 +43,11 @@ test.describe('HP/MP management modal', () => {
       damage.y - (amount.y + amount.height),
     ];
     expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThan(1);
+    expect(Math.abs(wheel.y + wheel.height - (damage.y + damage.height))).toBeLessThan(1);
     expect(
       paper.y + paper.height - Math.max(wheel.y + wheel.height, damage.y + damage.height),
     ).toBeLessThan(16);
+    await expect(page.locator('[data-pw="content-area"]')).toHaveCSS('overflow-y', 'hidden');
 
     await page.mouse.click(12, 12);
     await expect(popper).toBeHidden();
