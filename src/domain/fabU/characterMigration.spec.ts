@@ -126,6 +126,7 @@ test('backend deserialization repairs malformed authenticated character data', (
   });
 
   expect(character.name.firstName).toBe(createDefaultCharacter().name.firstName);
+  expect(character.name.lastName).toBe(createDefaultCharacter().name.lastName);
   expect(character.initiative).toBe(createDefaultCharacter().initiative);
   expect(character.attributes.dex).toEqual(createDefaultCharacter().attributes.dex);
   expect(character.attributes.insight).toEqual(createDefaultCharacter().attributes.insight);
