@@ -654,10 +654,7 @@ function DiceRoller() {
   };
 
   const closeDiceRail = () => {
-    rollSequenceRef.current += 1;
-    setIsRolling(false);
     setSelectedDice([]);
-    void fadeOutDisplayedRoll();
     setIsRailClosing(true);
     window.setTimeout(() => {
       setIsExpanded(false);
