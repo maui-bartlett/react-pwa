@@ -2085,7 +2085,7 @@ function FabU() {
                     Guard
                   </Typography>
                   {[
-                    'Gain Resistance.',
+                    'Gain Resistance (halves all damage).',
                     '+2 on all opposed actions.',
                     'You can cover another character who is not currently covering someone else.',
                     'A covered character cannot be targeted by a melee attack.',
