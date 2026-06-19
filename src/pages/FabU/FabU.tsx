@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
 import { useSwipeable } from 'react-swipeable';
 
@@ -84,6 +85,7 @@ import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import {
   type Character,
@@ -116,6 +118,31 @@ type ClassWithSpells = Character['classes'][number] & {
 };
 
 type BattleActionPopoverType = 'guard' | 'hinder' | 'study' | 'objective';
+
+type ObjectiveClockSummary = {
+  campaignId: Id<'campaigns'>;
+  campaignName: string;
+  clock: {
+    title: string;
+    segments: number;
+    filled: number;
+  };
+};
+
+type ObjectiveClockSyncProps = {
+  characterId: Id<'characters'>;
+  onChange: (clocks: ObjectiveClockSummary[] | undefined) => void;
+};
+
+function ObjectiveClockSync({ characterId, onChange }: ObjectiveClockSyncProps) {
+  const clocks = useQuery(api.campaigns.listObjectiveClocksForCharacter, { characterId });
+
+  useEffect(() => {
+    onChange(clocks);
+  }, [clocks, onChange]);
+
+  return null;
+}
 
 type FabulaUltimaSkillInfo = {
   name?: unknown;
@@ -800,10 +827,7 @@ function FabU() {
     api.characters.getActiveMine,
     convexAuth.isAuthenticated ? { gameSystem: 'fabula-ultima' } : 'skip',
   );
-  const objectiveClocks = useQuery(
-    api.campaigns.listObjectiveClocksForCharacter,
-    activeRemoteCharacter ? { characterId: activeRemoteCharacter._id } : 'skip',
-  );
+  const [objectiveClocks, setObjectiveClocks] = useState<ObjectiveClockSummary[] | undefined>();
   const localCharacters = useLocalCharacterSlots({
     atom: characterState,
     gameSystem: 'fabula-ultima',
@@ -3003,6 +3027,21 @@ function FabU() {
       <>
         {localCharacters.hydrated ? (
           <ConvexCharacterSyncBoundary character={character} history={characterHistory} />
+        ) : null}
+        {activeRemoteCharacter ? (
+          <ErrorBoundary
+            fallbackRender={() => null}
+            onError={(error) => {
+              console.warn('Objective clocks are unavailable; continuing without them.', error);
+              setObjectiveClocks(undefined);
+            }}
+            resetKeys={[activeRemoteCharacter._id]}
+          >
+            <ObjectiveClockSync
+              characterId={activeRemoteCharacter._id}
+              onChange={setObjectiveClocks}
+            />
+          </ErrorBoundary>
         ) : null}
         <meta name="title" content="Fab-u Preview" />
         <Stack
