@@ -48,6 +48,17 @@ test.describe('HP/MP management modal', () => {
       paper.y + paper.height - Math.max(wheel.y + wheel.height, damage.y + damage.height),
     ).toBeLessThan(16);
     await expect(page.locator('[data-pw="content-area"]')).toHaveCSS('overflow-y', 'hidden');
+    const damageRadius = await page
+      .locator('[data-pw="hp-management-subtract"]')
+      .evaluate((element) => getComputedStyle(element).borderRadius);
+    await expect(page.locator('[data-pw="hp-management-modifier-control"]')).toHaveCSS(
+      'border-radius',
+      damageRadius,
+    );
+    await expect(page.locator('[data-pw="hp-management-amount-control"]')).toHaveCSS(
+      'border-radius',
+      damageRadius,
+    );
 
     await page.mouse.click(12, 12);
     await expect(popper).toBeHidden();
