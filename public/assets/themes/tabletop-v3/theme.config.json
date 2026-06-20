@@ -1,6 +1,6 @@
 {
   "name": "Table Top Dice",
-  "systemName": "tabletop-v2",
+  "systemName": "tabletop-v3",
   "author": "Frank Ali",
   "version": 0.2,
   "meshFile": "default.json",

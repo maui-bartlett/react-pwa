@@ -578,7 +578,7 @@ function DiceRoller() {
         const diceBox = new DiceBox({
           assetPath: '/assets/',
           container: '#tabletop-dice-box',
-          theme: 'tabletop-v2',
+          theme: 'tabletop-v3',
           themeColor: initialConfig.themeColor,
           scale: 4.4,
           gravity: 2,
