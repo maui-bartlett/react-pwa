@@ -1149,7 +1149,9 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
   const rawTechniques: unknown = innerCandidate.techniques;
   const techniques = Array.isArray(rawTechniques)
     ? dedupeTechniques(
-        (rawTechniques as Array<Record<string, unknown>>).map((tech) => {
+        rawTechniques.flatMap((value) => {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+          const tech = value as Record<string, unknown>;
           const legacyElement = (tech as { element?: unknown }).element;
           const nextType =
             typeof tech.type === 'string'
@@ -1168,19 +1170,31 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
             typeof tech.description === 'string'
               ? tech.description
               : (tech as { body?: unknown }).body;
+          if (typeof nextName !== 'string' || !nextName.trim()) return [];
+          const description = typeof nextDescription === 'string' ? nextDescription : '';
+          const summary =
+            typeof tech.summary === 'string' && tech.summary.trim()
+              ? tech.summary
+              : summarizeTechnique(description);
           // Strip legacy keys
           const rest: Record<string, unknown> = { ...tech };
           delete rest.element;
           delete rest.title;
           delete rest.body;
           delete rest.category;
-          return withTechniqueFatigue({
-            ...rest,
-            type: nextType,
-            name: nextName,
-            approach: nextApproach,
-            description: nextDescription,
-          }) as Technique;
+          return [
+            withTechniqueFatigue({
+              ...rest,
+              type: nextType,
+              name: nextName,
+              approach: coerceApproach(nextApproach),
+              level: techniqueLevelOptions.includes(rest.level as TechniqueLevel)
+                ? (rest.level as TechniqueLevel)
+                : 'learned',
+              summary,
+              description,
+            }) as Technique,
+          ];
         }),
       )
     : defaultCharacter.techniques;
