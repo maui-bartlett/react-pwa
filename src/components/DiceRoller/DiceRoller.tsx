@@ -593,7 +593,7 @@ function DiceRoller() {
           // with noticeably varying force as it travels from the upper-left.
           throwForce: 5,
           startingHeight: DICE_BOX_STARTING_HEIGHT,
-          settleTimeout: 1600,
+          settleTimeout: 1800,
           delay: 10,
           offscreen: false,
           lightIntensity: initialConfig.mode === 'dark' ? 1.12 : 1.25,
