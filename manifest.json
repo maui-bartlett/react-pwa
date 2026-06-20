@@ -9,7 +9,7 @@
   "background_color": "#182237",
   "display": "standalone",
   "orientation": "portrait",
-  "pwa_version": "2026.06.19.4",
+  "pwa_version": "2026.06.20.1",
   "icons": [
     {
       "src": "pwa-192x192.png",
