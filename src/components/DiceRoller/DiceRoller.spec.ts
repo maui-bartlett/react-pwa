@@ -36,6 +36,7 @@ describe('DiceRoller results', () => {
     expect(zero.total).toBe(0);
     expect(isValidRollResult(zero, [{ id: 1, sides: 10 }])).toBe(true);
     expect(nine.rolls).toEqual([{ sides: 10, value: 9 }]);
+    expect(nine.total).toBe(9);
     expect(isValidRollResult(nine, [{ id: 1, sides: 10 }])).toBe(true);
   });
 
