@@ -40,6 +40,19 @@ describe('DiceRoller results', () => {
     expect(isValidRollResult(nine, [{ id: 1, sides: 10 }])).toBe(true);
   });
 
+  it('interprets percentile rolls using a zero-through-nine ones die', () => {
+    const hundred = toRollResult([{ dieType: 'd100', sides: 100, value: 0 }]);
+    const seven = toRollResult([{ dieType: 'd100', sides: 100, value: 7 }]);
+    const ten = toRollResult([{ dieType: 'd100', sides: 100, value: 10 }]);
+
+    expect(hundred.rolls).toEqual([{ sides: 100, value: 100 }]);
+    expect(hundred.total).toBe(100);
+    expect(seven.rolls).toEqual([{ sides: 100, value: 7 }]);
+    expect(seven.total).toBe(7);
+    expect(ten.rolls).toEqual([{ sides: 100, value: 10 }]);
+    expect(ten.total).toBe(10);
+  });
+
   it('rejects incomplete or mismatched result sets', () => {
     const result = toRollResult([{ dieType: 'd6', sides: 6, value: 5 }]);
 

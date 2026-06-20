@@ -37,7 +37,9 @@ function getRollValue(...values: Array<number | undefined>) {
 }
 
 function normalizeRollValue(sides: DieSize, value: number) {
-  return sides === 10 && value === 10 ? 0 : value;
+  if (sides === 10 && value === 10) return 0;
+  if (sides === 100 && value === 0) return 100;
+  return value;
 }
 
 function toRollResult(groups: DiceBoxRoll[]): RollResult {
