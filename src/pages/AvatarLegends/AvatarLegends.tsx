@@ -1160,18 +1160,21 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
                 ? normalizeTechniqueType(legacyElement)
                 : 'basic';
           // Migrate v2→v3: rename category→approach, title→name, body→description
-          const nextName =
-            typeof tech.name === 'string' ? tech.name : (tech as { title?: unknown }).title;
-          const nextApproach =
-            typeof tech.approach === 'string'
-              ? tech.approach
-              : (tech as { category?: unknown }).category;
-          const nextDescription =
-            typeof tech.description === 'string'
-              ? tech.description
-              : (tech as { body?: unknown }).body;
-          if (typeof nextName !== 'string' || !nextName.trim()) return [];
-          const description = typeof nextDescription === 'string' ? nextDescription : '';
+          const nextName = [tech.name, (tech as { title?: unknown }).title]
+            .find(
+              (candidate): candidate is string =>
+                typeof candidate === 'string' && candidate.trim().length > 0,
+            )
+            ?.trim();
+          const nextApproach = [tech.approach, (tech as { category?: unknown }).category].find(
+            (candidate): candidate is TechniqueCategory => coerceApproach(candidate) === candidate,
+          );
+          const description =
+            [tech.description, (tech as { body?: unknown }).body].find(
+              (candidate): candidate is string =>
+                typeof candidate === 'string' && candidate.trim().length > 0,
+            ) ?? '';
+          if (!nextName) return [];
           const summary =
             typeof tech.summary === 'string' && tech.summary.trim()
               ? tech.summary
