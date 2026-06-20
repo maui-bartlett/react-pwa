@@ -46,6 +46,11 @@ import {
   deriveTechniqueFatigue,
   withTechniqueFatigue,
 } from './techniqueFatigue';
+import {
+  dedupeTechniques,
+  getTechniqueIdentityKey,
+  getTechniquePersistenceKey,
+} from './techniqueIdentity';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -735,12 +740,6 @@ const defaultBasicTechniques: Technique[] = [
 ].map((technique) => withTechniqueFatigue(technique) as Technique);
 const defaultBalancePrinciples = ['Tradition', 'Progress'] as const;
 
-function getTechniquePersistenceKey(technique: Pick<Technique, 'approach' | 'name' | 'type'>) {
-  return [technique.type, technique.approach, technique.name]
-    .map((value) => value.trim().toLowerCase())
-    .join(':');
-}
-
 function normalizeTechniqueType(value: unknown): TechniqueElement {
   if (value === 'water' || value === 'waterbending') return 'waterbending';
   if (value === 'earth' || value === 'earthbending') return 'earthbending';
@@ -1024,7 +1023,7 @@ function applyClassDataToCharacter(
     balance: normalizeBalanceState(character.balance, leftPrinciple, rightPrinciple),
     stats: coerceStartingStats(classData),
     classMoves: [...classMoves, ...customMoves],
-    techniques:
+    techniques: dedupeTechniques(
       advancedTechnique && !advancedTechniqueDeleted
         ? [
             ...customOrBasicTechniques.filter(
@@ -1033,6 +1032,7 @@ function applyClassDataToCharacter(
             advancedTechnique,
           ]
         : customOrBasicTechniques,
+    ),
   };
 }
 
@@ -1111,7 +1111,9 @@ function serializeAvatarLegendsCharacter(state: CharacterState) {
   };
   const character = {
     ...legacy,
-    techniques: legacy.techniques.map((technique) => withTechniqueFatigue(technique) as Technique),
+    techniques: dedupeTechniques(
+      legacy.techniques.map((technique) => withTechniqueFatigue(technique) as Technique),
+    ),
   };
   delete character.classTraitBody;
   delete character.classTraitTitle;
@@ -1146,39 +1148,41 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
 
   const rawTechniques: unknown = innerCandidate.techniques;
   const techniques = Array.isArray(rawTechniques)
-    ? (rawTechniques as Array<Record<string, unknown>>).map((tech) => {
-        const legacyElement = (tech as { element?: unknown }).element;
-        const nextType =
-          typeof tech.type === 'string'
-            ? normalizeTechniqueType(tech.type)
-            : typeof legacyElement === 'string'
-              ? normalizeTechniqueType(legacyElement)
-              : 'basic';
-        // Migrate v2→v3: rename category→approach, title→name, body→description
-        const nextName =
-          typeof tech.name === 'string' ? tech.name : (tech as { title?: unknown }).title;
-        const nextApproach =
-          typeof tech.approach === 'string'
-            ? tech.approach
-            : (tech as { category?: unknown }).category;
-        const nextDescription =
-          typeof tech.description === 'string'
-            ? tech.description
-            : (tech as { body?: unknown }).body;
-        // Strip legacy keys
-        const rest: Record<string, unknown> = { ...tech };
-        delete rest.element;
-        delete rest.title;
-        delete rest.body;
-        delete rest.category;
-        return withTechniqueFatigue({
-          ...rest,
-          type: nextType,
-          name: nextName,
-          approach: nextApproach,
-          description: nextDescription,
-        }) as Technique;
-      })
+    ? dedupeTechniques(
+        (rawTechniques as Array<Record<string, unknown>>).map((tech) => {
+          const legacyElement = (tech as { element?: unknown }).element;
+          const nextType =
+            typeof tech.type === 'string'
+              ? normalizeTechniqueType(tech.type)
+              : typeof legacyElement === 'string'
+                ? normalizeTechniqueType(legacyElement)
+                : 'basic';
+          // Migrate v2→v3: rename category→approach, title→name, body→description
+          const nextName =
+            typeof tech.name === 'string' ? tech.name : (tech as { title?: unknown }).title;
+          const nextApproach =
+            typeof tech.approach === 'string'
+              ? tech.approach
+              : (tech as { category?: unknown }).category;
+          const nextDescription =
+            typeof tech.description === 'string'
+              ? tech.description
+              : (tech as { body?: unknown }).body;
+          // Strip legacy keys
+          const rest: Record<string, unknown> = { ...tech };
+          delete rest.element;
+          delete rest.title;
+          delete rest.body;
+          delete rest.category;
+          return withTechniqueFatigue({
+            ...rest,
+            type: nextType,
+            name: nextName,
+            approach: nextApproach,
+            description: nextDescription,
+          }) as Technique;
+        }),
+      )
     : defaultCharacter.techniques;
 
   // Migrate v2→v3: rename inventory and notes items' title→name, body→description
@@ -2476,10 +2480,12 @@ function PrimaryTrainingSelect() {
           setCharacter((prev) => ({
             ...prev,
             primaryTraining: next,
-            techniques: prev.techniques.map((technique) =>
-              technique.classTechnique
-                ? { ...technique, type: trainingToTechniqueType(next) }
-                : technique,
+            techniques: dedupeTechniques(
+              prev.techniques.map((technique) =>
+                technique.classTechnique
+                  ? { ...technique, type: trainingToTechniqueType(next) }
+                  : technique,
+              ),
             ),
           }));
         }}
@@ -4324,21 +4330,21 @@ function TechniqueAddCard({
 function CanonTechniquePickerDialog({
   open,
   filter,
-  selectedTechniqueName,
+  selectedTechniqueKeys,
   techniques,
   loading,
   onFilterChange,
-  onSelectTechniqueName,
+  onToggleTechnique,
   onAdd,
   onClose,
 }: {
   open: boolean;
   filter: TechniqueElementFilter;
-  selectedTechniqueName: string;
+  selectedTechniqueKeys: readonly string[];
   techniques: CanonTechnique[];
   loading: boolean;
   onFilterChange: (filter: TechniqueElementFilter) => void;
-  onSelectTechniqueName: (name: string) => void;
+  onToggleTechnique: (technique: CanonTechnique) => void;
   onAdd: () => void;
   onClose: () => void;
 }) {
@@ -4346,9 +4352,7 @@ function CanonTechniquePickerDialog({
     () => techniques.filter((technique) => filter === 'all' || technique.type === filter),
     [filter, techniques],
   );
-  const selectedTechnique = filteredTechniques.find(
-    (technique) => technique.name === selectedTechniqueName,
-  );
+  const selectedCount = selectedTechniqueKeys.length;
 
   return (
     <Dialog
@@ -4385,10 +4389,7 @@ function CanonTechniquePickerDialog({
           <TechniqueElementFilterRow
             value={filter}
             includeClass={false}
-            onChange={(next) => {
-              onFilterChange(next);
-              onSelectTechniqueName('');
-            }}
+            onChange={onFilterChange}
           />
         </Stack>
 
@@ -4427,19 +4428,20 @@ function CanonTechniquePickerDialog({
                   textAlign: 'center',
                 }}
               >
-                No techniques of that type.
+                No available techniques of that type.
               </Typography>
             </Panel>
           ) : (
             filteredTechniques.map((technique) => {
-              const selected = technique.name === selectedTechniqueName;
+              const selected = selectedTechniqueKeys.includes(getTechniqueIdentityKey(technique));
               const visual = techniqueElementVisual(technique.type);
               return (
                 <Box
                   key={`${technique.type}-${technique.name}`}
                   component="button"
                   type="button"
-                  onClick={() => onSelectTechniqueName(technique.name)}
+                  aria-pressed={selected}
+                  onClick={() => onToggleTechnique(technique)}
                   sx={{
                     width: '100%',
                     p: 0,
@@ -4539,7 +4541,7 @@ function CanonTechniquePickerDialog({
             Cancel
           </Button>
           <Button
-            disabled={!selectedTechnique}
+            disabled={selectedCount === 0}
             onClick={onAdd}
             sx={{
               flex: 1,
@@ -4554,7 +4556,7 @@ function CanonTechniquePickerDialog({
               '&:hover': { bgcolor: deepInk },
             }}
           >
-            Add
+            {selectedCount > 0 ? `Add ${selectedCount}` : 'Add'}
           </Button>
         </Stack>
       </Stack>
@@ -4658,25 +4660,27 @@ function CharacterPane() {
       return {
         ...prev,
         classMoves: hasClassMoves ? prev.classMoves : hydrated.classMoves,
-        techniques: classTechniqueDeleted
-          ? prev.techniques
-          : existingClassTechnique && expectedClassTechnique && expectedClassTechniqueKey
-            ? prev.techniques.map((technique) =>
-                technique.classTechnique &&
-                getTechniquePersistenceKey(technique) === expectedClassTechniqueKey
-                  ? {
-                      ...technique,
-                      type: expectedClassTechnique.type,
-                      approach: expectedClassTechnique.approach,
-                      name: expectedClassTechnique.name,
-                      summary: expectedClassTechnique.summary,
-                      description: expectedClassTechnique.description,
-                      fatigue: expectedClassTechnique.fatigue,
-                      classTechnique: true,
-                    }
-                  : technique,
-              )
-            : hydrated.techniques,
+        techniques: dedupeTechniques(
+          classTechniqueDeleted
+            ? prev.techniques
+            : existingClassTechnique && expectedClassTechnique && expectedClassTechniqueKey
+              ? prev.techniques.map((technique) =>
+                  technique.classTechnique &&
+                  getTechniquePersistenceKey(technique) === expectedClassTechniqueKey
+                    ? {
+                        ...technique,
+                        type: expectedClassTechnique.type,
+                        approach: expectedClassTechnique.approach,
+                        name: expectedClassTechnique.name,
+                        summary: expectedClassTechnique.summary,
+                        description: expectedClassTechnique.description,
+                        fatigue: expectedClassTechnique.fatigue,
+                        classTechnique: true,
+                      }
+                    : technique,
+                )
+              : hydrated.techniques,
+        ),
       };
     });
   }, [
@@ -5931,7 +5935,9 @@ function CombatPane() {
     null,
   );
   const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElementFilter>('all');
-  const [canonTechniqueName, setCanonTechniqueName] = useState('');
+  const [selectedCanonTechniqueKeys, setSelectedCanonTechniqueKeys] = useState<readonly string[]>(
+    [],
+  );
   const [pendingTechniqueDelete, setPendingTechniqueDelete] = useState<number | null>(null);
   // Which technique cards are currently in edit mode (by index into the full
   // techniques array). The Edit trigger lives in each card's swipe channel;
@@ -5981,6 +5987,17 @@ function CombatPane() {
       .filter((technique): technique is CanonTechnique => Boolean(technique))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [canonGameSystem]);
+  const existingTechniqueKeys = useMemo(
+    () => new Set(character.techniques.map(getTechniqueIdentityKey)),
+    [character.techniques],
+  );
+  const availableCanonTechniques = useMemo(
+    () =>
+      canonTechniques.filter(
+        (technique) => !existingTechniqueKeys.has(getTechniqueIdentityKey(technique)),
+      ),
+    [canonTechniques, existingTechniqueKeys],
+  );
   const deletedClassTechnique = useMemo(() => {
     const technique = coerceAdvancedTechnique(avatarClass, character.primaryTraining);
     if (!technique) return null;
@@ -6000,7 +6017,7 @@ function CombatPane() {
     setAddTechniqueOpen(false);
     setAddTechniqueKind(null);
     setCanonTechniqueType('all');
-    setCanonTechniqueName('');
+    setSelectedCanonTechniqueKeys([]);
   };
   const addCustomTechnique = () => {
     setCharacterState((prev) => {
@@ -6008,47 +6025,71 @@ function CombatPane() {
         elementFilter !== 'all' && elementFilter !== 'basic' && elementFilter !== 'class'
           ? elementFilter
           : trainingToTechniqueType(prev.primaryTraining);
+      const existingNames = new Set(
+        prev.techniques.map((technique) => technique.name.trim().toLowerCase()),
+      );
+      let customName = 'Custom Technique';
+      let suffix = 2;
+      while (existingNames.has(customName.toLowerCase())) {
+        customName = `Custom Technique ${suffix}`;
+        suffix += 1;
+      }
       return {
         ...prev,
-        techniques: [
+        techniques: dedupeTechniques([
           ...prev.techniques,
           withTechniqueFatigue({
             id: createLocalId('technique'),
             type: nextType,
             approach: 'Advance & Attack',
             level: 'learned',
-            name: 'Custom Technique',
+            name: customName,
             summary: 'Add a short technique summary.',
             description: 'Describe how this custom technique works.',
             custom: true,
           }) as Technique,
-        ],
+        ]),
       };
     });
     resetAddTechniqueFlow();
   };
   const addCanonTechnique = () => {
-    const selected = canonTechniques.find((technique) => technique.name === canonTechniqueName);
-    if (!selected) return;
-    setCharacterState((prev) => ({
-      ...prev,
-      techniques: [
-        ...prev.techniques,
-        {
-          ...selected,
-          id: createLocalId('technique'),
-          level: 'learned',
-        },
-      ],
-    }));
+    const selectedKeys = new Set(selectedCanonTechniqueKeys);
+    const selectedTechniques = availableCanonTechniques.filter((technique) =>
+      selectedKeys.has(getTechniqueIdentityKey(technique)),
+    );
+    if (selectedTechniques.length === 0) return;
+    setCharacterState((prev) => {
+      const currentKeys = new Set(prev.techniques.map(getTechniqueIdentityKey));
+      const additions = selectedTechniques
+        .filter((technique) => !currentKeys.has(getTechniqueIdentityKey(technique)))
+        .map(
+          (technique) =>
+            ({
+              ...technique,
+              id: createLocalId('technique'),
+              level: 'learned',
+            }) as Technique,
+        );
+      return {
+        ...prev,
+        techniques: dedupeTechniques([...prev.techniques, ...additions]),
+      };
+    });
     resetAddTechniqueFlow();
+  };
+  const toggleCanonTechnique = (technique: CanonTechnique) => {
+    const key = getTechniqueIdentityKey(technique);
+    setSelectedCanonTechniqueKeys((current) =>
+      current.includes(key) ? current.filter((value) => value !== key) : [...current, key],
+    );
   };
   const restoreClassTechnique = () => {
     if (!deletedClassTechnique) return;
     const key = getTechniquePersistenceKey(deletedClassTechnique);
     setCharacterState((prev) => ({
       ...prev,
-      techniques: [...prev.techniques, deletedClassTechnique],
+      techniques: dedupeTechniques([...prev.techniques, deletedClassTechnique]),
       deletedTechniqueKeys: (prev.deletedTechniqueKeys ?? []).filter(
         (deletedKey) => deletedKey !== key,
       ),
@@ -6204,14 +6245,16 @@ function CombatPane() {
                         ? (next) =>
                             setCharacterState((prev) => ({
                               ...prev,
-                              techniques: prev.techniques.map((item) =>
-                                item === tech
-                                  ? (withTechniqueFatigue({
-                                      ...item,
-                                      ...next,
-                                      custom: true,
-                                    }) as Technique)
-                                  : item,
+                              techniques: dedupeTechniques(
+                                prev.techniques.map((item) =>
+                                  item === tech
+                                    ? (withTechniqueFatigue({
+                                        ...item,
+                                        ...next,
+                                        custom: true,
+                                      }) as Technique)
+                                    : item,
+                                ),
                               ),
                             }))
                         : undefined
@@ -6264,7 +6307,7 @@ function CombatPane() {
                 onSelectKind={(kind) => {
                   setAddTechniqueKind(kind);
                   setCanonTechniqueType('all');
-                  setCanonTechniqueName('');
+                  setSelectedCanonTechniqueKeys([]);
                   if (kind === 'custom') addCustomTechnique();
                   if (kind === 'class') restoreClassTechnique();
                 }}
@@ -6276,11 +6319,11 @@ function CombatPane() {
             <CanonTechniquePickerDialog
               open={addTechniqueOpen && addTechniqueKind === 'canon'}
               filter={canonTechniqueType}
-              selectedTechniqueName={canonTechniqueName}
-              techniques={canonTechniques}
+              selectedTechniqueKeys={selectedCanonTechniqueKeys}
+              techniques={availableCanonTechniques}
               loading={addTechniqueOpen && !canonGameSystem}
               onFilterChange={setCanonTechniqueType}
-              onSelectTechniqueName={setCanonTechniqueName}
+              onToggleTechnique={toggleCanonTechnique}
               onAdd={addCanonTechnique}
               onClose={resetAddTechniqueFlow}
             />
