@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -6,6 +7,11 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
+
+import elementAir from '@/pages/AvatarLegends/assets/airbending-symbol.png';
+import elementEarth from '@/pages/AvatarLegends/assets/earthbending-symbol.png';
+import elementFire from '@/pages/AvatarLegends/assets/firebending-symbol.png';
+import elementWater from '@/pages/AvatarLegends/assets/waterbending-symbol.png';
 
 function AvatarLegendsAppIcon() {
   return (
@@ -67,6 +73,13 @@ const heroCovers = [
   },
 ] as const;
 
+const avatarElements = [
+  { label: 'Waterbending', src: elementWater, color: '#4b94bd' },
+  { label: 'Earthbending', src: elementEarth, color: '#70984f' },
+  { label: 'Airbending', src: elementAir, color: '#e0b82e' },
+  { label: 'Firebending', src: elementFire, color: '#bd4339' },
+] as const;
+
 function FabulaCrest() {
   return (
     <Box
@@ -118,21 +131,69 @@ function FabulaCrest() {
   );
 }
 
+function AvatarElementCarousel() {
+  const [activeElementIndex, setActiveElementIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveElementIndex((current) => (current + 1) % avatarElements.length);
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return (
+    <Box
+      role="img"
+      aria-label="Avatar Legends bending elements"
+      sx={{
+        position: 'relative',
+        width: 132,
+        height: 132,
+        borderRadius: '28px',
+        border: '3px solid rgba(255,255,255,0.88)',
+        bgcolor: '#d5d8dc',
+        boxShadow: '0 18px 36px rgba(0,0,0,0.28)',
+        overflow: 'hidden',
+      }}
+    >
+      {avatarElements.map((element, index) => {
+        const active = index === activeElementIndex;
+        return (
+          <Box
+            key={element.label}
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              inset: 22,
+              bgcolor: element.color,
+              maskImage: `url(${element.src})`,
+              maskPosition: 'center',
+              maskRepeat: 'no-repeat',
+              maskSize: 'contain',
+              WebkitMaskImage: `url(${element.src})`,
+              WebkitMaskPosition: 'center',
+              WebkitMaskRepeat: 'no-repeat',
+              WebkitMaskSize: 'contain',
+              opacity: active ? 1 : 0,
+              transform: active ? 'scale(1)' : 'scale(0.94)',
+              transition: 'opacity 650ms ease-in-out, transform 650ms ease-in-out',
+              '@media (prefers-reduced-motion: reduce)': {
+                display: index === 0 ? 'block' : 'none',
+                opacity: 1,
+                transform: 'none',
+                transition: 'none',
+              },
+            }}
+          />
+        );
+      })}
+    </Box>
+  );
+}
+
 function SystemVisual({ visual }: { visual: (typeof systems)[number]['visual'] }) {
   if (visual === 'avatar') {
-    return (
-      <Box
-        component="img"
-        alt=""
-        src="/avatar-legends-pwa-512x512.png"
-        sx={{
-          width: 132,
-          height: 132,
-          borderRadius: '28px',
-          boxShadow: '0 18px 36px rgba(0,0,0,0.28)',
-        }}
-      />
-    );
+    return <AvatarElementCarousel />;
   }
   return <FabulaCrest />;
 }
