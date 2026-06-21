@@ -672,23 +672,23 @@ const statusDescriptions: Record<string, StatusDescription> = {
 const conditionDescriptions: Record<string, ConditionDescription> = {
   Afraid: {
     penalty: '-2 to Intimidate and Call Someone Out.',
-    clear: 'Run from danger or difficulty.',
+    clear: 'Running from danger or difficulty.',
   },
   Angry: {
     penalty: '-2 to Guide and Comfort and Assess the Situation.',
-    clear: 'Break something important or lash out at a friend.',
+    clear: 'Breaking something important or lashing out at a friend.',
   },
   Insecure: {
     penalty: '-2 to Trick and Resist Shifting Balance.',
-    clear: 'Take foolhardy action without talking to your companions.',
+    clear: 'Taking foolhardy action without talking to your companions.',
   },
   Guilty: {
     penalty: '-2 to Push Your Luck and Deny a Call Out.',
-    clear: 'Make a personal sacrifice to absolve your guilt.',
+    clear: 'Making a personal sacrifice to absolve your guilt.',
   },
   Troubled: {
     penalty: '-2 to Plead and Rely on Your Skills and Training.',
-    clear: 'Seek guidance from a mentor or powerful figure.',
+    clear: 'Seeking guidance from a mentor or powerful figure.',
   },
 };
 
@@ -2781,7 +2781,7 @@ function StatusButton({
             label={label}
             color={textColor}
             onClick={onInfoClick}
-            sx={{ top: 4, right: 10 }}
+            sx={{ top: '50%', right: 10, transform: 'translateY(-50%)' }}
           />
         ) : null}
       </Box>
