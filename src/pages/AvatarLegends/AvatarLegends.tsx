@@ -5,9 +5,12 @@ import { Link } from 'react-router';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Dialog from '@mui/material/Dialog';
 import InputBase from '@mui/material/InputBase';
+import Paper from '@mui/material/Paper';
 import Popover from '@mui/material/Popover';
+import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -2671,6 +2674,7 @@ function StatusButton({
   inactiveTextColor,
   hexagonal = false,
   onToggle,
+  onInfoClick,
 }: {
   label: string;
   active: boolean;
@@ -2682,6 +2686,7 @@ function StatusButton({
   inactiveTextColor?: string;
   hexagonal?: boolean;
   onToggle: () => void;
+  onInfoClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   // In dark mode the inactive text would otherwise sit at the activeColor
   // (e.g., the dark-red `gold`), which is hard to read against the slate
@@ -2736,149 +2741,163 @@ function StatusButton({
     );
   }
   return (
-    <Box
-      component="button"
-      type="button"
-      onClick={onToggle}
-      aria-pressed={active}
-      sx={{
-        // Doubled vertical padding so the button is twice as tall.
-        py: '14px',
-        px: 1,
-        borderRadius: '4px',
-        border: `1.5px solid ${activeColor}`,
-        background: active ? activeColor : 'transparent',
-        color: textColor,
-        cursor: 'pointer',
-        textAlign: 'center',
-        fontFamily: 'Georgia, serif',
-        fontSize: '0.78rem',
-        fontWeight: 700,
-        letterSpacing: '0.02em',
-        transition: 'background-color 0.15s ease, color 0.15s ease',
-        width: '100%',
-      }}
-    >
-      {label}
+    <Box sx={{ position: 'relative', width: '100%' }}>
+      <Box
+        component="button"
+        type="button"
+        onClick={onToggle}
+        aria-pressed={active}
+        sx={{
+          // Doubled vertical padding so the button is twice as tall.
+          py: '14px',
+          px: 1,
+          borderRadius: '4px',
+          border: `1.5px solid ${activeColor}`,
+          background: active ? activeColor : 'transparent',
+          color: textColor,
+          cursor: 'pointer',
+          textAlign: 'center',
+          fontFamily: 'Georgia, serif',
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          letterSpacing: '0.02em',
+          transition: 'background-color 0.15s ease, color 0.15s ease',
+          width: '100%',
+        }}
+      >
+        {label}
+      </Box>
+      {onInfoClick ? (
+        <StatusInfoButton label={label} color={textColor} onClick={onInfoClick} />
+      ) : null}
     </Box>
   );
 }
 
-function StatusInfoButton({ label, onClick }: { label: string; onClick: () => void }) {
+function StatusInfoButton({
+  label,
+  color,
+  onClick,
+}: {
+  label: string;
+  color: string;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+}) {
   return (
     <Box
       component="button"
       type="button"
       aria-label={`About ${label}`}
-      onClick={onClick}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        onClick(event);
+      }}
       sx={{
         display: 'grid',
-        width: 30,
-        height: 30,
-        flex: '0 0 auto',
-        alignSelf: 'center',
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        width: 24,
+        height: 24,
         placeItems: 'center',
-        border: `1.5px solid ${alpha(ink, 0.72)}`,
-        borderRadius: '50%',
-        bgcolor: alpha(parchmentLight, 0.5),
-        color: ink,
+        border: 'none',
+        borderRadius: 0,
+        bgcolor: 'transparent',
+        color,
         cursor: 'pointer',
         p: 0,
         '&:hover': {
-          bgcolor: alpha(accent, 0.16),
+          color: activeInfoHoverColor(color),
         },
       }}
     >
-      <Info size={17} strokeWidth={2.1} />
+      <Info size={16} strokeWidth={2.1} />
     </Box>
   );
 }
 
-function StatusDescriptionDialog({
+function activeInfoHoverColor(color: string) {
+  return color === '#ffffff' ? alpha('#ffffff', 0.72) : alpha(color, 0.68);
+}
+
+function StatusDescriptionPopper({
   label,
+  anchorEl,
   positiveColor,
   onClose,
 }: {
   label: string | null;
+  anchorEl: HTMLElement | null;
   positiveColor: string;
   onClose: () => void;
 }) {
   const status = label ? statusDescriptions[label] : undefined;
   return (
-    <Dialog
-      open={Boolean(label && status)}
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{
-        sx: {
-          bgcolor: parchment,
-          backgroundImage: 'none',
-          border: `1px solid ${border}`,
-          borderRadius: '8px',
-          boxShadow: `0 18px 42px ${alpha(deepInk, 0.42)}`,
-          p: 2.25,
-          m: 2,
-        },
-      }}
-      slotProps={{
-        backdrop: {
-          sx: { backgroundColor: deepInk, opacity: 0.82 },
-        },
-      }}
+    <Popper
+      open={Boolean(label && status && anchorEl)}
+      anchorEl={anchorEl}
+      placement="bottom-end"
+      modifiers={[
+        { name: 'offset', options: { offset: [0, 6] } },
+        { name: 'flip', options: { padding: 12 } },
+        { name: 'preventOverflow', options: { padding: 12 } },
+      ]}
+      sx={{ zIndex: (theme) => theme.zIndex.modal }}
     >
-      {label && status ? (
-        <Stack spacing={1.4}>
-          <Typography
-            sx={{
-              color: status.category === 'Positive Status' ? positiveColor : passionRed,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '0.68rem',
-              fontWeight: 900,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {status.category}
-          </Typography>
-          <Typography
-            sx={{
-              color: ink,
-              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-              fontSize: '1.05rem',
-              fontWeight: 900,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {label}
-          </Typography>
-          <Typography
-            sx={{
-              color: brown,
-              fontFamily: 'Georgia, "Times New Roman", serif',
-              fontSize: '0.92rem',
-              lineHeight: 1.55,
-            }}
-          >
-            {status.description}
-          </Typography>
-          <Button
-            onClick={onClose}
-            sx={{
-              alignSelf: 'flex-end',
-              mt: 0.5,
-              border: `1px solid ${border}`,
-              color: ink,
-              fontWeight: 800,
-              textTransform: 'none',
-            }}
-          >
-            Close
-          </Button>
-        </Stack>
-      ) : null}
-    </Dialog>
+      <ClickAwayListener onClickAway={onClose}>
+        <Paper
+          elevation={0}
+          sx={{
+            width: 'min(280px, calc(100vw - 24px))',
+            bgcolor: parchment,
+            backgroundImage: 'none',
+            border: `1px solid ${border}`,
+            borderRadius: '8px',
+            boxShadow: `0 12px 30px ${alpha(deepInk, 0.34)}`,
+            p: 1.7,
+          }}
+        >
+          {label && status ? (
+            <Stack spacing={0.9}>
+              <Typography
+                sx={{
+                  color: status.category === 'Positive Status' ? positiveColor : passionRed,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.62rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {status.category}
+              </Typography>
+              <Typography
+                sx={{
+                  color: ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.96rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {label}
+              </Typography>
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.88rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                {status.description}
+              </Typography>
+            </Stack>
+          ) : null}
+        </Paper>
+      </ClickAwayListener>
+    </Popper>
   );
 }
 
@@ -6304,6 +6323,15 @@ function CombatPane() {
   };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
   const [statusInfoLabel, setStatusInfoLabel] = useState<string | null>(null);
+  const [statusInfoAnchorEl, setStatusInfoAnchorEl] = useState<HTMLElement | null>(null);
+  const openStatusInfo = (label: string, anchorEl: HTMLElement) => {
+    setStatusInfoLabel(label);
+    setStatusInfoAnchorEl(anchorEl);
+  };
+  const closeStatusInfo = () => {
+    setStatusInfoLabel(null);
+    setStatusInfoAnchorEl(null);
+  };
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
   const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
@@ -6524,17 +6552,14 @@ function CombatPane() {
                   POSITIVE
                 </Typography>
                 {positiveStatuses.map((label) => (
-                  <Stack key={label} direction="row" spacing={0.7} alignItems="center">
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <StatusButton
-                        label={label}
-                        active={Boolean(activeStatuses[label])}
-                        activeColor={positiveStatusColor}
-                        onToggle={() => toggleStatus(label)}
-                      />
-                    </Box>
-                    <StatusInfoButton label={label} onClick={() => setStatusInfoLabel(label)} />
-                  </Stack>
+                  <StatusButton
+                    key={label}
+                    label={label}
+                    active={Boolean(activeStatuses[label])}
+                    activeColor={positiveStatusColor}
+                    onToggle={() => toggleStatus(label)}
+                    onInfoClick={(event) => openStatusInfo(label, event.currentTarget)}
+                  />
                 ))}
               </Stack>
               <Stack spacing={1.2}>
@@ -6550,24 +6575,22 @@ function CombatPane() {
                   NEGATIVE
                 </Typography>
                 {negativeStatuses.map((label) => (
-                  <Stack key={label} direction="row" spacing={0.7} alignItems="center">
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <StatusButton
-                        label={label}
-                        active={Boolean(activeStatuses[label])}
-                        activeColor={negativeStatusColor}
-                        onToggle={() => toggleStatus(label)}
-                      />
-                    </Box>
-                    <StatusInfoButton label={label} onClick={() => setStatusInfoLabel(label)} />
-                  </Stack>
+                  <StatusButton
+                    key={label}
+                    label={label}
+                    active={Boolean(activeStatuses[label])}
+                    activeColor={negativeStatusColor}
+                    onToggle={() => toggleStatus(label)}
+                    onInfoClick={(event) => openStatusInfo(label, event.currentTarget)}
+                  />
                 ))}
               </Stack>
             </Box>
-            <StatusDescriptionDialog
+            <StatusDescriptionPopper
               label={statusInfoLabel}
+              anchorEl={statusInfoAnchorEl}
               positiveColor={positiveStatusColor}
-              onClose={() => setStatusInfoLabel(null)}
+              onClose={closeStatusInfo}
             />
           </Panel>
         ) : null}
