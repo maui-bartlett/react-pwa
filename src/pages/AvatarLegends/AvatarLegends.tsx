@@ -3706,7 +3706,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                 lineHeight: 1.3,
                 // Heading text breaks onto a new line per sentence.
                 whiteSpace: 'pre-line',
-                mt: index === 0 ? 2.2 : 3.8,
+                pt: 1,
               }}
             >
               {splitHeadingSentences(block.text)}
@@ -3770,7 +3770,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
               direction="row"
               alignItems="center"
               gap={1}
-              sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: index === 0 ? 2.2 : 3.8 }}
+              sx={{ flexWrap: 'wrap', rowGap: 0.5, pt: 1 }}
             >
               <Typography
                 sx={{
