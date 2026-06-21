@@ -14,7 +14,7 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { Backpack, ChevronRight, HandFist, House, Pencil, Trash2 } from 'lucide-react';
+import { Backpack, ChevronRight, HandFist, House, Info, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 import UndoSnackbar from '@/components/fab-u/atoms/UndoSnackbar';
@@ -615,6 +615,10 @@ type TechniqueElement =
   | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
+type StatusDescription = {
+  category: 'Positive Status' | 'Negative Status';
+  description: string;
+};
 // Proficiency levels in mastery order; used for both the edit-mode selector
 // and the at-a-glance level pill on each technique card.
 const techniqueLevelOptions = ['learned', 'practiced', 'mastered'] as const;
@@ -622,6 +626,41 @@ const techniqueLevelLabels: Record<TechniqueLevel, string> = {
   learned: 'Learned',
   practiced: 'Practiced',
   mastered: 'Mastered',
+};
+const statusDescriptions: Record<string, StatusDescription> = {
+  Doomed: {
+    category: 'Negative Status',
+    description: 'Suffer 1-fatigue periodically until you escape.',
+  },
+  Impaired: {
+    category: 'Negative Status',
+    description:
+      'Take a -2 penalty to physical actions or mark 1-fatigue (NPCs choose one fewer technique).',
+  },
+  Stunned: {
+    category: 'Negative Status',
+    description: 'Cannot act or respond until you recover.',
+  },
+  Trapped: {
+    category: 'Negative Status',
+    description: 'Helpless, requiring you to mark three conditions or fatigue to break free.',
+  },
+  Empowered: {
+    category: 'Positive Status',
+    description: 'Clear 1-fatigue at the end of each exchange.',
+  },
+  Favored: {
+    category: 'Positive Status',
+    description: 'Select an extra technique during your next exchange.',
+  },
+  Inspired: {
+    category: 'Positive Status',
+    description: 'Shift your balance track by spending the status.',
+  },
+  Prepared: {
+    category: 'Positive Status',
+    description: 'Use to gain +1 to a roll or avoid marking a condition.',
+  },
 };
 
 // UI-only atoms (no character data; just remember which sub-tab is
@@ -2722,6 +2761,124 @@ function StatusButton({
     >
       {label}
     </Box>
+  );
+}
+
+function StatusInfoButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      aria-label={`About ${label}`}
+      onClick={onClick}
+      sx={{
+        display: 'grid',
+        width: 30,
+        height: 30,
+        flex: '0 0 auto',
+        alignSelf: 'center',
+        placeItems: 'center',
+        border: `1.5px solid ${alpha(ink, 0.72)}`,
+        borderRadius: '50%',
+        bgcolor: alpha(parchmentLight, 0.5),
+        color: ink,
+        cursor: 'pointer',
+        p: 0,
+        '&:hover': {
+          bgcolor: alpha(accent, 0.16),
+        },
+      }}
+    >
+      <Info size={17} strokeWidth={2.1} />
+    </Box>
+  );
+}
+
+function StatusDescriptionDialog({
+  label,
+  positiveColor,
+  onClose,
+}: {
+  label: string | null;
+  positiveColor: string;
+  onClose: () => void;
+}) {
+  const status = label ? statusDescriptions[label] : undefined;
+  return (
+    <Dialog
+      open={Boolean(label && status)}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          bgcolor: parchment,
+          backgroundImage: 'none',
+          border: `1px solid ${border}`,
+          borderRadius: '8px',
+          boxShadow: `0 18px 42px ${alpha(deepInk, 0.42)}`,
+          p: 2.25,
+          m: 2,
+        },
+      }}
+      slotProps={{
+        backdrop: {
+          sx: { backgroundColor: deepInk, opacity: 0.82 },
+        },
+      }}
+    >
+      {label && status ? (
+        <Stack spacing={1.4}>
+          <Typography
+            sx={{
+              color: status.category === 'Positive Status' ? positiveColor : passionRed,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '0.68rem',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {status.category}
+          </Typography>
+          <Typography
+            sx={{
+              color: ink,
+              fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+              fontSize: '1.05rem',
+              fontWeight: 900,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {label}
+          </Typography>
+          <Typography
+            sx={{
+              color: brown,
+              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontSize: '0.92rem',
+              lineHeight: 1.55,
+            }}
+          >
+            {status.description}
+          </Typography>
+          <Button
+            onClick={onClose}
+            sx={{
+              alignSelf: 'flex-end',
+              mt: 0.5,
+              border: `1px solid ${border}`,
+              color: ink,
+              fontWeight: 800,
+              textTransform: 'none',
+            }}
+          >
+            Close
+          </Button>
+        </Stack>
+      ) : null}
+    </Dialog>
   );
 }
 
@@ -6146,6 +6303,7 @@ function CombatPane() {
     requestUndo();
   };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
+  const [statusInfoLabel, setStatusInfoLabel] = useState<string | null>(null);
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
   const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
@@ -6366,13 +6524,17 @@ function CombatPane() {
                   POSITIVE
                 </Typography>
                 {positiveStatuses.map((label) => (
-                  <StatusButton
-                    key={label}
-                    label={label}
-                    active={Boolean(activeStatuses[label])}
-                    activeColor={positiveStatusColor}
-                    onToggle={() => toggleStatus(label)}
-                  />
+                  <Stack key={label} direction="row" spacing={0.7} alignItems="center">
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <StatusButton
+                        label={label}
+                        active={Boolean(activeStatuses[label])}
+                        activeColor={positiveStatusColor}
+                        onToggle={() => toggleStatus(label)}
+                      />
+                    </Box>
+                    <StatusInfoButton label={label} onClick={() => setStatusInfoLabel(label)} />
+                  </Stack>
                 ))}
               </Stack>
               <Stack spacing={1.2}>
@@ -6388,16 +6550,25 @@ function CombatPane() {
                   NEGATIVE
                 </Typography>
                 {negativeStatuses.map((label) => (
-                  <StatusButton
-                    key={label}
-                    label={label}
-                    active={Boolean(activeStatuses[label])}
-                    activeColor={negativeStatusColor}
-                    onToggle={() => toggleStatus(label)}
-                  />
+                  <Stack key={label} direction="row" spacing={0.7} alignItems="center">
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <StatusButton
+                        label={label}
+                        active={Boolean(activeStatuses[label])}
+                        activeColor={negativeStatusColor}
+                        onToggle={() => toggleStatus(label)}
+                      />
+                    </Box>
+                    <StatusInfoButton label={label} onClick={() => setStatusInfoLabel(label)} />
+                  </Stack>
                 ))}
               </Stack>
             </Box>
+            <StatusDescriptionDialog
+              label={statusInfoLabel}
+              positiveColor={positiveStatusColor}
+              onClose={() => setStatusInfoLabel(null)}
+            />
           </Panel>
         ) : null}
 
