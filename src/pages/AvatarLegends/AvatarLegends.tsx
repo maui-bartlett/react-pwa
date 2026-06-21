@@ -622,6 +622,10 @@ type StatusDescription = {
   category: 'Positive Status' | 'Negative Status';
   description: string;
 };
+type ConditionDescription = {
+  penalty: string;
+  clear: string;
+};
 // Proficiency levels in mastery order; used for both the edit-mode selector
 // and the at-a-glance level pill on each technique card.
 const techniqueLevelOptions = ['learned', 'practiced', 'mastered'] as const;
@@ -663,6 +667,28 @@ const statusDescriptions: Record<string, StatusDescription> = {
   Prepared: {
     category: 'Positive Status',
     description: 'Use to gain +1 to a roll or avoid marking a condition.',
+  },
+};
+const conditionDescriptions: Record<string, ConditionDescription> = {
+  Afraid: {
+    penalty: '-2 to Intimidate and Call Someone Out.',
+    clear: 'Run from danger or difficulty.',
+  },
+  Angry: {
+    penalty: '-2 to Guide and Comfort and Assess the Situation.',
+    clear: 'Break something important or lash out at a friend.',
+  },
+  Insecure: {
+    penalty: '-2 to Trick and Resist Shifting Balance.',
+    clear: 'Take foolhardy action without talking to your companions.',
+  },
+  Guilty: {
+    penalty: '-2 to Push Your Luck and Deny a Call Out.',
+    clear: 'Make a personal sacrifice to absolve your guilt.',
+  },
+  Troubled: {
+    penalty: '-2 to Plead and Rely on Your Skills and Training.',
+    clear: 'Seek guidance from a mentor or powerful figure.',
   },
 };
 
@@ -2646,19 +2672,30 @@ function CharacterEditField({
 function ConditionButtonShared({ label }: { label: string }) {
   const [active, setActive] = useAtom(activeConditionsAtom);
   const { isDarkMode } = useThemeMode();
+  const [infoAnchorEl, setInfoAnchorEl] = useState<HTMLElement | null>(null);
+  const activeColor = isDarkMode ? darkConditionGold : bookAccent;
   return (
-    <StatusButton
-      label={label}
-      active={Boolean(active[label])}
-      // Conditions use a rulebook-gold fill; dark mode deepens it so
-      // active chips feel less bright against the slate surface.
-      activeColor={isDarkMode ? darkConditionGold : bookAccent}
-      // Unselected label reads in black in light mode (per spec); dark
-      // mode keeps the StatusButton default of white text at all times.
-      inactiveTextColor="#000000"
-      hexagonal
-      onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
-    />
+    <>
+      <StatusButton
+        label={label}
+        active={Boolean(active[label])}
+        // Conditions use a rulebook-gold fill; dark mode deepens it so
+        // active chips feel less bright against the slate surface.
+        activeColor={activeColor}
+        // Unselected label reads in black in light mode (per spec); dark
+        // mode keeps the StatusButton default of white text at all times.
+        inactiveTextColor="#000000"
+        hexagonal
+        onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
+        onInfoClick={(event) => setInfoAnchorEl(event.currentTarget)}
+      />
+      <ConditionDescriptionPopper
+        label={label}
+        anchorEl={infoAnchorEl}
+        color={activeColor}
+        onClose={() => setInfoAnchorEl(null)}
+      />
+    </>
   );
 }
 
@@ -2702,41 +2739,51 @@ function StatusButton({
   const hexClipPath = 'polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%)';
   if (hexagonal) {
     return (
-      <Box
-        component="button"
-        type="button"
-        onClick={onToggle}
-        aria-pressed={active}
-        sx={{
-          width: '100%',
-          p: '1.5px',
-          border: 'none',
-          background: activeColor,
-          clipPath: hexClipPath,
-          cursor: 'pointer',
-          transition: 'background-color 0.15s ease, color 0.15s ease',
-        }}
-      >
+      <Box sx={{ position: 'relative', width: '100%' }}>
         <Box
-          component="span"
+          component="button"
+          type="button"
+          onClick={onToggle}
+          aria-pressed={active}
           sx={{
-            display: 'block',
             width: '100%',
-            py: '14px',
-            px: 2.2,
-            boxSizing: 'border-box',
+            p: '1.5px',
+            border: 'none',
+            background: activeColor,
             clipPath: hexClipPath,
-            background: active ? activeColor : parchmentLight,
-            color: textColor,
-            textAlign: 'center',
-            fontFamily: 'Georgia, serif',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            letterSpacing: '0.02em',
+            cursor: 'pointer',
+            transition: 'background-color 0.15s ease, color 0.15s ease',
           }}
         >
-          {label}
+          <Box
+            component="span"
+            sx={{
+              display: 'block',
+              width: '100%',
+              py: '14px',
+              px: 2.2,
+              boxSizing: 'border-box',
+              clipPath: hexClipPath,
+              background: active ? activeColor : parchmentLight,
+              color: textColor,
+              textAlign: 'center',
+              fontFamily: 'Georgia, serif',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {label}
+          </Box>
         </Box>
+        {onInfoClick ? (
+          <StatusInfoButton
+            label={label}
+            color={textColor}
+            onClick={onInfoClick}
+            sx={{ top: 4, right: 10 }}
+          />
+        ) : null}
       </Box>
     );
   }
@@ -2778,10 +2825,12 @@ function StatusInfoButton({
   label,
   color,
   onClick,
+  sx,
 }: {
   label: string;
   color: string;
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  sx?: Record<string, unknown>;
 }) {
   return (
     <Box
@@ -2809,6 +2858,7 @@ function StatusInfoButton({
         '&:hover': {
           color: activeInfoHoverColor(color),
         },
+        ...sx,
       }}
     >
       <Info size={16} strokeWidth={2.1} />
@@ -2895,6 +2945,98 @@ function StatusDescriptionPopper({
               </Typography>
             </Stack>
           ) : null}
+        </Paper>
+      </ClickAwayListener>
+    </Popper>
+  );
+}
+
+function ConditionDescriptionPopper({
+  label,
+  anchorEl,
+  color,
+  onClose,
+}: {
+  label: string;
+  anchorEl: HTMLElement | null;
+  color: string;
+  onClose: () => void;
+}) {
+  const condition = conditionDescriptions[label];
+  return (
+    <Popper
+      open={Boolean(condition && anchorEl)}
+      anchorEl={anchorEl}
+      placement="bottom-end"
+      modifiers={[
+        { name: 'offset', options: { offset: [0, 6] } },
+        { name: 'flip', options: { padding: 12 } },
+        { name: 'preventOverflow', options: { padding: 12 } },
+      ]}
+      sx={{ zIndex: (theme) => theme.zIndex.modal }}
+    >
+      <ClickAwayListener onClickAway={onClose}>
+        <Paper
+          elevation={0}
+          sx={{
+            width: 'min(290px, calc(100vw - 24px))',
+            bgcolor: parchment,
+            backgroundImage: 'none',
+            border: `1px solid ${border}`,
+            borderRadius: '8px',
+            boxShadow: `0 12px 30px ${alpha(deepInk, 0.34)}`,
+            p: 1.7,
+          }}
+        >
+          <Stack spacing={1.1}>
+            <Typography
+              sx={{
+                color,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.96rem',
+                fontWeight: 900,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {label}
+            </Typography>
+            <Typography
+              sx={{
+                color: brown,
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontSize: '0.88rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {condition?.penalty}
+            </Typography>
+            <Box>
+              <Typography
+                sx={{
+                  color,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.62rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  mb: 0.35,
+                }}
+              >
+                Clear by
+              </Typography>
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.88rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                {condition?.clear}
+              </Typography>
+            </Box>
+          </Stack>
         </Paper>
       </ClickAwayListener>
     </Popper>
@@ -6334,9 +6476,6 @@ function CombatPane() {
   };
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
-  const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
-  const toggleCondition = (label: string) =>
-    setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
   const [inventory, setInventory] = useAtom(inventoryAtom);
   const [pendingInventoryDelete, setPendingInventoryDelete] = useState<number | null>(null);
   function updateInventoryItem(
@@ -6355,7 +6494,6 @@ function CombatPane() {
   }
   // Conditions sub-tab mirrors Character tab conditions, with dark mode
   // using a deeper gold fill for a quieter active state.
-  const conditionColor = isDarkMode ? darkConditionGold : bookAccent;
   const negativeStatusColor = isDarkMode ? darkNegativeRed : passionRed;
   const positiveStatusColor =
     character.primaryTraining === 'Firebending'
@@ -6618,14 +6756,7 @@ function CombatPane() {
                         : undefined
                     }
                   >
-                    <StatusButton
-                      label={label}
-                      active={Boolean(activeConditions[label])}
-                      activeColor={conditionColor}
-                      inactiveTextColor="#000000"
-                      hexagonal
-                      onToggle={() => toggleCondition(label)}
-                    />
+                    <ConditionButtonShared label={label} />
                   </Box>
                 );
               })}
