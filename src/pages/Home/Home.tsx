@@ -155,7 +155,8 @@ function Home() {
       <Box
         component="main"
         sx={{
-          py: { xs: 0, md: 6 },
+          pt: 0,
+          pb: { xs: 0, md: 6 },
         }}
       >
         <Box
