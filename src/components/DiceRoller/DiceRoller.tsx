@@ -328,7 +328,7 @@ function ResultReadoutOverlay({
         zIndex: (theme) => theme.zIndex.tooltip + 16,
         display: 'flex',
         width: 'auto',
-        maxWidth: 'none',
+        maxWidth: { xs: 'none', md: 300 },
         minHeight: 78,
         transform: 'none',
         alignItems: 'flex-start',
