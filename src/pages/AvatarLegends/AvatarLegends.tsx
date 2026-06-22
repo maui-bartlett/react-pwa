@@ -691,6 +691,18 @@ const conditionDescriptions: Record<string, ConditionDescription> = {
     clear: 'Seeking guidance from a mentor or powerful figure.',
   },
 };
+const moveConditionByTitle: Record<string, string> = {
+  Intimidate: 'Afraid',
+  'Call Someone Out': 'Afraid',
+  'Comfort or Support': 'Angry',
+  'Assess a Situation': 'Angry',
+  Trick: 'Insecure',
+  'Resist Shifting Your Balance': 'Insecure',
+  'Push Your Luck': 'Guilty',
+  'Deny a Callout': 'Guilty',
+  Plead: 'Troubled',
+  'Rely on Your Skills & Training': 'Troubled',
+};
 
 // UI-only atoms (no character data; just remember which sub-tab is
 // active when the user navigates away and comes back).
@@ -5476,10 +5488,12 @@ function FilterTabs({
  */
 function MoveAccordion({
   entry,
+  conditionEffect,
   onUpdate,
   onDelete,
 }: {
   entry: MoveEntry;
+  conditionEffect?: string;
   onUpdate?: (entry: MoveEntry) => void;
   onDelete?: () => void;
 }) {
@@ -5513,9 +5527,8 @@ function MoveAccordion({
             width: '100%',
             gap: 0.9,
             p: 0,
-            // Give collapsed Moves cards a bit more vertical presence; when
-            // open the body content sets the height so no min is needed.
-            minHeight: open ? undefined : 34,
+            // Keep the title row identical when expanding the accordion.
+            minHeight: 34,
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -5547,20 +5560,34 @@ function MoveAccordion({
               }}
             />
           ) : (
-            <Typography
-              sx={{
-                flex: 1,
-                color: ink,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.92rem',
-                fontWeight: 900,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                lineHeight: 1.1,
-              }}
-            >
-              {entry.title}
-            </Typography>
+            <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                sx={{
+                  color: ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.92rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.1,
+                }}
+              >
+                {entry.title}
+              </Typography>
+              {conditionEffect ? (
+                <Typography
+                  sx={{
+                    color: passionRed,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {conditionEffect}: -2 to this move
+                </Typography>
+              ) : null}
+            </Stack>
           )}
           <Box
             sx={{
@@ -5713,6 +5740,7 @@ function MoveAccordion({
 
 function MovesPane() {
   const [subTab, setSubTab] = useAtom(movesSubTabAtom);
+  const activeConditions = useAtomValue(activeConditionsAtom);
   const requestUndo = useRequestUndoButton();
   // Basic + Balance lists come from the rulebook constants; class
   // moves come from the active character record so each character
@@ -5737,6 +5765,11 @@ function MovesPane() {
         <MoveAccordion
           key={entry.id ?? `${subTab}-${entry.custom ? 'custom' : 'move'}-${entry.title}-${index}`}
           entry={entry}
+          conditionEffect={
+            activeConditions[moveConditionByTitle[entry.title]]
+              ? moveConditionByTitle[entry.title]
+              : undefined
+          }
           onUpdate={
             entry.custom
               ? (next) =>
