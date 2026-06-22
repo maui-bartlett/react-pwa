@@ -7502,11 +7502,12 @@ function FatigueCard({
         >
           <Panel noNotch>
             <Stack spacing={0.5}>
-              <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1}>
+              <Stack direction="row" alignItems="center" gap={1}>
                 <SectionTitle>Fatigue</SectionTitle>
                 {tempFatigue.length > 0 ? (
                   <Typography
                     sx={{
+                      ml: 'auto',
                       color: alpha(brown, 0.7),
                       fontSize: '0.72rem',
                       fontWeight: 600,
@@ -7515,6 +7516,31 @@ function FatigueCard({
                     {baseFatigue.length} base + {tempFatigue.length} temp
                   </Typography>
                 ) : null}
+                <Box
+                  component="button"
+                  type="button"
+                  aria-label="Edit fatigue capacity"
+                  onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                    event.stopPropagation();
+                    openEditor();
+                  }}
+                  sx={{
+                    display: 'grid',
+                    placeItems: 'center',
+                    width: 30,
+                    height: 30,
+                    flex: '0 0 auto',
+                    p: 0,
+                    borderRadius: '4px',
+                    border: `1px solid ${alpha(border, 0.75)}`,
+                    bgcolor: 'transparent',
+                    color: brown,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: alpha(accent, 0.12) },
+                  }}
+                >
+                  <Pencil size={15} />
+                </Box>
               </Stack>
               {/* Base diamonds first (left), then temp diamonds expand to the
                   right, so the bar grows rightward as temporary capacity is
