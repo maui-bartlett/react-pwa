@@ -2381,6 +2381,8 @@ function BalanceTrack({ classData }: { classData: AvatarClassData | null | undef
  */
 function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
   const { isDarkMode } = useThemeMode();
+  const stickyRef = useRef<HTMLDivElement | null>(null);
+  const [isStuck, setIsStuck] = useState(false);
   const rows: Array<[string, string]> = [
     ['Creativity', isDarkMode ? darkStatWater : water],
     ['Focus', isDarkMode ? darkStatEarth : earth],
@@ -2398,6 +2400,39 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
   }
   const statOptions = [-3, -2, -1, 0, 1, 2, 3];
 
+  useEffect(() => {
+    if (!sticky || !stickyRef.current) {
+      setIsStuck(false);
+      return;
+    }
+
+    const stickyElement = stickyRef.current;
+    const scrollRoot = stickyElement.closest<HTMLElement>('[data-dice-tray-scroll-root]');
+    if (!scrollRoot) return;
+
+    const rootTop = scrollRoot.getBoundingClientRect().top;
+    const naturalTop = stickyElement.getBoundingClientRect().top - rootTop + scrollRoot.scrollTop;
+    let frame: number | null = null;
+
+    const updateStuckState = () => {
+      frame = null;
+      setIsStuck(scrollRoot.scrollTop >= naturalTop - 0.5);
+    };
+    const requestUpdate = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(updateStuckState);
+    };
+
+    updateStuckState();
+    scrollRoot.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+    return () => {
+      scrollRoot.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [sticky]);
+
   return (
     // When sticky, pin to the top of the scrolling tab body so the stats stay
     // visible while scrolling Moves / Combat. Must be a direct child of the
@@ -2406,13 +2441,19 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
     // the cards that scroll underneath; the negative top margin trims the gap
     // above the panel.
     <Box
+      ref={stickyRef}
+      data-stuck={sticky && isStuck ? 'true' : 'false'}
       sx={
         sticky
           ? {
               position: 'sticky',
-              top: 0,
+              // The tab scroll root has 20px of top padding. Offset that only
+              // while pinned so the card touches the scroll viewport edge,
+              // then restore its normal inset when it returns to document flow.
+              top: isStuck ? '-20px' : 0,
               zIndex: 4,
-              mt: '-15px',
+              mt: `${isStuck ? 0 : -15}px !important`,
+              transition: 'top 180ms ease, margin-top 180ms ease',
             }
           : undefined
       }
