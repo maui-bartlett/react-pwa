@@ -1,4 +1,12 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
 
@@ -7969,14 +7977,33 @@ function AvatarLegends() {
   const [activeTab, setActiveTab] = useState<AvatarTab>(() =>
     readPersistentAppView('avatar-legends', 'tab', avatarTabValues, 'character'),
   );
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
+  const tabScrollPositionsRef = useRef<Record<AvatarTab, number>>({
+    character: 0,
+    moves: 0,
+    combat: 0,
+    backpack: 0,
+  });
   const activeConfig = useMemo(
     () => tabs.find((tab) => tab.value === activeTab) ?? tabs[0],
     [activeTab],
   );
 
+  useLayoutEffect(() => {
+    const scrollRoot = scrollRootRef.current;
+    if (!scrollRoot) return;
+    scrollRoot.scrollTop = tabScrollPositionsRef.current[activeTab];
+  }, [activeTab]);
+
   useEffect(() => {
     persistAppView('avatar-legends', 'tab', activeTab);
   }, [activeTab]);
+
+  const handleTabChange = (nextTab: AvatarTab) => {
+    const scrollRoot = scrollRootRef.current;
+    if (scrollRoot) tabScrollPositionsRef.current[activeTab] = scrollRoot.scrollTop;
+    setActiveTab(nextTab);
+  };
 
   // Dark mode for the avatar-legends UI. applyAvatarPalette mutates the
   // module-level color `let`s so every helper component picks up the
@@ -8364,7 +8391,11 @@ function AvatarLegends() {
             </Box>
 
             <Box
+              ref={scrollRootRef}
               data-dice-tray-scroll-root
+              onScroll={(event: React.UIEvent<HTMLDivElement>) => {
+                tabScrollPositionsRef.current[activeTab] = event.currentTarget.scrollTop;
+              }}
               sx={{
                 flex: 1,
                 overflowY: 'auto',
@@ -8436,7 +8467,7 @@ function AvatarLegends() {
                   return (
                     <ButtonBase
                       key={tab.value}
-                      onClick={() => setActiveTab(tab.value)}
+                      onClick={() => handleTabChange(tab.value)}
                       disableRipple
                       disableTouchRipple
                       focusRipple={false}
