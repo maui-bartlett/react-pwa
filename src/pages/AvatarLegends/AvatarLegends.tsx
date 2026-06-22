@@ -5718,16 +5718,18 @@ function MovesPane() {
   const [character, setCharacter] = useAtom(characterStateAtom);
   const visibleMoves: MoveEntry[] =
     subTab === 0
-      ? movesByCategory.basic
+      ? [...movesByCategory.basic, ...movesByCategory.balance, ...character.classMoves]
       : subTab === 1
-        ? movesByCategory.balance
-        : character.classMoves;
+        ? movesByCategory.basic
+        : subTab === 2
+          ? movesByCategory.balance
+          : character.classMoves;
   return (
     <Stack spacing={1} sx={{ mt: '-20px' }}>
       {/* Stats stay pinned at the top of the Moves tab while the list scrolls. */}
       <StatsPanel sticky />
       <FilterTabs
-        labels={['Basic', 'Balance', 'Class']}
+        labels={['All', 'Basic', 'Balance', 'Class']}
         activeIndex={subTab}
         onChange={setSubTab}
       />
@@ -5762,7 +5764,7 @@ function MovesPane() {
           }
         />
       ))}
-      {subTab === 2 ? (
+      {subTab === 3 ? (
         <AddListCard
           label="Add custom move"
           onClick={() =>
@@ -7850,12 +7852,12 @@ function BackpackPane() {
   return (
     <Stack spacing={1}>
       <FilterTabs
-        labels={['Notes', 'Inventory', 'Lore', 'Sessions']}
+        labels={['Journal', 'Inventory', 'Lore', 'Sessions']}
         activeIndex={subTab}
         onChange={setSubTab}
       />
 
-      {/* Notes sub-tab: editable + deletable accordion cards. */}
+      {/* Journal sub-tab: editable + deletable accordion cards. */}
       {subTab === 0 ? (
         <>
           {visibleNoteEntries.map(({ entry, index }) => (
