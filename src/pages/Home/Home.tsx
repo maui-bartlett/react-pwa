@@ -36,17 +36,17 @@ function FabulaSparkleIcon(props: SvgIconProps) {
     <SvgIcon {...props} viewBox="0 0 24 24">
       <path
         className="fabula-sparkle-star fabula-sparkle-star-main"
-        d="M11.8 2.3l1.95 5.05 5.05 1.95-5.05 1.95-1.95 5.05-1.95-5.05L4.8 9.3l5.05-1.95L11.8 2.3Z"
+        d="M11.5 9.5 9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12z"
         fill="currentColor"
       />
       <path
         className="fabula-sparkle-star fabula-sparkle-star-small"
-        d="M18.8 12.7l.9 2.25 2.25.9-2.25.9-.9 2.25-.9-2.25-2.25-.9 2.25-.9.9-2.25Z"
+        d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25z"
         fill="currentColor"
       />
       <path
         className="fabula-sparkle-star fabula-sparkle-star-tiny"
-        d="M5.25 14.3l.62 1.58 1.58.62-1.58.62-.62 1.58-.62-1.58-1.58-.62 1.58-.62.62-1.58Z"
+        d="m19 15-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"
         fill="currentColor"
       />
     </SvgIcon>
