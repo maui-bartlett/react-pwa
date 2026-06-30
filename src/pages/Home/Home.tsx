@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
@@ -31,6 +31,28 @@ function AvatarLegendsAppIcon() {
   );
 }
 
+function FabulaSparkleIcon(props: SvgIconProps) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24">
+      <path
+        className="fabula-sparkle-star fabula-sparkle-star-main"
+        d="M11.8 2.3l1.95 5.05 5.05 1.95-5.05 1.95-1.95 5.05-1.95-5.05L4.8 9.3l5.05-1.95L11.8 2.3Z"
+        fill="currentColor"
+      />
+      <path
+        className="fabula-sparkle-star fabula-sparkle-star-small"
+        d="M18.8 12.7l.9 2.25 2.25.9-2.25.9-.9 2.25-.9-2.25-2.25-.9 2.25-.9.9-2.25Z"
+        fill="currentColor"
+      />
+      <path
+        className="fabula-sparkle-star fabula-sparkle-star-tiny"
+        d="M5.25 14.3l.62 1.58 1.58.62-1.58.62-.62 1.58-.62-1.58-1.58-.62 1.58-.62.62-1.58Z"
+        fill="currentColor"
+      />
+    </SvgIcon>
+  );
+}
+
 const systems = [
   {
     name: 'Fabula Ultima',
@@ -43,7 +65,7 @@ const systems = [
     cover: '/fabula-ultima-cover.jpg',
     coverPosition: 'center 28%',
     visual: 'crest',
-    icon: AutoAwesomeIcon,
+    icon: FabulaSparkleIcon,
   },
   {
     name: 'Avatar Legends',
@@ -486,6 +508,39 @@ function Home() {
                         fontWeight: 800,
                         px: { xs: 2.2, md: 2 },
                         textTransform: 'none',
+                        '& .fabula-sparkle-star': {
+                          transformBox: 'fill-box',
+                          transformOrigin: 'center',
+                        },
+                        '&:hover .fabula-sparkle-star-main': {
+                          animation: 'fabulaStarPulse 980ms ease-in-out infinite',
+                        },
+                        '&:hover .fabula-sparkle-star-small': {
+                          animation: 'fabulaStarPulse 820ms ease-in-out 120ms infinite',
+                        },
+                        '&:hover .fabula-sparkle-star-tiny': {
+                          animation: 'fabulaStarPulse 700ms ease-in-out 240ms infinite',
+                        },
+                        '@keyframes fabulaStarPulse': {
+                          '0%, 100%': {
+                            opacity: 0.64,
+                            transform: 'scale(0.72) rotate(-8deg)',
+                          },
+                          '45%': {
+                            opacity: 1,
+                            transform: 'scale(1.18) rotate(8deg)',
+                          },
+                          '70%': {
+                            opacity: 0.82,
+                            transform: 'scale(0.92) rotate(0deg)',
+                          },
+                        },
+                        '@media (prefers-reduced-motion: reduce)': {
+                          '&:hover .fabula-sparkle-star-main, &:hover .fabula-sparkle-star-small, &:hover .fabula-sparkle-star-tiny':
+                            {
+                              animation: 'none',
+                            },
+                        },
                         '&:hover': {
                           bgcolor: '#fffaf0',
                         },
