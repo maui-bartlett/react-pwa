@@ -13,22 +13,42 @@ import elementEarth from '@/pages/AvatarLegends/assets/earthbending-symbol.png';
 import elementFire from '@/pages/AvatarLegends/assets/firebending-symbol.png';
 import elementWater from '@/pages/AvatarLegends/assets/waterbending-symbol.png';
 
-function AvatarLegendsAppIcon() {
+function AvatarLegendsAppIcon({ size = 'button' }: { size?: 'button' | 'card' }) {
+  const dimensions = size === 'card' ? 132 : 42;
+  const radius = size === 'card' ? '28px' : '8px';
+
   return (
     <Box
-      component="img"
-      alt=""
-      // Near-white-background variant (the installed PWA icon keeps its grey
-      // backdrop); sized to almost fill the button height.
-      src="/avatar-legends-button-icon.png"
+      role="img"
+      aria-label="Avatar Legends"
       sx={{
-        display: 'block',
-        width: 42,
-        height: 42,
-        borderRadius: '8px',
+        width: dimensions,
+        height: dimensions,
+        borderRadius: radius,
+        bgcolor: '#fff',
+        boxShadow: size === 'card' ? '0 18px 36px rgba(0,0,0,0.28)' : 'none',
+        display: 'grid',
+        placeItems: 'center',
+        overflow: 'hidden',
       }}
-    />
+    >
+      <Box
+        component="img"
+        alt=""
+        src="/avatar-legends-button-icon.png"
+        sx={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+        }}
+      />
+    </Box>
   );
+}
+
+function AvatarElementButtonIcon() {
+  return <AvatarElementCarousel size="button" />;
 }
 
 function FabulaSparkleIcon(props: SvgIconProps) {
@@ -78,7 +98,7 @@ const systems = [
     cover: '/avatar-legends-cover.jpg',
     coverPosition: 'center 32%',
     visual: 'avatar',
-    icon: AvatarLegendsAppIcon,
+    icon: AvatarElementButtonIcon,
   },
 ] as const;
 
@@ -153,8 +173,11 @@ function FabulaCrest() {
   );
 }
 
-function AvatarElementCarousel() {
+function AvatarElementCarousel({ size = 'card' }: { size?: 'button' | 'card' }) {
   const [activeElementIndex, setActiveElementIndex] = useState(0);
+  const dimensions = size === 'card' ? 132 : 42;
+  const radius = size === 'card' ? '28px' : '8px';
+  const inset = size === 'card' ? 22 : 7;
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -169,12 +192,12 @@ function AvatarElementCarousel() {
       aria-label="Avatar Legends bending elements"
       sx={{
         position: 'relative',
-        width: 132,
-        height: 132,
-        borderRadius: '28px',
-        border: '3px solid rgba(255,255,255,0.88)',
-        bgcolor: '#d5d8dc',
-        boxShadow: '0 18px 36px rgba(0,0,0,0.28)',
+        width: dimensions,
+        height: dimensions,
+        borderRadius: radius,
+        border: size === 'card' ? '3px solid rgba(255,255,255,0.88)' : 0,
+        bgcolor: '#fff',
+        boxShadow: size === 'card' ? '0 18px 36px rgba(0,0,0,0.28)' : 'none',
         overflow: 'hidden',
       }}
     >
@@ -186,7 +209,7 @@ function AvatarElementCarousel() {
             aria-hidden
             sx={{
               position: 'absolute',
-              inset: 22,
+              inset,
               bgcolor: element.color,
               maskImage: `url(${element.src})`,
               maskPosition: 'center',
@@ -215,7 +238,7 @@ function AvatarElementCarousel() {
 
 function SystemVisual({ visual }: { visual: (typeof systems)[number]['visual'] }) {
   if (visual === 'avatar') {
-    return <AvatarElementCarousel />;
+    return <AvatarLegendsAppIcon size="card" />;
   }
   return <FabulaCrest />;
 }
@@ -500,7 +523,7 @@ function Home() {
                       sx={{
                         mt: 1,
                         minHeight: { xs: 50, md: 44 },
-                        // Avatar Legends uses a large app-icon that almost fills
+                        // Avatar Legends uses a framed icon that almost fills
                         // the button, so trim the vertical padding to suit it.
                         py: system.visual === 'avatar' ? 0.4 : undefined,
                         borderRadius: 1.4,
