@@ -587,11 +587,22 @@ function SavePill({ ability }: { ability: AbilityScore }) {
   );
 }
 
-function AbilitiesScreen({ character }: { character: DndCharacter }) {
+function AbilitiesScreen({
+  character,
+  onEditStats,
+}: {
+  character: DndCharacter;
+  onEditStats: () => void;
+}) {
   return (
     <>
       <SectionHeader icon={<ShieldIcon />} title="Abilities, Saves, Senses" />
       <Box sx={{ px: 1.6, pb: 12 }}>
+        <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+          <Button startIcon={<EditIcon />} onClick={onEditStats} sx={inlineEditButtonSx}>
+            Edit Stats
+          </Button>
+        </Stack>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.2 }}>
           {character.abilities.map((ability) => (
             <AbilityTile key={ability.key} ability={ability} />
@@ -682,11 +693,22 @@ function SenseRow({ label, value }: { label: string; value: number }) {
   );
 }
 
-function SkillsScreen({ character }: { character: DndCharacter }) {
+function SkillsScreen({
+  character,
+  onEditSkills,
+}: {
+  character: DndCharacter;
+  onEditSkills: () => void;
+}) {
   return (
     <>
       <SectionHeader icon={<AutoAwesomeIcon />} title="Skills" mode="list" />
       <Box sx={{ px: 1.6, pb: 12 }}>
+        <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+          <Button startIcon={<EditIcon />} onClick={onEditSkills} sx={inlineEditButtonSx}>
+            Edit Skills
+          </Button>
+        </Stack>
         {character.skills.map((skill) => (
           <SkillRowView key={skill.name} skill={skill} />
         ))}
@@ -1124,6 +1146,16 @@ const moreButtonSx = {
   bgcolor: dndColors.panelSoft,
   textTransform: 'none',
   fontWeight: 800,
+};
+
+const inlineEditButtonSx = {
+  color: dndColors.blue,
+  border: `1px solid ${dndColors.border}`,
+  bgcolor: dndColors.panel,
+  borderRadius: '6px',
+  textTransform: 'none',
+  fontWeight: 900,
+  '&:hover': { bgcolor: dndColors.panelSoft },
 };
 
 function FeatureBlock({ feature }: { feature: Feature }) {
@@ -1734,6 +1766,204 @@ function HitPointEditDialog({
   );
 }
 
+type AbilityForm = {
+  abilities: Array<{
+    key: AbilityScore['key'];
+    label: string;
+    score: string;
+    saveBonus: string;
+    proficientSave: boolean;
+  }>;
+  passivePerception: string;
+  passiveInvestigation: string;
+  passiveInsight: string;
+};
+
+function createAbilityForm(character: DndCharacter): AbilityForm {
+  return {
+    abilities: character.abilities.map((ability) => ({
+      key: ability.key,
+      label: ability.label,
+      score: String(ability.score),
+      saveBonus: String(ability.saveBonus),
+      proficientSave: ability.proficientSave,
+    })),
+    passivePerception: String(character.passivePerception),
+    passiveInvestigation: String(character.passiveInvestigation),
+    passiveInsight: String(character.passiveInsight),
+  };
+}
+
+function AbilityEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: AbilityForm | null;
+  onChange: (form: AbilityForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  const updateAbility = (index: number, next: Partial<AbilityForm['abilities'][number]>) => {
+    onChange({
+      ...form,
+      abilities: form.abilities.map((ability, abilityIndex) =>
+        abilityIndex === index ? { ...ability, ...next } : ability,
+      ),
+    });
+  };
+
+  return (
+    <DndEditDialog title="Edit Abilities" open={open} onCancel={onCancel} onSave={onSave}>
+      {form.abilities.map((ability, index) => (
+        <Box
+          key={ability.key}
+          sx={{
+            p: 1,
+            border: `1px solid ${dndColors.border}`,
+            borderRadius: '7px',
+            bgcolor: dndColors.panel,
+          }}
+        >
+          <Typography sx={{ color: dndColors.text, fontWeight: 900, mb: 0.8 }}>
+            {ability.label}
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <FormField
+              label="Score"
+              value={ability.score}
+              inputMode="numeric"
+              onChange={(value) => updateAbility(index, { score: value })}
+            />
+            <FormField
+              label="Save"
+              value={ability.saveBonus}
+              inputMode="numeric"
+              onChange={(value) => updateAbility(index, { saveBonus: value })}
+            />
+          </Stack>
+          <Button
+            onClick={() => updateAbility(index, { proficientSave: !ability.proficientSave })}
+            sx={{ ...toggleButtonSx(ability.proficientSave), mt: 1 }}
+          >
+            {ability.proficientSave ? 'Save Proficient' : 'Save Not Proficient'}
+          </Button>
+        </Box>
+      ))}
+      <Stack direction="row" spacing={1}>
+        <FormField
+          label="Passive Perception"
+          value={form.passivePerception}
+          inputMode="numeric"
+          onChange={(value) => onChange({ ...form, passivePerception: value })}
+        />
+        <FormField
+          label="Passive Investigation"
+          value={form.passiveInvestigation}
+          inputMode="numeric"
+          onChange={(value) => onChange({ ...form, passiveInvestigation: value })}
+        />
+      </Stack>
+      <FormField
+        label="Passive Insight"
+        value={form.passiveInsight}
+        inputMode="numeric"
+        onChange={(value) => onChange({ ...form, passiveInsight: value })}
+      />
+    </DndEditDialog>
+  );
+}
+
+type SkillForm = Array<{
+  name: string;
+  ability: Skill['ability'];
+  bonus: string;
+  proficient: boolean;
+  expertise: boolean;
+}>;
+
+function createSkillForm(character: DndCharacter): SkillForm {
+  return character.skills.map((skill) => ({
+    name: skill.name,
+    ability: skill.ability,
+    bonus: String(skill.bonus),
+    proficient: skill.proficient,
+    expertise: Boolean(skill.expertise),
+  }));
+}
+
+function SkillEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: SkillForm | null;
+  onChange: (form: SkillForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  const updateSkill = (index: number, next: Partial<SkillForm[number]>) => {
+    onChange(form.map((skill, skillIndex) => (skillIndex === index ? { ...skill, ...next } : skill)));
+  };
+
+  return (
+    <DndEditDialog title="Edit Skills" open={open} onCancel={onCancel} onSave={onSave}>
+      {form.map((skill, index) => (
+        <Box
+          key={skill.name}
+          sx={{
+            p: 1,
+            border: `1px solid ${dndColors.border}`,
+            borderRadius: '7px',
+            bgcolor: dndColors.panel,
+          }}
+        >
+          <Typography sx={{ color: dndColors.text, fontWeight: 900, mb: 0.8 }}>
+            {skill.name}
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <FormField
+              label="Ability"
+              value={skill.ability.toUpperCase()}
+              onChange={(value) =>
+                updateSkill(index, { ability: value.toLowerCase() as Skill['ability'] })
+              }
+            />
+            <FormField
+              label="Bonus"
+              value={skill.bonus}
+              inputMode="numeric"
+              onChange={(value) => updateSkill(index, { bonus: value })}
+            />
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+            <Button
+              onClick={() => updateSkill(index, { proficient: !skill.proficient })}
+              sx={toggleButtonSx(skill.proficient)}
+            >
+              {skill.proficient ? 'Proficient' : 'Not Proficient'}
+            </Button>
+            <Button
+              onClick={() => updateSkill(index, { expertise: !skill.expertise })}
+              sx={toggleButtonSx(skill.expertise)}
+            >
+              {skill.expertise ? 'Expertise' : 'No Expertise'}
+            </Button>
+          </Stack>
+        </Box>
+      ))}
+    </DndEditDialog>
+  );
+}
+
 type AttackForm = Attack;
 type SpellForm = Spell;
 type ItemForm = InventoryItem;
@@ -1875,6 +2105,8 @@ function DungeonsAndDragons() {
   const [attackForm, setAttackForm] = useState<AttackForm | null>(null);
   const [spellForm, setSpellForm] = useState<SpellForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
+  const [abilityForm, setAbilityForm] = useState<AbilityForm | null>(null);
+  const [skillForm, setSkillForm] = useState<SkillForm | null>(null);
   const [charactersOpen, setCharactersOpen] = useState(false);
 
   const localCharacters = useLocalCharacterSlots({
@@ -2067,12 +2299,67 @@ function DungeonsAndDragons() {
     setHitPointForm(null);
   };
 
+  const saveAbilities = () => {
+    if (!abilityForm) return;
+    setCharacter((current) => ({
+      ...current,
+      abilities: current.abilities.map((ability) => {
+        const next = abilityForm.abilities.find((entry) => entry.key === ability.key);
+        return next
+          ? {
+              ...ability,
+              score: parseIntOrFallback(next.score, ability.score),
+              saveBonus: parseIntOrFallback(next.saveBonus, ability.saveBonus),
+              proficientSave: next.proficientSave,
+            }
+          : ability;
+      }),
+      passivePerception: parseIntOrFallback(abilityForm.passivePerception, current.passivePerception),
+      passiveInvestigation: parseIntOrFallback(
+        abilityForm.passiveInvestigation,
+        current.passiveInvestigation,
+      ),
+      passiveInsight: parseIntOrFallback(abilityForm.passiveInsight, current.passiveInsight),
+    }));
+    setAbilityForm(null);
+  };
+
+  const saveSkills = () => {
+    if (!skillForm) return;
+    setCharacter((current) => ({
+      ...current,
+      skills: current.skills.map((skill) => {
+        const next = skillForm.find((entry) => entry.name === skill.name);
+        return next
+          ? {
+              ...skill,
+              ability: next.ability,
+              bonus: parseIntOrFallback(next.bonus, skill.bonus),
+              proficient: next.proficient,
+              expertise: next.expertise,
+            }
+          : skill;
+      }),
+    }));
+    setSkillForm(null);
+  };
+
   const content = (() => {
     switch (activeTab) {
       case 'abilities':
-        return <AbilitiesScreen character={character} />;
+        return (
+          <AbilitiesScreen
+            character={character}
+            onEditStats={() => setAbilityForm(createAbilityForm(character))}
+          />
+        );
       case 'skills':
-        return <SkillsScreen character={character} />;
+        return (
+          <SkillsScreen
+            character={character}
+            onEditSkills={() => setSkillForm(createSkillForm(character))}
+          />
+        );
       case 'actions':
         return (
           <ActionsScreen
@@ -2224,6 +2511,20 @@ function DungeonsAndDragons() {
           onChange={setItemForm}
           onCancel={() => setItemForm(null)}
           onSave={saveItem}
+        />
+        <AbilityEditDialog
+          open={abilityForm !== null}
+          form={abilityForm}
+          onChange={setAbilityForm}
+          onCancel={() => setAbilityForm(null)}
+          onSave={saveAbilities}
+        />
+        <SkillEditDialog
+          open={skillForm !== null}
+          form={skillForm}
+          onChange={setSkillForm}
+          onCancel={() => setSkillForm(null)}
+          onSave={saveSkills}
         />
       </Box>
     </Box>
