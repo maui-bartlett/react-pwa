@@ -29,6 +29,35 @@ const TITLE_SMALL_WORDS = new Set([
 
 const DND_CORE_CLASSES = [
   {
+    className: 'Artificer',
+    hitDie: 'd8',
+    primaryAbilities: ['Intelligence'],
+    savingThrows: ['Constitution', 'Intelligence'],
+    armorProficiencies: ['Light Armor', 'Medium Armor', 'Shields'],
+    weaponProficiencies: ['Simple Weapons'],
+    toolProficiencies: ["Thieves' Tools", "Tinker's Tools", 'One Artisan Tool'],
+    skillChoices: {
+      choose: 2,
+      from: [
+        'Arcana',
+        'History',
+        'Investigation',
+        'Medicine',
+        'Nature',
+        'Perception',
+        'Sleight of Hand',
+      ],
+    },
+    spellcasting: {
+      type: 'half-rounded-up',
+      ability: 'Intelligence',
+      ritualCasting: true,
+      preparation: 'prepared',
+    },
+    multiclassPrerequisites: [{ ability: 'Intelligence', minimum: 13 }],
+    source: 'D&D 5e Artificer class attributes',
+  },
+  {
     className: 'Barbarian',
     hitDie: 'd12',
     primaryAbilities: ['Strength'],
@@ -510,7 +539,8 @@ export const seedDungeonsAndDragonsClasses = internalMutation({
         class: {
           ...classInfo,
           edition: '5e',
-          source: 'SRD 5.1 / 2014 core class attributes',
+          source:
+            'source' in classInfo ? classInfo.source : 'SRD 5.1 / 2014 core class attributes',
           meta: { gameSystem: DUNGEONS_AND_DRAGONS_GAME_SYSTEM },
           createdAt: now,
           updatedAt: now,
