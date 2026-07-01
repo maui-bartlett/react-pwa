@@ -1288,6 +1288,9 @@ function FeatureBlock({
                 component="button"
                 key={index}
                 type="button"
+                disabled={!onUpdateUses}
+                aria-label={`${feature.name}: set ${feature.uses!.label} used to ${index + 1} of ${feature.uses!.max}`}
+                aria-pressed={index < feature.uses!.used}
                 onClick={() => onUpdateUses?.(index + 1 === feature.uses!.used ? index : index + 1)}
                 sx={{
                   width: 28,
@@ -1297,6 +1300,7 @@ function FeatureBlock({
                   bgcolor: index < feature.uses!.used ? dndColors.muted : 'transparent',
                   cursor: onUpdateUses ? 'pointer' : 'default',
                   p: 0,
+                  '&:focus-visible': { outline: `2px solid ${dndColors.blue}`, outlineOffset: 2 },
                 }}
               />
             ))}
@@ -2114,15 +2118,36 @@ function SkillEditDialog({
           <Typography sx={{ color: dndColors.text, fontWeight: 900, mb: 0.8 }}>
             {skill.name}
           </Typography>
-          <Stack direction="row" spacing={1}>
-            <FormField
-              label="Ability"
-              value={skill.ability.toUpperCase()}
-              onChange={(value) => {
-                const normalized = value.trim().toLowerCase();
-                if (isAbilityKey(normalized)) updateSkill(index, { ability: normalized });
-              }}
-            />
+          <Stack spacing={1}>
+            <Box>
+              <Typography
+                sx={{
+                  color: dndColors.muted,
+                  fontSize: 11,
+                  fontWeight: 900,
+                  mb: 0.4,
+                  textTransform: 'uppercase',
+                }}
+              >
+                Ability
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={0.6}>
+                {abilityKeys.map((ability) => (
+                  <Button
+                    key={ability}
+                    onClick={() => updateSkill(index, { ability })}
+                    sx={{
+                      ...toggleButtonSx(skill.ability === ability),
+                      minWidth: 48,
+                      minHeight: 34,
+                      fontSize: 12,
+                    }}
+                  >
+                    {ability.toUpperCase()}
+                  </Button>
+                ))}
+              </Stack>
+            </Box>
             <FormField
               label="Bonus"
               value={skill.bonus}
@@ -2678,8 +2703,8 @@ function DungeonsAndDragons() {
         const reset = feature.uses.reset.toLowerCase();
         const resetsOnRest =
           restType === 'long'
-            ? reset.includes('long rest')
-            : reset.includes('short') || reset.includes('long rest');
+            ? reset.includes('long rest') || reset.includes('short')
+            : reset.includes('short');
         return resetsOnRest
           ? { ...feature, uses: { ...feature.uses, used: 0 } }
           : feature;
