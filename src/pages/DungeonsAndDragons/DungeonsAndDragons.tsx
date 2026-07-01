@@ -35,6 +35,7 @@ import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import type { LocalCharacterSummary } from '@/state/useLocalCharacterSlots';
 
 import type {
+  AbilityKey,
   AbilityScore,
   Attack,
   DndCharacter,
@@ -66,12 +67,18 @@ const dndColors = {
   gold: '#f0b948',
 };
 
+const abilityKeys: readonly AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
 function abilityModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
 function formatModifier(value: number) {
   return value >= 0 ? `+${value}` : `${value}`;
+}
+
+function isAbilityKey(value: string): value is AbilityKey {
+  return abilityKeys.includes(value as AbilityKey);
 }
 
 function createEntryId(prefix: string) {
@@ -1092,20 +1099,37 @@ function InventoryRow({ item }: { item: InventoryItem }) {
 function FeaturesScreen({
   character,
   onDeleteFeature,
+  onUpdateFeatureUses,
+  onRestFeatures,
   onSelectTab,
 }: {
   character: DndCharacter;
   onDeleteFeature: (id: string) => void;
+  onUpdateFeatureUses: (id: string, used: number) => void;
+  onRestFeatures: (restType: 'short' | 'long') => void;
   onSelectTab: (tab: DndTab) => void;
 }) {
   return (
     <>
       <SectionHeader icon={<PersonIcon />} title="Features & Traits" />
       <Box sx={{ px: 1.6, pb: 12 }}>
+        <Stack direction="row" spacing={1} sx={{ mt: 1.4 }}>
+          <Button onClick={() => onRestFeatures('short')} sx={moreButtonSx}>
+            Short Rest
+          </Button>
+          <Button onClick={() => onRestFeatures('long')} sx={moreButtonSx}>
+            Long Rest
+          </Button>
+        </Stack>
         <Typography sx={subSectionSx}>Class Features</Typography>
         {character.features.map((feature) => (
           <SwipeRow key={feature.id} onDelete={() => onDeleteFeature(feature.id)}>
-            <FeatureBlock feature={feature} />
+            <FeatureBlock
+              feature={feature}
+              onUpdateUses={
+                feature.uses ? (used) => onUpdateFeatureUses(feature.id, used) : undefined
+              }
+            />
           </SwipeRow>
         ))}
         <Typography sx={subSectionSx}>Feats</Typography>
@@ -1158,7 +1182,13 @@ const inlineEditButtonSx = {
   '&:hover': { bgcolor: dndColors.panelSoft },
 };
 
-function FeatureBlock({ feature }: { feature: Feature }) {
+function FeatureBlock({
+  feature,
+  onUpdateUses,
+}: {
+  feature: Feature;
+  onUpdateUses?: (used: number) => void;
+}) {
   return (
     <Box sx={{ py: 1.2, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}>
       <Typography sx={{ color: dndColors.text, fontSize: 19, fontWeight: 900 }}>
@@ -1184,13 +1214,18 @@ function FeatureBlock({ feature }: { feature: Feature }) {
           <Stack direction="row" spacing={0.7} sx={{ mt: 0.8 }}>
             {Array.from({ length: feature.uses.max }).map((_, index) => (
               <Box
+                component="button"
                 key={index}
+                type="button"
+                onClick={() => onUpdateUses?.(index + 1 === feature.uses!.used ? index : index + 1)}
                 sx={{
                   width: 28,
                   height: 28,
                   borderRadius: '4px',
                   border: `2px solid ${dndColors.muted}`,
                   bgcolor: index < feature.uses!.used ? dndColors.muted : 'transparent',
+                  cursor: onUpdateUses ? 'pointer' : 'default',
+                  p: 0,
                 }}
               />
             ))}
@@ -1225,12 +1260,21 @@ function TagCloud({ values }: { values: string[] }) {
   );
 }
 
-function BackgroundScreen({ character }: { character: DndCharacter }) {
+function BackgroundScreen({
+  character,
+  onEditBackground,
+}: {
+  character: DndCharacter;
+  onEditBackground: () => void;
+}) {
   return (
     <>
       <SectionHeader icon={<PersonIcon />} title="Background" mode="list" />
       <Box sx={{ px: 1.6, pb: 12 }}>
         <DndCard title={character.background} sx={{ p: 1.6 }}>
+          <Button onClick={onEditBackground} sx={{ ...inlineEditButtonSx, mb: 1 }}>
+            Edit Background
+          </Button>
           <Detail title="Alignment" value={character.alignment} />
           <Detail title="Personality Traits" value={character.personality.traits} />
           <Detail title="Ideals" value={character.personality.ideals} />
@@ -1243,20 +1287,44 @@ function BackgroundScreen({ character }: { character: DndCharacter }) {
   );
 }
 
-function NotesScreen({ character }: { character: DndCharacter }) {
+function NotesScreen({
+  character,
+  onAddNote,
+  onEditNote,
+  onDeleteNote,
+}: {
+  character: DndCharacter;
+  onAddNote: () => void;
+  onEditNote: (note: DndCharacter['notes'][number]) => void;
+  onDeleteNote: (id: string) => void;
+}) {
   return (
     <>
       <SectionHeader icon={<MenuBookIcon />} title="Notes" mode="list" />
       <Box sx={{ px: 1.6, pb: 12 }}>
+        <Button
+          fullWidth
+          startIcon={<AddIcon />}
+          onClick={onAddNote}
+          sx={{ ...inlineEditButtonSx, mb: 1.2, minHeight: 44 }}
+        >
+          Add Note
+        </Button>
         {character.notes.map((note) => (
-          <DndCard key={note.id} sx={{ p: 1.6, mb: 1.2 }}>
-            <Typography sx={{ color: dndColors.text, fontSize: 19, fontWeight: 900 }}>
-              {note.title}
-            </Typography>
-            <Typography sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.55, mt: 0.8 }}>
-              {note.body}
-            </Typography>
-          </DndCard>
+          <SwipeRow
+            key={note.id}
+            onDelete={() => onDeleteNote(note.id)}
+            onEdit={() => onEditNote(note)}
+          >
+            <DndCard sx={{ p: 1.6, mb: 1.2 }}>
+              <Typography sx={{ color: dndColors.text, fontSize: 19, fontWeight: 900 }}>
+                {note.title}
+              </Typography>
+              <Typography sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.55, mt: 0.8 }}>
+                {note.body}
+              </Typography>
+            </DndCard>
+          </SwipeRow>
         ))}
       </Box>
     </>
@@ -1570,6 +1638,52 @@ function FormField({
           color: dndColors.text,
           fontSize: 16,
           fontWeight: 700,
+        }}
+      />
+    </Box>
+  );
+}
+
+function MultilineFormField({
+  label,
+  value,
+  onChange,
+  minRows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  minRows?: number;
+}) {
+  return (
+    <Box>
+      <Typography
+        sx={{
+          color: dndColors.muted,
+          fontSize: 11,
+          fontWeight: 900,
+          mb: 0.4,
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Typography>
+      <InputBase
+        value={value}
+        multiline
+        minRows={minRows}
+        onChange={(event) => onChange(event.target.value)}
+        sx={{
+          width: '100%',
+          px: 1.1,
+          py: 0.8,
+          borderRadius: '6px',
+          bgcolor: dndColors.panelStrong,
+          border: `1px solid ${dndColors.border}`,
+          color: dndColors.text,
+          fontSize: 16,
+          fontWeight: 700,
+          alignItems: 'flex-start',
         }}
       />
     </Box>
@@ -1933,9 +2047,10 @@ function SkillEditDialog({
             <FormField
               label="Ability"
               value={skill.ability.toUpperCase()}
-              onChange={(value) =>
-                updateSkill(index, { ability: value.toLowerCase() as Skill['ability'] })
-              }
+              onChange={(value) => {
+                const normalized = value.trim().toLowerCase();
+                if (isAbilityKey(normalized)) updateSkill(index, { ability: normalized });
+              }}
             />
             <FormField
               label="Bonus"
@@ -1960,6 +2075,90 @@ function SkillEditDialog({
           </Stack>
         </Box>
       ))}
+    </DndEditDialog>
+  );
+}
+
+type BackgroundForm = {
+  background: string;
+  alignment: string;
+  traits: string;
+  ideals: string;
+  bonds: string;
+  flaws: string;
+  backstory: string;
+};
+
+function createBackgroundForm(character: DndCharacter): BackgroundForm {
+  return {
+    background: character.background,
+    alignment: character.alignment,
+    traits: character.personality.traits,
+    ideals: character.personality.ideals,
+    bonds: character.personality.bonds,
+    flaws: character.personality.flaws,
+    backstory: character.personality.backstory,
+  };
+}
+
+function BackgroundEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: BackgroundForm | null;
+  onChange: (form: BackgroundForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  const setField = (key: keyof BackgroundForm, value: string) => onChange({ ...form, [key]: value });
+  return (
+    <DndEditDialog title="Edit Background" open={open} onCancel={onCancel} onSave={onSave}>
+      <FormField label="Background" value={form.background} onChange={(value) => setField('background', value)} />
+      <FormField label="Alignment" value={form.alignment} onChange={(value) => setField('alignment', value)} />
+      <MultilineFormField label="Personality Traits" value={form.traits} onChange={(value) => setField('traits', value)} />
+      <MultilineFormField label="Ideals" value={form.ideals} onChange={(value) => setField('ideals', value)} />
+      <MultilineFormField label="Bonds" value={form.bonds} onChange={(value) => setField('bonds', value)} />
+      <MultilineFormField label="Flaws" value={form.flaws} onChange={(value) => setField('flaws', value)} />
+      <MultilineFormField
+        label="Backstory"
+        value={form.backstory}
+        minRows={4}
+        onChange={(value) => setField('backstory', value)}
+      />
+    </DndEditDialog>
+  );
+}
+
+type NoteForm = DndCharacter['notes'][number];
+
+function NoteEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: NoteForm | null;
+  onChange: (form: NoteForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  return (
+    <DndEditDialog title="Edit Note" open={open} onCancel={onCancel} onSave={onSave}>
+      <FormField label="Title" value={form.title} onChange={(title) => onChange({ ...form, title })} />
+      <MultilineFormField
+        label="Body"
+        value={form.body}
+        minRows={6}
+        onChange={(body) => onChange({ ...form, body })}
+      />
     </DndEditDialog>
   );
 }
@@ -2107,6 +2306,8 @@ function DungeonsAndDragons() {
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
   const [abilityForm, setAbilityForm] = useState<AbilityForm | null>(null);
   const [skillForm, setSkillForm] = useState<SkillForm | null>(null);
+  const [backgroundForm, setBackgroundForm] = useState<BackgroundForm | null>(null);
+  const [noteForm, setNoteForm] = useState<NoteForm | null>(null);
   const [charactersOpen, setCharactersOpen] = useState(false);
 
   const localCharacters = useLocalCharacterSlots({
@@ -2162,6 +2363,16 @@ function DungeonsAndDragons() {
       setCharacter((current) => ({
         ...current,
         [key]: current[key].filter((entry) => entry.id !== id),
+      }));
+      setUndoOpen(true);
+    });
+  };
+
+  const deleteNote = (id: string) => {
+    confirmDelete(() => {
+      setCharacter((current) => ({
+        ...current,
+        notes: current.notes.filter((entry) => entry.id !== id),
       }));
       setUndoOpen(true);
     });
@@ -2333,7 +2544,7 @@ function DungeonsAndDragons() {
         return next
           ? {
               ...skill,
-              ability: next.ability,
+              ability: isAbilityKey(next.ability) ? next.ability : skill.ability,
               bonus: parseIntOrFallback(next.bonus, skill.bonus),
               proficient: next.proficient,
               expertise: next.expertise,
@@ -2342,6 +2553,67 @@ function DungeonsAndDragons() {
       }),
     }));
     setSkillForm(null);
+  };
+
+  const saveBackground = () => {
+    if (!backgroundForm) return;
+    setCharacter((current) => ({
+      ...current,
+      background: backgroundForm.background.trim() || current.background,
+      alignment: backgroundForm.alignment.trim() || current.alignment,
+      personality: {
+        traits: backgroundForm.traits.trim(),
+        ideals: backgroundForm.ideals.trim(),
+        bonds: backgroundForm.bonds.trim(),
+        flaws: backgroundForm.flaws.trim(),
+        backstory: backgroundForm.backstory.trim(),
+      },
+    }));
+    setBackgroundForm(null);
+  };
+
+  const saveNote = () => {
+    if (!noteForm) return;
+    setCharacter((current) => ({
+      ...current,
+      notes: current.notes.some((note) => note.id === noteForm.id)
+        ? current.notes.map((note) => (note.id === noteForm.id ? noteForm : note))
+        : [...current.notes, noteForm],
+    }));
+    setNoteForm(null);
+  };
+
+  const updateFeatureUses = (id: string, nextUsed: number) => {
+    setCharacter((current) => ({
+      ...current,
+      features: current.features.map((feature) => {
+        if (feature.id !== id || !feature.uses) return feature;
+        return {
+          ...feature,
+          uses: {
+            ...feature.uses,
+            used: Math.min(feature.uses.max, Math.max(0, nextUsed)),
+          },
+        };
+      }),
+    }));
+  };
+
+  const restFeatures = (restType: 'short' | 'long') => {
+    setCharacter((current) => ({
+      ...current,
+      features: current.features.map((feature) => {
+        if (!feature.uses) return feature;
+        const reset = feature.uses.reset.toLowerCase();
+        const resetsOnRest =
+          restType === 'long'
+            ? reset.includes('long rest')
+            : reset.includes('short') || reset.includes('long rest');
+        return resetsOnRest
+          ? { ...feature, uses: { ...feature.uses, used: 0 } }
+          : feature;
+      }),
+    }));
   };
 
   const content = (() => {
@@ -2392,13 +2664,33 @@ function DungeonsAndDragons() {
           <FeaturesScreen
             character={character}
             onDeleteFeature={(id) => deleteById('features', id)}
+            onUpdateFeatureUses={updateFeatureUses}
+            onRestFeatures={restFeatures}
             onSelectTab={setActiveTab}
           />
         );
       case 'background':
-        return <BackgroundScreen character={character} />;
+        return (
+          <BackgroundScreen
+            character={character}
+            onEditBackground={() => setBackgroundForm(createBackgroundForm(character))}
+          />
+        );
       case 'notes':
-        return <NotesScreen character={character} />;
+        return (
+          <NotesScreen
+            character={character}
+            onAddNote={() =>
+              setNoteForm({
+                id: createEntryId('note'),
+                title: 'New Note',
+                body: '',
+              })
+            }
+            onEditNote={(note) => setNoteForm({ ...note })}
+            onDeleteNote={deleteNote}
+          />
+        );
       default:
         return <AppMenu activeTab={activeTab} onChange={setActiveTab} />;
     }
@@ -2463,6 +2755,7 @@ function DungeonsAndDragons() {
           onAdd={localCharacters.addCharacter}
           onSelect={localCharacters.selectCharacter}
           onDelete={(id) => {
+            const characterToDelete = localCharacters.characters.find((entry) => entry.id === id);
             setCharactersOpen(false);
             confirmDelete(
               () => {
@@ -2470,8 +2763,12 @@ function DungeonsAndDragons() {
                 setUndoOpen(false);
               },
               {
-                title: 'Delete this character?',
-                body: 'This removes the local DnD character slot from this device.',
+                title: characterToDelete
+                  ? `Delete ${characterToDelete.name}?`
+                  : 'Delete this character?',
+                body: characterToDelete
+                  ? `This removes ${characterToDelete.name} from this device.`
+                  : 'This removes the local DnD character slot from this device.',
               },
             );
           }}
@@ -2525,6 +2822,20 @@ function DungeonsAndDragons() {
           onChange={setSkillForm}
           onCancel={() => setSkillForm(null)}
           onSave={saveSkills}
+        />
+        <BackgroundEditDialog
+          open={backgroundForm !== null}
+          form={backgroundForm}
+          onChange={setBackgroundForm}
+          onCancel={() => setBackgroundForm(null)}
+          onSave={saveBackground}
+        />
+        <NoteEditDialog
+          open={noteForm !== null}
+          form={noteForm}
+          onChange={setNoteForm}
+          onCancel={() => setNoteForm(null)}
+          onSave={saveNote}
         />
       </Box>
     </Box>
