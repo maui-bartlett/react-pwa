@@ -30,8 +30,9 @@ import { alpha } from '@mui/material/styles';
 import { atom, useAtom } from 'jotai';
 
 import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
-import { useIndexedDbCharacterPersistence } from '@/state/useIndexedDbCharacterPersistence';
 import { persistAppView } from '@/state/persistentAppLocation';
+import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
+import type { LocalCharacterSummary } from '@/state/useLocalCharacterSlots';
 
 import type {
   AbilityScore,
@@ -78,6 +79,45 @@ function createEntryId(prefix: string) {
     return `${prefix}-${crypto.randomUUID()}`;
   }
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function createDndCharacter() {
+  return {
+    ...initialDndCharacter,
+    id: createEntryId('dnd-character'),
+    name: 'New Adventurer',
+    hitPoints: {
+      ...initialDndCharacter.hitPoints,
+      deathSaves: { ...initialDndCharacter.hitPoints.deathSaves },
+    },
+    classes: initialDndCharacter.classes.map((entry) => ({ ...entry })),
+    abilities: initialDndCharacter.abilities.map((entry) => ({ ...entry })),
+    skills: initialDndCharacter.skills.map((entry) => ({ ...entry })),
+    attacks: initialDndCharacter.attacks.map((entry) => ({ ...entry, id: createEntryId('attack') })),
+    spells: initialDndCharacter.spells.map((entry) => ({ ...entry, id: createEntryId('spell') })),
+    spellcasting: {
+      ...initialDndCharacter.spellcasting,
+      slots: initialDndCharacter.spellcasting.slots.map((entry) => ({ ...entry })),
+    },
+    inventory: initialDndCharacter.inventory.map((entry) => ({
+      ...entry,
+      id: createEntryId('item'),
+    })),
+    money: { ...initialDndCharacter.money },
+    features: initialDndCharacter.features.map((entry) => ({
+      ...entry,
+      uses: entry.uses ? { ...entry.uses } : undefined,
+    })),
+    feats: initialDndCharacter.feats.map((entry) => ({ ...entry })),
+    proficiencies: [...initialDndCharacter.proficiencies],
+    languages: [...initialDndCharacter.languages],
+    personality: { ...initialDndCharacter.personality },
+    notes: initialDndCharacter.notes.map((entry) => ({ ...entry, id: createEntryId('note') })),
+  };
+}
+
+function describeDndCharacter(character: DndCharacter) {
+  return character.name.trim() || 'Unnamed Character';
 }
 
 function parseIntOrFallback(value: string, fallback: number) {
@@ -203,10 +243,12 @@ function HeroHeader({
   character,
   onEditCharacter,
   onEditHitPoints,
+  onOpenCharacters,
 }: {
   character: DndCharacter;
   onEditCharacter: () => void;
   onEditHitPoints: () => void;
+  onOpenCharacters: () => void;
 }) {
   const hpPercent = Math.max(0, Math.min(100, (character.hitPoints.current / character.hitPoints.max) * 100));
 
@@ -224,9 +266,14 @@ function HeroHeader({
             {classLine(character)}
           </Typography>
         </Stack>
-        <IconButton aria-label="Edit character" onClick={onEditCharacter} sx={roundButtonSx}>
-          <EditIcon />
-        </IconButton>
+        <Stack direction="row" spacing={0.7}>
+          <IconButton aria-label="Switch character" onClick={onOpenCharacters} sx={roundButtonSx}>
+            <PersonIcon />
+          </IconButton>
+          <IconButton aria-label="Edit character" onClick={onEditCharacter} sx={roundButtonSx}>
+            <EditIcon />
+          </IconButton>
+        </Stack>
       </Stack>
 
       <Box
@@ -1250,25 +1297,125 @@ function ConfirmDeleteDialog({
   open,
   onCancel,
   onConfirm,
-  characterName,
+  title = 'Delete this entry?',
+  body,
 }: {
   open: boolean;
   onCancel: () => void;
   onConfirm: () => void;
-  characterName: string;
+  title?: string;
+  body: string;
 }) {
   return (
     <Dialog open={open} onClose={onCancel} PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}>
-      <DialogTitle sx={{ fontWeight: 900 }}>Delete this entry?</DialogTitle>
-      <DialogContent sx={{ color: dndColors.muted }}>
-        This removes it from {characterName}. You can undo immediately after deleting.
-      </DialogContent>
+      <DialogTitle sx={{ fontWeight: 900 }}>{title}</DialogTitle>
+      <DialogContent sx={{ color: dndColors.muted }}>{body}</DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onCancel} sx={{ color: dndColors.text }}>
           Cancel
         </Button>
         <Button onClick={onConfirm} variant="contained" sx={{ bgcolor: dndColors.red, '&:hover': { bgcolor: dndColors.redDark } }}>
           Delete
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function CharacterSwitcherDialog({
+  open,
+  characters,
+  canAdd,
+  limit,
+  onAdd,
+  onSelect,
+  onDelete,
+  onClose,
+}: {
+  open: boolean;
+  characters: LocalCharacterSummary[];
+  canAdd: boolean;
+  limit: number;
+  onAdd: () => void;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
+    >
+      <DialogTitle sx={{ fontWeight: 900 }}>Characters</DialogTitle>
+      <DialogContent>
+        <Button
+          fullWidth
+          disabled={!canAdd}
+          startIcon={<AddIcon />}
+          onClick={() => {
+            onAdd();
+            onClose();
+          }}
+          sx={{
+            minHeight: 50,
+            mb: 1.4,
+            border: `1px dashed ${dndColors.border}`,
+            color: canAdd ? dndColors.text : dndColors.muted,
+            bgcolor: dndColors.panel,
+            textTransform: 'none',
+            fontWeight: 900,
+            '&:hover': { bgcolor: dndColors.panelStrong },
+          }}
+        >
+          Add character ({characters.length}/{limit})
+        </Button>
+        <Stack spacing={1}>
+          {characters.map((character) => (
+            <Stack
+              key={character.id}
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{
+                minHeight: 52,
+                px: 1.2,
+                borderRadius: '7px',
+                border: `1px solid ${character.active ? dndColors.red : dndColors.border}`,
+                bgcolor: character.active ? alpha(dndColors.red, 0.16) : dndColors.panel,
+              }}
+            >
+              <Button
+                onClick={() => {
+                  onSelect(character.id);
+                  onClose();
+                }}
+                sx={{
+                  flex: 1,
+                  justifyContent: 'flex-start',
+                  color: dndColors.text,
+                  textTransform: 'none',
+                  fontWeight: 900,
+                }}
+              >
+                {character.name}
+              </Button>
+              <IconButton
+                aria-label={`Delete ${character.name}`}
+                onClick={() => onDelete(character.id)}
+                sx={{ color: dndColors.red }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Stack>
+          ))}
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ color: dndColors.text }}>
+          Close
         </Button>
       </DialogActions>
     </Dialog>
@@ -1717,18 +1864,26 @@ function toggleButtonSx(active: boolean) {
 function DungeonsAndDragons() {
   const [character, setCharacter, history] = useDndCharacterHistory();
   const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
-  const [pendingDelete, setPendingDelete] = useState<null | (() => void)>(null);
+  const [pendingDelete, setPendingDelete] = useState<null | {
+    confirm: () => void;
+    title?: string;
+    body: string;
+  }>(null);
   const [undoOpen, setUndoOpen] = useState(false);
   const [characterForm, setCharacterForm] = useState<CharacterForm | null>(null);
   const [hitPointForm, setHitPointForm] = useState<HitPointForm | null>(null);
   const [attackForm, setAttackForm] = useState<AttackForm | null>(null);
   const [spellForm, setSpellForm] = useState<SpellForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
+  const [charactersOpen, setCharactersOpen] = useState(false);
 
-  useIndexedDbCharacterPersistence({
+  const localCharacters = useLocalCharacterSlots({
     atom: dndCharacterState,
-    key: 'dnd-character-state',
+    gameSystem: 'dungeons-and-dragons',
+    legacyKey: 'dnd-character-state',
     initialValue: initialDndCharacter,
+    createCharacter: createDndCharacter,
+    describeCharacter: describeDndCharacter,
     migrate: (_key, initialValue) => normalizeDndCharacter(initialValue),
   });
 
@@ -1756,7 +1911,17 @@ function DungeonsAndDragons() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [history]);
 
-  const confirmDelete = (mutation: () => void) => setPendingDelete(() => mutation);
+  const confirmDelete = (
+    mutation: () => void,
+    options?: { title?: string; body?: string },
+  ) =>
+    setPendingDelete({
+      confirm: mutation,
+      title: options?.title,
+      body:
+        options?.body ??
+        `This removes it from ${character.name}. You can undo immediately after deleting.`,
+    });
   const deleteById = <K extends 'attacks' | 'spells' | 'inventory' | 'features'>(
     key: K,
     id: string,
@@ -1980,6 +2145,7 @@ function DungeonsAndDragons() {
             character={character}
             onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
+            onOpenCharacters={() => setCharactersOpen(true)}
           />
           {content}
         </Box>
@@ -1994,12 +2160,35 @@ function DungeonsAndDragons() {
         />
         <ConfirmDeleteDialog
           open={pendingDelete !== null}
-          characterName={character.name}
+          title={pendingDelete?.title}
+          body={pendingDelete?.body ?? ''}
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => {
-            pendingDelete?.();
+            pendingDelete?.confirm();
             setPendingDelete(null);
           }}
+        />
+        <CharacterSwitcherDialog
+          open={charactersOpen}
+          characters={localCharacters.characters}
+          canAdd={localCharacters.canAdd}
+          limit={localCharacters.limit}
+          onAdd={localCharacters.addCharacter}
+          onSelect={localCharacters.selectCharacter}
+          onDelete={(id) => {
+            setCharactersOpen(false);
+            confirmDelete(
+              () => {
+                localCharacters.deleteCharacter(id);
+                setUndoOpen(false);
+              },
+              {
+                title: 'Delete this character?',
+                body: 'This removes the local DnD character slot from this device.',
+              },
+            );
+          }}
+          onClose={() => setCharactersOpen(false)}
         />
         <CharacterEditDialog
           open={characterForm !== null}
