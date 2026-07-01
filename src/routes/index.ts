@@ -2,6 +2,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import HomeIcon from '@mui/icons-material/Home';
 import PublicIcon from '@mui/icons-material/Public';
+import ShieldIcon from '@mui/icons-material/Shield';
 
 import asyncComponentLoader from '@/utils/loader';
 
@@ -35,6 +36,12 @@ const routes: Routes = [
     path: '/fab-u',
     title: 'Fab U',
     icon: AutoAwesomeIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/DungeonsAndDragons')),
+    path: '/dungeons-and-dragons',
+    title: 'Dungeons & Dragons',
+    icon: ShieldIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/Join')),

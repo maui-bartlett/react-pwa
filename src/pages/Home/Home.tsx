@@ -73,6 +73,55 @@ function FabulaSparkleIcon(props: SvgIconProps) {
   );
 }
 
+function DungeonsAndDragonsIcon({ size = 'button' }: { size?: 'button' | 'card' }) {
+  const dimensions = size === 'card' ? 132 : 42;
+  const radius = size === 'card' ? '28px' : '8px';
+
+  return (
+    <Box
+      role="img"
+      aria-label="Dungeons & Dragons"
+      sx={{
+        width: dimensions,
+        height: dimensions,
+        borderRadius: radius,
+        bgcolor: '#0b0f12',
+        border: size === 'card' ? '3px solid rgba(255,255,255,0.88)' : 0,
+        boxShadow: size === 'card' ? '0 18px 36px rgba(0,0,0,0.28)' : 'none',
+        color: '#e40712',
+        display: 'grid',
+        placeItems: 'center',
+      }}
+    >
+      <Box
+        component="svg"
+        viewBox="0 0 64 64"
+        aria-hidden
+        sx={{ width: size === 'card' ? 86 : 28, height: size === 'card' ? 86 : 28 }}
+      >
+        <path
+          d="M32 4 56 18v28L32 60 8 46V18L32 4Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="4"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M32 4 20 34 32 60 44 34 32 4ZM8 18l12 16-12 12M56 18 44 34l12 12M20 34h24M8 18h48"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinejoin="round"
+        />
+      </Box>
+    </Box>
+  );
+}
+
+function DungeonsAndDragonsButtonIcon() {
+  return <DungeonsAndDragonsIcon />;
+}
+
 const systems = [
   {
     name: 'Fabula Ultima',
@@ -99,6 +148,20 @@ const systems = [
     coverPosition: 'center 32%',
     visual: 'avatar',
     icon: AvatarElementButtonIcon,
+  },
+  {
+    name: 'Dungeons & Dragons',
+    href: '/dungeons-and-dragons',
+    eyebrow: 'D20 fantasy adventuring',
+    description:
+      'Track abilities, saves, skills, attacks, spell slots, inventory, features, money, and notes.',
+    action: 'Open Dungeons & Dragons',
+    color: '#121a1f',
+    accent: '#e40712',
+    cover: '',
+    coverPosition: 'center',
+    visual: 'dnd',
+    icon: DungeonsAndDragonsButtonIcon,
   },
 ] as const;
 
@@ -239,6 +302,9 @@ function AvatarElementCarousel({ size = 'card' }: { size?: 'button' | 'card' }) 
 function SystemVisual({ visual }: { visual: (typeof systems)[number]['visual'] }) {
   if (visual === 'avatar') {
     return <AvatarLegendsAppIcon size="card" />;
+  }
+  if (visual === 'dnd') {
+    return <DungeonsAndDragonsIcon size="card" />;
   }
   return <FabulaCrest />;
 }
@@ -450,18 +516,28 @@ function Home() {
                     borderRadius: { xs: 0, md: 2 },
                     border: { xs: 0, md: `1px solid ${alpha('#ffffff', 0.2)}` },
                     backgroundImage: {
-                      xs: `linear-gradient(180deg, rgba(8,12,19,0.1) 0%, rgba(8,12,19,0.42) 42%, ${alpha(
-                        system.color,
-                        0.96,
-                      )} 100%), url("${system.cover}")`,
+                      xs:
+                        system.visual === 'dnd'
+                          ? `radial-gradient(circle at 78% 18%, ${alpha(
+                              system.accent,
+                              0.28,
+                            )}, transparent 32%), linear-gradient(180deg, #263640 0%, ${alpha(
+                              system.color,
+                              0.98,
+                            )} 100%)`
+                          : `linear-gradient(180deg, rgba(8,12,19,0.1) 0%, rgba(8,12,19,0.42) 42%, ${alpha(
+                              system.color,
+                              0.96,
+                            )} 100%), url("${system.cover}")`,
                       md: `linear-gradient(145deg, ${alpha(
                         system.color,
                         0.82,
-                      )}, ${alpha('#080c13', 0.88)})`,
+                      )}, ${alpha(system.visual === 'dnd' ? '#080c13' : '#080c13', 0.88)})`,
                     },
                     backgroundPosition: { xs: system.coverPosition, md: 'center' },
                     backgroundSize: 'cover',
                     minHeight: { xs: '64dvh', sm: 480, md: 300 },
+                    gridColumn: { md: system.visual === 'dnd' ? '1 / -1' : 'auto' },
                     p: { xs: 2.5, sm: 3 },
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', sm: 'auto 1fr' },
