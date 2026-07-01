@@ -5,6 +5,7 @@ import { deriveTechniqueFatigue } from './lib/avatarTechniqueFatigue';
 
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
+const DUNGEONS_AND_DRAGONS_GAME_SYSTEM = 'dungeons-and-dragons';
 const TITLE_SMALL_WORDS = new Set([
   'a',
   'an',
@@ -25,6 +26,303 @@ const TITLE_SMALL_WORDS = new Set([
   'to',
   'with',
 ]);
+
+const DND_CORE_CLASSES = [
+  {
+    className: 'Barbarian',
+    hitDie: 'd12',
+    primaryAbilities: ['Strength'],
+    savingThrows: ['Strength', 'Constitution'],
+    armorProficiencies: ['Light Armor', 'Medium Armor', 'Shields'],
+    weaponProficiencies: ['Simple Weapons', 'Martial Weapons'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 2,
+      from: ['Animal Handling', 'Athletics', 'Intimidation', 'Nature', 'Perception', 'Survival'],
+    },
+    spellcasting: null,
+    multiclassPrerequisites: [{ ability: 'Strength', minimum: 13 }],
+  },
+  {
+    className: 'Bard',
+    hitDie: 'd8',
+    primaryAbilities: ['Charisma'],
+    savingThrows: ['Dexterity', 'Charisma'],
+    armorProficiencies: ['Light Armor'],
+    weaponProficiencies: ['Simple Weapons', 'Hand Crossbows', 'Longswords', 'Rapiers', 'Shortswords'],
+    toolProficiencies: ['Three Musical Instruments'],
+    skillChoices: {
+      choose: 3,
+      from: 'Any',
+    },
+    spellcasting: {
+      type: 'full',
+      ability: 'Charisma',
+      ritualCasting: true,
+      preparation: 'known',
+    },
+    multiclassPrerequisites: [{ ability: 'Charisma', minimum: 13 }],
+  },
+  {
+    className: 'Cleric',
+    hitDie: 'd8',
+    primaryAbilities: ['Wisdom'],
+    savingThrows: ['Wisdom', 'Charisma'],
+    armorProficiencies: ['Light Armor', 'Medium Armor', 'Shields'],
+    weaponProficiencies: ['Simple Weapons'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 2,
+      from: ['History', 'Insight', 'Medicine', 'Persuasion', 'Religion'],
+    },
+    spellcasting: {
+      type: 'full',
+      ability: 'Wisdom',
+      ritualCasting: true,
+      preparation: 'prepared',
+    },
+    multiclassPrerequisites: [{ ability: 'Wisdom', minimum: 13 }],
+  },
+  {
+    className: 'Druid',
+    hitDie: 'd8',
+    primaryAbilities: ['Wisdom'],
+    savingThrows: ['Intelligence', 'Wisdom'],
+    armorProficiencies: ['Light Armor', 'Medium Armor', 'Shields'],
+    weaponProficiencies: [
+      'Clubs',
+      'Daggers',
+      'Darts',
+      'Javelins',
+      'Maces',
+      'Quarterstaffs',
+      'Scimitars',
+      'Sickles',
+      'Slings',
+      'Spears',
+    ],
+    toolProficiencies: ['Herbalism Kit'],
+    skillChoices: {
+      choose: 2,
+      from: [
+        'Arcana',
+        'Animal Handling',
+        'Insight',
+        'Medicine',
+        'Nature',
+        'Perception',
+        'Religion',
+        'Survival',
+      ],
+    },
+    spellcasting: {
+      type: 'full',
+      ability: 'Wisdom',
+      ritualCasting: true,
+      preparation: 'prepared',
+    },
+    multiclassPrerequisites: [{ ability: 'Wisdom', minimum: 13 }],
+  },
+  {
+    className: 'Fighter',
+    hitDie: 'd10',
+    primaryAbilities: ['Strength', 'Dexterity'],
+    savingThrows: ['Strength', 'Constitution'],
+    armorProficiencies: ['All Armor', 'Shields'],
+    weaponProficiencies: ['Simple Weapons', 'Martial Weapons'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 2,
+      from: [
+        'Acrobatics',
+        'Animal Handling',
+        'Athletics',
+        'History',
+        'Insight',
+        'Intimidation',
+        'Perception',
+        'Survival',
+      ],
+    },
+    spellcasting: null,
+    multiclassPrerequisites: [
+      { ability: 'Strength', minimum: 13 },
+      { ability: 'Dexterity', minimum: 13 },
+    ],
+    multiclassPrerequisiteMode: 'any',
+  },
+  {
+    className: 'Monk',
+    hitDie: 'd8',
+    primaryAbilities: ['Dexterity', 'Wisdom'],
+    savingThrows: ['Strength', 'Dexterity'],
+    armorProficiencies: [],
+    weaponProficiencies: ['Simple Weapons', 'Shortswords'],
+    toolProficiencies: ['One Artisan Tool or Musical Instrument'],
+    skillChoices: {
+      choose: 2,
+      from: ['Acrobatics', 'Athletics', 'History', 'Insight', 'Religion', 'Stealth'],
+    },
+    spellcasting: null,
+    multiclassPrerequisites: [
+      { ability: 'Dexterity', minimum: 13 },
+      { ability: 'Wisdom', minimum: 13 },
+    ],
+    multiclassPrerequisiteMode: 'all',
+  },
+  {
+    className: 'Paladin',
+    hitDie: 'd10',
+    primaryAbilities: ['Strength', 'Charisma'],
+    savingThrows: ['Wisdom', 'Charisma'],
+    armorProficiencies: ['All Armor', 'Shields'],
+    weaponProficiencies: ['Simple Weapons', 'Martial Weapons'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 2,
+      from: ['Athletics', 'Insight', 'Intimidation', 'Medicine', 'Persuasion', 'Religion'],
+    },
+    spellcasting: {
+      type: 'half',
+      ability: 'Charisma',
+      ritualCasting: false,
+      preparation: 'prepared',
+    },
+    multiclassPrerequisites: [
+      { ability: 'Strength', minimum: 13 },
+      { ability: 'Charisma', minimum: 13 },
+    ],
+    multiclassPrerequisiteMode: 'all',
+  },
+  {
+    className: 'Ranger',
+    hitDie: 'd10',
+    primaryAbilities: ['Dexterity', 'Wisdom'],
+    savingThrows: ['Strength', 'Dexterity'],
+    armorProficiencies: ['Light Armor', 'Medium Armor', 'Shields'],
+    weaponProficiencies: ['Simple Weapons', 'Martial Weapons'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 3,
+      from: [
+        'Animal Handling',
+        'Athletics',
+        'Insight',
+        'Investigation',
+        'Nature',
+        'Perception',
+        'Stealth',
+        'Survival',
+      ],
+    },
+    spellcasting: {
+      type: 'half',
+      ability: 'Wisdom',
+      ritualCasting: false,
+      preparation: 'known',
+    },
+    multiclassPrerequisites: [
+      { ability: 'Dexterity', minimum: 13 },
+      { ability: 'Wisdom', minimum: 13 },
+    ],
+    multiclassPrerequisiteMode: 'all',
+  },
+  {
+    className: 'Rogue',
+    hitDie: 'd8',
+    primaryAbilities: ['Dexterity'],
+    savingThrows: ['Dexterity', 'Intelligence'],
+    armorProficiencies: ['Light Armor'],
+    weaponProficiencies: ['Simple Weapons', 'Hand Crossbows', 'Longswords', 'Rapiers', 'Shortswords'],
+    toolProficiencies: ["Thieves' Tools"],
+    skillChoices: {
+      choose: 4,
+      from: [
+        'Acrobatics',
+        'Athletics',
+        'Deception',
+        'Insight',
+        'Intimidation',
+        'Investigation',
+        'Perception',
+        'Performance',
+        'Persuasion',
+        'Sleight of Hand',
+        'Stealth',
+      ],
+    },
+    spellcasting: null,
+    multiclassPrerequisites: [{ ability: 'Dexterity', minimum: 13 }],
+  },
+  {
+    className: 'Sorcerer',
+    hitDie: 'd6',
+    primaryAbilities: ['Charisma'],
+    savingThrows: ['Constitution', 'Charisma'],
+    armorProficiencies: [],
+    weaponProficiencies: ['Daggers', 'Darts', 'Slings', 'Quarterstaffs', 'Light Crossbows'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 2,
+      from: ['Arcana', 'Deception', 'Insight', 'Intimidation', 'Persuasion', 'Religion'],
+    },
+    spellcasting: {
+      type: 'full',
+      ability: 'Charisma',
+      ritualCasting: false,
+      preparation: 'known',
+    },
+    multiclassPrerequisites: [{ ability: 'Charisma', minimum: 13 }],
+  },
+  {
+    className: 'Warlock',
+    hitDie: 'd8',
+    primaryAbilities: ['Charisma'],
+    savingThrows: ['Wisdom', 'Charisma'],
+    armorProficiencies: ['Light Armor'],
+    weaponProficiencies: ['Simple Weapons'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 2,
+      from: [
+        'Arcana',
+        'Deception',
+        'History',
+        'Intimidation',
+        'Investigation',
+        'Nature',
+        'Religion',
+      ],
+    },
+    spellcasting: {
+      type: 'pact',
+      ability: 'Charisma',
+      ritualCasting: false,
+      preparation: 'known',
+    },
+    multiclassPrerequisites: [{ ability: 'Charisma', minimum: 13 }],
+  },
+  {
+    className: 'Wizard',
+    hitDie: 'd6',
+    primaryAbilities: ['Intelligence'],
+    savingThrows: ['Intelligence', 'Wisdom'],
+    armorProficiencies: [],
+    weaponProficiencies: ['Daggers', 'Darts', 'Slings', 'Quarterstaffs', 'Light Crossbows'],
+    toolProficiencies: [],
+    skillChoices: {
+      choose: 2,
+      from: ['Arcana', 'History', 'Insight', 'Investigation', 'Medicine', 'Religion'],
+    },
+    spellcasting: {
+      type: 'full',
+      ability: 'Intelligence',
+      ritualCasting: true,
+      preparation: 'prepared',
+    },
+    multiclassPrerequisites: [{ ability: 'Intelligence', minimum: 13 }],
+  },
+] as const;
 
 function titleCaseWord(word: string, index: number, words: string[]) {
   const lower = word.toLowerCase();
@@ -186,6 +484,45 @@ export const clearFabulaUltimaClasses = internalMutation({
   },
 });
 
+/**
+ * Seed the Dungeons & Dragons class catalog. Idempotent — clears existing DnD
+ * class docs and re-inserts the canonical core class list.
+ *
+ * Run after deploy:
+ *   npx convex run classes:seedDungeonsAndDragonsClasses
+ */
+export const seedDungeonsAndDragonsClasses = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem', (q) =>
+        q.eq('class.meta.gameSystem', DUNGEONS_AND_DRAGONS_GAME_SYSTEM),
+      )
+      .collect();
+
+    await Promise.all(existing.map((classDoc) => ctx.db.delete(classDoc._id)));
+
+    const now = Date.now();
+    let inserted = 0;
+    for (const classInfo of DND_CORE_CLASSES) {
+      await ctx.db.insert('classes', {
+        class: {
+          ...classInfo,
+          edition: '5e',
+          source: 'SRD 5.1 / 2014 core class attributes',
+          meta: { gameSystem: DUNGEONS_AND_DRAGONS_GAME_SYSTEM },
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      inserted += 1;
+    }
+
+    return { deleted: existing.length, inserted };
+  },
+});
+
 export const listAvatarLegendsClasses = query({
   args: {},
   handler: async (ctx) => {
@@ -205,6 +542,18 @@ export const listFabulaUltimaClasses = query({
       .query('classes')
       .withIndex('by_classMetaGameSystem', (q) =>
         q.eq('class.meta.gameSystem', FABULA_ULTIMA_GAME_SYSTEM),
+      )
+      .collect();
+  },
+});
+
+export const listDungeonsAndDragonsClasses = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem_className', (q) =>
+        q.eq('class.meta.gameSystem', DUNGEONS_AND_DRAGONS_GAME_SYSTEM),
       )
       .collect();
   },

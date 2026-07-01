@@ -2,6 +2,7 @@ import type { Doc, Id } from '../_generated/dataModel';
 
 const FABULA_ULTIMA_TYPE = 'fabula-ultima';
 const AVATAR_LEGENDS_TYPE = 'avatar-legends';
+const DUNGEONS_AND_DRAGONS_TYPE = 'dungeons-and-dragons';
 
 type GameSystemMeta = {
   gameSystem?: string;
@@ -11,11 +12,12 @@ type GameSystemMeta = {
 const MANAGED_GAME_SYSTEMS: ReadonlySet<string> = new Set([
   FABULA_ULTIMA_TYPE,
   AVATAR_LEGENDS_TYPE,
+  DUNGEONS_AND_DRAGONS_TYPE,
 ]);
 
 /**
  * True when a document belongs to one of the game systems this backend
- * manages (currently Fabula Ultima and Avatar Legends). Used by the
+ * manages. Used by the
  * read/write/owner guards so they apply uniformly across apps — gating
  * on a single system would silently reject the other app's characters.
  */
@@ -46,6 +48,7 @@ function isActiveForProfile(
 
 export {
   AVATAR_LEGENDS_TYPE,
+  DUNGEONS_AND_DRAGONS_TYPE,
   FABULA_ULTIMA_TYPE,
   isActiveForProfile,
   isManagedCharacterDocument,

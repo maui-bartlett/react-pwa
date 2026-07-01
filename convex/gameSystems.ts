@@ -6,6 +6,7 @@ import { deriveTechniqueFatigue, withTechniqueFatigue } from './lib/avatarTechni
 
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
+const DUNGEONS_AND_DRAGONS_GAME_SYSTEM = 'dungeons-and-dragons';
 
 /** Short collapsed-card blurb: the first sentence of the rules text, falling
  *  back to a clipped prefix. Mirrors the client's `summarizeTechnique` so the
@@ -1530,6 +1531,12 @@ export const seedDefaults = internalMutation({
         id: AVATAR_LEGENDS_GAME_SYSTEM,
         name: 'Avatar Legends',
         techniques: avatarLegendsBuiltInTechniques,
+      }),
+    );
+    results.push(
+      await upsertGameSystem(ctx, {
+        id: DUNGEONS_AND_DRAGONS_GAME_SYSTEM,
+        name: 'Dungeons & Dragons',
       }),
     );
 
