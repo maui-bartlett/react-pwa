@@ -1,5 +1,7 @@
-import { HTMLAttributes, ReactNode, useEffect, useState } from 'react';
+import { HTMLAttributes, ReactNode, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
+
+import { ErrorBoundary } from 'react-error-boundary';
 
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -30,9 +32,11 @@ import { alpha } from '@mui/material/styles';
 import { atom, useAtom } from 'jotai';
 
 import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
+import AccountSettings from '@/sections/AccountSettings';
 import { persistAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import type { LocalCharacterSummary } from '@/state/useLocalCharacterSlots';
+import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 
 import type {
   AbilityKey,
@@ -50,6 +54,10 @@ import { dndCharacterState, initialDndCharacter, initialDndTab, normalizeDndChar
 import { useDndCharacterHistory } from './useCharacterHistory';
 
 const activeDndTabState = atom<DndTab>(initialDndTab);
+const DND_GAME_SYSTEM = 'dungeons-and-dragons';
+const DND_SCHEMA_VERSION = 1;
+const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
+const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
 
 const dndColors = {
   page: '#10181d',
@@ -143,6 +151,20 @@ function createDndCharacter() {
 
 function describeDndCharacter(character: DndCharacter) {
   return character.name.trim() || 'Unnamed Character';
+}
+
+function serializeDndCharacter(character: DndCharacter) {
+  return {
+    schemaVersion: DND_SCHEMA_VERSION,
+    character,
+  };
+}
+
+function deserializeDndCharacter(raw: unknown): DndCharacter {
+  const maybeState = raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? (raw as { character?: unknown })
+    : null;
+  return normalizeDndCharacter(maybeState?.character ?? raw);
 }
 
 function parseIntOrFallback(value: string, fallback: number) {
@@ -269,11 +291,13 @@ function HeroHeader({
   onEditCharacter,
   onEditHitPoints,
   onOpenCharacters,
+  accountAction,
 }: {
   character: DndCharacter;
   onEditCharacter: () => void;
   onEditHitPoints: () => void;
   onOpenCharacters: () => void;
+  accountAction: ReactNode;
 }) {
   const hpPercent = Math.max(0, Math.min(100, (character.hitPoints.current / character.hitPoints.max) * 100));
 
@@ -292,6 +316,7 @@ function HeroHeader({
           </Typography>
         </Stack>
         <Stack direction="row" spacing={0.7}>
+          {accountAction}
           <IconButton aria-label="Switch character" onClick={onOpenCharacters} sx={roundButtonSx}>
             <PersonIcon />
           </IconButton>
@@ -2434,6 +2459,30 @@ function toggleButtonSx(active: boolean) {
   };
 }
 
+function ConvexCharacterSyncMount() {
+  const [character, , history] = useDndCharacterHistory();
+  const applyRemote = useCallback(
+    (remote: DndCharacter) => {
+      history.replace(remote);
+    },
+    [history],
+  );
+
+  useConvexCharacterSync<DndCharacter>({
+    character,
+    applyRemote,
+    serialize: serializeDndCharacter,
+    deserialize: deserializeDndCharacter,
+    gameSystem: DND_GAME_SYSTEM,
+    schemaVersion: DND_SCHEMA_VERSION,
+    pendingSyncKeyPrefix: DND_PENDING_SYNC_KEY,
+    selectCharacterEventName: DND_SELECT_CHARACTER_EVENT,
+    describeCharacter: describeDndCharacter,
+  });
+
+  return null;
+}
+
 function DungeonsAndDragons() {
   const [character, setCharacter, history] = useDndCharacterHistory();
   const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
@@ -2457,13 +2506,19 @@ function DungeonsAndDragons() {
 
   const localCharacters = useLocalCharacterSlots({
     atom: dndCharacterState,
-    gameSystem: 'dungeons-and-dragons',
+    gameSystem: DND_GAME_SYSTEM,
     legacyKey: 'dnd-character-state',
     initialValue: initialDndCharacter,
     createCharacter: createDndCharacter,
     describeCharacter: describeDndCharacter,
     migrate: (_key, initialValue) => normalizeDndCharacter(initialValue),
   });
+  const selectRemoteCharacter = useCallback(
+    (characterState: unknown) => {
+      history.replace(deserializeDndCharacter(characterState));
+    },
+    [history],
+  );
 
   const setActiveTab = (tab: DndTab) => {
     setActiveTabRaw(tab);
@@ -2899,6 +2954,14 @@ function DungeonsAndDragons() {
         overflow: 'hidden',
       }}
     >
+      <ErrorBoundary
+        fallbackRender={() => null}
+        onError={(error) => {
+          console.warn('Dungeons & Dragons Convex sync is unavailable; continuing locally.', error);
+        }}
+      >
+        {localCharacters.hydrated ? <ConvexCharacterSyncMount /> : null}
+      </ErrorBoundary>
       <Box
         sx={{
           position: 'relative',
@@ -2916,6 +2979,22 @@ function DungeonsAndDragons() {
             onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
             onOpenCharacters={() => setCharactersOpen(true)}
+            accountAction={
+              <AccountSettings
+                gameSystem={DND_GAME_SYSTEM}
+                localCharacterName={character.name}
+                localCharacters={localCharacters}
+                createCharacterPayload={() => {
+                  const nextCharacter = createDndCharacter();
+                  return {
+                    schemaVersion: DND_SCHEMA_VERSION,
+                    characterState: serializeDndCharacter(nextCharacter),
+                  };
+                }}
+                onSelectCharacterState={selectRemoteCharacter}
+                selectCharacterEventName={DND_SELECT_CHARACTER_EVENT}
+              />
+            }
           />
           {content}
         </Box>

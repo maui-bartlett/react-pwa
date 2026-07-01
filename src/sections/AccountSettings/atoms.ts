@@ -5,10 +5,11 @@ import { atom } from 'jotai';
  * account / settings menu is opened from a game-system-specific UI:
  *   - Opening from /fab-u sets 'fabula-ultima'
  *   - Opening from /avatar-legends sets 'avatar-legends'
+ *   - Opening from /dungeons-and-dragons sets 'dungeons-and-dragons'
  *
  * Downstream account-menu screens (characters list, campaigns list, etc.)
  * can read this atom to filter the data to just the current game system.
  */
-export type GameSystem = 'fabula-ultima' | 'avatar-legends';
+export type GameSystem = 'fabula-ultima' | 'avatar-legends' | 'dungeons-and-dragons';
 
 export const gameSystemAtom = atom<GameSystem>('fabula-ultima');

@@ -177,6 +177,7 @@ function assertAuthSuccess(result: unknown) {
  * `meta.gameSystem`.
  *
  *   - avatar-legends: `characterState.character.name` is a plain string
+ *   - dungeons-and-dragons: `characterState.character.name` is a plain string
  *   - fabula-ultima:  `characterState.character.name` is
  *     `{ firstName, lastName, nickName }`
  */
@@ -194,7 +195,7 @@ function getCharacterDisplayName(character: {
       ? (state.character as Record<string, unknown>)
       : null;
 
-  if (system === 'avatar-legends') {
+  if (system === 'avatar-legends' || system === 'dungeons-and-dragons') {
     const name = typeof inner?.name === 'string' ? inner.name.trim() : '';
     return name || 'Unnamed character';
   }
