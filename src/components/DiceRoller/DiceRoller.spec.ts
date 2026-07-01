@@ -28,6 +28,31 @@ describe('DiceRoller results', () => {
     expect(isValidRollResult(result, [{ id: 1, sides: 20 }])).toBe(false);
   });
 
+  it('uses zero through nine for d10 results', () => {
+    const zero = toRollResult([{ dieType: 'd10', sides: 10, value: 10 }]);
+    const nine = toRollResult([{ dieType: 'd10', sides: 10, value: 9 }]);
+
+    expect(zero.rolls).toEqual([{ sides: 10, value: 0 }]);
+    expect(zero.total).toBe(0);
+    expect(isValidRollResult(zero, [{ id: 1, sides: 10 }])).toBe(true);
+    expect(nine.rolls).toEqual([{ sides: 10, value: 9 }]);
+    expect(nine.total).toBe(9);
+    expect(isValidRollResult(nine, [{ id: 1, sides: 10 }])).toBe(true);
+  });
+
+  it('interprets percentile rolls using a zero-through-nine ones die', () => {
+    const hundred = toRollResult([{ dieType: 'd100', sides: 100, value: 0 }]);
+    const seven = toRollResult([{ dieType: 'd100', sides: 100, value: 7 }]);
+    const ten = toRollResult([{ dieType: 'd100', sides: 100, value: 10 }]);
+
+    expect(hundred.rolls).toEqual([{ sides: 100, value: 100 }]);
+    expect(hundred.total).toBe(100);
+    expect(seven.rolls).toEqual([{ sides: 100, value: 7 }]);
+    expect(seven.total).toBe(7);
+    expect(ten.rolls).toEqual([{ sides: 100, value: 10 }]);
+    expect(ten.total).toBe(10);
+  });
+
   it('rejects incomplete or mismatched result sets', () => {
     const result = toRollResult([{ dieType: 'd6', sides: 6, value: 5 }]);
 
@@ -60,6 +85,22 @@ describe('DiceRoller results', () => {
       { sides: 20, value: 20 },
     ]);
     expect(result.total).toBe(21);
+    expect(isValidRollResult(result, dice)).toBe(true);
+  });
+
+  it('creates fallback d10 results from zero through nine', () => {
+    const dice = [
+      { id: 1, sides: 10 as const },
+      { id: 2, sides: 10 as const },
+    ];
+    const values = [0, 0.999];
+    const result = createRandomRollResult(dice, () => values.shift() ?? 0);
+
+    expect(result.rolls).toEqual([
+      { sides: 10, value: 0 },
+      { sides: 10, value: 9 },
+    ]);
+    expect(result.total).toBe(9);
     expect(isValidRollResult(result, dice)).toBe(true);
   });
 });

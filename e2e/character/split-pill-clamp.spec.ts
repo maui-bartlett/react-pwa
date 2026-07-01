@@ -2,59 +2,19 @@ import { devices, expect, test } from '@playwright/test';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
 
-test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
+// XP is still edited inline via its suffix pill. HP/MP are now adjusted through
+// the HP/MP management modal (see hp-mp-management.spec.ts), so their inline
+// click-through / clamping cases live there instead.
+test.describe('XP split-pill click-through and clamping (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
-  });
-
-  // ── Click-through: clicking suffix or neutral area enters edit mode ──────
-
-  test('Overview HP StatPill: clicking suffix area enters edit mode', async ({ page }) => {
-    await page.locator('[data-pw="statpill-ov-hp"]').click({ position: { x: 70, y: 32 } });
-    await expect(page.locator('[data-pw="statpill-ov-hp-input"]')).toBeVisible();
-    await page.locator('[data-pw="statpill-ov-hp-input"]').blur();
-  });
-
-  test('Overview MP StatPill: clicking suffix area enters edit mode', async ({ page }) => {
-    await page.locator('[data-pw="statpill-ov-mp"]').click({ position: { x: 70, y: 32 } });
-    await expect(page.locator('[data-pw="statpill-ov-mp-input"]')).toBeVisible();
-    await page.locator('[data-pw="statpill-ov-mp-input"]').blur();
-  });
-
-  test('Spells HP SummaryStrip: clicking suffix area enters edit mode', async ({ page }) => {
-    await page.getByRole('button', { name: 'Spells' }).first().click();
-    await page.locator('[data-pw="metric-hp"]').click({ position: { x: 70, y: 32 } });
-    await expect(page.locator('[data-pw="metric-hp-input"]')).toBeVisible();
-    await page.locator('[data-pw="metric-hp-input"]').blur();
   });
 
   test('Overview XP SummaryStrip: clicking suffix area enters edit mode', async ({ page }) => {
     await page.locator('[data-pw="metric-ov-xp"]').click({ position: { x: 70, y: 32 } });
     await expect(page.locator('[data-pw="metric-ov-xp-input"]')).toBeVisible();
     await page.locator('[data-pw="metric-ov-xp-input"]').blur();
-  });
-
-  // ── Clamping: values > total become total on blur ────────────────────────
-
-  test('Overview HP: typing 999 (totalHP=58) → clamped to 58', async ({ page }) => {
-    const pill = page.locator('[data-pw="statpill-ov-hp"]');
-    await pill.click();
-    const input = page.locator('[data-pw="statpill-ov-hp-input"]');
-    await input.waitFor({ state: 'visible' });
-    await input.fill('999');
-    await input.blur();
-    await expect(pill.locator('h6').first()).toHaveText('58');
-  });
-
-  test('Overview MP: typing 999 → clamped to totalMP (58)', async ({ page }) => {
-    const pill = page.locator('[data-pw="statpill-ov-mp"]');
-    await pill.click();
-    const input = page.locator('[data-pw="statpill-ov-mp-input"]');
-    await input.waitFor({ state: 'visible' });
-    await input.fill('999');
-    await input.blur();
-    await expect(pill.locator('h6').first()).toHaveText('58');
   });
 
   test('Overview XP: typing 999 → rolls over into level and XP 9', async ({ page }) => {
@@ -76,53 +36,5 @@ test.describe('Split-pill click-through and clamping (mobile viewport)', () => {
     await input.fill('999');
     await input.blur();
     await expect(pill.locator('p').first()).toHaveText('9');
-  });
-
-  test('Spells HP SummaryStrip: typing 999 → clamped to totalHP (58)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Spells' }).first().click();
-    const pill = page.locator('[data-pw="metric-hp"]');
-    await pill.click();
-    const input = page.locator('[data-pw="metric-hp-input"]');
-    await input.waitFor({ state: 'visible' });
-    await input.fill('999');
-    await input.blur();
-    await expect(pill.locator('p').first()).toHaveText('58');
-  });
-
-  // ── Clamping: negative values become 0 ───────────────────────────────────
-
-  test('Overview HP: negative input is rejected (non-digit stripped) → 0', async ({ page }) => {
-    const pill = page.locator('[data-pw="statpill-ov-hp"]');
-    await pill.click();
-    const input = page.locator('[data-pw="statpill-ov-hp-input"]');
-    await input.waitFor({ state: 'visible' });
-    // The input strips non-digits so "-5" becomes "5"; empty string → 0
-    await input.fill('');
-    await input.blur();
-    await expect(pill.locator('h6').first()).toHaveText('0');
-  });
-
-  // ── Combat pills also clamped ─────────────────────────────────────────────
-
-  test('Combat HP: typing 999 → clamped to totalHP (58)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Combat' }).first().click();
-    const pill = page.locator('[data-pw="statpill-cb-hp"]');
-    await pill.click();
-    const input = page.locator('[data-pw="statpill-cb-hp-input"]');
-    await input.waitFor({ state: 'visible' });
-    await input.fill('999');
-    await input.blur();
-    await expect(pill.locator('h6').first()).toHaveText('58');
-  });
-
-  test('Combat MP: typing 999 → clamped to totalMP (58)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Combat' }).first().click();
-    const pill = page.locator('[data-pw="statpill-cb-mp"]');
-    await pill.click();
-    const input = page.locator('[data-pw="statpill-cb-mp-input"]');
-    await input.waitFor({ state: 'visible' });
-    await input.fill('999');
-    await input.blur();
-    await expect(pill.locator('h6').first()).toHaveText('58');
   });
 });

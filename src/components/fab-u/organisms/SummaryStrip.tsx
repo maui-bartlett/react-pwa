@@ -22,6 +22,10 @@ type SummaryMetric = {
   pw?: string;
   /** When provided the pill is editable; called with the committed integer value */
   onChange?: (value: number) => void;
+  /** When set, clicking the pill runs this instead of inline editing (opens the
+   *  HP/MP management popover, anchored to the pill element). Takes precedence
+   *  over onChange clicks. */
+  onManage?: (anchorEl: HTMLElement) => void;
   /** When set, the committed value is clamped to [0, maxValue]. */
   maxValue?: number;
   /** Optional icon rendered at the trailing (right) edge of the pill */
@@ -77,7 +81,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
         {metrics.map((metric, metricIndex) => {
           const insertMiddleAfter = middleAction && metricIndex === 0;
           const isEditing = editing?.label === metric.label;
-          const editable = !!metric.onChange;
+          const editable = !!metric.onChange || !!metric.onManage;
           const showZenitIcon = metric.pw === 'zenit';
           const isXpMetric = metric.label === 'XP';
           const tc = metric.toneColor;
@@ -88,7 +92,13 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
             <Box
               key={metric.label}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
-              onClick={() => !isEditing && openEdit(metric)}
+              onClick={(e) => {
+                if (metric.onManage) {
+                  metric.onManage(e.currentTarget);
+                  return;
+                }
+                if (!isEditing) openEdit(metric);
+              }}
               sx={{
                 ...(useGradientBorder
                   ? {
@@ -109,7 +119,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                 px: 1.05,
                 py: 0.6,
                 minHeight: 52,
-                cursor: editable && !isEditing ? 'text' : 'default',
+                cursor: metric.onManage ? 'pointer' : editable && !isEditing ? 'text' : 'default',
                 transition: 'border-color 150ms ease',
               }}
             >

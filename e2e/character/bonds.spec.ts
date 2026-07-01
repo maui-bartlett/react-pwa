@@ -52,7 +52,8 @@ test.describe('Bonds type toggle (mobile viewport)', () => {
   test('After removing: reopening menu shows type as not selected', async ({ page }) => {
     await page.locator('[data-pw="bond-add-juice"]').click();
     await page.locator('[data-pw="bond-type-loyalty"]').click();
-    // Re-open
+    // The menu stays open; close it, then re-open to confirm the change stuck.
+    await page.keyboard.press('Escape');
     await page.locator('[data-pw="bond-add-juice"]').click();
     await expect(page.locator('[data-pw="bond-type-loyalty"]')).toHaveAttribute(
       'data-selected',
@@ -63,17 +64,17 @@ test.describe('Bonds type toggle (mobile viewport)', () => {
 
   // ── Toggle: add then remove ───────────────────────────────────────────────
 
-  test('Add Hatred then remove Hatred → chip gone', async ({ page }) => {
+  test('Add Mistrust then remove Mistrust → chip gone', async ({ page }) => {
     const btn = page.locator('[data-pw="bond-add-yoru"]');
-    // Yoru seeded with Affection; add Hatred
+    // Yoru seeded with Affection; add Mistrust (no exclusive-pair conflict).
     await btn.click();
-    await page.locator('[data-pw="bond-type-hatred"]').click();
+    await page.locator('[data-pw="bond-type-mistrust"]').click();
     const row = btn.locator('..');
-    await expect(row.locator('text=Hatred')).toBeVisible();
-    // Remove Hatred
-    await btn.click();
-    await page.locator('[data-pw="bond-type-hatred"]').click();
-    await expect(row.locator('text=Hatred')).not.toBeVisible();
+    await expect(row.locator('text=Mistrust')).toBeVisible();
+    // The menu stays open — tap the same type again to remove it.
+    await page.locator('[data-pw="bond-type-mistrust"]').click();
+    await expect(row.locator('text=Mistrust')).not.toBeVisible();
+    await page.keyboard.press('Escape');
   });
 
   // ── Persistence ───────────────────────────────────────────────────────────
@@ -88,11 +89,12 @@ test.describe('Bonds type toggle (mobile viewport)', () => {
   });
 
   test('Adding a type persists after reload', async ({ page }) => {
+    // Granada seeded with Admiration; add Loyalty (no exclusive-pair conflict).
     await page.locator('[data-pw="bond-add-granada"]').click();
-    await page.locator('[data-pw="bond-type-inferiority"]').click();
+    await page.locator('[data-pw="bond-type-loyalty"]').click();
     await page.reload();
     const row = page.locator('[data-pw="bond-add-granada"]').locator('..');
-    await expect(row.locator('text=Inferiority')).toBeVisible();
+    await expect(row.locator('text=Loyalty')).toBeVisible();
     await expect(row.locator('text=Admiration')).toBeVisible();
   });
 
@@ -102,6 +104,7 @@ test.describe('Bonds type toggle (mobile viewport)', () => {
     // Remove Affection from Jelena on Overview
     await page.locator('[data-pw="bond-add-jelena"]').click();
     await page.locator('[data-pw="bond-type-affection"]').click();
+    await page.keyboard.press('Escape'); // close the menu before navigating
 
     await page.locator('[data-pw="app-footer"]').getByText('Combat').click();
     const combatRow = page.locator('[data-pw="bond-add-jelena"]').locator('..');
@@ -114,6 +117,7 @@ test.describe('Bonds type toggle (mobile viewport)', () => {
     // Add Mistrust to Yoru on Combat
     await page.locator('[data-pw="bond-add-yoru"]').first().click();
     await page.locator('[data-pw="bond-type-mistrust"]').click();
+    await page.keyboard.press('Escape'); // close the menu before navigating
 
     await page.locator('[data-pw="app-footer"]').getByText('Character').click();
     const overviewRow = page.locator('[data-pw="bond-add-yoru"]').locator('..');

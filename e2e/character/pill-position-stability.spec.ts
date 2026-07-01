@@ -38,21 +38,9 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
     expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
   });
 
-  test('Overview HP (StatPill inline, with suffix) — x stable within 2px', async ({ page }) => {
-    const pill = page.locator('[data-pw="statpill-ov-hp"]');
-    const valueEl = pill.locator('h6').first();
-    const input = page.locator('[data-pw="statpill-ov-hp-input"]');
-    const { delta } = await measureShift(page, pill, valueEl, input);
-    expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
-  });
-
-  test('Overview MP (StatPill inline, with suffix) — x stable within 2px', async ({ page }) => {
-    const pill = page.locator('[data-pw="statpill-ov-mp"]');
-    const valueEl = pill.locator('h6').first();
-    const input = page.locator('[data-pw="statpill-ov-mp-input"]');
-    const { delta } = await measureShift(page, pill, valueEl, input);
-    expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
-  });
+  // HP/MP pills now open the HP/MP management modal instead of inline editing
+  // (see hp-mp-management.spec.ts), so they no longer have a position-stability
+  // case here.
 
   test('Combat FP (StatPill inline, no suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
@@ -68,24 +56,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
     const pill = page.locator('[data-pw="statpill-cb-ip"]');
     const valueEl = pill.locator('h6').first();
     const input = page.locator('[data-pw="statpill-cb-ip-input"]');
-    const { delta } = await measureShift(page, pill, valueEl, input);
-    expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
-  });
-
-  test('Combat HP (StatPill inline, with suffix) — x stable within 2px', async ({ page }) => {
-    await page.getByRole('button', { name: 'Combat' }).first().click();
-    const pill = page.locator('[data-pw="statpill-cb-hp"]');
-    const valueEl = pill.locator('h6').first();
-    const input = page.locator('[data-pw="statpill-cb-hp-input"]');
-    const { delta } = await measureShift(page, pill, valueEl, input);
-    expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
-  });
-
-  test('Combat MP (StatPill inline, with suffix) — x stable within 2px', async ({ page }) => {
-    await page.getByRole('button', { name: 'Combat' }).first().click();
-    const pill = page.locator('[data-pw="statpill-cb-mp"]');
-    const valueEl = pill.locator('h6').first();
-    const input = page.locator('[data-pw="statpill-cb-mp-input"]');
     const { delta } = await measureShift(page, pill, valueEl, input);
     expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
   });
@@ -123,20 +93,6 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
     const pill = page.locator('[data-pw="metric-zenit"]');
     const valueEl = pill.locator('p').first();
     const input = page.locator('[data-pw="metric-zenit-input"]');
-    const valueBB = await valueEl.boundingBox();
-    await pill.click();
-    await input.waitFor({ state: 'visible' });
-    const inputBB = await input.boundingBox();
-    const delta = Math.abs((inputBB?.x ?? 0) - (valueBB?.x ?? 0));
-    await input.blur();
-    expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);
-  });
-
-  test('Spells HP (SummaryStrip, with suffix) — x stable within 2px', async ({ page }) => {
-    await page.getByRole('button', { name: 'Spells' }).first().click();
-    const pill = page.locator('[data-pw="metric-hp"]');
-    const valueEl = pill.locator('p').first();
-    const input = page.locator('[data-pw="metric-hp-input"]');
     const valueBB = await valueEl.boundingBox();
     await pill.click();
     await input.waitFor({ state: 'visible' });

@@ -18,6 +18,38 @@ function hasGameSystem(document: { meta?: { gameSystem?: string } } | null | und
   return Boolean(document?.meta?.gameSystem);
 }
 
+const objectiveClockValidator = v.object({
+  title: v.string(),
+  segments: v.number(),
+  filled: v.number(),
+});
+
+type ObjectiveClock = {
+  title: string;
+  segments: number;
+  filled: number;
+};
+
+function normalizeObjectiveClock(settings: unknown): ObjectiveClock | null {
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return null;
+  const clock = (settings as Record<string, unknown>).objectiveClock;
+  if (!clock || typeof clock !== 'object' || Array.isArray(clock)) return null;
+  const candidate = clock as Record<string, unknown>;
+  if (
+    typeof candidate.title !== 'string' ||
+    typeof candidate.segments !== 'number' ||
+    typeof candidate.filled !== 'number'
+  ) {
+    return null;
+  }
+  const segments = Math.min(12, Math.max(2, Math.round(candidate.segments)));
+  return {
+    title: candidate.title.trim() || 'Objective',
+    segments,
+    filled: Math.min(segments, Math.max(0, Math.round(candidate.filled))),
+  };
+}
+
 export const listMine = query({
   args: { gameSystem: v.string(), includeArchived: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
@@ -54,6 +86,89 @@ export const get = query({
       throw new ConvexError('CAMPAIGN_NOT_FOUND');
     }
     return campaign;
+  },
+});
+
+export const getObjectiveClock = query({
+  args: { campaignId: v.id('campaigns') },
+  handler: async (ctx, args) => {
+    const membership = await requireCampaignMember(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!campaign || campaign.archivedAt || !hasGameSystem(campaign)) {
+      throw new ConvexError('CAMPAIGN_NOT_FOUND');
+    }
+    return {
+      canManage: membership.role === 'gm',
+      clock: normalizeObjectiveClock(campaign.settings),
+    };
+  },
+});
+
+export const listObjectiveClocksForCharacter = query({
+  args: { characterId: v.id('characters') },
+  handler: async (ctx, args) => {
+    const character = await requireCharacterOwner(ctx, args.characterId);
+    const links = await ctx.db
+      .query('campaignCharacters')
+      .withIndex('by_characterId', (q) => q.eq('characterId', args.characterId))
+      .collect();
+
+    const clocks = await Promise.all(
+      links
+        .filter((link) => !link.removedAt)
+        .map(async (link) => {
+          const membership = await ctx.db
+            .query('campaignMembers')
+            .withIndex('by_campaignId_userId', (q) =>
+              q.eq('campaignId', link.campaignId).eq('userId', character.ownerUserId),
+            )
+            .unique();
+          if (!membership || membership.status !== 'active') return null;
+          const campaign = await ctx.db.get(link.campaignId);
+          if (!campaign || campaign.archivedAt || campaign.status !== 'active') return null;
+          const clock = normalizeObjectiveClock(campaign.settings);
+          return clock ? { campaignId: campaign._id, campaignName: campaign.name, clock } : null;
+        }),
+    );
+
+    return clocks.filter((clock): clock is NonNullable<typeof clock> => clock !== null);
+  },
+});
+
+export const setObjectiveClock = mutation({
+  args: {
+    campaignId: v.id('campaigns'),
+    clock: v.optional(objectiveClockValidator),
+  },
+  handler: async (ctx, args) => {
+    await requireCampaignGM(ctx, args.campaignId);
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!campaign || campaign.archivedAt || !hasGameSystem(campaign)) {
+      throw new ConvexError('CAMPAIGN_NOT_FOUND');
+    }
+    const currentSettings =
+      campaign.settings &&
+      typeof campaign.settings === 'object' &&
+      !Array.isArray(campaign.settings)
+        ? (campaign.settings as Record<string, unknown>)
+        : {};
+    const nextClock = args.clock
+      ? {
+          title: args.clock.title.trim() || 'Objective',
+          segments: Math.min(12, Math.max(2, Math.round(args.clock.segments))),
+          filled: Math.max(0, Math.round(args.clock.filled)),
+        }
+      : undefined;
+    if (nextClock) nextClock.filled = Math.min(nextClock.segments, nextClock.filled);
+
+    const nextSettings = { ...currentSettings };
+    if (nextClock) {
+      nextSettings.objectiveClock = nextClock;
+    } else {
+      delete nextSettings.objectiveClock;
+    }
+
+    await ctx.db.patch(args.campaignId, { settings: nextSettings, updatedAt: Date.now() });
   },
 });
 

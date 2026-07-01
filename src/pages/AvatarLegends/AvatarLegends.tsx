@@ -1,22 +1,34 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Dialog from '@mui/material/Dialog';
 import InputBase from '@mui/material/InputBase';
+import Paper from '@mui/material/Paper';
 import Popover from '@mui/material/Popover';
+import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
-import { atom, useAtom, useAtomValue } from 'jotai';
-import { Backpack, ChevronRight, HandFist, House, Pencil, Trash2 } from 'lucide-react';
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { Backpack, ChevronRight, HandFist, House, Info, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
+import UndoSnackbar from '@/components/fab-u/atoms/UndoSnackbar';
 import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
 import type { FabUTokens } from '@/components/fab-u/tokens';
 import AccountSettings from '@/sections/AccountSettings';
@@ -45,6 +57,11 @@ import {
   deriveTechniqueFatigue,
   withTechniqueFatigue,
 } from './techniqueFatigue';
+import {
+  dedupeTechniques,
+  getTechniqueIdentityKey,
+  getTechniquePersistenceKey,
+} from './techniqueIdentity';
 
 type AvatarTab = 'character' | 'moves' | 'combat' | 'backpack';
 
@@ -609,6 +626,14 @@ type TechniqueElement =
   | 'basic';
 type TechniqueCategory = 'Advance & Attack' | 'Defend & Maneuver' | 'Evade & Observe';
 type TechniqueLevel = 'learned' | 'practiced' | 'mastered';
+type StatusDescription = {
+  category: 'Positive Status' | 'Negative Status';
+  description: string;
+};
+type ConditionDescription = {
+  penalty: string;
+  clear: string;
+};
 // Proficiency levels in mastery order; used for both the edit-mode selector
 // and the at-a-glance level pill on each technique card.
 const techniqueLevelOptions = ['learned', 'practiced', 'mastered'] as const;
@@ -616,6 +641,75 @@ const techniqueLevelLabels: Record<TechniqueLevel, string> = {
   learned: 'Learned',
   practiced: 'Practiced',
   mastered: 'Mastered',
+};
+const statusDescriptions: Record<string, StatusDescription> = {
+  Doomed: {
+    category: 'Negative Status',
+    description: 'Suffer 1-fatigue periodically until you escape.',
+  },
+  Impaired: {
+    category: 'Negative Status',
+    description:
+      'Take a -2 penalty to physical actions or mark 1-fatigue (NPCs choose one fewer technique).',
+  },
+  Stunned: {
+    category: 'Negative Status',
+    description: 'Cannot act or respond until you recover.',
+  },
+  Trapped: {
+    category: 'Negative Status',
+    description: 'Helpless, requiring you to mark three conditions or fatigue to break free.',
+  },
+  Empowered: {
+    category: 'Positive Status',
+    description: 'Clear 1-fatigue at the end of each exchange.',
+  },
+  Favored: {
+    category: 'Positive Status',
+    description: 'Select an extra technique during your next exchange.',
+  },
+  Inspired: {
+    category: 'Positive Status',
+    description: 'Shift your balance track by spending the status.',
+  },
+  Prepared: {
+    category: 'Positive Status',
+    description: 'Use to gain +1 to a roll or avoid marking a condition.',
+  },
+};
+const conditionDescriptions: Record<string, ConditionDescription> = {
+  Afraid: {
+    penalty: '-2 to Intimidate and Call Someone Out.',
+    clear: 'Running from danger or difficulty.',
+  },
+  Angry: {
+    penalty: '-2 to Guide and Comfort and Assess the Situation.',
+    clear: 'Breaking something important or lashing out at a friend.',
+  },
+  Insecure: {
+    penalty: '-2 to Trick and Resist Shifting Balance.',
+    clear: 'Taking foolhardy action without talking to your companions.',
+  },
+  Guilty: {
+    penalty: '-2 to Push Your Luck and Deny a Call Out.',
+    clear: 'Making a personal sacrifice to absolve your guilt.',
+  },
+  Troubled: {
+    penalty: '-2 to Plead and Rely on Your Skills and Training.',
+    clear: 'Seeking guidance from a mentor or powerful figure.',
+  },
+};
+const moveConditionByTitle: Record<string, string> = {
+  Intimidate: 'Afraid',
+  'Call Someone Out': 'Afraid',
+  'Comfort or Support': 'Angry',
+  'Assess a Situation': 'Angry',
+  Trick: 'Insecure',
+  'Resist Shifting Your Balance': 'Insecure',
+  'Push Your Luck': 'Guilty',
+  'Deny a Callout': 'Guilty',
+  Plead: 'Troubled',
+  'Rely on Your Skills & Training': 'Troubled',
 };
 
 // UI-only atoms (no character data; just remember which sub-tab is
@@ -733,12 +827,6 @@ const defaultBasicTechniques: Technique[] = [
   },
 ].map((technique) => withTechniqueFatigue(technique) as Technique);
 const defaultBalancePrinciples = ['Tradition', 'Progress'] as const;
-
-function getTechniquePersistenceKey(technique: Pick<Technique, 'approach' | 'name' | 'type'>) {
-  return [technique.type, technique.approach, technique.name]
-    .map((value) => value.trim().toLowerCase())
-    .join(':');
-}
 
 function normalizeTechniqueType(value: unknown): TechniqueElement {
   if (value === 'water' || value === 'waterbending') return 'waterbending';
@@ -1023,7 +1111,7 @@ function applyClassDataToCharacter(
     balance: normalizeBalanceState(character.balance, leftPrinciple, rightPrinciple),
     stats: coerceStartingStats(classData),
     classMoves: [...classMoves, ...customMoves],
-    techniques:
+    techniques: dedupeTechniques(
       advancedTechnique && !advancedTechniqueDeleted
         ? [
             ...customOrBasicTechniques.filter(
@@ -1032,6 +1120,7 @@ function applyClassDataToCharacter(
             advancedTechnique,
           ]
         : customOrBasicTechniques,
+    ),
   };
 }
 
@@ -1074,6 +1163,14 @@ function createRandomAvatarLegendsBackendPayload(classData?: AvatarClassData | n
  *  surface reads from / writes to this atom (often via a derived slice). */
 const characterStateAtom = atom<CharacterState>(defaultCharacter);
 
+// Bumped after a destructive action to briefly reveal the Undo button (mirrors
+// FabU's after-delete undo). The value is just a change signal.
+const undoSignalAtom = atom(0);
+function useRequestUndoButton() {
+  const bump = useSetAtom(undoSignalAtom);
+  return () => bump((n) => n + 1);
+}
+
 /** Per-app persisted-state schema version. Bump whenever the on-the-wire
  *  shape of the AL `CharacterState` changes in a breaking way.
  *  v2: `age` is `number`, technique key is `type` (was `element`).
@@ -1102,7 +1199,9 @@ function serializeAvatarLegendsCharacter(state: CharacterState) {
   };
   const character = {
     ...legacy,
-    techniques: legacy.techniques.map((technique) => withTechniqueFatigue(technique) as Technique),
+    techniques: dedupeTechniques(
+      legacy.techniques.map((technique) => withTechniqueFatigue(technique) as Technique),
+    ),
   };
   delete character.classTraitBody;
   delete character.classTraitTitle;
@@ -1137,39 +1236,58 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
 
   const rawTechniques: unknown = innerCandidate.techniques;
   const techniques = Array.isArray(rawTechniques)
-    ? (rawTechniques as Array<Record<string, unknown>>).map((tech) => {
-        const legacyElement = (tech as { element?: unknown }).element;
-        const nextType =
-          typeof tech.type === 'string'
-            ? normalizeTechniqueType(tech.type)
-            : typeof legacyElement === 'string'
-              ? normalizeTechniqueType(legacyElement)
-              : 'basic';
-        // Migrate v2→v3: rename category→approach, title→name, body→description
-        const nextName =
-          typeof tech.name === 'string' ? tech.name : (tech as { title?: unknown }).title;
-        const nextApproach =
-          typeof tech.approach === 'string'
-            ? tech.approach
-            : (tech as { category?: unknown }).category;
-        const nextDescription =
-          typeof tech.description === 'string'
-            ? tech.description
-            : (tech as { body?: unknown }).body;
-        // Strip legacy keys
-        const rest: Record<string, unknown> = { ...tech };
-        delete rest.element;
-        delete rest.title;
-        delete rest.body;
-        delete rest.category;
-        return withTechniqueFatigue({
-          ...rest,
-          type: nextType,
-          name: nextName,
-          approach: nextApproach,
-          description: nextDescription,
-        }) as Technique;
-      })
+    ? dedupeTechniques(
+        rawTechniques.flatMap((value) => {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+          const tech = value as Record<string, unknown>;
+          const legacyElement = (tech as { element?: unknown }).element;
+          const nextType =
+            typeof tech.type === 'string'
+              ? normalizeTechniqueType(tech.type)
+              : typeof legacyElement === 'string'
+                ? normalizeTechniqueType(legacyElement)
+                : 'basic';
+          // Migrate v2→v3: rename category→approach, title→name, body→description
+          const nextName = [tech.name, (tech as { title?: unknown }).title]
+            .find(
+              (candidate): candidate is string =>
+                typeof candidate === 'string' && candidate.trim().length > 0,
+            )
+            ?.trim();
+          const nextApproach = [tech.approach, (tech as { category?: unknown }).category].find(
+            (candidate): candidate is TechniqueCategory => coerceApproach(candidate) === candidate,
+          );
+          const description =
+            [tech.description, (tech as { body?: unknown }).body].find(
+              (candidate): candidate is string =>
+                typeof candidate === 'string' && candidate.trim().length > 0,
+            ) ?? '';
+          if (!nextName) return [];
+          const summary =
+            typeof tech.summary === 'string' && tech.summary.trim()
+              ? tech.summary
+              : summarizeTechnique(description);
+          // Strip legacy keys
+          const rest: Record<string, unknown> = { ...tech };
+          delete rest.element;
+          delete rest.title;
+          delete rest.body;
+          delete rest.category;
+          return [
+            withTechniqueFatigue({
+              ...rest,
+              type: nextType,
+              name: nextName,
+              approach: coerceApproach(nextApproach),
+              level: techniqueLevelOptions.includes(rest.level as TechniqueLevel)
+                ? (rest.level as TechniqueLevel)
+                : 'learned',
+              summary,
+              description,
+            }) as Technique,
+          ];
+        }),
+      )
     : defaultCharacter.techniques;
 
   // Migrate v2→v3: rename inventory and notes items' title→name, body→description
@@ -1335,7 +1453,35 @@ function ConvexCharacterSyncMount() {
     return () => window.removeEventListener('keydown', onKey);
   }, [historyControls]);
 
-  return null;
+  // Floating Undo button shown briefly after a destructive action (matches
+  // FabU), sitting in the gap beneath the dice FAB. Styled with AL's gold.
+  const undoSignal = useAtomValue(undoSignalAtom);
+  const [undoVisible, setUndoVisible] = useState(false);
+  // Only reveal for *new* bumps — a remount after a prior delete must not
+  // reopen a stale Undo (undoSignalAtom is never reset).
+  const lastUndoSignal = useRef(undoSignal);
+  useEffect(() => {
+    if (undoSignal === lastUndoSignal.current) return;
+    lastUndoSignal.current = undoSignal;
+    setUndoVisible(true);
+  }, [undoSignal]);
+
+  return (
+    <UndoSnackbar
+      open={undoVisible}
+      onUndo={() => {
+        historyControls.undo();
+        setUndoVisible(false);
+      }}
+      onClose={() => setUndoVisible(false)}
+      colors={{
+        bg: bookAccent,
+        fg: deepInk,
+        border: alpha(deepInk, 0.4),
+        shadow: `0 8px 20px ${alpha(deepInk, 0.35)}`,
+      }}
+    />
+  );
 }
 
 // Helper: derive a get/set slice atom from a single field on
@@ -2284,9 +2430,12 @@ function StatsPanel({ sticky = false }: { sticky?: boolean } = {}) {
         sticky
           ? {
               position: 'sticky',
-              top: 0,
+              // The tab scroll root has 20px of top padding. Always offset it
+              // so the sticky Stats card sits flush with the viewport edge,
+              // both before and after it begins pinning.
+              top: '-20px',
               zIndex: 4,
-              mt: '-15px',
+              mt: '0 !important',
             }
           : undefined
       }
@@ -2439,10 +2588,12 @@ function PrimaryTrainingSelect() {
           setCharacter((prev) => ({
             ...prev,
             primaryTraining: next,
-            techniques: prev.techniques.map((technique) =>
-              technique.classTechnique
-                ? { ...technique, type: trainingToTechniqueType(next) }
-                : technique,
+            techniques: dedupeTechniques(
+              prev.techniques.map((technique) =>
+                technique.classTechnique
+                  ? { ...technique, type: trainingToTechniqueType(next) }
+                  : technique,
+              ),
             ),
           }));
         }}
@@ -2544,19 +2695,30 @@ function CharacterEditField({
 function ConditionButtonShared({ label }: { label: string }) {
   const [active, setActive] = useAtom(activeConditionsAtom);
   const { isDarkMode } = useThemeMode();
+  const [infoAnchorEl, setInfoAnchorEl] = useState<HTMLElement | null>(null);
+  const activeColor = isDarkMode ? darkConditionGold : bookAccent;
   return (
-    <StatusButton
-      label={label}
-      active={Boolean(active[label])}
-      // Conditions use a rulebook-gold fill; dark mode deepens it so
-      // active chips feel less bright against the slate surface.
-      activeColor={isDarkMode ? darkConditionGold : bookAccent}
-      // Unselected label reads in black in light mode (per spec); dark
-      // mode keeps the StatusButton default of white text at all times.
-      inactiveTextColor="#000000"
-      hexagonal
-      onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
-    />
+    <>
+      <StatusButton
+        label={label}
+        active={Boolean(active[label])}
+        // Conditions use a rulebook-gold fill; dark mode deepens it so
+        // active chips feel less bright against the slate surface.
+        activeColor={activeColor}
+        // Unselected label reads in black in light mode (per spec); dark
+        // mode keeps the StatusButton default of white text at all times.
+        inactiveTextColor="#000000"
+        hexagonal
+        onToggle={() => setActive((prev) => ({ ...prev, [label]: !prev[label] }))}
+        onInfoClick={(event) => setInfoAnchorEl(event.currentTarget)}
+      />
+      <ConditionDescriptionPopper
+        label={label}
+        anchorEl={infoAnchorEl}
+        color={activeColor}
+        onClose={() => setInfoAnchorEl(null)}
+      />
+    </>
   );
 }
 
@@ -2572,6 +2734,7 @@ function StatusButton({
   inactiveTextColor,
   hexagonal = false,
   onToggle,
+  onInfoClick,
 }: {
   label: string;
   active: boolean;
@@ -2583,6 +2746,7 @@ function StatusButton({
   inactiveTextColor?: string;
   hexagonal?: boolean;
   onToggle: () => void;
+  onInfoClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   // In dark mode the inactive text would otherwise sit at the activeColor
   // (e.g., the dark-red `gold`), which is hard to read against the slate
@@ -2598,70 +2762,307 @@ function StatusButton({
   const hexClipPath = 'polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%)';
   if (hexagonal) {
     return (
+      <Box sx={{ position: 'relative', width: '100%' }}>
+        <Box
+          component="button"
+          type="button"
+          onClick={onToggle}
+          aria-pressed={active}
+          sx={{
+            width: '100%',
+            p: '1.5px',
+            border: 'none',
+            background: activeColor,
+            clipPath: hexClipPath,
+            cursor: 'pointer',
+            transition: 'background-color 0.15s ease, color 0.15s ease',
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              display: 'block',
+              width: '100%',
+              py: '14px',
+              px: 2.2,
+              boxSizing: 'border-box',
+              clipPath: hexClipPath,
+              background: active ? activeColor : parchmentLight,
+              color: textColor,
+              textAlign: 'center',
+              fontFamily: 'Georgia, serif',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {label}
+          </Box>
+        </Box>
+        {onInfoClick ? (
+          <StatusInfoButton
+            label={label}
+            color={textColor}
+            onClick={onInfoClick}
+            sx={{ top: '50%', right: 10, transform: 'translateY(-50%)' }}
+          />
+        ) : null}
+      </Box>
+    );
+  }
+  return (
+    <Box sx={{ position: 'relative', width: '100%' }}>
       <Box
         component="button"
         type="button"
         onClick={onToggle}
         aria-pressed={active}
         sx={{
-          width: '100%',
-          p: '1.5px',
-          border: 'none',
-          background: activeColor,
-          clipPath: hexClipPath,
+          // Doubled vertical padding so the button is twice as tall.
+          py: '14px',
+          px: 1,
+          borderRadius: '4px',
+          border: `1.5px solid ${activeColor}`,
+          background: active ? activeColor : 'transparent',
+          color: textColor,
           cursor: 'pointer',
+          textAlign: 'center',
+          fontFamily: 'Georgia, serif',
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          letterSpacing: '0.02em',
           transition: 'background-color 0.15s ease, color 0.15s ease',
+          width: '100%',
         }}
       >
-        <Box
-          component="span"
-          sx={{
-            display: 'block',
-            width: '100%',
-            py: '14px',
-            px: 2.2,
-            boxSizing: 'border-box',
-            clipPath: hexClipPath,
-            background: active ? activeColor : parchmentLight,
-            color: textColor,
-            textAlign: 'center',
-            fontFamily: 'Georgia, serif',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            letterSpacing: '0.02em',
-          }}
-        >
-          {label}
-        </Box>
+        {label}
       </Box>
-    );
-  }
+      {onInfoClick ? (
+        <StatusInfoButton label={label} color={textColor} onClick={onInfoClick} />
+      ) : null}
+    </Box>
+  );
+}
+
+function StatusInfoButton({
+  label,
+  color,
+  onClick,
+  sx,
+}: {
+  label: string;
+  color: string;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  sx?: Record<string, unknown>;
+}) {
   return (
     <Box
       component="button"
       type="button"
-      onClick={onToggle}
-      aria-pressed={active}
+      aria-label={`About ${label}`}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        onClick(event);
+      }}
       sx={{
-        // Doubled vertical padding so the button is twice as tall.
-        py: '14px',
-        px: 1,
-        borderRadius: '4px',
-        border: `1.5px solid ${activeColor}`,
-        background: active ? activeColor : 'transparent',
-        color: textColor,
+        display: 'grid',
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        width: 24,
+        height: 24,
+        placeItems: 'center',
+        border: 'none',
+        borderRadius: 0,
+        bgcolor: 'transparent',
+        color,
         cursor: 'pointer',
-        textAlign: 'center',
-        fontFamily: 'Georgia, serif',
-        fontSize: '0.78rem',
-        fontWeight: 700,
-        letterSpacing: '0.02em',
-        transition: 'background-color 0.15s ease, color 0.15s ease',
-        width: '100%',
+        p: 0,
+        '&:hover': {
+          color: activeInfoHoverColor(color),
+        },
+        ...sx,
       }}
     >
-      {label}
+      <Info size={16} strokeWidth={2.1} />
     </Box>
+  );
+}
+
+function activeInfoHoverColor(color: string) {
+  return color === '#ffffff' ? alpha('#ffffff', 0.72) : alpha(color, 0.68);
+}
+
+function StatusDescriptionPopper({
+  label,
+  anchorEl,
+  positiveColor,
+  onClose,
+}: {
+  label: string | null;
+  anchorEl: HTMLElement | null;
+  positiveColor: string;
+  onClose: () => void;
+}) {
+  const status = label ? statusDescriptions[label] : undefined;
+  return (
+    <Popper
+      open={Boolean(label && status && anchorEl)}
+      anchorEl={anchorEl}
+      placement="bottom-end"
+      modifiers={[
+        { name: 'offset', options: { offset: [0, 6] } },
+        { name: 'flip', options: { padding: 12 } },
+        { name: 'preventOverflow', options: { padding: 12 } },
+      ]}
+      sx={{ zIndex: (theme) => theme.zIndex.modal }}
+    >
+      <ClickAwayListener onClickAway={onClose}>
+        <Paper
+          elevation={0}
+          sx={{
+            width: 'min(280px, calc(100vw - 24px))',
+            bgcolor: parchment,
+            backgroundImage: 'none',
+            border: `1px solid ${border}`,
+            borderRadius: '8px',
+            boxShadow: `0 12px 30px ${alpha(deepInk, 0.34)}`,
+            p: 1.7,
+          }}
+        >
+          {label && status ? (
+            <Stack spacing={0.9}>
+              <Typography
+                sx={{
+                  color: status.category === 'Positive Status' ? positiveColor : passionRed,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.62rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {status.category}
+              </Typography>
+              <Typography
+                sx={{
+                  color: ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.96rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {label}
+              </Typography>
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.88rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                {status.description}
+              </Typography>
+            </Stack>
+          ) : null}
+        </Paper>
+      </ClickAwayListener>
+    </Popper>
+  );
+}
+
+function ConditionDescriptionPopper({
+  label,
+  anchorEl,
+  color,
+  onClose,
+}: {
+  label: string;
+  anchorEl: HTMLElement | null;
+  color: string;
+  onClose: () => void;
+}) {
+  const condition = conditionDescriptions[label];
+  return (
+    <Popper
+      open={Boolean(condition && anchorEl)}
+      anchorEl={anchorEl}
+      placement="bottom-end"
+      modifiers={[
+        { name: 'offset', options: { offset: [0, 6] } },
+        { name: 'flip', options: { padding: 12 } },
+        { name: 'preventOverflow', options: { padding: 12 } },
+      ]}
+      sx={{ zIndex: (theme) => theme.zIndex.modal }}
+    >
+      <ClickAwayListener onClickAway={onClose}>
+        <Paper
+          elevation={0}
+          sx={{
+            width: 'min(290px, calc(100vw - 24px))',
+            bgcolor: parchment,
+            backgroundImage: 'none',
+            border: `1px solid ${border}`,
+            borderRadius: '8px',
+            boxShadow: `0 12px 30px ${alpha(deepInk, 0.34)}`,
+            p: 1.7,
+          }}
+        >
+          <Stack spacing={1.1}>
+            <Typography
+              sx={{
+                color,
+                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                fontSize: '0.96rem',
+                fontWeight: 900,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {label}
+            </Typography>
+            <Typography
+              sx={{
+                color: brown,
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontSize: '0.88rem',
+                lineHeight: 1.5,
+              }}
+            >
+              {condition?.penalty}
+            </Typography>
+            <Box>
+              <Typography
+                sx={{
+                  color,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.62rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  mb: 0.35,
+                }}
+              >
+                Clear by
+              </Typography>
+              <Typography
+                sx={{
+                  color: brown,
+                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontSize: '0.88rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                {condition?.clear}
+              </Typography>
+            </Box>
+          </Stack>
+        </Paper>
+      </ClickAwayListener>
+    </Popper>
   );
 }
 
@@ -3328,7 +3729,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
                 lineHeight: 1.3,
                 // Heading text breaks onto a new line per sentence.
                 whiteSpace: 'pre-line',
-                mt: index === 0 ? 0.4 : 2.2,
+                pt: 1,
               }}
             >
               {splitHeadingSentences(block.text)}
@@ -3392,7 +3793,7 @@ function ClassTraitContent({ text, className }: { text: string; className: strin
               direction="row"
               alignItems="center"
               gap={1}
-              sx={{ flexWrap: 'wrap', rowGap: 0.5, mt: index === 0 ? 0.4 : 2.2 }}
+              sx={{ flexWrap: 'wrap', rowGap: 0.5, pt: 1 }}
             >
               <Typography
                 sx={{
@@ -4287,21 +4688,21 @@ function TechniqueAddCard({
 function CanonTechniquePickerDialog({
   open,
   filter,
-  selectedTechniqueName,
+  selectedTechniqueKeys,
   techniques,
   loading,
   onFilterChange,
-  onSelectTechniqueName,
+  onToggleTechnique,
   onAdd,
   onClose,
 }: {
   open: boolean;
   filter: TechniqueElementFilter;
-  selectedTechniqueName: string;
+  selectedTechniqueKeys: readonly string[];
   techniques: CanonTechnique[];
   loading: boolean;
   onFilterChange: (filter: TechniqueElementFilter) => void;
-  onSelectTechniqueName: (name: string) => void;
+  onToggleTechnique: (technique: CanonTechnique) => void;
   onAdd: () => void;
   onClose: () => void;
 }) {
@@ -4309,9 +4710,7 @@ function CanonTechniquePickerDialog({
     () => techniques.filter((technique) => filter === 'all' || technique.type === filter),
     [filter, techniques],
   );
-  const selectedTechnique = filteredTechniques.find(
-    (technique) => technique.name === selectedTechniqueName,
-  );
+  const selectedCount = selectedTechniqueKeys.length;
 
   return (
     <Dialog
@@ -4348,10 +4747,7 @@ function CanonTechniquePickerDialog({
           <TechniqueElementFilterRow
             value={filter}
             includeClass={false}
-            onChange={(next) => {
-              onFilterChange(next);
-              onSelectTechniqueName('');
-            }}
+            onChange={onFilterChange}
           />
         </Stack>
 
@@ -4390,19 +4786,20 @@ function CanonTechniquePickerDialog({
                   textAlign: 'center',
                 }}
               >
-                No techniques of that type.
+                No available techniques of that type.
               </Typography>
             </Panel>
           ) : (
             filteredTechniques.map((technique) => {
-              const selected = technique.name === selectedTechniqueName;
+              const selected = selectedTechniqueKeys.includes(getTechniqueIdentityKey(technique));
               const visual = techniqueElementVisual(technique.type);
               return (
                 <Box
                   key={`${technique.type}-${technique.name}`}
                   component="button"
                   type="button"
-                  onClick={() => onSelectTechniqueName(technique.name)}
+                  aria-pressed={selected}
+                  onClick={() => onToggleTechnique(technique)}
                   sx={{
                     width: '100%',
                     p: 0,
@@ -4502,7 +4899,7 @@ function CanonTechniquePickerDialog({
             Cancel
           </Button>
           <Button
-            disabled={!selectedTechnique}
+            disabled={selectedCount === 0}
             onClick={onAdd}
             sx={{
               flex: 1,
@@ -4517,7 +4914,7 @@ function CanonTechniquePickerDialog({
               '&:hover': { bgcolor: deepInk },
             }}
           >
-            Add
+            {selectedCount > 0 ? `Add ${selectedCount}` : 'Add'}
           </Button>
         </Stack>
       </Stack>
@@ -4621,25 +5018,27 @@ function CharacterPane() {
       return {
         ...prev,
         classMoves: hasClassMoves ? prev.classMoves : hydrated.classMoves,
-        techniques: classTechniqueDeleted
-          ? prev.techniques
-          : existingClassTechnique && expectedClassTechnique && expectedClassTechniqueKey
-            ? prev.techniques.map((technique) =>
-                technique.classTechnique &&
-                getTechniquePersistenceKey(technique) === expectedClassTechniqueKey
-                  ? {
-                      ...technique,
-                      type: expectedClassTechnique.type,
-                      approach: expectedClassTechnique.approach,
-                      name: expectedClassTechnique.name,
-                      summary: expectedClassTechnique.summary,
-                      description: expectedClassTechnique.description,
-                      fatigue: expectedClassTechnique.fatigue,
-                      classTechnique: true,
-                    }
-                  : technique,
-              )
-            : hydrated.techniques,
+        techniques: dedupeTechniques(
+          classTechniqueDeleted
+            ? prev.techniques
+            : existingClassTechnique && expectedClassTechnique && expectedClassTechniqueKey
+              ? prev.techniques.map((technique) =>
+                  technique.classTechnique &&
+                  getTechniquePersistenceKey(technique) === expectedClassTechniqueKey
+                    ? {
+                        ...technique,
+                        type: expectedClassTechnique.type,
+                        approach: expectedClassTechnique.approach,
+                        name: expectedClassTechnique.name,
+                        summary: expectedClassTechnique.summary,
+                        description: expectedClassTechnique.description,
+                        fatigue: expectedClassTechnique.fatigue,
+                        classTechnique: true,
+                      }
+                    : technique,
+                )
+              : hydrated.techniques,
+        ),
       };
     });
   }, [
@@ -5059,10 +5458,12 @@ function FilterTabs({
  */
 function MoveAccordion({
   entry,
+  conditionEffect,
   onUpdate,
   onDelete,
 }: {
   entry: MoveEntry;
+  conditionEffect?: string;
   onUpdate?: (entry: MoveEntry) => void;
   onDelete?: () => void;
 }) {
@@ -5096,9 +5497,8 @@ function MoveAccordion({
             width: '100%',
             gap: 0.9,
             p: 0,
-            // Give collapsed Moves cards a bit more vertical presence; when
-            // open the body content sets the height so no min is needed.
-            minHeight: open ? undefined : 34,
+            // Keep the title row identical when expanding the accordion.
+            minHeight: 34,
             background: 'none',
             border: 'none',
             cursor: 'pointer',
@@ -5130,20 +5530,34 @@ function MoveAccordion({
               }}
             />
           ) : (
-            <Typography
-              sx={{
-                flex: 1,
-                color: ink,
-                fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
-                fontSize: '0.92rem',
-                fontWeight: 900,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                lineHeight: 1.1,
-              }}
-            >
-              {entry.title}
-            </Typography>
+            <Stack spacing={0.35} sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                sx={{
+                  color: ink,
+                  fontFamily: '"IM Fell English SC", "IM Fell English", Georgia, serif',
+                  fontSize: '0.92rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.1,
+                }}
+              >
+                {entry.title}
+              </Typography>
+              {conditionEffect ? (
+                <Typography
+                  sx={{
+                    color: passionRed,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {conditionEffect}: -2 to this move
+                </Typography>
+              ) : null}
+            </Stack>
           )}
           <Box
             sx={{
@@ -5296,22 +5710,26 @@ function MoveAccordion({
 
 function MovesPane() {
   const [subTab, setSubTab] = useAtom(movesSubTabAtom);
+  const activeConditions = useAtomValue(activeConditionsAtom);
+  const requestUndo = useRequestUndoButton();
   // Basic + Balance lists come from the rulebook constants; class
   // moves come from the active character record so each character
   // can carry their own class-specific moves.
   const [character, setCharacter] = useAtom(characterStateAtom);
   const visibleMoves: MoveEntry[] =
     subTab === 0
-      ? movesByCategory.basic
+      ? [...movesByCategory.basic, ...movesByCategory.balance, ...character.classMoves]
       : subTab === 1
-        ? movesByCategory.balance
-        : character.classMoves;
+        ? movesByCategory.basic
+        : subTab === 2
+          ? movesByCategory.balance
+          : character.classMoves;
   return (
-    <Stack spacing={1}>
+    <Stack spacing={1} sx={{ mt: '-20px' }}>
       {/* Stats stay pinned at the top of the Moves tab while the list scrolls. */}
       <StatsPanel sticky />
       <FilterTabs
-        labels={['Basic', 'Balance', 'Class']}
+        labels={['All', 'Basic', 'Balance', 'Class']}
         activeIndex={subTab}
         onChange={setSubTab}
       />
@@ -5319,6 +5737,11 @@ function MovesPane() {
         <MoveAccordion
           key={entry.id ?? `${subTab}-${entry.custom ? 'custom' : 'move'}-${entry.title}-${index}`}
           entry={entry}
+          conditionEffect={
+            activeConditions[moveConditionByTitle[entry.title]]
+              ? moveConditionByTitle[entry.title]
+              : undefined
+          }
           onUpdate={
             entry.custom
               ? (next) =>
@@ -5330,16 +5753,18 @@ function MovesPane() {
           }
           onDelete={
             entry.custom
-              ? () =>
+              ? () => {
                   setCharacter((prev) => ({
                     ...prev,
                     classMoves: prev.classMoves.filter((move) => move !== entry),
-                  }))
+                  }));
+                  requestUndo();
+                }
               : undefined
           }
         />
       ))}
-      {subTab === 2 ? (
+      {subTab === 3 ? (
         <AddListCard
           label="Add custom move"
           onClick={() =>
@@ -5891,7 +6316,9 @@ function CombatPane() {
     null,
   );
   const [canonTechniqueType, setCanonTechniqueType] = useState<TechniqueElementFilter>('all');
-  const [canonTechniqueName, setCanonTechniqueName] = useState('');
+  const [selectedCanonTechniqueKeys, setSelectedCanonTechniqueKeys] = useState<readonly string[]>(
+    [],
+  );
   const [pendingTechniqueDelete, setPendingTechniqueDelete] = useState<number | null>(null);
   // Which technique cards are currently in edit mode (by index into the full
   // techniques array). The Edit trigger lives in each card's swipe channel;
@@ -5941,6 +6368,17 @@ function CombatPane() {
       .filter((technique): technique is CanonTechnique => Boolean(technique))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [canonGameSystem]);
+  const existingTechniqueKeys = useMemo(
+    () => new Set(character.techniques.map(getTechniqueIdentityKey)),
+    [character.techniques],
+  );
+  const availableCanonTechniques = useMemo(
+    () =>
+      canonTechniques.filter(
+        (technique) => !existingTechniqueKeys.has(getTechniqueIdentityKey(technique)),
+      ),
+    [canonTechniques, existingTechniqueKeys],
+  );
   const deletedClassTechnique = useMemo(() => {
     const technique = coerceAdvancedTechnique(avatarClass, character.primaryTraining);
     if (!technique) return null;
@@ -5960,7 +6398,7 @@ function CombatPane() {
     setAddTechniqueOpen(false);
     setAddTechniqueKind(null);
     setCanonTechniqueType('all');
-    setCanonTechniqueName('');
+    setSelectedCanonTechniqueKeys([]);
   };
   const addCustomTechnique = () => {
     setCharacterState((prev) => {
@@ -5968,47 +6406,71 @@ function CombatPane() {
         elementFilter !== 'all' && elementFilter !== 'basic' && elementFilter !== 'class'
           ? elementFilter
           : trainingToTechniqueType(prev.primaryTraining);
+      const existingNames = new Set(
+        prev.techniques.map((technique) => technique.name.trim().toLowerCase()),
+      );
+      let customName = 'Custom Technique';
+      let suffix = 2;
+      while (existingNames.has(customName.toLowerCase())) {
+        customName = `Custom Technique ${suffix}`;
+        suffix += 1;
+      }
       return {
         ...prev,
-        techniques: [
+        techniques: dedupeTechniques([
           ...prev.techniques,
           withTechniqueFatigue({
             id: createLocalId('technique'),
             type: nextType,
             approach: 'Advance & Attack',
             level: 'learned',
-            name: 'Custom Technique',
+            name: customName,
             summary: 'Add a short technique summary.',
             description: 'Describe how this custom technique works.',
             custom: true,
           }) as Technique,
-        ],
+        ]),
       };
     });
     resetAddTechniqueFlow();
   };
   const addCanonTechnique = () => {
-    const selected = canonTechniques.find((technique) => technique.name === canonTechniqueName);
-    if (!selected) return;
-    setCharacterState((prev) => ({
-      ...prev,
-      techniques: [
-        ...prev.techniques,
-        {
-          ...selected,
-          id: createLocalId('technique'),
-          level: 'learned',
-        },
-      ],
-    }));
+    const selectedKeys = new Set(selectedCanonTechniqueKeys);
+    const selectedTechniques = availableCanonTechniques.filter((technique) =>
+      selectedKeys.has(getTechniqueIdentityKey(technique)),
+    );
+    if (selectedTechniques.length === 0) return;
+    setCharacterState((prev) => {
+      const currentKeys = new Set(prev.techniques.map(getTechniqueIdentityKey));
+      const additions = selectedTechniques
+        .filter((technique) => !currentKeys.has(getTechniqueIdentityKey(technique)))
+        .map(
+          (technique) =>
+            ({
+              ...technique,
+              id: createLocalId('technique'),
+              level: 'learned',
+            }) as Technique,
+        );
+      return {
+        ...prev,
+        techniques: dedupeTechniques([...prev.techniques, ...additions]),
+      };
+    });
     resetAddTechniqueFlow();
+  };
+  const toggleCanonTechnique = (technique: CanonTechnique) => {
+    const key = getTechniqueIdentityKey(technique);
+    setSelectedCanonTechniqueKeys((current) =>
+      current.includes(key) ? current.filter((value) => value !== key) : [...current, key],
+    );
   };
   const restoreClassTechnique = () => {
     if (!deletedClassTechnique) return;
     const key = getTechniquePersistenceKey(deletedClassTechnique);
     setCharacterState((prev) => ({
       ...prev,
-      techniques: [...prev.techniques, deletedClassTechnique],
+      techniques: dedupeTechniques([...prev.techniques, deletedClassTechnique]),
       deletedTechniqueKeys: (prev.deletedTechniqueKeys ?? []).filter(
         (deletedKey) => deletedKey !== key,
       ),
@@ -6018,6 +6480,7 @@ function CombatPane() {
   const updateFatigueCapacity = (base: boolean[], temp: boolean[]) => {
     setCharacterState((prev) => ({ ...prev, fatigue: base, tempFatigue: temp }));
   };
+  const requestUndo = useRequestUndoButton();
   const confirmTechniqueDelete = () => {
     if (pendingTechniqueDelete === null) return;
     setCharacterState((prev) => {
@@ -6044,13 +6507,21 @@ function CombatPane() {
         .map((value) => (value > pendingTechniqueDelete ? value - 1 : value)),
     );
     setPendingTechniqueDelete(null);
+    requestUndo();
   };
   const [activeStatuses, setActiveStatuses] = useAtom(activeStatusesAtom);
+  const [statusInfoLabel, setStatusInfoLabel] = useState<string | null>(null);
+  const [statusInfoAnchorEl, setStatusInfoAnchorEl] = useState<HTMLElement | null>(null);
+  const openStatusInfo = (label: string, anchorEl: HTMLElement) => {
+    setStatusInfoLabel(label);
+    setStatusInfoAnchorEl(anchorEl);
+  };
+  const closeStatusInfo = () => {
+    setStatusInfoLabel(null);
+    setStatusInfoAnchorEl(null);
+  };
   const toggleStatus = (label: string) =>
     setActiveStatuses((prev) => ({ ...prev, [label]: !prev[label] }));
-  const [activeConditions, setActiveConditions] = useAtom(activeConditionsAtom);
-  const toggleCondition = (label: string) =>
-    setActiveConditions((prev) => ({ ...prev, [label]: !prev[label] }));
   const [inventory, setInventory] = useAtom(inventoryAtom);
   const [pendingInventoryDelete, setPendingInventoryDelete] = useState<number | null>(null);
   function updateInventoryItem(
@@ -6065,10 +6536,10 @@ function CombatPane() {
     if (pendingInventoryDelete === null) return;
     setInventory((prev) => prev.filter((_, index) => index !== pendingInventoryDelete));
     setPendingInventoryDelete(null);
+    requestUndo();
   }
   // Conditions sub-tab mirrors Character tab conditions, with dark mode
   // using a deeper gold fill for a quieter active state.
-  const conditionColor = isDarkMode ? darkConditionGold : bookAccent;
   const negativeStatusColor = isDarkMode ? darkNegativeRed : passionRed;
   const positiveStatusColor =
     character.primaryTraining === 'Firebending'
@@ -6079,7 +6550,7 @@ function CombatPane() {
 
   return (
     <>
-      <Stack spacing={1}>
+      <Stack spacing={1} sx={{ mt: '-20px' }}>
         {/* Combat tab opens with the same Stats panel that lives on Character,
           for at-a-glance reference during combat rolls. Sticky so it stays
           visible while scrolling through techniques. */}
@@ -6161,14 +6632,16 @@ function CombatPane() {
                         ? (next) =>
                             setCharacterState((prev) => ({
                               ...prev,
-                              techniques: prev.techniques.map((item) =>
-                                item === tech
-                                  ? (withTechniqueFatigue({
-                                      ...item,
-                                      ...next,
-                                      custom: true,
-                                    }) as Technique)
-                                  : item,
+                              techniques: dedupeTechniques(
+                                prev.techniques.map((item) =>
+                                  item === tech
+                                    ? (withTechniqueFatigue({
+                                        ...item,
+                                        ...next,
+                                        custom: true,
+                                      }) as Technique)
+                                    : item,
+                                ),
                               ),
                             }))
                         : undefined
@@ -6221,7 +6694,7 @@ function CombatPane() {
                 onSelectKind={(kind) => {
                   setAddTechniqueKind(kind);
                   setCanonTechniqueType('all');
-                  setCanonTechniqueName('');
+                  setSelectedCanonTechniqueKeys([]);
                   if (kind === 'custom') addCustomTechnique();
                   if (kind === 'class') restoreClassTechnique();
                 }}
@@ -6233,11 +6706,11 @@ function CombatPane() {
             <CanonTechniquePickerDialog
               open={addTechniqueOpen && addTechniqueKind === 'canon'}
               filter={canonTechniqueType}
-              selectedTechniqueName={canonTechniqueName}
-              techniques={canonTechniques}
+              selectedTechniqueKeys={selectedCanonTechniqueKeys}
+              techniques={availableCanonTechniques}
               loading={addTechniqueOpen && !canonGameSystem}
               onFilterChange={setCanonTechniqueType}
-              onSelectTechniqueName={setCanonTechniqueName}
+              onToggleTechnique={toggleCanonTechnique}
               onAdd={addCanonTechnique}
               onClose={resetAddTechniqueFlow}
             />
@@ -6269,6 +6742,7 @@ function CombatPane() {
                     active={Boolean(activeStatuses[label])}
                     activeColor={positiveStatusColor}
                     onToggle={() => toggleStatus(label)}
+                    onInfoClick={(event) => openStatusInfo(label, event.currentTarget)}
                   />
                 ))}
               </Stack>
@@ -6291,10 +6765,17 @@ function CombatPane() {
                     active={Boolean(activeStatuses[label])}
                     activeColor={negativeStatusColor}
                     onToggle={() => toggleStatus(label)}
+                    onInfoClick={(event) => openStatusInfo(label, event.currentTarget)}
                   />
                 ))}
               </Stack>
             </Box>
+            <StatusDescriptionPopper
+              label={statusInfoLabel}
+              anchorEl={statusInfoAnchorEl}
+              positiveColor={positiveStatusColor}
+              onClose={closeStatusInfo}
+            />
           </Panel>
         ) : null}
 
@@ -6321,14 +6802,7 @@ function CombatPane() {
                         : undefined
                     }
                   >
-                    <StatusButton
-                      label={label}
-                      active={Boolean(activeConditions[label])}
-                      activeColor={conditionColor}
-                      inactiveTextColor="#000000"
-                      hexagonal
-                      onToggle={() => toggleCondition(label)}
-                    />
+                    <ConditionButtonShared label={label} />
                   </Box>
                 );
               })}
@@ -6395,6 +6869,7 @@ function ConnectionsSection() {
   // Connections come from the active character record.
   const [character, setCharacter] = useAtom(characterStateAtom);
   const [pendingConnectionDelete, setPendingConnectionDelete] = useState<number | null>(null);
+  const requestUndo = useRequestUndoButton();
   const connections = character.connections;
   const addConnection = () =>
     setCharacter((prev) => ({
@@ -6443,6 +6918,7 @@ function ConnectionsSection() {
             connections: prev.connections.filter((_, index) => index !== pendingConnectionDelete),
           }));
           setPendingConnectionDelete(null);
+          requestUndo();
         }}
       />
     </Stack>
@@ -7036,11 +7512,12 @@ function FatigueCard({
         >
           <Panel noNotch>
             <Stack spacing={0.5}>
-              <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1}>
+              <Stack direction="row" alignItems="center" gap={1}>
                 <SectionTitle>Fatigue</SectionTitle>
                 {tempFatigue.length > 0 ? (
                   <Typography
                     sx={{
+                      ml: 'auto',
                       color: alpha(brown, 0.7),
                       fontSize: '0.72rem',
                       fontWeight: 600,
@@ -7049,6 +7526,31 @@ function FatigueCard({
                     {baseFatigue.length} base + {tempFatigue.length} temp
                   </Typography>
                 ) : null}
+                <Box
+                  component="button"
+                  type="button"
+                  aria-label="Edit fatigue capacity"
+                  onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                    event.stopPropagation();
+                    openEditor();
+                  }}
+                  sx={{
+                    display: 'grid',
+                    placeItems: 'center',
+                    width: 30,
+                    height: 30,
+                    flex: '0 0 auto',
+                    p: 0,
+                    borderRadius: '4px',
+                    border: `1px solid ${alpha(border, 0.75)}`,
+                    bgcolor: 'transparent',
+                    color: brown,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: alpha(accent, 0.12) },
+                  }}
+                >
+                  <Pencil size={15} />
+                </Box>
               </Stack>
               {/* Base diamonds first (left), then temp diamonds expand to the
                   right, so the bar grows rightward as temporary capacity is
@@ -7259,6 +7761,7 @@ function BackpackPane() {
     list: 'notes' | 'inventory';
     index: number;
   } | null>(null);
+  const requestUndo = useRequestUndoButton();
 
   function addNote() {
     setNotes((prev) => [
@@ -7305,6 +7808,7 @@ function BackpackPane() {
     } else {
       setInventory((prev) => prev.filter((_, i) => i !== index));
     }
+    requestUndo();
   }
 
   const visibleNoteEntries = notes
@@ -7348,12 +7852,12 @@ function BackpackPane() {
   return (
     <Stack spacing={1}>
       <FilterTabs
-        labels={['Notes', 'Inventory', 'Lore', 'Sessions']}
+        labels={['Journal', 'Inventory', 'Lore', 'Sessions']}
         activeIndex={subTab}
         onChange={setSubTab}
       />
 
-      {/* Notes sub-tab: editable + deletable accordion cards. */}
+      {/* Journal sub-tab: editable + deletable accordion cards. */}
       {subTab === 0 ? (
         <>
           {visibleNoteEntries.map(({ entry, index }) => (
@@ -7475,14 +7979,33 @@ function AvatarLegends() {
   const [activeTab, setActiveTab] = useState<AvatarTab>(() =>
     readPersistentAppView('avatar-legends', 'tab', avatarTabValues, 'character'),
   );
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
+  const tabScrollPositionsRef = useRef<Record<AvatarTab, number>>({
+    character: 0,
+    moves: 0,
+    combat: 0,
+    backpack: 0,
+  });
   const activeConfig = useMemo(
     () => tabs.find((tab) => tab.value === activeTab) ?? tabs[0],
     [activeTab],
   );
 
+  useLayoutEffect(() => {
+    const scrollRoot = scrollRootRef.current;
+    if (!scrollRoot) return;
+    scrollRoot.scrollTop = tabScrollPositionsRef.current[activeTab];
+  }, [activeTab]);
+
   useEffect(() => {
     persistAppView('avatar-legends', 'tab', activeTab);
   }, [activeTab]);
+
+  const handleTabChange = (nextTab: AvatarTab) => {
+    const scrollRoot = scrollRootRef.current;
+    if (scrollRoot) tabScrollPositionsRef.current[activeTab] = scrollRoot.scrollTop;
+    setActiveTab(nextTab);
+  };
 
   // Dark mode for the avatar-legends UI. applyAvatarPalette mutates the
   // module-level color `let`s so every helper component picks up the
@@ -7870,7 +8393,11 @@ function AvatarLegends() {
             </Box>
 
             <Box
+              ref={scrollRootRef}
               data-dice-tray-scroll-root
+              onScroll={(event: React.UIEvent<HTMLDivElement>) => {
+                tabScrollPositionsRef.current[activeTab] = event.currentTarget.scrollTop;
+              }}
               sx={{
                 flex: 1,
                 overflowY: 'auto',
@@ -7942,7 +8469,7 @@ function AvatarLegends() {
                   return (
                     <ButtonBase
                       key={tab.value}
-                      onClick={() => setActiveTab(tab.value)}
+                      onClick={() => handleTabChange(tab.value)}
                       disableRipple
                       disableTouchRipple
                       focusRipple={false}

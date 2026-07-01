@@ -5,7 +5,14 @@ import IconButton from '@mui/material/IconButton';
 
 import { Undo2 } from 'lucide-react';
 
-import { useFabUTokens } from '../ThemeContext';
+type UndoSnackbarColors = {
+  bg: string;
+  fg: string;
+  border: string;
+  shadow: string;
+  /** Hover/active background. Defaults to `bg`. */
+  bgStrong?: string;
+};
 
 type UndoSnackbarProps = {
   open: boolean;
@@ -13,15 +20,18 @@ type UndoSnackbarProps = {
   onClose: () => void;
   /** Auto-dismiss after this many milliseconds. Defaults to 5000. */
   timeoutMs?: number;
+  /** Theme colors, supplied by each app (FabU / Avatar Legends). */
+  colors: UndoSnackbarColors;
 };
 
 /**
- * Circular floating Undo button that appears in the bottom-right corner of
- * the app for `timeoutMs` (default 5s) after a destructive action completes.
- * Click → triggers `onUndo`. Times out → triggers `onClose`.
+ * Circular floating Undo button shown briefly after a destructive action.
+ * Sits in the gap directly beneath the dice FAB (horizontally centered under
+ * it, between the dice button and the app footer). Click → `onUndo`; times
+ * out → `onClose`.
  */
-function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000 }: UndoSnackbarProps) {
-  const fabUTokens = useFabUTokens();
+function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000, colors }: UndoSnackbarProps) {
+  const bgStrong = colors.bgStrong ?? colors.bg;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -37,19 +47,22 @@ function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000 }: UndoSnackbarP
         aria-label="Undo last action"
         sx={{
           position: 'fixed',
-          right: 20,
-          bottom: 24,
-          width: 56,
-          height: 56,
-          bgcolor: fabUTokens.color.brand,
-          color: fabUTokens.color.brandFg,
-          boxShadow: fabUTokens.shadow.card,
-          // zIndex above MUI Dialog (1300) and Popover (1300), below tooltip (1500)
+          // Centered horizontally under the dice FAB (right: {xs:15, sm:34},
+          // width 72; the 66px button centers at right+36), in the gap between
+          // the dice button and the footer. Matches the dice button's size.
+          right: { xs: 18, sm: 37 },
+          bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 53px)', sm: 55 },
+          width: 66,
+          height: 66,
+          bgcolor: colors.bg,
+          color: colors.fg,
+          boxShadow: colors.shadow,
+          // zIndex above MUI Dialog/Popover (1300), below tooltip (1500).
           zIndex: 1400,
-          border: `1px solid ${fabUTokens.color.brandStrong}`,
+          border: `2px solid ${colors.border}`,
           transition: 'transform 150ms ease, background-color 150ms ease',
           '&:hover': {
-            bgcolor: fabUTokens.color.brandStrong,
+            bgcolor: bgStrong,
             transform: 'scale(1.04)',
           },
           '&:active': {
@@ -57,7 +70,7 @@ function UndoSnackbar({ open, onUndo, onClose, timeoutMs = 5000 }: UndoSnackbarP
           },
         }}
       >
-        <Undo2 size={24} strokeWidth={2.25} />
+        <Undo2 size={32} strokeWidth={2.25} />
       </IconButton>
     </Fade>
   );

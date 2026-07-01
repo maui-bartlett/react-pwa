@@ -1,22 +1,26 @@
 import type { MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
 import { useSwipeable } from 'react-swipeable';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Collapse from '@mui/material/Collapse';
 import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
+import Paper from '@mui/material/Paper';
 import Popover from '@mui/material/Popover';
+import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { useQuery } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
   Backpack,
@@ -38,14 +42,20 @@ import {
   AttributesStatsCard,
   BondType,
   BondsCard,
+  type CatalogItem,
   CombatSubTab,
   ConfirmDeleteModal,
   DetailListCard,
   EquipmentCard,
+  type EquipmentSlot,
   FabUTab,
   FabUThemeProvider,
   HeaderBar,
+  type HpMpKind,
+  HpMpManagementModal,
+  ItemPickerDialog,
   MobileScreen,
+  ObjectiveClock,
   PrimaryNavBar,
   SegmentedTabs,
   SkillCrystalIcon,
@@ -57,8 +67,11 @@ import {
   SurfaceCard,
   TabOption,
   UndoSnackbar,
+  catalogItemBackpackSubtitle,
+  catalogItemToEquipment,
   darkFabUTokens,
   fabUTokens as lightFabUTokens,
+  useFabUPopperScrollLock,
   useFabUTokens,
 } from '@/components/fab-u';
 import type { SkillRow, SpellRow } from '@/components/fab-u';
@@ -72,6 +85,7 @@ import { themeModeState } from '@/theme/atoms';
 import { ThemeMode } from '@/theme/types';
 
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import {
   type Character,
@@ -96,10 +110,39 @@ const combatTabs: TabOption<CombatSubTab>[] = [
 
 const FAB_U_TOAST_WIDTH = 'min(390px, calc(100vw - 24px))';
 const DEFAULT_SKILL_MAX_LEVEL = 5;
+/** Placeholder subtitle for a class with no recorded skills yet. */
+const NO_SKILLS_SUBTITLE = 'No skills recorded yet';
 
 type ClassWithSpells = Character['classes'][number] & {
   spells?: SpellRow[];
 };
+
+type BattleActionPopoverType = 'guard' | 'hinder' | 'study' | 'objective';
+
+type ObjectiveClockSummary = {
+  campaignId: Id<'campaigns'>;
+  campaignName: string;
+  clock: {
+    title: string;
+    segments: number;
+    filled: number;
+  };
+};
+
+type ObjectiveClockSyncProps = {
+  characterId: Id<'characters'>;
+  onChange: (clocks: ObjectiveClockSummary[] | undefined) => void;
+};
+
+function ObjectiveClockSync({ characterId, onChange }: ObjectiveClockSyncProps) {
+  const clocks = useQuery(api.campaigns.listObjectiveClocksForCharacter, { characterId });
+
+  useEffect(() => {
+    onChange(clocks);
+  }, [clocks, onChange]);
+
+  return null;
+}
 
 type FabulaUltimaSkillInfo = {
   name?: unknown;
@@ -713,6 +756,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
 }
 
 function FabU() {
+  const convexAuth = useConvexAuth();
   const themeMode = useAtomValue(themeModeState);
   const [, setThemeMode] = useAtom(themeModeState);
   useProfileThemeSync(themeMode, setThemeMode);
@@ -756,6 +800,10 @@ function FabU() {
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
+  // HP/MP management popover: which kind, and the pill it anchors to.
+  const [hpMpModal, setHpMpModal] = useState<{ kind: HpMpKind; anchorEl: HTMLElement } | null>(
+    null,
+  );
   useEffect(() => {
     if (!notEnoughMpToastOpen) return;
     const t = setTimeout(() => setNotEnoughMpToastOpen(false), 2400);
@@ -766,11 +814,20 @@ function FabU() {
   const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
   const [fabulaAnchorEl, setFabulaAnchorEl] = useState<HTMLElement | null>(null);
   const [fabulaAnchorDir, setFabulaAnchorDir] = useState<'above' | 'below'>('above');
+  const [battleActionPopover, setBattleActionPopover] = useState<{
+    type: BattleActionPopoverType;
+    anchorEl: HTMLElement;
+  } | null>(null);
   const [pendingCombatSubTabScroll, setPendingCombatSubTabScroll] = useState(false);
   const [character, setCharacter, characterHistory] = useCharacterHistory();
   const fabulaUltimaClassDocs = useQuery(api.classes.listFabulaUltimaClasses) as
     | FabulaUltimaClassDoc[]
     | undefined;
+  const activeRemoteCharacter = useQuery(
+    api.characters.getActiveMine,
+    convexAuth.isAuthenticated ? { gameSystem: 'fabula-ultima' } : 'skip',
+  );
+  const [objectiveClocks, setObjectiveClocks] = useState<ObjectiveClockSummary[] | undefined>();
   const localCharacters = useLocalCharacterSlots({
     atom: characterState,
     gameSystem: 'fabula-ultima',
@@ -781,12 +838,14 @@ function FabU() {
     migrate: migrateFabULocalCharacter,
   });
   const statusEffects = character.statusEffects;
+  useFabUPopperScrollLock(Boolean(battleActionPopover));
   const handleToggleEffect = (id: string) => {
     setCharacter((c) => ({
       ...c,
       statusEffects: { ...c.statusEffects, [id]: !c.statusEffects[id] },
     }));
   };
+
   // Session-scoped delete-confirm + undo flow. `pendingDelete` holds the
   // deferred mutation; clicking Delete runs it then pops the undo button.
   const [pendingDelete, setPendingDelete] = useState<{
@@ -794,6 +853,7 @@ function FabU() {
     cancel?: () => void;
     beforeConfirm?: () => void;
   } | null>(null);
+  // Undo button shows briefly after a confirmed destructive action.
   const [undoOpen, setUndoOpen] = useState(false);
   const confirmDelete = (
     performDelete: () => void,
@@ -818,11 +878,6 @@ function FabU() {
     pendingDelete?.cancel?.();
     setPendingDelete(null);
   };
-  const handleUndoFromSnackbar = () => {
-    characterHistory.undo();
-    setUndoOpen(false);
-  };
-
   // Keyboard shortcuts: Cmd/Ctrl+Z = undo, Cmd/Ctrl+Shift+Z = redo.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -858,6 +913,8 @@ function FabU() {
   const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
+  const setHpBonus = (v: number) => setCharacter((c) => ({ ...c, hpBonus: v }));
+  const setMpBonus = (v: number) => setCharacter((c) => ({ ...c, mpBonus: v }));
   const setCurrentXP = (v: number) =>
     setCharacter((c) => {
       if (v <= c.totalXP) return { ...c, currentXP: v };
@@ -1094,7 +1151,7 @@ function FabU() {
 
       return {
         ...c,
-        classes: [...c.classes, { name: className, level: 0, subtitle: 'No skills recorded yet' }],
+        classes: [...c.classes, { name: className, level: 0, subtitle: NO_SKILLS_SUBTITLE }],
         skillGroups: c.skillGroups.some((group) => group.className === className)
           ? c.skillGroups
           : [...c.skillGroups, { className, skills: [] }],
@@ -1279,18 +1336,51 @@ function FabU() {
     }));
   };
 
-  const handleAddBackpackItem = () => {
-    setCharacter((prev) => ({
-      ...prev,
-      backpack: [...prev.backpack, { id: String(Date.now()), title: 'New Item', subtitle: '' }],
-    }));
+  // Item picker (catalog vs. custom). `slot === 'all'` targets the Backpack;
+  // otherwise it fills the named Equipment slot.
+  const [itemPicker, setItemPicker] = useState<{ slot: EquipmentSlot | 'all' } | null>(null);
+
+  const handleAddBackpackItem = () => setItemPicker({ slot: 'all' });
+
+  const handleAddEquipmentItem = (slot: string) => setItemPicker({ slot: slot as EquipmentSlot });
+
+  // Append a blank custom entry (preserves the prior "New Item" behavior).
+  const addCustomItem = () => {
+    const target = itemPicker?.slot;
+    if (target === 'all') {
+      setCharacter((prev) => ({
+        ...prev,
+        backpack: [...prev.backpack, { id: String(Date.now()), title: 'New Item', subtitle: '' }],
+      }));
+    } else if (target) {
+      setCharacter((prev) => ({
+        ...prev,
+        equipment: [...prev.equipment, { name: 'New Item', slot: target, description: '' }],
+      }));
+    }
   };
 
-  const handleAddEquipmentItem = (slot: string) => {
-    setCharacter((prev) => ({
-      ...prev,
-      equipment: [...prev.equipment, { name: 'New Item', slot, description: '' }],
-    }));
+  // Append a Fabula Ultima catalog item to the targeted slot/backpack.
+  const addCatalogItem = (item: CatalogItem) => {
+    const target = itemPicker?.slot;
+    if (target === 'all') {
+      setCharacter((prev) => ({
+        ...prev,
+        backpack: [
+          ...prev.backpack,
+          {
+            id: String(Date.now()),
+            title: item.name,
+            subtitle: catalogItemBackpackSubtitle(item),
+          },
+        ],
+      }));
+    } else if (target) {
+      setCharacter((prev) => ({
+        ...prev,
+        equipment: [...prev.equipment, catalogItemToEquipment(item, target)],
+      }));
+    }
   };
 
   const handleAddSpell = (className: string, spell: import('@/components/fab-u').SpellRow) =>
@@ -1504,7 +1594,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
-              onChange: setCurrentHP,
+              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               pw: 'ov-hp',
             },
@@ -1514,7 +1604,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onChange: setCurrentMP,
+              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               pw: 'ov-mp',
             },
@@ -1537,11 +1627,22 @@ function FabU() {
           onAdd={canAddClass ? openClassPicker : undefined}
           onItemClick={navigateToClassSkills}
           onRemoveItem={removeClass}
-          items={character.classes.map((cls) => ({
-            title: cls.name,
-            subtitle: cls.subtitle,
-            trailing: `LVL ${skillLevelTotalsByClass[cls.name] ?? 0}`,
-          }))}
+          items={character.classes.map((cls) => {
+            // Show the class's actually-selected skills (dot-separated) in the
+            // subtitle. Fall back to the stored subtitle (curated text or the
+            // "No skills recorded yet" placeholder) only when none are selected.
+            const skillNames =
+              character.skillGroups
+                .find((g) => g.className === cls.name)
+                ?.skills.map((s) => s.name?.trim())
+                .filter(Boolean) ?? [];
+            const subtitle = skillNames.length > 0 ? skillNames.join(' · ') : cls.subtitle;
+            return {
+              title: cls.name,
+              subtitle,
+              trailing: `LVL ${skillLevelTotalsByClass[cls.name] ?? 0}`,
+            };
+          })}
         />
 
         <BondsCard
@@ -1612,7 +1713,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
-              onChange: setCurrentHP,
+              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               pw: 'cb-hp',
             },
@@ -1622,7 +1723,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onChange: setCurrentMP,
+              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               pw: 'cb-mp',
             },
@@ -1696,6 +1797,7 @@ function FabU() {
                   return (
                     <Button
                       key={action}
+                      data-pw={`battle-action-${action.toLowerCase()}`}
                       variant="contained"
                       onClick={(event) => {
                         if (action === 'Attack') {
@@ -1722,6 +1824,12 @@ function FabU() {
                             rect.top > window.innerHeight / 2 ? 'above' : 'below',
                           );
                           setInventoryAnchorEl(event.currentTarget);
+                        }
+                        if (action === 'Guard' || action === 'Hinder' || action === 'Study') {
+                          setBattleActionPopover({
+                            type: action.toLowerCase() as BattleActionPopoverType,
+                            anchorEl: event.currentTarget,
+                          });
                         }
                       }}
                       sx={{
@@ -1816,6 +1924,12 @@ function FabU() {
                 </Button>
                 <Button
                   variant="contained"
+                  onClick={(event) =>
+                    setBattleActionPopover({
+                      type: 'objective',
+                      anchorEl: event.currentTarget,
+                    })
+                  }
                   sx={{
                     flex: '1 1 calc(50% - 4px)',
                     width: 'calc(50% - 4px)',
@@ -1847,6 +1961,218 @@ function FabU() {
             </Stack>
           </Stack>
         </SurfaceCard>
+
+        <Popper
+          open={Boolean(battleActionPopover)}
+          anchorEl={battleActionPopover?.anchorEl}
+          placement="bottom-end"
+          modifiers={[
+            { name: 'offset', options: { offset: [0, 5] } },
+            { name: 'flip', options: { padding: 12 } },
+            { name: 'preventOverflow', options: { padding: 12 } },
+          ]}
+          sx={{
+            zIndex: (theme) => theme.zIndex.modal,
+            pointerEvents: 'none',
+          }}
+        >
+          <ClickAwayListener onClickAway={() => setBattleActionPopover(null)}>
+            <Paper
+              data-pw="battle-action-popover-paper"
+              sx={{
+                p: 1.2,
+                width: 'min(330px, calc(100vw - 24px))',
+                maxHeight: 'min(520px, calc(100vh - 32px))',
+                overflowY: 'auto',
+                pointerEvents: 'auto',
+                bgcolor: fabUTokens.color.surface,
+                backgroundImage: 'none',
+                border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.border}`,
+                borderRadius: '10px',
+                boxShadow: fabUTokens.shadow.soft,
+              }}
+            >
+              {battleActionPopover?.type === 'hinder' ? (
+                <Stack spacing={0.9} data-pw="hinder-popover">
+                  <Typography
+                    sx={{
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      color: fabUTokens.color.textPrimary,
+                    }}
+                  >
+                    Choose a status effect
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}>
+                    {[
+                      { label: 'Slow', color: '#d8a24b' },
+                      { label: 'Dazed', color: '#7da06f' },
+                      { label: 'Weak', color: '#c56a60' },
+                      { label: 'Shaken', color: '#7292d4' },
+                    ].map((status) => (
+                      <Button
+                        key={status.label}
+                        variant="contained"
+                        onClick={() => setBattleActionPopover(null)}
+                        sx={{
+                          minHeight: 42,
+                          bgcolor: status.color,
+                          color: '#ffffff',
+                          textTransform: 'none',
+                          fontWeight: 800,
+                          '&:hover': { bgcolor: status.color, filter: 'brightness(0.9)' },
+                        }}
+                      >
+                        {status.label}
+                      </Button>
+                    ))}
+                  </Box>
+                </Stack>
+              ) : battleActionPopover?.type === 'study' ? (
+                <Stack spacing={0.9} data-pw="study-popover">
+                  <Typography
+                    sx={{
+                      fontSize: '0.88rem',
+                      fontWeight: 800,
+                      color: fabUTokens.color.textPrimary,
+                    }}
+                  >
+                    Make an [INS + INS] check
+                  </Typography>
+                  {[
+                    ['7–9', 'Basic information'],
+                    ['10–12', 'Complete information with no room for doubt'],
+                    [
+                      '13–15',
+                      'Detailed information — a complete answer and a useful additional detail',
+                    ],
+                    ['16+', 'Encyclopedic — anything and everything your character could learn'],
+                  ].map(([range, result]) => (
+                    <Stack
+                      key={range}
+                      direction="row"
+                      spacing={0.9}
+                      sx={{
+                        borderTop: `1px solid ${fabUTokens.color.border}`,
+                        pt: 0.75,
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          minWidth: 48,
+                          fontSize: '0.76rem',
+                          fontWeight: 900,
+                          color: fabUTokens.color.highlight,
+                        }}
+                      >
+                        {range}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.76rem', color: fabUTokens.color.textPrimary }}>
+                        {result}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              ) : battleActionPopover?.type === 'guard' ? (
+                <Stack spacing={0.85} data-pw="guard-popover">
+                  <Typography
+                    sx={{
+                      fontSize: '0.88rem',
+                      fontWeight: 800,
+                      color: fabUTokens.color.textPrimary,
+                    }}
+                  >
+                    Guard
+                  </Typography>
+                  {[
+                    'Gain Resistance (halves all damage).',
+                    '+2 on all opposed actions.',
+                    'You can cover another character who is not currently covering someone else.',
+                    'A covered character cannot be targeted by a melee attack.',
+                  ].map((line) => (
+                    <Typography
+                      key={line}
+                      sx={{
+                        fontSize: '0.78rem',
+                        lineHeight: 1.45,
+                        color: fabUTokens.color.textPrimary,
+                      }}
+                    >
+                      {line}
+                    </Typography>
+                  ))}
+                  <Box
+                    sx={{
+                      border: `1px solid ${fabUTokens.color.warning}`,
+                      borderRadius: '8px',
+                      bgcolor: alpha(fabUTokens.color.warning, 0.1),
+                      px: 1,
+                      py: 0.75,
+                    }}
+                  >
+                    <Typography
+                      sx={{ fontSize: '0.76rem', fontWeight: 800, color: fabUTokens.color.warning }}
+                    >
+                      Guard can be used only once per turn.
+                    </Typography>
+                  </Box>
+                </Stack>
+              ) : battleActionPopover?.type === 'objective' ? (
+                <Stack spacing={1.2} alignItems="center" data-pw="objective-popover">
+                  {objectiveClocks && objectiveClocks.length > 0 ? (
+                    objectiveClocks.map(({ campaignId, campaignName, clock }) => (
+                      <Stack
+                        key={campaignId}
+                        spacing={0.8}
+                        alignItems="center"
+                        sx={{ width: '100%', pb: 2.5 }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                            color: fabUTokens.color.textSecondary,
+                          }}
+                        >
+                          {campaignName}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: '0.9rem',
+                            fontWeight: 900,
+                            textAlign: 'center',
+                            color: fabUTokens.color.textPrimary,
+                          }}
+                        >
+                          {clock.title}
+                        </Typography>
+                        <ObjectiveClock
+                          segments={clock.segments}
+                          filled={clock.filled}
+                          label={clock.title}
+                        />
+                      </Stack>
+                    ))
+                  ) : (
+                    <Typography
+                      sx={{
+                        py: 1,
+                        fontSize: '0.8rem',
+                        lineHeight: 1.45,
+                        textAlign: 'center',
+                        color: fabUTokens.color.textSecondary,
+                      }}
+                    >
+                      No objective set
+                    </Typography>
+                  )}
+                </Stack>
+              ) : null}
+            </Paper>
+          </ClickAwayListener>
+        </Popper>
 
         <Popover
           open={Boolean(inventoryAnchorEl)}
@@ -2338,7 +2664,7 @@ function FabU() {
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
               pw: 'hp',
-              onChange: setCurrentHP,
+              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               toneColor: fabUTokens.color.hp,
             },
@@ -2347,7 +2673,7 @@ function FabU() {
               value: String(character.currentMP),
               valueSuffix: ` / ${totalMP}`,
               pw: 'mp',
-              onChange: setCurrentMP,
+              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               toneColor: fabUTokens.color.mp,
             },
@@ -2702,6 +3028,21 @@ function FabU() {
         {localCharacters.hydrated ? (
           <ConvexCharacterSyncBoundary character={character} history={characterHistory} />
         ) : null}
+        {activeRemoteCharacter ? (
+          <ErrorBoundary
+            fallbackRender={() => null}
+            onError={(error) => {
+              console.warn('Objective clocks are unavailable; continuing without them.', error);
+              setObjectiveClocks(undefined);
+            }}
+            resetKeys={[activeRemoteCharacter._id]}
+          >
+            <ObjectiveClockSync
+              characterId={activeRemoteCharacter._id}
+              onChange={setObjectiveClocks}
+            />
+          </ErrorBoundary>
+        ) : null}
         <meta name="title" content="Fab-u Preview" />
         <Stack
           data-pw="app-canvas"
@@ -2853,10 +3194,39 @@ function FabU() {
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
+      {hpMpModal ? (
+        <HpMpManagementModal
+          anchorEl={hpMpModal.anchorEl}
+          kind={hpMpModal.kind}
+          current={hpMpModal.kind === 'hp' ? character.currentHP : character.currentMP}
+          max={hpMpModal.kind === 'hp' ? totalHP : totalMP}
+          modifier={hpMpModal.kind === 'hp' ? character.hpBonus : character.mpBonus}
+          onApply={hpMpModal.kind === 'hp' ? setCurrentHP : setCurrentMP}
+          onChangeModifier={hpMpModal.kind === 'hp' ? setHpBonus : setMpBonus}
+          onClose={() => setHpMpModal(null)}
+        />
+      ) : null}
       <UndoSnackbar
         open={undoOpen}
-        onUndo={handleUndoFromSnackbar}
+        onUndo={() => {
+          characterHistory.undo();
+          setUndoOpen(false);
+        }}
         onClose={() => setUndoOpen(false)}
+        colors={{
+          bg: fabUTokens.color.brand,
+          fg: fabUTokens.color.brandFg,
+          border: '#ffffff',
+          shadow: fabUTokens.shadow.card,
+          bgStrong: fabUTokens.color.brandStrong,
+        }}
+      />
+      <ItemPickerDialog
+        open={itemPicker !== null}
+        slot={itemPicker?.slot ?? 'all'}
+        onClose={() => setItemPicker(null)}
+        onSelectItem={addCatalogItem}
+        onAddCustom={addCustomItem}
       />
     </FabUThemeProvider>
   );

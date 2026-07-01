@@ -36,40 +36,46 @@ function getRollValue(...values: Array<number | undefined>) {
   return values.find((value) => typeof value === 'number' && Number.isFinite(value)) ?? 0;
 }
 
+function normalizeRollValue(sides: DieSize, value: number) {
+  if (sides === 10 && value === 10) return 0;
+  if (sides === 100 && value === 0) return 100;
+  return value;
+}
+
 function toRollResult(groups: DiceBoxRoll[]): RollResult {
   const rolls = groups.flatMap((group) => {
     if (!group.rolls?.length) {
+      const sides = normalizeDieSize(group.sides ?? group.dieType);
       return [
         {
-          sides: normalizeDieSize(group.sides ?? group.dieType),
-          value: getRollValue(group.value, group.result),
+          sides,
+          value: normalizeRollValue(sides, getRollValue(group.value, group.result)),
         },
       ];
     }
 
     return group.rolls.map((roll) => {
       const isSingleDieGroup = group.rolls?.length === 1;
+      const sides = normalizeDieSize(roll.sides ?? roll.dieType ?? group.sides ?? group.dieType);
       return {
-        sides: normalizeDieSize(roll.sides ?? roll.dieType ?? group.sides ?? group.dieType),
-        value: getRollValue(
-          roll.value,
-          roll.result,
-          isSingleDieGroup ? group.value : undefined,
-          isSingleDieGroup ? group.result : undefined,
+        sides,
+        value: normalizeRollValue(
+          sides,
+          getRollValue(
+            roll.value,
+            roll.result,
+            isSingleDieGroup ? group.value : undefined,
+            isSingleDieGroup ? group.result : undefined,
+          ),
         ),
       };
     });
   });
 
-  const groupedTotal = groups.reduce(
-    (sum, group) => sum + getRollValue(group.value, group.result),
-    0,
-  );
-
   return {
     id: Date.now() * 1000 + (resultIdCounter++ % 1000),
     rolls,
-    total: groupedTotal || rolls.reduce((sum, roll) => sum + roll.value, 0),
+    total: rolls.reduce((sum, roll) => sum + roll.value, 0),
   };
 }
 
@@ -84,7 +90,9 @@ function isValidRollResult(result: RollResult, selectedDice: RollDie[]) {
   });
 
   for (const roll of result.rolls) {
-    if (!Number.isInteger(roll.value) || roll.value < 1 || roll.value > roll.sides) return false;
+    const minimum = roll.sides === 10 ? 0 : 1;
+    const maximum = roll.sides === 10 ? 9 : roll.sides;
+    if (!Number.isInteger(roll.value) || roll.value < minimum || roll.value > maximum) return false;
     actualCounts.set(roll.sides, (actualCounts.get(roll.sides) ?? 0) + 1);
   }
 
@@ -95,7 +103,7 @@ function createRandomRollResult(dice: RollDie[], random: () => number = Math.ran
   return toRollResult(
     dice.map(({ sides }) => ({
       sides,
-      value: Math.floor(random() * sides) + 1,
+      value: sides === 10 ? Math.floor(random() * 10) : Math.floor(random() * sides) + 1,
     })),
   );
 }

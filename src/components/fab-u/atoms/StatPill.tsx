@@ -30,6 +30,7 @@ function StatPill({
   valueColor,
   borderColor,
   fillGradient,
+  onManage,
 }: StatPillData) {
   const fabUTokens = useFabUTokens();
   const [editing, setEditing] = useState(false);
@@ -45,7 +46,7 @@ function StatPill({
       }
     : getToneStyles(tone);
   const inline = layout === 'inline';
-  const editable = !!onChange;
+  const editable = !!onChange || !!onManage;
   const hasBaseTempEditor = !!(onChange && onChangeSuffix);
   const popoverOpen = Boolean(anchorEl);
   const resolvedMinHeight = minHeight ?? (inline ? 42 : 46);
@@ -178,6 +179,10 @@ function StatPill({
       <Box
         data-pw={pw ? `statpill-${pw}` : undefined}
         onClick={(e) => {
+          if (onManage) {
+            onManage(e.currentTarget);
+            return;
+          }
           if (hasBaseTempEditor) {
             openBaseTempEditor(e);
             return;
@@ -207,7 +212,13 @@ function StatPill({
           py: inline ? 0.75 : 0.6,
           minWidth: 0,
           minHeight: resolvedMinHeight,
-          cursor: editable && !editing ? (hasBaseTempEditor ? 'pointer' : 'text') : 'default',
+          cursor: onManage
+            ? 'pointer'
+            : editable && !editing
+              ? hasBaseTempEditor
+                ? 'pointer'
+                : 'text'
+              : 'default',
           transition: 'border-color 150ms ease',
         }}
       >

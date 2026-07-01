@@ -1,6 +1,14 @@
-import type { EquipmentItem } from '@/components/fab-u';
+import type {
+  Attribute,
+  Bond,
+  BondType,
+  EquipmentItem,
+  SkillRow,
+  SpellRow,
+} from '@/components/fab-u';
 import { skillGroups as defaultSkillGroups } from '@/pages/FabU/skills';
 import type { SkillGroup } from '@/pages/FabU/skills';
+import type { SpellGroup } from '@/pages/FabU/spells';
 
 import {
   BACKPACK_DEFAULTS,
@@ -15,6 +23,7 @@ import type {
   BackstoryPrompt,
   Character,
   CharacterName,
+  ClassEntry,
   PersistedCharacterState,
   StatusEffects,
 } from './characterTypes';
@@ -23,6 +32,101 @@ type CharacterMigrationOptions = {
   oldBackstoryAnswers?: unknown;
   oldStatusEffects?: unknown;
 };
+
+const DIE_SIZES = new Set(['d6', 'd8', 'd10', 'd12', 'd20']);
+const BOND_TYPES = new Set<BondType>([
+  'Admiration',
+  'Loyalty',
+  'Affection',
+  'Inferiority',
+  'Mistrust',
+  'Hatred',
+]);
+
+function normalizeNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeNullableNumber(value: unknown, fallback: number | null): number | null {
+  return value === null
+    ? null
+    : typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : fallback;
+}
+
+function normalizeString(value: unknown, fallback: string): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+function normalizeAttribute(stored: unknown, fallback: Attribute): Attribute {
+  if (!stored || typeof stored !== 'object') return fallback;
+  const attribute = stored as Record<string, unknown>;
+  return {
+    die:
+      typeof attribute.die === 'string' && DIE_SIZES.has(attribute.die)
+        ? (attribute.die as Attribute['die'])
+        : fallback.die,
+    modifier: normalizeNumber(attribute.modifier, fallback.modifier),
+    temp:
+      attribute.temp === null
+        ? null
+        : typeof attribute.temp === 'string' && DIE_SIZES.has(attribute.temp)
+          ? (attribute.temp as Attribute['die'])
+          : fallback.temp,
+  };
+}
+
+function normalizeAttributes(
+  stored: unknown,
+  defaults: Character['attributes'],
+): Character['attributes'] {
+  const attributes =
+    stored && typeof stored === 'object' ? (stored as Record<string, unknown>) : {};
+  return {
+    dex: normalizeAttribute(attributes.dex, defaults.dex),
+    insight: normalizeAttribute(attributes.insight, defaults.insight),
+    might: normalizeAttribute(attributes.might, defaults.might),
+    willpower: normalizeAttribute(attributes.willpower, defaults.willpower),
+  };
+}
+
+function normalizeClasses(stored: unknown, defaults: ClassEntry[]): ClassEntry[] {
+  if (!Array.isArray(stored)) return defaults;
+  return stored.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const classEntry = entry as Record<string, unknown>;
+    if (typeof classEntry.name !== 'string') return [];
+    return [
+      {
+        name: classEntry.name,
+        level: normalizeNumber(classEntry.level, 0),
+        subtitle: normalizeString(classEntry.subtitle, ''),
+      },
+    ];
+  });
+}
+
+function normalizeBonds(stored: unknown, defaults: Bond[]): Bond[] {
+  if (!Array.isArray(stored)) return defaults;
+  return stored.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const bond = entry as Record<string, unknown>;
+    if (typeof bond.characterName !== 'string') return [];
+    const types = Array.isArray(bond.types)
+      ? bond.types.filter(
+          (type): type is BondType => typeof type === 'string' && BOND_TYPES.has(type as BondType),
+        )
+      : [];
+    return [
+      {
+        id: typeof bond.id === 'string' ? bond.id : String(Math.random()),
+        characterName: bond.characterName,
+        types,
+      },
+    ];
+  });
+}
 
 function normalizeBackstoryPrompts(
   storedPrompts: unknown,
@@ -177,21 +281,83 @@ function normalizeHpMpBonus(
   return { hpBonus: initialValue.hpBonus, mpBonus: initialValue.mpBonus };
 }
 
+function normalizeSkillRow(stored: unknown): SkillRow | null {
+  if (!stored || typeof stored !== 'object') return null;
+  const skill = stored as Record<string, unknown>;
+  if (typeof skill.name !== 'string') return null;
+  return {
+    name: skill.name,
+    effect:
+      typeof skill.effect === 'string'
+        ? skill.effect
+        : typeof skill.description === 'string'
+          ? skill.description
+          : '',
+    ...(typeof skill.level === 'string' ? { level: skill.level } : {}),
+    ...(typeof skill.maxLevel === 'number' && Number.isFinite(skill.maxLevel)
+      ? { maxLevel: skill.maxLevel }
+      : {}),
+    ...(typeof skill.description === 'string' ? { description: skill.description } : {}),
+  };
+}
+
 function normalizeSkillGroups(storedSkillGroups: unknown, defaults: Character): SkillGroup[] {
-  return ((storedSkillGroups as SkillGroup[] | undefined) ?? defaults.skillGroups).map(
-    (group: SkillGroup) => {
-      const defaultGroup = defaultSkillGroups.find((dg) => dg.className === group.className);
-      return {
-        ...group,
-        skills: group.skills.map((skill) => {
-          const defaultSkill = defaultGroup?.skills.find((ds) => ds.name === skill.name);
+  const groups = Array.isArray(storedSkillGroups) ? storedSkillGroups : defaults.skillGroups;
+  return groups.flatMap((storedGroup) => {
+    if (!storedGroup || typeof storedGroup !== 'object') return [];
+    const group = storedGroup as Record<string, unknown>;
+    if (typeof group.className !== 'string') return [];
+    const skills = Array.isArray(group.skills)
+      ? group.skills.map(normalizeSkillRow).filter((skill): skill is SkillRow => skill !== null)
+      : [];
+    const normalizedGroup: SkillGroup = { className: group.className, skills };
+    const defaultGroup = defaultSkillGroups.find(
+      (candidate) => candidate.className === normalizedGroup.className,
+    );
+    return [
+      {
+        ...normalizedGroup,
+        skills: normalizedGroup.skills.map((skill) => {
+          const defaultSkill = defaultGroup?.skills.find(
+            (candidate) => candidate.name === skill.name,
+          );
           return defaultSkill?.maxLevel != null
             ? { ...skill, maxLevel: defaultSkill.maxLevel }
             : skill;
         }),
-      };
-    },
-  );
+      },
+    ];
+  });
+}
+
+function normalizeSpellRow(stored: unknown): SpellRow | null {
+  if (!stored || typeof stored !== 'object') return null;
+  const spell = stored as Record<string, unknown>;
+  if (typeof spell.name !== 'string') return null;
+  return {
+    name: spell.name,
+    cost: normalizeString(spell.cost, ''),
+    target: normalizeString(spell.target, ''),
+    duration: spell.duration === 'Scene' ? 'Scene' : 'Instant',
+    effect: normalizeString(spell.effect, ''),
+  };
+}
+
+function normalizeSpellGroups(storedSpellGroups: unknown, defaults: Character): SpellGroup[] {
+  const groups = Array.isArray(storedSpellGroups) ? storedSpellGroups : defaults.spellGroups;
+  return groups.flatMap((storedGroup) => {
+    if (!storedGroup || typeof storedGroup !== 'object') return [];
+    const group = storedGroup as Record<string, unknown>;
+    if (typeof group.className !== 'string') return [];
+    return [
+      {
+        className: group.className,
+        spells: Array.isArray(group.spells)
+          ? group.spells.map(normalizeSpellRow).filter((spell): spell is SpellRow => spell !== null)
+          : [],
+      },
+    ];
+  });
 }
 
 function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {}): Character {
@@ -216,13 +382,32 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
     ...initialValue,
     ...withoutFlatName,
     name: normalizeName(parsed, initialValue.name),
+    initiative: normalizeNumber(parsed.initiative, initialValue.initiative),
+    defense: normalizeNumber(parsed.defense, initialValue.defense),
+    defenseTemp: normalizeNullableNumber(parsed.defenseTemp, initialValue.defenseTemp),
+    magicDefense: normalizeNumber(parsed.magicDefense, initialValue.magicDefense),
+    magicDefenseTemp: normalizeNullableNumber(
+      parsed.magicDefenseTemp,
+      initialValue.magicDefenseTemp,
+    ),
+    fabulaPoints: normalizeNumber(parsed.fabulaPoints, initialValue.fabulaPoints),
+    inventoryPoints: normalizeNumber(parsed.inventoryPoints, initialValue.inventoryPoints),
+    currentHP: normalizeNumber(parsed.currentHP, initialValue.currentHP),
+    currentMP: normalizeNumber(parsed.currentMP, initialValue.currentMP),
+    currentXP: normalizeNumber(parsed.currentXP, initialValue.currentXP),
+    totalXP: normalizeNumber(parsed.totalXP, initialValue.totalXP),
+    level: normalizeNumber(parsed.level, initialValue.level),
     zenit:
       typeof parsed.zenit === 'number'
         ? parsed.zenit
         : typeof legacyZenit === 'number'
           ? legacyZenit
           : initialValue.zenit,
+    attributes: normalizeAttributes(parsed.attributes, initialValue.attributes),
+    bonds: normalizeBonds(parsed.bonds, initialValue.bonds),
+    classes: normalizeClasses(parsed.classes, initialValue.classes),
     skillGroups: normalizeSkillGroups(parsed.skillGroups, initialValue),
+    spellGroups: normalizeSpellGroups(parsed.spellGroups, initialValue),
     backstoryPrompts: normalizeBackstoryPrompts(
       parsed.backstoryPrompts,
       options.oldBackstoryAnswers,
@@ -231,6 +416,7 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
     backpack: normalizeBackpack(parsed.backpack),
     statusEffects: normalizeStatusEffects(parsed.statusEffects ?? options.oldStatusEffects),
     traits: normalizeTraits(parsed.traits, initialValue.traits),
+    notes: normalizeString(parsed.notes, initialValue.notes),
     ...normalizeHpMpBonus(parsed, initialValue),
   };
 }

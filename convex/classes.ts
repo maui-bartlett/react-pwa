@@ -429,7 +429,7 @@ What does your squad value? (choose 2):
 □ Excellence □ Justice □ Duty □ Mercy □ Tradition □ Protection
 Despite being the leader, you chose to travel with your new companions for the time being, until you’ve achieved this group’s purpose.
 Choose where your team is without you:
-□ protecting the team’s home while you are away □ training and preparing for something important □ temporarily disbanded or exiled □ protecting a powerful figure □ journeying, doing good works throughout your scope □ performing traditional or ceremonial duties □ stationed at an important location □ escorting important travelers
+□ protecting the team’s home while you are away □ training and preparing for something important □ temporarily disbanded or exiled □ protecting a powerful figure □ journeying, doing good works within your scope □ performing traditional or ceremonial duties □ stationed at an important location □ escorting important travelers
 Within any group, you serve a role both subtle and overt, sometimes leading the team, sometimes helping it glue itself together. You earn Team through your leadership style, and you spend Team through your support style. At the end of each session, you may change 1 style of leadership and 1 style of support.
 Choose 2 styles of leadership. Earn 1-Team when…
 □ Firm: …you openly call on a companion to live up to their principle. □ Inspiring: …you live up to your principle and roll a hit. □ Indomitable: …you roll a hit when you resist shifting your balance or you deny a callout. □ Empathetic: …you guide and comfort a companion and they open up to you. □ Guidance: …you assess a situation and give a companion instructions based on the answers. □ Diplomatic: …you plead with an NPC for help and roll a 10+.

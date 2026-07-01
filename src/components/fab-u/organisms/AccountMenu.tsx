@@ -1366,6 +1366,8 @@ function AccountMenu({
                               bgcolor: fabUTokens.color.surfaceMuted,
                               px: 1.2,
                               py: 0.95,
+                              display: 'flex',
+                              alignItems: 'center',
                             }}
                           >
                             <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>

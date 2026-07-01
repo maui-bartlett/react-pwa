@@ -1,27 +1,75 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-function AvatarLegendsAppIcon() {
+import elementAir from '@/pages/AvatarLegends/assets/airbending-symbol.png';
+import elementEarth from '@/pages/AvatarLegends/assets/earthbending-symbol.png';
+import elementFire from '@/pages/AvatarLegends/assets/firebending-symbol.png';
+import elementWater from '@/pages/AvatarLegends/assets/waterbending-symbol.png';
+
+function AvatarLegendsAppIcon({ size = 'button' }: { size?: 'button' | 'card' }) {
+  const dimensions = size === 'card' ? 132 : 42;
+  const radius = size === 'card' ? '28px' : '8px';
+
   return (
     <Box
-      component="img"
-      alt=""
-      // Near-white-background variant (the installed PWA icon keeps its grey
-      // backdrop); sized to almost fill the button height.
-      src="/avatar-legends-button-icon.png"
+      role="img"
+      aria-label="Avatar Legends"
       sx={{
-        display: 'block',
-        width: 42,
-        height: 42,
-        borderRadius: '8px',
+        width: dimensions,
+        height: dimensions,
+        borderRadius: radius,
+        bgcolor: '#fff',
+        boxShadow: size === 'card' ? '0 18px 36px rgba(0,0,0,0.28)' : 'none',
+        display: 'grid',
+        placeItems: 'center',
+        overflow: 'hidden',
       }}
-    />
+    >
+      <Box
+        component="img"
+        alt=""
+        src="/avatar-legends-button-icon.png"
+        sx={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+        }}
+      />
+    </Box>
+  );
+}
+
+function AvatarElementButtonIcon() {
+  return <AvatarElementCarousel size="button" />;
+}
+
+function FabulaSparkleIcon(props: SvgIconProps) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24">
+      <path
+        className="fabula-sparkle-star fabula-sparkle-star-main"
+        d="M11.5 9.5 9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12z"
+        fill="currentColor"
+      />
+      <path
+        className="fabula-sparkle-star fabula-sparkle-star-small"
+        d="m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25z"
+        fill="currentColor"
+      />
+      <path
+        className="fabula-sparkle-star fabula-sparkle-star-tiny"
+        d="m19 15-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25z"
+        fill="currentColor"
+      />
+    </SvgIcon>
   );
 }
 
@@ -37,7 +85,7 @@ const systems = [
     cover: '/fabula-ultima-cover.jpg',
     coverPosition: 'center 28%',
     visual: 'crest',
-    icon: AutoAwesomeIcon,
+    icon: FabulaSparkleIcon,
   },
   {
     name: 'Avatar Legends',
@@ -50,7 +98,7 @@ const systems = [
     cover: '/avatar-legends-cover.jpg',
     coverPosition: 'center 32%',
     visual: 'avatar',
-    icon: AvatarLegendsAppIcon,
+    icon: AvatarElementButtonIcon,
   },
 ] as const;
 
@@ -65,6 +113,13 @@ const heroCovers = [
     src: '/avatar-legends-cover.jpg',
     side: 'right',
   },
+] as const;
+
+const avatarElements = [
+  { label: 'Waterbending', src: elementWater, color: '#4b94bd' },
+  { label: 'Earthbending', src: elementEarth, color: '#70984f' },
+  { label: 'Airbending', src: elementAir, color: '#e0b82e' },
+  { label: 'Firebending', src: elementFire, color: '#bd4339' },
 ] as const;
 
 function FabulaCrest() {
@@ -118,21 +173,72 @@ function FabulaCrest() {
   );
 }
 
+function AvatarElementCarousel({ size = 'card' }: { size?: 'button' | 'card' }) {
+  const [activeElementIndex, setActiveElementIndex] = useState(0);
+  const dimensions = size === 'card' ? 132 : 42;
+  const radius = size === 'card' ? '28px' : '8px';
+  const inset = size === 'card' ? 22 : 7;
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveElementIndex((current) => (current + 1) % avatarElements.length);
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return (
+    <Box
+      role="img"
+      aria-label="Avatar Legends bending elements"
+      sx={{
+        position: 'relative',
+        width: dimensions,
+        height: dimensions,
+        borderRadius: radius,
+        border: size === 'card' ? '3px solid rgba(255,255,255,0.88)' : 0,
+        bgcolor: '#fff',
+        boxShadow: size === 'card' ? '0 18px 36px rgba(0,0,0,0.28)' : 'none',
+        overflow: 'hidden',
+      }}
+    >
+      {avatarElements.map((element, index) => {
+        const active = index === activeElementIndex;
+        return (
+          <Box
+            key={element.label}
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              inset,
+              bgcolor: element.color,
+              maskImage: `url(${element.src})`,
+              maskPosition: 'center',
+              maskRepeat: 'no-repeat',
+              maskSize: 'contain',
+              WebkitMaskImage: `url(${element.src})`,
+              WebkitMaskPosition: 'center',
+              WebkitMaskRepeat: 'no-repeat',
+              WebkitMaskSize: 'contain',
+              opacity: active ? 1 : 0,
+              transform: active ? 'scale(1)' : 'scale(0.94)',
+              transition: 'opacity 650ms ease-in-out, transform 650ms ease-in-out',
+              '@media (prefers-reduced-motion: reduce)': {
+                display: index === 0 ? 'block' : 'none',
+                opacity: 1,
+                transform: 'none',
+                transition: 'none',
+              },
+            }}
+          />
+        );
+      })}
+    </Box>
+  );
+}
+
 function SystemVisual({ visual }: { visual: (typeof systems)[number]['visual'] }) {
   if (visual === 'avatar') {
-    return (
-      <Box
-        component="img"
-        alt=""
-        src="/avatar-legends-pwa-512x512.png"
-        sx={{
-          width: 132,
-          height: 132,
-          borderRadius: '28px',
-          boxShadow: '0 18px 36px rgba(0,0,0,0.28)',
-        }}
-      />
-    );
+    return <AvatarLegendsAppIcon size="card" />;
   }
   return <FabulaCrest />;
 }
@@ -141,28 +247,30 @@ function Home() {
   return (
     <Box
       sx={{
-        height: '100vh',
-        minHeight: '100vh',
+        height: '100dvh',
+        minHeight: '100dvh',
         background: {
           xs: '#182237',
           md: 'radial-gradient(circle at 12% 8%, rgba(183,147,200,0.3), transparent 28%), radial-gradient(circle at 88% 18%, rgba(49,92,77,0.32), transparent 30%), linear-gradient(180deg, #182237 0%, #241b2e 48%, #101721 100%)',
         },
         color: '#f8f4ec',
         overflowY: 'auto',
+        overflowX: 'hidden',
         WebkitOverflowScrolling: 'touch',
       }}
     >
       <Box
         component="main"
         sx={{
-          py: { xs: 0, md: 6 },
+          pt: 0,
+          pb: { xs: 0, md: 6 },
         }}
       >
         <Box
           component="section"
           sx={{
             position: 'relative',
-            minHeight: { xs: '56dvh', sm: 580, md: 'calc(100vh - 48px)' },
+            minHeight: { xs: '56dvh', sm: 580, md: '100dvh' },
             display: 'grid',
             alignItems: 'center',
             overflow: 'hidden',
@@ -415,7 +523,7 @@ function Home() {
                       sx={{
                         mt: 1,
                         minHeight: { xs: 50, md: 44 },
-                        // Avatar Legends uses a large app-icon that almost fills
+                        // Avatar Legends uses a framed icon that almost fills
                         // the button, so trim the vertical padding to suit it.
                         py: system.visual === 'avatar' ? 0.4 : undefined,
                         borderRadius: 1.4,
@@ -424,6 +532,39 @@ function Home() {
                         fontWeight: 800,
                         px: { xs: 2.2, md: 2 },
                         textTransform: 'none',
+                        '& .fabula-sparkle-star': {
+                          transformBox: 'fill-box',
+                          transformOrigin: 'center',
+                        },
+                        '&:hover .fabula-sparkle-star-main': {
+                          animation: 'fabulaStarPulse 980ms ease-in-out infinite',
+                        },
+                        '&:hover .fabula-sparkle-star-small': {
+                          animation: 'fabulaStarPulse 820ms ease-in-out 120ms infinite',
+                        },
+                        '&:hover .fabula-sparkle-star-tiny': {
+                          animation: 'fabulaStarPulse 700ms ease-in-out 240ms infinite',
+                        },
+                        '@keyframes fabulaStarPulse': {
+                          '0%, 100%': {
+                            opacity: 0.64,
+                            transform: 'scale(0.72) rotate(-8deg)',
+                          },
+                          '45%': {
+                            opacity: 1,
+                            transform: 'scale(1.18) rotate(8deg)',
+                          },
+                          '70%': {
+                            opacity: 0.82,
+                            transform: 'scale(0.92) rotate(0deg)',
+                          },
+                        },
+                        '@media (prefers-reduced-motion: reduce)': {
+                          '&:hover .fabula-sparkle-star-main, &:hover .fabula-sparkle-star-small, &:hover .fabula-sparkle-star-tiny':
+                            {
+                              animation: 'none',
+                            },
+                        },
                         '&:hover': {
                           bgcolor: '#fffaf0',
                         },

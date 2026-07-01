@@ -328,7 +328,7 @@ function ResultReadoutOverlay({
         zIndex: (theme) => theme.zIndex.tooltip + 16,
         display: 'flex',
         width: 'auto',
-        maxWidth: 'none',
+        maxWidth: { xs: 'none', md: 300 },
         minHeight: 78,
         transform: 'none',
         alignItems: 'flex-start',
@@ -578,7 +578,7 @@ function DiceRoller() {
         const diceBox = new DiceBox({
           assetPath: '/assets/',
           container: '#tabletop-dice-box',
-          theme: 'default',
+          theme: 'tabletop-v4',
           themeColor: initialConfig.themeColor,
           scale: 4.4,
           gravity: 2,
@@ -593,7 +593,7 @@ function DiceRoller() {
           // with noticeably varying force as it travels from the upper-left.
           throwForce: 5,
           startingHeight: DICE_BOX_STARTING_HEIGHT,
-          settleTimeout: 1600,
+          settleTimeout: 1800,
           delay: 10,
           offscreen: false,
           lightIntensity: initialConfig.mode === 'dark' ? 1.12 : 1.25,
@@ -654,10 +654,7 @@ function DiceRoller() {
   };
 
   const closeDiceRail = () => {
-    rollSequenceRef.current += 1;
-    setIsRolling(false);
     setSelectedDice([]);
-    void fadeOutDisplayedRoll();
     setIsRailClosing(true);
     window.setTimeout(() => {
       setIsExpanded(false);

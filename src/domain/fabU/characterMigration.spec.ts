@@ -99,3 +99,46 @@ test('backend serialization keeps status effects inside the character shape', ()
   expect((serialized as { statusEffects?: unknown }).statusEffects).toBeUndefined();
   expect(deserialized.statusEffects.shaken).toBe(true);
 });
+
+test('backend deserialization repairs malformed authenticated character data', () => {
+  const character = deserializeCharacterFromBackend({
+    schemaVersion: 1,
+    character: {
+      name: null,
+      initiative: 'fast',
+      defense: null,
+      attributes: {
+        dex: null,
+        insight: { die: 'd100', modifier: 'high' },
+        might: { die: 'd10', modifier: 2 },
+      },
+      bonds: null,
+      classes: null,
+      skillGroups: { Entropist: [] },
+      spellGroups: 'none',
+      backstoryPrompts: null,
+      equipment: null,
+      backpack: null,
+      statusEffects: null,
+      traits: null,
+      notes: null,
+    },
+  });
+
+  expect(character.name.firstName).toBe(createDefaultCharacter().name.firstName);
+  expect(character.name.lastName).toBe(createDefaultCharacter().name.lastName);
+  expect(character.initiative).toBe(createDefaultCharacter().initiative);
+  expect(character.attributes.dex).toEqual(createDefaultCharacter().attributes.dex);
+  expect(character.attributes.insight).toEqual(createDefaultCharacter().attributes.insight);
+  expect(character.attributes.might).toEqual({ die: 'd10', modifier: 2 });
+  expect(character.attributes.willpower).toEqual(createDefaultCharacter().attributes.willpower);
+  expect(character.classes.map((entry) => entry.name)).toEqual(
+    createDefaultCharacter().classes.map((entry) => entry.name),
+  );
+  expect(
+    character.skillGroups.reduce((count, group) => count + group.skills.length, 0),
+  ).toBeGreaterThan(0);
+  expect(character.spellGroups).toEqual(createDefaultCharacter().spellGroups);
+  expect(character.bonds).toEqual(createDefaultCharacter().bonds);
+  expect(character.notes).toBe(createDefaultCharacter().notes);
+});
