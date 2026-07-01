@@ -42,6 +42,7 @@ import type {
   DndTab,
   Feature,
   InventoryItem,
+  Money,
   Skill,
   Spell,
 } from './atoms';
@@ -1047,11 +1048,13 @@ function InventoryScreen({
   onDeleteItem,
   onAddItem,
   onEditItem,
+  onEditMoney,
 }: {
   character: DndCharacter;
   onDeleteItem: (id: string) => void;
   onAddItem: () => void;
   onEditItem: (item: InventoryItem) => void;
+  onEditMoney: () => void;
 }) {
   const totalWeight = character.inventory.reduce((sum, item) => {
     const numeric = Number.parseFloat(item.weight);
@@ -1084,6 +1087,9 @@ function InventoryScreen({
                 <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 900 }}>
                   {character.money.gp} gp
                 </Typography>
+                <Button onClick={onEditMoney} sx={{ ...inlineEditButtonSx, mt: 1 }}>
+                  Edit Money
+                </Button>
               </Stack>
             </Stack>
             <Button
@@ -2259,6 +2265,48 @@ function NoteEditDialog({
   );
 }
 
+type MoneyForm = Record<keyof Money, string>;
+
+function createMoneyForm(money: Money): MoneyForm {
+  return {
+    cp: String(money.cp),
+    sp: String(money.sp),
+    ep: String(money.ep),
+    gp: String(money.gp),
+    pp: String(money.pp),
+  };
+}
+
+function MoneyEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: MoneyForm | null;
+  onChange: (form: MoneyForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  const setField = (key: keyof MoneyForm, value: string) => onChange({ ...form, [key]: value });
+  return (
+    <DndEditDialog title="Edit Money" open={open} onCancel={onCancel} onSave={onSave}>
+      <Stack direction="row" spacing={1}>
+        <FormField label="CP" value={form.cp} inputMode="numeric" onChange={(value) => setField('cp', value)} />
+        <FormField label="SP" value={form.sp} inputMode="numeric" onChange={(value) => setField('sp', value)} />
+        <FormField label="EP" value={form.ep} inputMode="numeric" onChange={(value) => setField('ep', value)} />
+      </Stack>
+      <Stack direction="row" spacing={1}>
+        <FormField label="GP" value={form.gp} inputMode="numeric" onChange={(value) => setField('gp', value)} />
+        <FormField label="PP" value={form.pp} inputMode="numeric" onChange={(value) => setField('pp', value)} />
+      </Stack>
+    </DndEditDialog>
+  );
+}
+
 type AttackForm = Attack;
 type SpellForm = Spell;
 type ItemForm = InventoryItem;
@@ -2404,6 +2452,7 @@ function DungeonsAndDragons() {
   const [skillForm, setSkillForm] = useState<SkillForm | null>(null);
   const [backgroundForm, setBackgroundForm] = useState<BackgroundForm | null>(null);
   const [noteForm, setNoteForm] = useState<NoteForm | null>(null);
+  const [moneyForm, setMoneyForm] = useState<MoneyForm | null>(null);
   const [charactersOpen, setCharactersOpen] = useState(false);
 
   const localCharacters = useLocalCharacterSlots({
@@ -2543,6 +2592,21 @@ function DungeonsAndDragons() {
         : [...current.inventory, itemForm],
     }));
     setItemForm(null);
+  };
+
+  const saveMoney = () => {
+    if (!moneyForm) return;
+    setCharacter((current) => ({
+      ...current,
+      money: {
+        cp: parseIntOrFallback(moneyForm.cp, current.money.cp),
+        sp: parseIntOrFallback(moneyForm.sp, current.money.sp),
+        ep: parseIntOrFallback(moneyForm.ep, current.money.ep),
+        gp: parseIntOrFallback(moneyForm.gp, current.money.gp),
+        pp: parseIntOrFallback(moneyForm.pp, current.money.pp),
+      },
+    }));
+    setMoneyForm(null);
   };
 
   const saveCharacter = () => {
@@ -2783,6 +2847,7 @@ function DungeonsAndDragons() {
             onAddItem={addItem}
             onEditItem={(item) => setItemForm({ ...item })}
             onDeleteItem={(id) => deleteById('inventory', id)}
+            onEditMoney={() => setMoneyForm(createMoneyForm(character.money))}
           />
         );
       case 'features':
@@ -2934,6 +2999,13 @@ function DungeonsAndDragons() {
           onChange={setItemForm}
           onCancel={() => setItemForm(null)}
           onSave={saveItem}
+        />
+        <MoneyEditDialog
+          open={moneyForm !== null}
+          form={moneyForm}
+          onChange={setMoneyForm}
+          onCancel={() => setMoneyForm(null)}
+          onSave={saveMoney}
         />
         <AbilityEditDialog
           open={abilityForm !== null}
