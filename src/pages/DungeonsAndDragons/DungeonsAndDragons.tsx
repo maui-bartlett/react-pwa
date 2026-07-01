@@ -69,6 +69,23 @@ const dndColors = {
 
 const abilityKeys: readonly AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
+const dndConditions = [
+  'Blinded',
+  'Charmed',
+  'Deafened',
+  'Frightened',
+  'Grappled',
+  'Incapacitated',
+  'Invisible',
+  'Paralyzed',
+  'Petrified',
+  'Poisoned',
+  'Prone',
+  'Restrained',
+  'Stunned',
+  'Unconscious',
+];
+
 function abilityModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
@@ -597,9 +614,13 @@ function SavePill({ ability }: { ability: AbilityScore }) {
 function AbilitiesScreen({
   character,
   onEditStats,
+  onToggleInspiration,
+  onToggleCondition,
 }: {
   character: DndCharacter;
   onEditStats: () => void;
+  onToggleInspiration: () => void;
+  onToggleCondition: (condition: string) => void;
 }) {
   return (
     <>
@@ -645,6 +666,38 @@ function AbilitiesScreen({
         <SenseRow label="Passive Perception" value={character.passivePerception} />
         <SenseRow label="Passive Investigation" value={character.passiveInvestigation} />
         <SenseRow label="Passive Insight" value={character.passiveInsight} />
+        <DividerLabel title="Inspiration & Conditions" />
+        <Button
+          fullWidth
+          onClick={onToggleInspiration}
+          sx={{
+            ...toggleButtonSx(character.inspiration),
+            minHeight: 48,
+            justifyContent: 'space-between',
+            px: 1.4,
+          }}
+        >
+          Inspiration
+          <Box component="span">{character.inspiration ? 'Marked' : 'Unmarked'}</Box>
+        </Button>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.8, mt: 1.2 }}>
+          {dndConditions.map((condition) => {
+            const active = character.conditions.includes(condition);
+            return (
+              <Button
+                key={condition}
+                onClick={() => onToggleCondition(condition)}
+                sx={{
+                  ...toggleButtonSx(active),
+                  minHeight: 38,
+                  fontSize: 12,
+                }}
+              >
+                {condition}
+              </Button>
+            );
+          })}
+        </Box>
       </Box>
     </>
   );
@@ -882,11 +935,13 @@ function SpellsScreen({
   onDeleteSpell,
   onAddSpell,
   onEditSpell,
+  onUpdateSpellSlot,
 }: {
   character: DndCharacter;
   onDeleteSpell: (id: string) => void;
   onAddSpell: () => void;
   onEditSpell: (spell: Spell) => void;
+  onUpdateSpellSlot: (level: string, used: number) => void;
 }) {
   return (
     <>
@@ -900,7 +955,11 @@ function SpellsScreen({
           </Stack>
           <Stack direction="row" spacing={1} sx={{ mt: 1.3 }}>
             {character.spellcasting.slots.map((slot) => (
-              <SlotTracker key={slot.level} slot={slot} />
+              <SlotTracker
+                key={slot.level}
+                slot={slot}
+                onUpdate={(used) => onUpdateSpellSlot(slot.level, used)}
+              />
             ))}
           </Stack>
         </DndCard>
@@ -926,20 +985,32 @@ function SpellsScreen({
   );
 }
 
-function SlotTracker({ slot }: { slot: { level: string; used: number; max: number } }) {
+function SlotTracker({
+  slot,
+  onUpdate,
+}: {
+  slot: { level: string; used: number; max: number };
+  onUpdate: (used: number) => void;
+}) {
   return (
     <Box sx={{ flex: 1 }}>
       <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>{slot.level}</Typography>
       <Stack direction="row" spacing={0.4} sx={{ mt: 0.5 }}>
         {Array.from({ length: slot.max }).map((_, index) => (
           <Box
+            component="button"
             key={index}
+            type="button"
+            aria-label={`${slot.level} spell slot ${index + 1}`}
+            onClick={() => onUpdate(index + 1 === slot.used ? index : index + 1)}
             sx={{
               width: 18,
               height: 18,
               borderRadius: '50%',
               border: `2px solid ${dndColors.blue}`,
               bgcolor: index < slot.used ? dndColors.blue : 'transparent',
+              cursor: 'pointer',
+              p: 0,
             }}
           />
         ))}
@@ -2616,6 +2687,33 @@ function DungeonsAndDragons() {
     }));
   };
 
+  const toggleInspiration = () => {
+    setCharacter((current) => ({ ...current, inspiration: !current.inspiration }));
+  };
+
+  const toggleCondition = (condition: string) => {
+    setCharacter((current) => ({
+      ...current,
+      conditions: current.conditions.includes(condition)
+        ? current.conditions.filter((entry) => entry !== condition)
+        : [...current.conditions, condition],
+    }));
+  };
+
+  const updateSpellSlot = (level: string, used: number) => {
+    setCharacter((current) => ({
+      ...current,
+      spellcasting: {
+        ...current.spellcasting,
+        slots: current.spellcasting.slots.map((slot) =>
+          slot.level === level
+            ? { ...slot, used: Math.min(slot.max, Math.max(0, used)) }
+            : slot,
+        ),
+      },
+    }));
+  };
+
   const content = (() => {
     switch (activeTab) {
       case 'abilities':
@@ -2623,6 +2721,8 @@ function DungeonsAndDragons() {
           <AbilitiesScreen
             character={character}
             onEditStats={() => setAbilityForm(createAbilityForm(character))}
+            onToggleInspiration={toggleInspiration}
+            onToggleCondition={toggleCondition}
           />
         );
       case 'skills':
@@ -2648,6 +2748,7 @@ function DungeonsAndDragons() {
             onAddSpell={addSpell}
             onEditSpell={(spell) => setSpellForm({ ...spell })}
             onDeleteSpell={(id) => deleteById('spells', id)}
+            onUpdateSpellSlot={updateSpellSlot}
           />
         );
       case 'inventory':
