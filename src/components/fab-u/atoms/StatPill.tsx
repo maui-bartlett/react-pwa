@@ -44,7 +44,7 @@ function StatPill({
         backgroundColor: alpha(toneColor, 0.08),
         color: toneColor,
       }
-    : getToneStyles(tone);
+    : getToneStyles(tone, fabUTokens);
   const inline = layout === 'inline';
   const editable = !!onChange || !!onManage;
   const hasBaseTempEditor = !!(onChange && onChangeSuffix);

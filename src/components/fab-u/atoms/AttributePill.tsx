@@ -66,7 +66,7 @@ function AttributePill({
   const [open, setOpen] = useState(false);
   const [anchorPos, setAnchorPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [draftTemp, setDraftTemp] = useState<DieSize | null>(null);
-  const toneStyles = getToneStyles(tone);
+  const toneStyles = getToneStyles(tone, fabUTokens);
   const editable = !!(onChangeDie || onChangeModifier);
 
   function handleOpen(e: React.MouseEvent<HTMLElement>) {

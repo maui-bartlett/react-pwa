@@ -772,14 +772,28 @@ function ConditionsScreen({
             return (
               <Button
                 key={condition}
+                aria-pressed={active}
                 onClick={() => onToggleCondition(condition)}
                 sx={{
                   ...toggleButtonSx(active),
                   minHeight: 38,
                   fontSize: 12,
+                  justifyContent: 'space-between',
+                  px: 1.2,
                 }}
               >
-                {condition}
+                <Box component="span">{condition}</Box>
+                <Box
+                  component="span"
+                  sx={{
+                    width: 9,
+                    height: 9,
+                    borderRadius: '50%',
+                    bgcolor: active ? dndColors.green : 'transparent',
+                    border: `1px solid ${active ? dndColors.green : dndColors.border}`,
+                    boxShadow: active ? `0 0 0 3px ${alpha(dndColors.green, 0.18)}` : 'none',
+                  }}
+                />
               </Button>
             );
           })}
@@ -1968,31 +1982,203 @@ function HitPointEditDialog({
   onCancel: () => void;
   onSave: () => void;
 }) {
+  const [amount, setAmount] = useState(0);
+  useEffect(() => {
+    if (open) setAmount(0);
+  }, [open]);
   if (!form) return null;
   const setField = (key: keyof HitPointForm, value: string) => onChange({ ...form, [key]: value });
+  const current = Math.max(0, parseIntOrFallback(form.current, 0));
+  const max = Math.max(1, parseIntOrFallback(form.max, 1));
+  const temp = Math.max(0, parseIntOrFallback(form.temp, 0));
+  const setAmountFromText = (value: string) => {
+    const parsed = Number.parseInt(value.replace(/[^0-9]/g, ''), 10);
+    setAmount(Number.isNaN(parsed) ? 0 : Math.min(Math.max(max, 30), parsed));
+  };
+  const applyDelta = (direction: 1 | -1) => {
+    const next = Math.max(0, Math.min(max, current + direction * amount));
+    setField('current', String(next));
+  };
+  const setDeathSave = (key: 'deathSuccesses' | 'deathFailures', next: number) => {
+    setField(key, String(Math.max(0, Math.min(3, next))));
+  };
+  const wheelMax = Math.max(max, 30);
   return (
     <DndEditDialog title="Edit Hit Points" open={open} onCancel={onCancel} onSave={onSave}>
-      <Stack direction="row" spacing={1}>
-        <FormField label="Current" value={form.current} inputMode="numeric" onChange={(value) => setField('current', value)} />
-        <FormField label="Max" value={form.max} inputMode="numeric" onChange={(value) => setField('max', value)} />
-        <FormField label="Temp" value={form.temp} inputMode="numeric" onChange={(value) => setField('temp', value)} />
+      <Stack alignItems="center" sx={{ mb: 1 }}>
+        <Typography
+          sx={{
+            fontSize: 11,
+            fontWeight: 900,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: dndColors.muted,
+          }}
+        >
+          Hit Points
+        </Typography>
+        <Typography sx={{ fontSize: 34, fontWeight: 900, color: dndColors.blue, lineHeight: 1.1 }}>
+          {current}
+          <Typography component="span" sx={{ color: dndColors.muted, fontSize: 19, fontWeight: 800 }}>
+            {' / '}
+            {max}
+          </Typography>
+        </Typography>
+        <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 800 }}>
+          {temp} temporary
+        </Typography>
       </Stack>
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 108px',
+          gap: 1,
+          alignItems: 'stretch',
+        }}
+      >
+        <Stack spacing={0.8}>
+          <Stack direction="row" spacing={1}>
+            <FormField label="Max" value={form.max} inputMode="numeric" onChange={(value) => setField('max', value)} />
+            <FormField label="Temp" value={form.temp} inputMode="numeric" onChange={(value) => setField('temp', value)} />
+          </Stack>
+          <Button
+            onClick={() => applyDelta(1)}
+            variant="contained"
+            disableElevation
+            sx={{
+              bgcolor: dndColors.green,
+              color: '#ffffff',
+              fontWeight: 900,
+              textTransform: 'none',
+              '&:hover': { bgcolor: dndColors.green },
+            }}
+          >
+            Heal
+          </Button>
+          <InputBase
+            value={String(amount)}
+            inputProps={{
+              inputMode: 'numeric',
+              style: { textAlign: 'center', fontWeight: 900, fontSize: 18, padding: 0 },
+            }}
+            onChange={(event) => setAmountFromText(event.target.value)}
+            sx={{
+              border: `1px solid ${dndColors.border}`,
+              borderRadius: '8px',
+              bgcolor: dndColors.panelStrong,
+              height: 40,
+              color: dndColors.text,
+            }}
+          />
+          <Button
+            onClick={() => applyDelta(-1)}
+            variant="contained"
+            disableElevation
+            sx={{
+              bgcolor: dndColors.red,
+              color: '#ffffff',
+              fontWeight: 900,
+              textTransform: 'none',
+              '&:hover': { bgcolor: dndColors.redDark },
+            }}
+          >
+            Damage
+          </Button>
+        </Stack>
+
+        <Box
+          sx={{
+            maxHeight: 176,
+            overflowY: 'auto',
+            border: `1px solid ${dndColors.border}`,
+            borderRadius: '12px',
+            bgcolor: dndColors.panelStrong,
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+          }}
+        >
+          {Array.from({ length: wheelMax + 1 }, (_, value) => (
+            <Button
+              key={value}
+              onClick={() => setAmount(value)}
+              fullWidth
+              sx={{
+                minHeight: 32,
+                color: value === amount ? dndColors.blue : dndColors.muted,
+                bgcolor: value === amount ? alpha(dndColors.blue, 0.14) : 'transparent',
+                fontWeight: value === amount ? 900 : 700,
+                borderRadius: 0,
+                '&:hover': { bgcolor: alpha(dndColors.blue, 0.18) },
+              }}
+            >
+              {value}
+            </Button>
+          ))}
+        </Box>
+      </Box>
+
+      <FormField label="Current" value={form.current} inputMode="numeric" onChange={(value) => setField('current', value)} />
       <FormField label="Hit Dice" value={form.hitDice} onChange={(value) => setField('hitDice', value)} />
-      <Stack direction="row" spacing={1}>
-        <FormField
-          label="Death Saves"
-          value={form.deathSuccesses}
-          inputMode="numeric"
-          onChange={(value) => setField('deathSuccesses', value)}
+      <Stack direction="row" spacing={1} sx={{ mt: 0.4 }}>
+        <DeathSaveTrack
+          label="Successes"
+          value={parseIntOrFallback(form.deathSuccesses, 0)}
+          color={dndColors.green}
+          onChange={(next) => setDeathSave('deathSuccesses', next)}
         />
-        <FormField
+        <DeathSaveTrack
           label="Failures"
-          value={form.deathFailures}
-          inputMode="numeric"
-          onChange={(value) => setField('deathFailures', value)}
+          value={parseIntOrFallback(form.deathFailures, 0)}
+          color={dndColors.red}
+          onChange={(next) => setDeathSave('deathFailures', next)}
         />
       </Stack>
     </DndEditDialog>
+  );
+}
+
+function DeathSaveTrack({
+  label,
+  value,
+  color,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  color: string;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <Box sx={{ flex: 1 }}>
+      <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, mb: 0.6 }}>
+        {label}
+      </Typography>
+      <Stack direction="row" spacing={0.7}>
+        {[1, 2, 3].map((mark) => {
+          const active = mark <= value;
+          return (
+            <Box
+              key={mark}
+              component="button"
+              type="button"
+              aria-label={`${label} ${mark}`}
+              aria-pressed={active}
+              onClick={() => onChange(value === mark ? mark - 1 : mark)}
+              style={{ appearance: 'none' }}
+              sx={{
+                width: 31,
+                height: 31,
+                borderRadius: '50%',
+                border: `2px solid ${active ? color : dndColors.border}`,
+                bgcolor: active ? color : 'transparent',
+                cursor: 'pointer',
+              }}
+            />
+          );
+        })}
+      </Stack>
+    </Box>
   );
 }
 
@@ -2461,11 +2647,12 @@ function toggleButtonSx(active: boolean) {
   return {
     minHeight: 42,
     border: `1px solid ${active ? dndColors.green : dndColors.border}`,
-    color: active ? dndColors.green : dndColors.text,
-    bgcolor: dndColors.panelStrong,
+    color: active ? '#ffffff' : dndColors.text,
+    bgcolor: active ? alpha(dndColors.green, 0.24) : dndColors.panelStrong,
+    boxShadow: active ? `inset 0 0 0 1px ${alpha(dndColors.green, 0.22)}` : 'none',
     fontWeight: 900,
     textTransform: 'none',
-    '&:hover': { bgcolor: alpha('#ffffff', 0.08) },
+    '&:hover': { bgcolor: active ? alpha(dndColors.green, 0.32) : alpha('#ffffff', 0.08) },
   };
 }
 

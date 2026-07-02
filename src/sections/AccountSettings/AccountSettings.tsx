@@ -2,15 +2,17 @@ import { useEffect, useMemo } from 'react';
 
 import { useSetAtom } from 'jotai';
 
-import { FabUTokensContext } from '@/components/fab-u/ThemeContext';
-import AccountMenu from '@/components/fab-u/organisms/AccountMenu';
+import AccountMenu from '@/components/account/AccountMenu';
+import { FabUTokensContext } from '@/components/account/AccountThemeContext';
 import {
   FabUTokens,
   avatarDarkTokens,
   avatarLightTokens,
+  dndDarkTokens,
+  dndLightTokens,
   darkFabUTokens,
   fabUTokens,
-} from '@/components/fab-u/tokens';
+} from '@/components/account/tokens';
 import type { UseLocalCharacterSlotsResult } from '@/state/useLocalCharacterSlots';
 import { useThemeMode } from '@/theme/hooks';
 
@@ -20,7 +22,8 @@ type AccountSettingsProps = {
   /**
    * Which RPG system this surface represents. Sets the shared gameSystemAtom
    * (so downstream account-menu queries can filter) AND swaps the palette
-   * the dialog renders with — green for fabula-ultima, blue for avatar-legends.
+   * the dialog renders with — green for fabula-ultima, blue for avatar-legends,
+   * red/black for dungeons-and-dragons.
    */
   gameSystem: GameSystem;
   /** Optional locally-active character name. */
@@ -71,6 +74,9 @@ function AccountSettings({
     if (tokensOverride) return tokensOverride;
     if (gameSystem === 'avatar-legends') {
       return isDarkMode ? avatarDarkTokens : avatarLightTokens;
+    }
+    if (gameSystem === 'dungeons-and-dragons') {
+      return isDarkMode ? dndDarkTokens : dndLightTokens;
     }
     return isDarkMode ? darkFabUTokens : fabUTokens;
   }, [gameSystem, isDarkMode, tokensOverride]);
