@@ -49,6 +49,7 @@ import type {
   DndTab,
   Feat,
   Feature,
+  HitDicePool,
   InventoryItem,
   Money,
   Skill,
@@ -166,6 +167,7 @@ function createDndCharacter() {
     name: 'New Adventurer',
     hitPoints: {
       ...initialDndCharacter.hitPoints,
+      hitDicePools: initialDndCharacter.hitPoints.hitDicePools.map((entry) => ({ ...entry })),
       deathSaves: { ...initialDndCharacter.hitPoints.deathSaves },
     },
     classes: initialDndCharacter.classes.map((entry) => ({ ...entry })),
@@ -201,6 +203,44 @@ function describeDndCharacter(character: DndCharacter) {
 function parseIntOrFallback(value: string, fallback: number) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function parseHitDicePools(value: string, fallback: HitDicePool[]) {
+  const pools = new Map<string, number>();
+  const matches = value.matchAll(/(\d+)\s*d\s*(\d+)/giu);
+  for (const match of matches) {
+    const count = Number.parseInt(match[1] ?? '', 10);
+    const sides = Number.parseInt(match[2] ?? '', 10);
+    if (!Number.isFinite(count) || !Number.isFinite(sides) || count <= 0 || sides <= 0) continue;
+    const die = `d${sides}`;
+    pools.set(die, (pools.get(die) ?? 0) + count);
+  }
+  if (pools.size === 0) return fallback.map((pool) => ({ ...pool }));
+  return Array.from(pools.entries()).map(([die, max]) => {
+    const existing = fallback.find((pool) => pool.die === die);
+    return { die, max, used: Math.min(max, Math.max(0, existing?.used ?? 0)) };
+  });
+}
+
+function formatHitDicePools(pools: HitDicePool[]) {
+  if (pools.length === 0) return 'No hit dice';
+  return pools.map((pool) => `${pool.max - pool.used}/${pool.max}${pool.die}`).join(' + ');
+}
+
+function hitDieAverageHeal(die: string, constitutionModifier: number) {
+  const sides = Number.parseInt(die.replace(/[^0-9]/g, ''), 10);
+  if (!Number.isFinite(sides) || sides <= 0) return Math.max(1, constitutionModifier);
+  return Math.max(1, Math.floor(sides / 2) + 1 + constitutionModifier);
+}
+
+function recoverLongRestHitDice(pools: HitDicePool[]) {
+  const total = pools.reduce((sum, pool) => sum + pool.max, 0);
+  let remainingRecovery = Math.max(1, Math.floor(total / 2));
+  return pools.map((pool) => {
+    const recovered = Math.min(pool.used, remainingRecovery);
+    remainingRecovery -= recovered;
+    return { ...pool, used: pool.used - recovered };
+  });
 }
 
 function classLine(character: DndCharacter) {
@@ -2150,13 +2190,20 @@ function DndEditDialog({
 
 function RestDialog({
   open,
+  character,
   onClose,
   onApplyRest,
+  onSpendHitDie,
 }: {
   open: boolean;
+  character: DndCharacter;
   onClose: () => void;
   onApplyRest: (restType: RestType) => void;
+  onSpendHitDie: (die: string) => void;
 }) {
+  const constitutionScore = character.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
+  const constitutionModifier = abilityModifier(constitutionScore);
+  const hitDicePools = character.hitPoints.hitDicePools;
   return (
     <Dialog
       open={open}
@@ -2168,6 +2215,40 @@ function RestDialog({
       <DialogTitle sx={{ fontWeight: 900 }}>Take a Rest</DialogTitle>
       <DialogContent>
         <Stack spacing={1.2} sx={{ pt: 0.5 }}>
+          <Box
+            sx={{
+              border: `1px solid ${dndColors.border}`,
+              borderRadius: '8px',
+              bgcolor: dndColors.panelStrong,
+              p: 1.4,
+            }}
+          >
+            <Typography sx={{ color: dndColors.text, fontWeight: 900 }}>Hit Dice</Typography>
+            <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 800, mt: 0.3 }}>
+              {formatHitDicePools(hitDicePools)}
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1, mt: 1 }}>
+              {hitDicePools.map((pool) => {
+                const available = pool.max - pool.used;
+                const healAmount = hitDieAverageHeal(pool.die, constitutionModifier);
+                return (
+                  <Button
+                    key={pool.die}
+                    disabled={available <= 0 || character.hitPoints.current >= character.hitPoints.max}
+                    onClick={() => onSpendHitDie(pool.die)}
+                    sx={{
+                      border: `1px solid ${available > 0 ? dndColors.blue : dndColors.border}`,
+                      color: available > 0 ? dndColors.blue : dndColors.muted,
+                      fontWeight: 900,
+                      textTransform: 'none',
+                    }}
+                  >
+                    Spend {pool.die} (+{healAmount})
+                  </Button>
+                );
+              })}
+            </Stack>
+          </Box>
           <Button
             onClick={() => onApplyRest('short')}
             sx={{
@@ -3742,6 +3823,10 @@ function DungeonsAndDragons() {
         max: parseIntOrFallback(hitPointForm.max, current.hitPoints.max),
         temp: parseIntOrFallback(hitPointForm.temp, current.hitPoints.temp),
         hitDice: hitPointForm.hitDice.trim() || current.hitPoints.hitDice,
+        hitDicePools: parseHitDicePools(
+          hitPointForm.hitDice.trim(),
+          current.hitPoints.hitDicePools,
+        ),
         deathSaves: {
           successes: parseIntOrFallback(
             hitPointForm.deathSuccesses,
@@ -3876,6 +3961,7 @@ function DungeonsAndDragons() {
               ...current.hitPoints,
               current: current.hitPoints.max,
               temp: 0,
+              hitDicePools: recoverLongRestHitDice(current.hitPoints.hitDicePools),
               deathSaves: { successes: 0, failures: 0 },
             },
             spellcasting: {
@@ -3886,6 +3972,28 @@ function DungeonsAndDragons() {
         : {}),
     }));
     setRestOpen(false);
+    setUndoOpen(true);
+  };
+
+  const spendHitDie = (die: string) => {
+    setCharacter((current) => {
+      const pool = current.hitPoints.hitDicePools.find((entry) => entry.die === die);
+      if (!pool || pool.used >= pool.max || current.hitPoints.current >= current.hitPoints.max) {
+        return current;
+      }
+      const constitutionScore = current.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
+      const healAmount = hitDieAverageHeal(die, abilityModifier(constitutionScore));
+      return {
+        ...current,
+        hitPoints: {
+          ...current.hitPoints,
+          current: Math.min(current.hitPoints.max, current.hitPoints.current + healAmount),
+          hitDicePools: current.hitPoints.hitDicePools.map((entry) =>
+            entry.die === die ? { ...entry, used: entry.used + 1 } : entry,
+          ),
+        },
+      };
+    });
     setUndoOpen(true);
   };
 
@@ -4139,8 +4247,10 @@ function DungeonsAndDragons() {
         />
         <RestDialog
           open={restOpen}
+          character={character}
           onClose={() => setRestOpen(false)}
           onApplyRest={applyRest}
+          onSpendHitDie={spendHitDie}
         />
         <CharacterEditDialog
           open={characterForm !== null}

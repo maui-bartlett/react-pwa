@@ -91,6 +91,12 @@ type Money = {
   pp: number;
 };
 
+type HitDicePool = {
+  die: string;
+  max: number;
+  used: number;
+};
+
 type DndCharacter = {
   id: string;
   name: string;
@@ -112,6 +118,7 @@ type DndCharacter = {
     max: number;
     temp: number;
     hitDice: string;
+    hitDicePools: HitDicePool[];
     deathSaves: { successes: number; failures: number };
   };
   inspiration: boolean;
@@ -178,6 +185,10 @@ const initialDndCharacter: DndCharacter = {
     max: 101,
     temp: 0,
     hitDice: '10d8 + 2d6',
+    hitDicePools: [
+      { die: 'd8', max: 10, used: 0 },
+      { die: 'd6', max: 2, used: 0 },
+    ],
     deathSaves: { successes: 0, failures: 0 },
   },
   inspiration: true,
@@ -443,12 +454,14 @@ const initialDndCharacter: DndCharacter = {
 function normalizeDndCharacter(value: unknown): DndCharacter {
   if (!value || typeof value !== 'object') return initialDndCharacter;
   const partial = value as Partial<DndCharacter>;
+  const hitDicePools = normalizeHitDicePools(partial.hitPoints?.hitDicePools, partial.hitPoints?.hitDice);
   return {
     ...initialDndCharacter,
     ...partial,
     hitPoints: {
       ...initialDndCharacter.hitPoints,
       ...partial.hitPoints,
+      hitDicePools,
       deathSaves: {
         ...initialDndCharacter.hitPoints.deathSaves,
         ...partial.hitPoints?.deathSaves,
@@ -469,6 +482,42 @@ function normalizeDndCharacter(value: unknown): DndCharacter {
   };
 }
 
+function normalizeHitDicePools(value: unknown, fallbackText?: string): HitDicePool[] {
+  if (Array.isArray(value)) {
+    const pools = value
+      .map((pool) => {
+        if (!pool || typeof pool !== 'object') return null;
+        const entry = pool as Partial<HitDicePool>;
+        const die = typeof entry.die === 'string' ? entry.die.trim().toLowerCase() : '';
+        const max = Number.isFinite(entry.max) ? Number(entry.max) : 0;
+        const used = Number.isFinite(entry.used) ? Number(entry.used) : 0;
+        if (!/^d\d+$/u.test(die) || max <= 0) return null;
+        return { die, max, used: Math.min(max, Math.max(0, used)) };
+      })
+      .filter((pool): pool is HitDicePool => Boolean(pool));
+    if (pools.length > 0) return pools;
+  }
+
+  const fromText = parseHitDiceText(fallbackText);
+  return fromText.length > 0
+    ? fromText
+    : initialDndCharacter.hitPoints.hitDicePools.map((pool) => ({ ...pool }));
+}
+
+function parseHitDiceText(value?: string): HitDicePool[] {
+  if (!value) return [];
+  const pools = new Map<string, number>();
+  const matches = value.matchAll(/(\d+)\s*d\s*(\d+)/giu);
+  for (const match of matches) {
+    const count = Number.parseInt(match[1] ?? '', 10);
+    const sides = Number.parseInt(match[2] ?? '', 10);
+    if (!Number.isFinite(count) || !Number.isFinite(sides) || count <= 0 || sides <= 0) continue;
+    const die = `d${sides}`;
+    pools.set(die, (pools.get(die) ?? 0) + count);
+  }
+  return Array.from(pools.entries()).map(([die, max]) => ({ die, max, used: 0 }));
+}
+
 const dndCharacterState = atom<DndCharacter>(initialDndCharacter);
 
 const initialDndTab = readPersistentAppView('dungeons-and-dragons', 'tab', dndTabs, 'abilities');
@@ -482,6 +531,7 @@ export type {
   DndTab,
   Feat,
   Feature,
+  HitDicePool,
   InventoryItem,
   Money,
   Skill,

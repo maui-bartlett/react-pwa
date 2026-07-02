@@ -38,9 +38,10 @@ This tracker covers the requested Dungeons & Dragons feature set for Table-Top O
   - Current state: inventory items can be added/edited/deleted, quick-equipped/unequipped, quantity/cost/weight/currency can be edited, and carried weight is summarized.
   - Remaining: equipment effects, encumbrance thresholds, item catalog selection, and derived AC/attack/stat changes from equipped items.
 
-- [ ] Add rest workflows: short rest, long rest, hit dice spend/recover, HP recovery, feature resets.
-  - Current state: short rest resets short-rest features; long rest restores HP, clears temp HP/death saves, recovers spell slots, and resets rest features.
-  - Remaining: hit dice spending during short rest and hit dice recovery rules.
+- [x] Add rest workflows: short rest, long rest, hit dice spend/recover, HP recovery, feature resets.
+  - Short rest resets short-rest features.
+  - Hit dice can be spent from the rest dialog to recover HP.
+  - Long rest restores HP, clears temp HP/death saves, recovers spell slots, resets rest features, and recovers spent hit dice.
 
 - [ ] Add conditions/exhaustion/inspiration polish with rules descriptions and clearer management UI.
   - Current state: conditions visibly toggle and persist; inspiration toggles.

@@ -38,6 +38,7 @@ describe('Dungeons & Dragons character persistence', () => {
     expect(character.hitPoints).toMatchObject({
       current: 12,
       max: initialDndCharacter.hitPoints.max,
+      hitDicePools: initialDndCharacter.hitPoints.hitDicePools,
       deathSaves: { successes: 0, failures: 0 },
     });
     expect(character.spellcasting).toMatchObject({
@@ -57,5 +58,18 @@ describe('Dungeons & Dragons character persistence', () => {
   it('falls back to the default character for invalid persisted values', () => {
     expect(normalizeDndCharacter(null)).toBe(initialDndCharacter);
     expect(deserializeDndCharacter(undefined)).toBe(initialDndCharacter);
+  });
+
+  it('derives hit dice pools from legacy hit dice text', () => {
+    const character = normalizeDndCharacter({
+      hitPoints: {
+        hitDice: '3d10 + 2d6',
+      },
+    });
+
+    expect(character.hitPoints.hitDicePools).toEqual([
+      { die: 'd10', max: 3, used: 0 },
+      { die: 'd6', max: 2, used: 0 },
+    ]);
   });
 });
