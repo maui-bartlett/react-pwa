@@ -1,9 +1,11 @@
 import { v } from 'convex/values';
 
 import { internalMutation, query } from './_generated/server';
+import { DUNGEONS_AND_DRAGONS_SPELLS } from './data/dungeonsAndDragonsSpells';
 import { FABULA_ULTIMA_ITEMS } from './data/fabulaUltimaItems';
 
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
+const DUNGEONS_AND_DRAGONS_GAME_SYSTEM = 'dungeons-and-dragons';
 
 /**
  * Public catalog read: every item registered for a game system. Used by the
@@ -45,5 +47,40 @@ export const seedFabulaUltimaItems = internalMutation({
       inserted += 1;
     }
     return { deleted: existing.length, inserted };
+  },
+});
+
+/**
+ * Seed DnD spell catalog entries into the shared catalog table. These are
+ * stored as `type: "spell"` items so the client can read them through the
+ * existing `items:listByGameSystem` catalog query.
+ */
+export const seedDungeonsAndDragonsSpells = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db
+      .query('items')
+      .withIndex('by_metaGameSystem', (q) =>
+        q.eq('meta.gameSystem', DUNGEONS_AND_DRAGONS_GAME_SYSTEM),
+      )
+      .collect();
+    await Promise.all(
+      existing
+        .filter((doc) => doc.type === 'spell' || doc.category === 'Spell')
+        .map((doc) => ctx.db.delete(doc._id)),
+    );
+
+    const now = Date.now();
+    let inserted = 0;
+    for (const spell of DUNGEONS_AND_DRAGONS_SPELLS) {
+      await ctx.db.insert('items', {
+        ...spell,
+        meta: { gameSystem: DUNGEONS_AND_DRAGONS_GAME_SYSTEM },
+        createdAt: now,
+        updatedAt: now,
+      });
+      inserted += 1;
+    }
+    return { inserted };
   },
 });

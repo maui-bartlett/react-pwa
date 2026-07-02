@@ -675,7 +675,9 @@ function DiceRoller() {
       return;
     }
 
-    setSelectedDice(dice);
+    if (options.expandWhenUnavailable ?? true) {
+      setSelectedDice(dice);
+    }
 
     const applyMetadata = (result: RollResult) =>
       withRollMetadata(result, { label: options.label, modifier: options.modifier ?? 0 });

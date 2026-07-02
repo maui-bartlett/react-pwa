@@ -143,6 +143,27 @@ const dndItemCatalog: Array<Omit<InventoryItem, 'id' | 'equipped'>> = [
   { name: 'Potion of Healing', category: 'Potion', weight: '0.5 lb.', quantity: '1', cost: '50' },
 ];
 
+const MAX_ROLL_DICE = 20;
+
+type SpellCatalogEntry = Omit<Spell, 'id' | 'prepared'> & {
+  classes?: string[];
+  category?: string;
+  type?: string;
+};
+
+const dndSpellCatalog: SpellCatalogEntry[] = [
+  { name: 'Fire Bolt', level: 'Cantrip', school: 'Evocation', castingTime: '1 Action', range: '120 ft.', hitDc: '+8', damage: '1d10', classes: ['Wizard'] },
+  { name: 'Ray of Frost', level: 'Cantrip', school: 'Evocation', castingTime: '1 Action', range: '60 ft.', hitDc: '+8', damage: '1d8', classes: ['Wizard'] },
+  { name: 'Mage Hand', level: 'Cantrip', school: 'Conjuration', castingTime: '1 Action', range: '30 ft.', hitDc: 'Utility', classes: ['Wizard'] },
+  { name: 'Shield', level: '1st Level', school: 'Abjuration', castingTime: '1 Reaction', range: 'Self', hitDc: '+5 AC', classes: ['Wizard'] },
+  { name: 'Absorb Elements', level: '1st Level', school: 'Abjuration', castingTime: '1 Reaction', range: 'Self', hitDc: 'Resistance', classes: ['Wizard'] },
+  { name: 'Silvery Barbs', level: '1st Level', school: 'Enchantment', castingTime: '1 Reaction', range: '60 ft.', hitDc: 'Reroll', classes: ['Wizard'] },
+  { name: 'Magic Missile', level: '1st Level', school: 'Evocation', castingTime: '1 Action', range: '120 ft.', hitDc: 'Auto', damage: '3d4+3', classes: ['Wizard'] },
+  { name: 'Detect Magic', level: '1st Level', school: 'Divination', castingTime: '1 Action', range: 'Self', hitDc: 'Utility', classes: ['Wizard'] },
+  { name: 'Misty Step', level: '2nd Level', school: 'Conjuration', castingTime: '1 Bonus Action', range: 'Self', hitDc: 'Utility', classes: ['Wizard'] },
+  { name: 'Invisibility', level: '2nd Level', school: 'Illusion', castingTime: '1 Action', range: 'Touch', hitDc: 'Utility', classes: ['Wizard'] },
+];
+
 type DndClassDoc = {
   class?: {
     className?: string;
@@ -304,7 +325,9 @@ function parseDiceExpression(value: string): { dice: DieSize[]; modifier: number
     const count = Number.parseInt(match[1] || '1', 10);
     const sides = Number.parseInt(match[2] ?? '', 10) as DieSize;
     if (!Number.isFinite(count) || count <= 0) continue;
-    for (let index = 0; index < count; index += 1) dice.push(sides);
+    for (let index = 0; index < count && dice.length < MAX_ROLL_DICE; index += 1) {
+      dice.push(sides);
+    }
   }
   const withoutDice = value.replace(/\d*d(?:4|6|8|10|12|20|100)/giu, '');
   for (const match of withoutDice.matchAll(/[+-]\s*\d+/gu)) {
@@ -3548,20 +3571,55 @@ function AttackEditDialog({
 function SpellEditDialog({
   open,
   form,
+  spellCatalog,
   onChange,
   onCancel,
   onSave,
 }: {
   open: boolean;
   form: SpellForm | null;
+  spellCatalog: SpellCatalogEntry[];
   onChange: (form: SpellForm) => void;
   onCancel: () => void;
   onSave: () => void;
 }) {
   if (!form) return null;
   const setField = (key: keyof SpellForm, value: string) => onChange({ ...form, [key]: value });
+  const applyCatalogSpell = (spell: SpellCatalogEntry) => {
+    onChange({
+      ...form,
+      name: spell.name,
+      level: spell.level,
+      school: spell.school,
+      castingTime: spell.castingTime,
+      range: spell.range,
+      hitDc: spell.hitDc,
+      damage: spell.damage,
+    });
+  };
   return (
     <DndEditDialog title="Edit Spell" open={open} onCancel={onCancel} onSave={onSave}>
+      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
+        Spell Catalog
+      </Typography>
+      <Stack direction="row" spacing={0.8} sx={{ flexWrap: 'wrap', gap: 0.8 }}>
+        {spellCatalog.map((spell) => (
+          <Button
+            key={`${spell.level}-${spell.name}`}
+            onClick={() => applyCatalogSpell(spell)}
+            sx={{
+              minHeight: 30,
+              border: `1px solid ${form.name === spell.name ? dndColors.blue : dndColors.border}`,
+              color: form.name === spell.name ? dndColors.blue : dndColors.text,
+              fontSize: 11,
+              fontWeight: 900,
+              textTransform: 'none',
+            }}
+          >
+            {spell.name}
+          </Button>
+        ))}
+      </Stack>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <Stack direction="row" spacing={1}>
         <FormField label="Level" value={form.level} onChange={(value) => setField('level', value)} />
@@ -3814,6 +3872,18 @@ function DungeonsAndDragons() {
       .filter((classInfo): classInfo is DndClassInfo => Boolean(classInfo?.className))
       .map((classInfo) => [classInfo.className!, classInfo] as const),
   );
+  const dndCatalogItems = useQuery(api.items.listByGameSystem, {
+    gameSystem: DND_GAME_SYSTEM,
+  }) as Array<SpellCatalogEntry & { meta?: { gameSystem?: string } }> | undefined;
+  const dndSpellOptions = (dndCatalogItems ?? [])
+    .filter((entry) => entry.type === 'spell' || entry.category === 'Spell')
+    .filter((entry): entry is SpellCatalogEntry => Boolean(entry.name));
+  const spellCatalogSource = dndSpellOptions.length > 0 ? dndSpellOptions : dndSpellCatalog;
+  const characterClassNames = new Set(character.classes.map((entry) => entry.name.toLowerCase()));
+  const classSpellCatalog = spellCatalogSource.filter((spell) =>
+    spell.classes?.some((className) => characterClassNames.has(className.toLowerCase())),
+  );
+  const spellCatalogOptions = classSpellCatalog.length > 0 ? classSpellCatalog : spellCatalogSource;
   const [pendingDelete, setPendingDelete] = useState<null | {
     confirm: () => void;
     title?: string;
@@ -4589,6 +4659,7 @@ function DungeonsAndDragons() {
         <SpellEditDialog
           open={spellForm !== null}
           form={spellForm}
+          spellCatalog={spellCatalogOptions}
           onChange={setSpellForm}
           onCancel={() => setSpellForm(null)}
           onSave={saveSpell}

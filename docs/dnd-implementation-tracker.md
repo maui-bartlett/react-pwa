@@ -26,9 +26,11 @@ This tracker covers the requested Dungeons & Dragons feature set for Table-Top O
   - Current state: feats can be added, edited, and deleted; class feature uses can be tracked and reset by rests.
   - Remaining: richer class feature editing, catalog-backed feature add/select, and more detailed feature rules metadata.
 
-- [ ] Add spell catalog support, spell preparation, spell slots by level, and rest-based slot recovery.
-  - Current state: spells can be manually added/edited/deleted, prepared/book status can be toggled, spellcasting stats and slots by level can be edited, and long rest recovers slots.
-  - Remaining: Convex spell catalog, spell selection from catalog, class spell list filtering, and automatic slot derivation.
+- [x] Add spell catalog support, spell preparation, spell slots by level, and rest-based slot recovery.
+  - Spells can be manually added/edited/deleted.
+  - Prepared/book status can be toggled.
+  - Spellcasting stats and slots by level can be edited, and long rest recovers slots.
+  - Spell editor reads Convex-backed DnD spell catalog records through the shared catalog query, with a local fallback catalog and class filtering.
 
 - [x] Add attack/check/save/spell roll integration with the global dice roller.
   - Ability checks, saving throws, skills, attacks, attack damage, spell rolls, and parseable spell damage can request rolls from the global dice roller.
