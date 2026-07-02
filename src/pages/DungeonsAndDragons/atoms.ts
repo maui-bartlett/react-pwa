@@ -62,6 +62,7 @@ type InventoryItem = {
   quantity: string;
   cost: string;
   equipped?: boolean;
+  armorClassModifier?: number;
 };
 
 type Feature = {
@@ -348,6 +349,7 @@ const initialDndCharacter: DndCharacter = {
       quantity: '--',
       cost: '--',
       equipped: true,
+      armorClassModifier: 1,
     },
     {
       id: 'crossbow-hand-1-item',

@@ -34,9 +34,11 @@ This tracker covers the requested Dungeons & Dragons feature set for Table-Top O
   - Ability checks, saving throws, skills, attacks, attack damage, spell rolls, and parseable spell damage can request rolls from the global dice roller.
   - Roll results include labels and modifiers in the shared result card.
 
-- [ ] Add inventory detail: equip/unequip effects, quantity, currency, weight/encumbrance, item catalog selection.
-  - Current state: inventory items can be added/edited/deleted, quick-equipped/unequipped, quantity/cost/weight/currency can be edited, and carried weight is summarized.
-  - Remaining: equipment effects, encumbrance thresholds, item catalog selection, and derived AC/attack/stat changes from equipped items.
+- [x] Add inventory detail: equip/unequip effects, quantity, currency, weight/encumbrance, item catalog selection.
+  - Inventory items can be added/edited/deleted and quick-equipped/unequipped.
+  - Item editor includes a DnD item catalog picker.
+  - Quantity-aware weight and Strength-based encumbrance are summarized.
+  - Equipped item AC modifiers contribute to displayed Armor Class.
 
 - [x] Add rest workflows: short rest, long rest, hit dice spend/recover, HP recovery, feature resets.
   - Short rest resets short-rest features.

@@ -130,6 +130,19 @@ const exhaustionEffects = [
   'Level 6: death.',
 ];
 
+const dndItemCatalog: Array<Omit<InventoryItem, 'id' | 'equipped'>> = [
+  { name: 'Leather Armor', category: 'Light Armor', weight: '10 lb.', quantity: '1', cost: '10', armorClassModifier: 1 },
+  { name: 'Studded Leather Armor', category: 'Light Armor', weight: '13 lb.', quantity: '1', cost: '45', armorClassModifier: 2 },
+  { name: 'Shield', category: 'Shield', weight: '6 lb.', quantity: '1', cost: '10', armorClassModifier: 2 },
+  { name: 'Dagger', category: 'Melee Weapon', weight: '1 lb.', quantity: '1', cost: '2' },
+  { name: 'Rapier', category: 'Melee Weapon', weight: '2 lb.', quantity: '1', cost: '25' },
+  { name: 'Shortsword', category: 'Melee Weapon', weight: '2 lb.', quantity: '1', cost: '10' },
+  { name: 'Crossbow, Hand', category: 'Ranged Weapon', weight: '3 lb.', quantity: '1', cost: '75' },
+  { name: "Thieves' Tools", category: 'Tools', weight: '1 lb.', quantity: '1', cost: '25' },
+  { name: "Explorer's Pack", category: 'Adventuring Gear', weight: '59 lb.', quantity: '1', cost: '10' },
+  { name: 'Potion of Healing', category: 'Potion', weight: '0.5 lb.', quantity: '1', cost: '50' },
+];
+
 type DndClassDoc = {
   class?: {
     className?: string;
@@ -310,6 +323,28 @@ function rollDiceExpression(label: string, expression: string) {
   dispatchTabletopDiceRoll({ label, dice: parsed.dice, modifier: parsed.modifier });
 }
 
+function equippedArmorClassModifier(character: DndCharacter) {
+  return character.inventory.reduce(
+    (sum, item) => sum + (item.equipped ? item.armorClassModifier ?? 0 : 0),
+    0,
+  );
+}
+
+function effectiveArmorClass(character: DndCharacter) {
+  return character.armorClass + equippedArmorClassModifier(character);
+}
+
+function strengthScore(character: DndCharacter) {
+  return character.abilities.find((ability) => ability.key === 'str')?.score ?? 10;
+}
+
+function encumbranceLabel(totalWeight: number, character: DndCharacter) {
+  const strength = strengthScore(character);
+  if (totalWeight > strength * 10) return 'HEAVILY ENCUMBERED';
+  if (totalWeight > strength * 5) return 'ENCUMBERED';
+  return 'UNENCUMBERED';
+}
+
 function classLine(character: DndCharacter) {
   return `${character.classes
     .map((entry) => `${entry.name} ${entry.level}`)
@@ -465,7 +500,7 @@ function HeroHeader({
         }}
       >
         <Stack spacing={1.1}>
-          <DefenseBadge label="Armor Class" value={character.armorClass} shape="shield" />
+          <DefenseBadge label="Armor Class" value={effectiveArmorClass(character)} shape="shield" />
           <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" onClick={onOpenRest} />
         </Stack>
         <Stack spacing={1.1} alignItems="center">
@@ -1464,8 +1499,11 @@ function InventoryScreen({
 }) {
   const totalWeight = character.inventory.reduce((sum, item) => {
     const numeric = Number.parseFloat(item.weight);
-    return Number.isFinite(numeric) ? sum + numeric : sum;
+    const quantity = Number.parseFloat(item.quantity);
+    return Number.isFinite(numeric) ? sum + numeric * (Number.isFinite(quantity) ? quantity : 1) : sum;
   }, 0);
+  const encumbrance = encumbranceLabel(totalWeight, character);
+  const acModifier = equippedArmorClassModifier(character);
 
   return (
     <>
@@ -1486,7 +1524,11 @@ function InventoryScreen({
                 <Typography sx={{ color: dndColors.text, fontSize: 25, fontWeight: 900 }}>
                   {totalWeight} lb.
                 </Typography>
-                <Typography sx={{ color: dndColors.muted, fontWeight: 800 }}>UNENCUMBERED</Typography>
+                <Typography sx={{ color: dndColors.muted, fontWeight: 800 }}>{encumbrance}</Typography>
+                <Typography sx={{ color: dndColors.blue, fontSize: 12, fontWeight: 900, mt: 0.5 }}>
+                  AC {character.armorClass}
+                  {acModifier ? ` + ${acModifier} equipped` : ''}
+                </Typography>
               </Stack>
               <Stack alignItems="flex-end">
                 <Typography sx={{ color: dndColors.muted, fontWeight: 900 }}>TOTAL CURRENCY</Typography>
@@ -3632,9 +3674,40 @@ function ItemEditDialog({
   onSave: () => void;
 }) {
   if (!form) return null;
-  const setField = (key: keyof ItemForm, value: string) => onChange({ ...form, [key]: value });
+  const setField = (
+    key: 'name' | 'category' | 'weight' | 'quantity' | 'cost',
+    value: string,
+  ) => onChange({ ...form, [key]: value });
+  const applyCatalogItem = (catalogItem: Omit<InventoryItem, 'id' | 'equipped'>) => {
+    onChange({
+      ...form,
+      ...catalogItem,
+      equipped: form.equipped,
+    });
+  };
   return (
     <DndEditDialog title="Edit Item" open={open} onCancel={onCancel} onSave={onSave}>
+      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
+        Item Catalog
+      </Typography>
+      <Stack direction="row" spacing={0.8} sx={{ flexWrap: 'wrap', gap: 0.8 }}>
+        {dndItemCatalog.map((item) => (
+          <Button
+            key={item.name}
+            onClick={() => applyCatalogItem(item)}
+            sx={{
+              minHeight: 30,
+              border: `1px solid ${form.name === item.name ? dndColors.blue : dndColors.border}`,
+              color: form.name === item.name ? dndColors.blue : dndColors.text,
+              fontSize: 11,
+              fontWeight: 900,
+              textTransform: 'none',
+            }}
+          >
+            {item.name}
+          </Button>
+        ))}
+      </Stack>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <FormField label="Category" value={form.category} onChange={(value) => setField('category', value)} />
       <Stack direction="row" spacing={1}>
@@ -3642,6 +3715,14 @@ function ItemEditDialog({
         <FormField label="Qty" value={form.quantity} onChange={(value) => setField('quantity', value)} />
         <FormField label="Cost" value={form.cost} onChange={(value) => setField('cost', value)} />
       </Stack>
+      <FormField
+        label="AC Modifier"
+        value={String(form.armorClassModifier ?? 0)}
+        inputMode="numeric"
+        onChange={(value) =>
+          onChange({ ...form, armorClassModifier: parseIntOrFallback(value, 0) })
+        }
+      />
       <Button
         onClick={() => onChange({ ...form, equipped: !form.equipped })}
         sx={toggleButtonSx(Boolean(form.equipped))}
