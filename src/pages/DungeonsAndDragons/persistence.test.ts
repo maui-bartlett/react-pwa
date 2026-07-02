@@ -72,4 +72,9 @@ describe('Dungeons & Dragons character persistence', () => {
       { die: 'd6', max: 2, used: 0 },
     ]);
   });
+
+  it('clamps persisted exhaustion to the supported level range', () => {
+    expect(normalizeDndCharacter({ exhaustion: 8 }).exhaustion).toBe(6);
+    expect(normalizeDndCharacter({ exhaustion: -3 }).exhaustion).toBe(0);
+  });
 });

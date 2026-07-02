@@ -101,6 +101,33 @@ const dndConditions = [
   'Unconscious',
 ];
 
+const dndConditionDescriptions: Record<string, string> = {
+  Blinded: 'Cannot see; automatically fails sight checks. Attacks against you have advantage, and your attacks have disadvantage.',
+  Charmed: 'Cannot attack the charmer or target them with harmful abilities. The charmer has advantage on social checks against you.',
+  Deafened: 'Cannot hear and automatically fails checks that require hearing.',
+  Frightened: 'Disadvantage on checks and attacks while the source is in sight, and you cannot willingly move closer to it.',
+  Grappled: 'Speed becomes 0. Ends if the grappler is incapacitated or you are moved out of reach.',
+  Incapacitated: 'Cannot take actions or reactions.',
+  Invisible: 'Cannot be seen without special senses. Your attacks have advantage, and attacks against you have disadvantage.',
+  Paralyzed: 'Incapacitated, cannot move or speak, fails Strength/Dex saves, attacks against you have advantage, and nearby hits crit.',
+  Petrified: 'Transformed into inert stone-like material, incapacitated, unaware, resistant to damage, and immune to poison/disease.',
+  Poisoned: 'Disadvantage on attack rolls and ability checks.',
+  Prone: 'Only crawl unless you stand. Your attacks have disadvantage; nearby attacks against you have advantage.',
+  Restrained: 'Speed becomes 0, attacks against you have advantage, your attacks have disadvantage, and Dex saves have disadvantage.',
+  Stunned: 'Incapacitated, cannot move, can speak falteringly, fails Strength/Dex saves, and attacks against you have advantage.',
+  Unconscious: 'Incapacitated, cannot move or speak, unaware, drops held items, falls prone, fails Strength/Dex saves, and nearby hits crit.',
+};
+
+const exhaustionEffects = [
+  'No exhaustion.',
+  'Level 1: disadvantage on ability checks.',
+  'Level 2: speed halved.',
+  'Level 3: disadvantage on attack rolls and saving throws.',
+  'Level 4: hit point maximum halved.',
+  'Level 5: speed reduced to 0.',
+  'Level 6: death.',
+];
+
 type DndClassDoc = {
   class?: {
     className?: string;
@@ -841,45 +868,93 @@ function SenseRow({ label, value }: { label: string; value: number }) {
 function ConditionsScreen({
   character,
   onToggleCondition,
+  onSetExhaustion,
 }: {
   character: DndCharacter;
   onToggleCondition: (condition: string) => void;
+  onSetExhaustion: (level: number) => void;
 }) {
   return (
     <>
       <SectionHeader icon={<AutoAwesomeIcon />} title="Conditions" mode="list" />
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.8, mt: 1.2 }}>
+      <Box sx={{ px: 1.6, pb: 12 }}>
+        <DndCard sx={{ p: 1.4, mt: 1.2, mb: 1.4 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+            <Stack>
+              <Typography sx={{ color: dndColors.text, fontSize: 19, fontWeight: 900 }}>
+                Exhaustion
+              </Typography>
+              <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 800 }}>
+                {exhaustionEffects[character.exhaustion]}
+              </Typography>
+            </Stack>
+            <Typography sx={{ color: dndColors.blue, fontSize: 28, fontWeight: 900 }}>
+              {character.exhaustion}
+            </Typography>
+          </Stack>
+          <Stack direction="row" spacing={0.8}>
+            {exhaustionEffects.map((_, level) => (
+              <Button
+                key={level}
+                aria-label={`Set exhaustion level ${level}`}
+                aria-pressed={character.exhaustion === level}
+                onClick={() => onSetExhaustion(level)}
+                sx={{
+                  minWidth: 0,
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  border: `1px solid ${character.exhaustion === level ? dndColors.red : dndColors.border}`,
+                  bgcolor: character.exhaustion === level ? alpha(dndColors.red, 0.22) : dndColors.panelStrong,
+                  color: character.exhaustion === level ? '#ffffff' : dndColors.muted,
+                  fontWeight: 900,
+                  '&:hover': {
+                    bgcolor: character.exhaustion === level ? alpha(dndColors.red, 0.3) : alpha('#ffffff', 0.08),
+                  },
+                }}
+              >
+                {level}
+              </Button>
+            ))}
+          </Stack>
+        </DndCard>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 0.9 }}>
           {dndConditions.map((condition) => {
             const active = character.conditions.includes(condition);
             return (
-              <Button
+              <Box
                 key={condition}
-                aria-pressed={active}
-                onClick={() => onToggleCondition(condition)}
                 sx={{
-                  ...toggleButtonSx(active),
-                  minHeight: 38,
-                  fontSize: 12,
-                  justifyContent: 'space-between',
-                  px: 1.2,
+                  border: `1px solid ${active ? dndColors.green : dndColors.border}`,
+                  borderRadius: '8px',
+                  bgcolor: active ? alpha(dndColors.green, 0.12) : dndColors.panelSoft,
+                  p: 1.2,
                 }}
               >
-                <Box component="span">{condition}</Box>
-                <Box
-                  component="span"
+                <Button
+                  fullWidth
+                  aria-pressed={active}
+                  onClick={() => onToggleCondition(condition)}
                   sx={{
-                    width: 9,
-                    height: 9,
-                    borderRadius: '50%',
-                    bgcolor: active ? dndColors.green : 'transparent',
-                    border: `1px solid ${active ? dndColors.green : dndColors.border}`,
-                    boxShadow: active ? `0 0 0 3px ${alpha(dndColors.green, 0.18)}` : 'none',
+                    ...toggleButtonSx(active),
+                    minHeight: 38,
+                    fontSize: 13,
+                    justifyContent: 'space-between',
+                    px: 1.2,
                   }}
-                />
-              </Button>
+                >
+                  <Box component="span">{condition}</Box>
+                  <Box component="span">{active ? 'Marked' : 'Clear'}</Box>
+                </Button>
+                <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 700, mt: 0.8, lineHeight: 1.35 }}>
+                  {dndConditionDescriptions[condition]}
+                </Typography>
+              </Box>
             );
           })}
-        </Box> 
+        </Box>
+      </Box>
     </>
   );
 }
@@ -4008,6 +4083,15 @@ function DungeonsAndDragons() {
         ? current.conditions.filter((entry) => entry !== condition)
         : [...current.conditions, condition],
     }));
+    setUndoOpen(true);
+  };
+
+  const setExhaustion = (level: number) => {
+    setCharacter((current) => ({
+      ...current,
+      exhaustion: Math.max(0, Math.min(6, level)),
+    }));
+    setUndoOpen(true);
   };
 
   const updateSpellSlot = (level: string, used: number) => {
@@ -4039,6 +4123,7 @@ function DungeonsAndDragons() {
           <ConditionsScreen
             character={character}
             onToggleCondition={toggleCondition}
+            onSetExhaustion={setExhaustion}
           />
         );
       case 'skills':

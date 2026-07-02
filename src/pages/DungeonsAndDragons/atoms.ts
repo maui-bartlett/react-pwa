@@ -123,6 +123,7 @@ type DndCharacter = {
   };
   inspiration: boolean;
   conditions: string[];
+  exhaustion: number;
   abilities: AbilityScore[];
   skills: Skill[];
   attacks: Attack[];
@@ -193,6 +194,7 @@ const initialDndCharacter: DndCharacter = {
   },
   inspiration: true,
   conditions: [],
+  exhaustion: 0,
   abilities: [
     { key: 'str', label: 'Strength', score: 10, saveBonus: 1, proficientSave: false },
     { key: 'dex', label: 'Dexterity', score: 18, saveBonus: 9, proficientSave: true },
@@ -458,6 +460,7 @@ function normalizeDndCharacter(value: unknown): DndCharacter {
   return {
     ...initialDndCharacter,
     ...partial,
+    exhaustion: Math.max(0, Math.min(6, Number.isFinite(partial.exhaustion) ? Number(partial.exhaustion) : 0)),
     hitPoints: {
       ...initialDndCharacter.hitPoints,
       ...partial.hitPoints,

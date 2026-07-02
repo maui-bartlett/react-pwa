@@ -43,9 +43,10 @@ This tracker covers the requested Dungeons & Dragons feature set for Table-Top O
   - Hit dice can be spent from the rest dialog to recover HP.
   - Long rest restores HP, clears temp HP/death saves, recovers spell slots, resets rest features, and recovers spent hit dice.
 
-- [ ] Add conditions/exhaustion/inspiration polish with rules descriptions and clearer management UI.
-  - Current state: conditions visibly toggle and persist; inspiration toggles.
-  - Remaining: condition/exhaustion rules descriptions, exhaustion level tracking, and a more guided condition management UI.
+- [x] Add conditions/exhaustion/inspiration polish with rules descriptions and clearer management UI.
+  - Conditions visibly toggle, persist, and show concise rules descriptions.
+  - Exhaustion is tracked from level 0-6 with the current rules effect shown in the Conditions screen.
+  - Inspiration toggles from the Abilities screen.
 
 - [ ] Add campaign/GM support for DnD sheets if we want parity with FabU campaign tools.
   - Current state: not implemented for DnD.
