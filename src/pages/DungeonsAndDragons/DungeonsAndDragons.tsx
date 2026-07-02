@@ -1019,6 +1019,7 @@ function SpellsScreen({
   onDeleteSpell,
   onAddSpell,
   onEditSpell,
+  onEditSpellcasting,
   onTogglePrepared,
   onUpdateSpellSlot,
 }: {
@@ -1026,6 +1027,7 @@ function SpellsScreen({
   onDeleteSpell: (id: string) => void;
   onAddSpell: () => void;
   onEditSpell: (spell: Spell) => void;
+  onEditSpellcasting: () => void;
   onTogglePrepared: (id: string) => void;
   onUpdateSpellSlot: (level: string, used: number) => void;
 }) {
@@ -1034,10 +1036,17 @@ function SpellsScreen({
       <SectionHeader icon={<LocalFireDepartmentIcon />} title="Spells" />
       <Box sx={{ px: 1.6, pb: 12 }}>
         <DndCard sx={{ p: 1.4, mb: 1.4 }}>
-          <Stack direction="row" justifyContent="space-between">
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
             <Metric label="Spell Save DC" value={character.spellcasting.saveDc} />
             <Metric label="Spell Attack" value={formatModifier(character.spellcasting.attackBonus)} />
             <Metric label="Ability" value={character.spellcasting.ability.toUpperCase()} />
+            <IconButton
+              aria-label="Edit spellcasting"
+              onClick={onEditSpellcasting}
+              sx={{ color: dndColors.blue, mt: -0.7, mr: -0.7 }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
           </Stack>
           <Stack direction="row" spacing={1} sx={{ mt: 1.3 }}>
             {character.spellcasting.slots.map((slot) => (
@@ -2906,6 +2915,42 @@ type AttackForm = Attack;
 type SpellForm = Spell;
 type ItemForm = InventoryItem;
 type FeatForm = Feat;
+type SpellcastingForm = {
+  ability: string;
+  saveDc: string;
+  attackBonus: string;
+  slots: string;
+};
+
+function createSpellcastingForm(character: DndCharacter): SpellcastingForm {
+  return {
+    ability: character.spellcasting.ability,
+    saveDc: String(character.spellcasting.saveDc),
+    attackBonus: String(character.spellcasting.attackBonus),
+    slots: character.spellcasting.slots.map((slot) => `${slot.level}: ${slot.max}`).join('\n'),
+  };
+}
+
+function parseSpellSlots(value: string, currentSlots: DndCharacter['spellcasting']['slots']) {
+  const currentByLevel = new Map(currentSlots.map((slot) => [slot.level.toLowerCase(), slot]));
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [rawLevel, rawMax] = line.split(/[:,-]/, 2);
+      const level = rawLevel?.trim();
+      const max = Number.parseInt(rawMax?.replace(/[^0-9]/g, '') ?? '', 10);
+      if (!level || Number.isNaN(max) || max < 0) return null;
+      const current = currentByLevel.get(level.toLowerCase());
+      return {
+        level,
+        max,
+        used: Math.min(max, Math.max(0, current?.used ?? 0)),
+      };
+    })
+    .filter((slot): slot is DndCharacter['spellcasting']['slots'][number] => Boolean(slot));
+}
 
 function AttackEditDialog({
   open,
@@ -2980,6 +3025,81 @@ function SpellEditDialog({
       >
         {form.prepared ? 'Prepared' : 'Not Prepared'}
       </Button>
+    </DndEditDialog>
+  );
+}
+
+function SpellcastingEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: SpellcastingForm | null;
+  onChange: (form: SpellcastingForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  const setField = (key: keyof SpellcastingForm, value: string) =>
+    onChange({ ...form, [key]: value });
+  return (
+    <DndEditDialog title="Edit Spellcasting" open={open} onCancel={onCancel} onSave={onSave}>
+      <Box>
+        <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, mb: 0.4 }}>
+          ABILITY
+        </Typography>
+        <Box
+          component="select"
+          aria-label="Spellcasting ability"
+          value={form.ability}
+          onChange={(event) => setField('ability', event.target.value)}
+          sx={{
+            width: '100%',
+            minHeight: 42,
+            border: `1px solid ${dndColors.border}`,
+            borderRadius: '6px',
+            bgcolor: dndColors.panelStrong,
+            color: dndColors.text,
+            px: 1,
+            font: 'inherit',
+            fontWeight: 800,
+            outline: 'none',
+            '& option': { color: '#11191e', backgroundColor: '#ffffff' },
+          }}
+        >
+          {abilityKeys.map((ability) => (
+            <option key={ability} value={ability}>
+              {ability.toUpperCase()}
+            </option>
+          ))}
+        </Box>
+      </Box>
+      <Stack direction="row" spacing={1}>
+        <FormField
+          label="Save DC"
+          value={form.saveDc}
+          inputMode="numeric"
+          onChange={(value) => setField('saveDc', value)}
+        />
+        <FormField
+          label="Attack Bonus"
+          value={form.attackBonus}
+          inputMode="numeric"
+          onChange={(value) => setField('attackBonus', value)}
+        />
+      </Stack>
+      <MultilineFormField
+        label="Slots"
+        value={form.slots}
+        minRows={4}
+        onChange={(value) => setField('slots', value)}
+      />
+      <Typography sx={{ color: dndColors.muted, fontSize: 12, lineHeight: 1.4 }}>
+        Enter one slot level per line, like “1st: 4” or “2nd: 3”.
+      </Typography>
     </DndEditDialog>
   );
 }
@@ -3109,6 +3229,7 @@ function DungeonsAndDragons() {
   const [hitPointForm, setHitPointForm] = useState<HitPointForm | null>(null);
   const [attackForm, setAttackForm] = useState<AttackForm | null>(null);
   const [spellForm, setSpellForm] = useState<SpellForm | null>(null);
+  const [spellcastingForm, setSpellcastingForm] = useState<SpellcastingForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
   const [featForm, setFeatForm] = useState<FeatForm | null>(null);
   const [abilityForm, setAbilityForm] = useState<AbilityForm | null>(null);
@@ -3258,6 +3379,26 @@ function DungeonsAndDragons() {
         spell.id === id ? { ...spell, prepared: !spell.prepared } : spell,
       ),
     }));
+  };
+
+  const saveSpellcasting = () => {
+    if (!spellcastingForm) return;
+    setCharacter((current) => ({
+      ...current,
+      spellcasting: {
+        ...current.spellcasting,
+        ability: isAbilityKey(spellcastingForm.ability)
+          ? spellcastingForm.ability
+          : current.spellcasting.ability,
+        saveDc: parseIntOrFallback(spellcastingForm.saveDc, current.spellcasting.saveDc),
+        attackBonus: parseIntOrFallback(
+          spellcastingForm.attackBonus,
+          current.spellcasting.attackBonus,
+        ),
+        slots: parseSpellSlots(spellcastingForm.slots, current.spellcasting.slots),
+      },
+    }));
+    setSpellcastingForm(null);
   };
 
   const addItem = () => {
@@ -3563,6 +3704,7 @@ function DungeonsAndDragons() {
             character={character}
             onAddSpell={addSpell}
             onEditSpell={(spell) => setSpellForm({ ...spell })}
+            onEditSpellcasting={() => setSpellcastingForm(createSpellcastingForm(character))}
             onDeleteSpell={(id) => deleteById('spells', id)}
             onTogglePrepared={toggleSpellPrepared}
             onUpdateSpellSlot={updateSpellSlot}
@@ -3769,6 +3911,13 @@ function DungeonsAndDragons() {
           onChange={setSpellForm}
           onCancel={() => setSpellForm(null)}
           onSave={saveSpell}
+        />
+        <SpellcastingEditDialog
+          open={spellcastingForm !== null}
+          form={spellcastingForm}
+          onChange={setSpellcastingForm}
+          onCancel={() => setSpellcastingForm(null)}
+          onSave={saveSpellcasting}
         />
         <ItemEditDialog
           open={itemForm !== null}
