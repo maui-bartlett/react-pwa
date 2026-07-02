@@ -4,6 +4,7 @@ import { readPersistentAppView } from '@/state/persistentAppLocation';
 
 type DndTab =
   | 'abilities'
+  | 'conditions'
   | 'skills'
   | 'actions'
   | 'spells'
@@ -143,6 +144,7 @@ type DndCharacter = {
 
 const dndTabs: readonly DndTab[] = [
   'abilities',
+  'conditions',
   'skills',
   'actions',
   'spells',

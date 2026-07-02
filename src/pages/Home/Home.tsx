@@ -152,7 +152,7 @@ const systems = [
   {
     name: 'Dungeons & Dragons',
     href: '/dungeons-and-dragons',
-    eyebrow: 'D20 fantasy adventuring',
+    eyebrow: 'Delve into the classic TTRPG',
     description:
       'Track abilities, saves, skills, attacks, spell slots, inventory, features, money, and notes.',
     action: 'Open Dungeons & Dragons',

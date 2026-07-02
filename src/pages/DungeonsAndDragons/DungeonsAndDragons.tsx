@@ -7,14 +7,15 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import BackpackIcon from '@mui/icons-material/Backpack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PersonIcon from '@mui/icons-material/Person';
 import ShieldIcon from '@mui/icons-material/Shield';
+
+import { Backpack, Sword, ChevronRight, HandFist, House, Info, Pencil, Trash2 } from 'lucide-react';
+
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -173,7 +174,7 @@ function parseIntOrFallback(value: string, fallback: number) {
 }
 
 function classLine(character: DndCharacter) {
-  return `${character.species} ${character.classes
+  return `${character.classes
     .map((entry) => `${entry.name} ${entry.level}`)
     .join(' • ')}`;
 }
@@ -291,31 +292,46 @@ function HeroHeader({
   onEditCharacter,
   onEditHitPoints,
   onOpenCharacters,
+  homeAction,
   accountAction,
+
 }: {
   character: DndCharacter;
   onEditCharacter: () => void;
   onEditHitPoints: () => void;
   onOpenCharacters: () => void;
+  homeAction: ReactNode;
   accountAction: ReactNode;
 }) {
+
   const hpPercent = Math.max(0, Math.min(100, (character.hitPoints.current / character.hitPoints.max) * 100));
+
+  const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
+
+  const setActiveTab = (tab: DndTab) => {
+    setActiveTabRaw(tab);
+    persistAppView('dungeons-and-dragons', 'tab', tab);
+  };
 
   return (
     <Box sx={{ bgcolor: dndColors.chrome, px: 1.8, pt: 2.4, pb: 2 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <IconButton component={Link} to="/home" aria-label="Back to TableTop home" sx={roundButtonSx}>
+        {/* <IconButton component={Link} to="/home" aria-label="Back to TableTop home" sx={roundButtonSx}>
           <ArrowBackIcon />
-        </IconButton>
-        <Stack alignItems="center" spacing={0.2}>
+        </IconButton> */}
+        <Stack alignItems="start" spacing={0.2}>
           <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 700 }}>
             {character.name}
+          </Typography>
+          <Typography sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
+            {character.species}
           </Typography>
           <Typography sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
             {classLine(character)}
           </Typography>
         </Stack>
         <Stack direction="row" spacing={0.7}>
+          {homeAction}
           {accountAction}
           <IconButton aria-label="Switch character" onClick={onOpenCharacters} sx={roundButtonSx}>
             <PersonIcon />
@@ -340,7 +356,6 @@ function HeroHeader({
           <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" />
         </Stack>
         <Stack spacing={1.1} alignItems="center">
-          <DragonMark />
           <DefenseBadge label="Initiative" value={formatModifier(character.initiative)} shape="hex" />
           <SmallActionButton icon={<AutoFixHighIcon />} label="Manage" />
         </Stack>
@@ -381,7 +396,17 @@ function HeroHeader({
               }}
             />
           </Box>
-          <Button
+          <ConditionsButton onChange={setActiveTab}/>
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
+function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
+  return (
+    <Button
+            onClick={() => onChange('conditions')}
             sx={{
               minHeight: 43,
               bgcolor: dndColors.panelStrong,
@@ -393,10 +418,7 @@ function HeroHeader({
             }}
           >
             Conditions
-          </Button>
-        </Stack>
-      </Box>
-    </Box>
+    </Button> 
   );
 }
 
@@ -473,9 +495,9 @@ function SmallActionButton({ icon, label }: { icon: ReactNode; label: string }) 
 
 const tabOptions: Array<{ value: DndTab; label: string; icon: ReactNode }> = [
   { value: 'abilities', label: 'Stats', icon: <ShieldIcon /> },
-  { value: 'actions', label: 'Actions', icon: <FitnessCenterIcon /> },
+  { value: 'actions', label: 'Actions', icon: <Sword /> },
   { value: 'spells', label: 'Spells', icon: <LocalFireDepartmentIcon /> },
-  { value: 'inventory', label: 'Inventory', icon: <BackpackIcon /> },
+  { value: 'inventory', label: 'Inventory', icon: <Backpack /> },
   { value: 'features', label: 'More', icon: <MenuBookIcon /> },
 ];
 
@@ -602,7 +624,7 @@ function SavePill({ ability }: { ability: AbilityScore }) {
           width: 15,
           height: 15,
           borderRadius: '50%',
-          ml: -0.5,
+          ml: 1,
           bgcolor: ability.proficientSave ? dndColors.text : 'transparent',
           border: `2px ${ability.proficientSave ? 'solid' : 'dashed'} ${dndColors.text}`,
         }}
@@ -613,8 +635,9 @@ function SavePill({ ability }: { ability: AbilityScore }) {
           color: dndColors.text,
           fontWeight: 900,
           fontSize: 13,
-          textAlign: 'center',
+          textAlign: 'left',
           textTransform: 'uppercase',
+          ml: 1,
         }}
       >
         {ability.label}
@@ -641,12 +664,10 @@ function AbilitiesScreen({
   character,
   onEditStats,
   onToggleInspiration,
-  onToggleCondition,
 }: {
   character: DndCharacter;
   onEditStats: () => void;
   onToggleInspiration: () => void;
-  onToggleCondition: (condition: string) => void;
 }) {
   return (
     <>
@@ -677,8 +698,9 @@ function AbilitiesScreen({
               borderRadius: '5px',
               bgcolor: dndColors.green,
               color: '#ffffff',
-              display: 'grid',
-              placeItems: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               fontWeight: 900,
             }}
           >
@@ -705,25 +727,7 @@ function AbilitiesScreen({
         >
           Inspiration
           <Box component="span">{character.inspiration ? 'Marked' : 'Unmarked'}</Box>
-        </Button>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.8, mt: 1.2 }}>
-          {dndConditions.map((condition) => {
-            const active = character.conditions.includes(condition);
-            return (
-              <Button
-                key={condition}
-                onClick={() => onToggleCondition(condition)}
-                sx={{
-                  ...toggleButtonSx(active),
-                  minHeight: 38,
-                  fontSize: 12,
-                }}
-              >
-                {condition}
-              </Button>
-            );
-          })}
-        </Box>
+        </Button>        
       </Box>
     </>
   );
@@ -776,6 +780,38 @@ function SenseRow({ label, value }: { label: string; value: number }) {
         {label.toUpperCase()}
       </Typography>
     </Stack>
+  );
+}
+
+function ConditionsScreen({
+  character,
+  onToggleCondition,
+}: {
+  character: DndCharacter;
+  onToggleCondition: (condition: string) => void;
+}) {
+  return (
+    <>
+      <SectionHeader icon={<AutoAwesomeIcon />} title="Conditions" mode="list" />
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.8, mt: 1.2 }}>
+          {dndConditions.map((condition) => {
+            const active = character.conditions.includes(condition);
+            return (
+              <Button
+                key={condition}
+                onClick={() => onToggleCondition(condition)}
+                sx={{
+                  ...toggleButtonSx(active),
+                  minHeight: 38,
+                  fontSize: 12,
+                }}
+              >
+                {condition}
+              </Button>
+            );
+          })}
+        </Box> 
+    </>
   );
 }
 
@@ -848,7 +884,7 @@ function ActionsScreen({
 }) {
   return (
     <>
-      <SectionHeader icon={<FitnessCenterIcon />} title="Actions" />
+      <SectionHeader icon={<Sword />} title="Actions" />
       <Box sx={{ px: 1.6, pb: 12 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
           <Typography sx={{ color: dndColors.text, fontSize: 20, fontWeight: 900 }}>
@@ -890,7 +926,7 @@ function AttackRow({ attack }: { attack: Attack }) {
       }}
     >
       <Box sx={{ color: dndColors.text, display: 'grid', placeItems: 'center' }}>
-        {attack.kind.toLowerCase().includes('cantrip') ? <LocalFireDepartmentIcon /> : <FitnessCenterIcon />}
+        {attack.kind.toLowerCase().includes('cantrip') ? <LocalFireDepartmentIcon /> : <Sword/>}
       </Box>
       <Stack>
         <Typography
@@ -949,6 +985,7 @@ function RollBox({ children }: { children: ReactNode }) {
         fontSize: 18,
         fontWeight: 900,
         bgcolor: alpha('#000000', 0.08),
+        padding: `3px 8px 5px 8px`
       }}
     >
       {children}
@@ -1088,7 +1125,7 @@ function InventoryScreen({
 
   return (
     <>
-      <SectionHeader icon={<BackpackIcon />} title="Inventory" />
+      <SectionHeader icon={<Backpack />} title="Inventory" />
       <Box sx={{ px: 1.6, pb: 12 }}>
         <DndCard sx={{ mb: 1.5 }}>
           <Box
@@ -1664,8 +1701,8 @@ function AppMenu({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab: D
   const menuItems: Array<{ tab: DndTab; label: string; icon: ReactNode }> = [
     { tab: 'abilities', label: 'Abilities, Saves, Senses', icon: <ShieldIcon /> },
     { tab: 'skills', label: 'Skills', icon: <AutoAwesomeIcon /> },
-    { tab: 'actions', label: 'Actions', icon: <FitnessCenterIcon /> },
-    { tab: 'inventory', label: 'Inventory', icon: <BackpackIcon /> },
+    { tab: 'actions', label: 'Actions', icon: <Sword /> },
+    { tab: 'inventory', label: 'Inventory', icon: <Backpack /> },
     { tab: 'spells', label: 'Spells', icon: <LocalFireDepartmentIcon /> },
     { tab: 'features', label: 'Features & Traits', icon: <PersonIcon /> },
     { tab: 'background', label: 'Background', icon: <MenuBookIcon /> },
@@ -2866,6 +2903,12 @@ function DungeonsAndDragons() {
             character={character}
             onEditStats={() => setAbilityForm(createAbilityForm(character))}
             onToggleInspiration={toggleInspiration}
+          />
+        );
+      case 'conditions':
+        return (
+          <ConditionsScreen
+            character={character}
             onToggleCondition={toggleCondition}
           />
         );
@@ -2979,6 +3022,25 @@ function DungeonsAndDragons() {
             onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
             onOpenCharacters={() => setCharactersOpen(true)}
+            homeAction={
+            <IconButton
+              component={Link}
+              to="/"
+              aria-label="Back to Table Top home"
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: '8px',
+                bgcolor: alpha('#ffffff', 0.16),
+                color: '#ffffff',
+                '&:hover': {
+                  bgcolor: alpha('#ffffff', 0.22),
+                },
+              }}
+            >
+              <House size={18} strokeWidth={2} />
+            </IconButton>
+            }
             accountAction={
               <AccountSettings
                 gameSystem={DND_GAME_SYSTEM}
