@@ -55,11 +55,11 @@ import type {
   Spell,
 } from './atoms';
 import { dndCharacterState, initialDndCharacter, initialDndTab, normalizeDndCharacter } from './atoms';
+import { DND_SCHEMA_VERSION, deserializeDndCharacter, serializeDndCharacter } from './persistence';
 import { useDndCharacterHistory } from './useCharacterHistory';
 
 const activeDndTabState = atom<DndTab>(initialDndTab);
 const DND_GAME_SYSTEM = 'dungeons-and-dragons';
-const DND_SCHEMA_VERSION = 1;
 const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
 const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
 type RestType = 'short' | 'long';
@@ -196,20 +196,6 @@ function createDndCharacter() {
 
 function describeDndCharacter(character: DndCharacter) {
   return character.name.trim() || 'Unnamed Character';
-}
-
-function serializeDndCharacter(character: DndCharacter) {
-  return {
-    schemaVersion: DND_SCHEMA_VERSION,
-    character,
-  };
-}
-
-function deserializeDndCharacter(raw: unknown): DndCharacter {
-  const maybeState = raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? (raw as { character?: unknown })
-    : null;
-  return normalizeDndCharacter(maybeState?.character ?? raw);
 }
 
 function parseIntOrFallback(value: string, fallback: number) {
