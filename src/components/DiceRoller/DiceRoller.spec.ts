@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { createRandomRollResult, isValidRollResult, toRollResult } from './diceRollResults';
+import {
+  createRandomRollResult,
+  isValidRollResult,
+  toRollResult,
+  withRollMetadata,
+} from './diceRollResults';
 
 describe('DiceRoller results', () => {
   it('accepts valid flat DiceBox results', () => {
@@ -102,5 +107,15 @@ describe('DiceRoller results', () => {
     ]);
     expect(result.total).toBe(9);
     expect(isValidRollResult(result, dice)).toBe(true);
+  });
+
+  it('adds labels and modifiers to roll totals without changing dice values', () => {
+    const result = toRollResult([{ dieType: 'd20', sides: 20, value: 12 }]);
+    const withModifier = withRollMetadata(result, { label: 'Dexterity Save', modifier: 4 });
+
+    expect(withModifier.label).toBe('Dexterity Save');
+    expect(withModifier.modifier).toBe(4);
+    expect(withModifier.rolls).toEqual(result.rolls);
+    expect(withModifier.total).toBe(16);
   });
 });

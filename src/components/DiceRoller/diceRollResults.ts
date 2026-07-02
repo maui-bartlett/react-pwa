@@ -9,6 +9,8 @@ type RollDie = {
 type RollResult = {
   id: number;
   rolls: Array<{ sides: DieSize; value: number }>;
+  label?: string;
+  modifier?: number;
   total: number;
 };
 
@@ -79,6 +81,19 @@ function toRollResult(groups: DiceBoxRoll[]): RollResult {
   };
 }
 
+function withRollMetadata(
+  result: RollResult,
+  options: { label?: string; modifier?: number } = {},
+): RollResult {
+  const modifier = options.modifier ?? 0;
+  return {
+    ...result,
+    label: options.label,
+    modifier,
+    total: result.rolls.reduce((sum, roll) => sum + roll.value, 0) + modifier,
+  };
+}
+
 function isValidRollResult(result: RollResult, selectedDice: RollDie[]) {
   if (result.rolls.length !== selectedDice.length) return false;
 
@@ -108,5 +123,5 @@ function createRandomRollResult(dice: RollDie[], random: () => number = Math.ran
   );
 }
 
-export { createRandomRollResult, dieSizes, isValidRollResult, toRollResult };
+export { createRandomRollResult, dieSizes, isValidRollResult, toRollResult, withRollMetadata };
 export type { DiceBoxRoll, DieSize, RollDie, RollResult };

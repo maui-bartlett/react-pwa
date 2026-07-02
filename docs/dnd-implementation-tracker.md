@@ -30,9 +30,9 @@ This tracker covers the requested Dungeons & Dragons feature set for Table-Top O
   - Current state: spells can be manually added/edited/deleted, prepared/book status can be toggled, spellcasting stats and slots by level can be edited, and long rest recovers slots.
   - Remaining: Convex spell catalog, spell selection from catalog, class spell list filtering, and automatic slot derivation.
 
-- [ ] Add attack/check/save/spell roll integration with the global dice roller.
-  - Current state: attack/save/skill values are visible but do not invoke the global dice roller.
-  - Remaining: tap-to-roll hooks for attacks, ability checks, saves, skills, and spell attacks/DC workflows.
+- [x] Add attack/check/save/spell roll integration with the global dice roller.
+  - Ability checks, saving throws, skills, attacks, attack damage, spell rolls, and parseable spell damage can request rolls from the global dice roller.
+  - Roll results include labels and modifiers in the shared result card.
 
 - [ ] Add inventory detail: equip/unequip effects, quantity, currency, weight/encumbrance, item catalog selection.
   - Current state: inventory items can be added/edited/deleted, quick-equipped/unequipped, quantity/cost/weight/currency can be edited, and carried weight is summarized.

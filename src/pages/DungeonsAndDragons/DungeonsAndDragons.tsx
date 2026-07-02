@@ -33,6 +33,8 @@ import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
 
 import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
+import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
+import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import AccountSettings from '@/sections/AccountSettings';
 import { persistAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
@@ -243,10 +245,15 @@ function parseHitDicePools(value: string, fallback: HitDicePool[]) {
     pools.set(die, (pools.get(die) ?? 0) + count);
   }
   if (pools.size === 0) return fallback.map((pool) => ({ ...pool }));
-  return Array.from(pools.entries()).map(([die, max]) => {
+  const parsedPools = Array.from(pools.entries()).map(([die, max]) => {
     const existing = fallback.find((pool) => pool.die === die);
     return { die, max, used: Math.min(max, Math.max(0, existing?.used ?? 0)) };
   });
+  const parsedDice = new Set(parsedPools.map((pool) => pool.die));
+  return [
+    ...parsedPools,
+    ...fallback.filter((pool) => !parsedDice.has(pool.die)).map((pool) => ({ ...pool })),
+  ];
 }
 
 function formatHitDicePools(pools: HitDicePool[]) {
@@ -268,6 +275,39 @@ function recoverLongRestHitDice(pools: HitDicePool[]) {
     remainingRecovery -= recovered;
     return { ...pool, used: pool.used - recovered };
   });
+}
+
+function parseSignedModifier(value: string | number) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  const match = value.match(/[+-]?\d+/u);
+  return match ? Number.parseInt(match[0], 10) : 0;
+}
+
+function parseDiceExpression(value: string): { dice: DieSize[]; modifier: number } | null {
+  const dice: DieSize[] = [];
+  let modifier = 0;
+  const diceMatches = value.matchAll(/(\d*)d(4|6|8|10|12|20|100)/giu);
+  for (const match of diceMatches) {
+    const count = Number.parseInt(match[1] || '1', 10);
+    const sides = Number.parseInt(match[2] ?? '', 10) as DieSize;
+    if (!Number.isFinite(count) || count <= 0) continue;
+    for (let index = 0; index < count; index += 1) dice.push(sides);
+  }
+  const withoutDice = value.replace(/\d*d(?:4|6|8|10|12|20|100)/giu, '');
+  for (const match of withoutDice.matchAll(/[+-]\s*\d+/gu)) {
+    modifier += Number.parseInt(match[0].replace(/\s/g, ''), 10);
+  }
+  return dice.length > 0 ? { dice, modifier } : null;
+}
+
+function rollD20(label: string, modifier: string | number) {
+  dispatchTabletopDiceRoll({ label, dice: [20], modifier: parseSignedModifier(modifier) });
+}
+
+function rollDiceExpression(label: string, expression: string) {
+  const parsed = parseDiceExpression(expression);
+  if (!parsed) return;
+  dispatchTabletopDiceRoll({ label, dice: parsed.dice, modifier: parsed.modifier });
 }
 
 function classLine(character: DndCharacter) {
@@ -634,10 +674,20 @@ function BottomNav({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab:
   );
 }
 
-function AbilityTile({ ability }: { ability: AbilityScore }) {
+function AbilityTile({ ability, onRoll }: { ability: AbilityScore; onRoll: () => void }) {
   const modifier = abilityModifier(ability.score);
   return (
     <Box
+      role="button"
+      tabIndex={0}
+      aria-label={`Roll ${ability.label} check`}
+      onClick={onRoll}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onRoll();
+        }
+      }}
       sx={{
         minHeight: 122,
         px: 1,
@@ -647,6 +697,7 @@ function AbilityTile({ ability }: { ability: AbilityScore }) {
         bgcolor: dndColors.panelSoft,
         border: `1px solid ${dndColors.border}`,
         textAlign: 'center',
+        cursor: 'pointer',
       }}
     >
       <Typography sx={{ color: dndColors.text, fontSize: 13, fontWeight: 900 }}>
@@ -688,9 +739,19 @@ function AbilityTile({ ability }: { ability: AbilityScore }) {
   );
 }
 
-function SavePill({ ability }: { ability: AbilityScore }) {
+function SavePill({ ability, onRoll }: { ability: AbilityScore; onRoll: () => void }) {
   return (
     <Stack
+      role="button"
+      tabIndex={0}
+      aria-label={`Roll ${ability.label} saving throw`}
+      onClick={onRoll}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onRoll();
+        }
+      }}
       direction="row"
       alignItems="center"
       sx={{
@@ -699,6 +760,7 @@ function SavePill({ ability }: { ability: AbilityScore }) {
         borderRadius: '28px',
         overflow: 'hidden',
         bgcolor: dndColors.panelSoft,
+        cursor: 'pointer',
       }}
     >
       <Box
@@ -762,14 +824,22 @@ function AbilitiesScreen({
         </Stack>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.2 }}>
           {character.abilities.map((ability) => (
-            <AbilityTile key={ability.key} ability={ability} />
+            <AbilityTile
+              key={ability.key}
+              ability={ability}
+              onRoll={() => rollD20(`${ability.label} Check`, abilityModifier(ability.score))}
+            />
           ))}
         </Box>
 
         <DividerLabel title="Saving Throws" />
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.1 }}>
           {character.abilities.map((ability) => (
-            <SavePill key={ability.key} ability={ability} />
+            <SavePill
+              key={ability.key}
+              ability={ability}
+              onRoll={() => rollD20(`${ability.label} Save`, ability.saveBonus)}
+            />
           ))}
         </Box>
         <Stack direction="row" alignItems="center" spacing={0.7} sx={{ mt: 1.4 }}>
@@ -976,21 +1046,36 @@ function SkillsScreen({
           </Button>
         </Stack>
         {character.skills.map((skill) => (
-          <SkillRowView key={skill.name} skill={skill} />
+          <SkillRowView
+            key={skill.name}
+            skill={skill}
+            onRoll={() => rollD20(`${skill.name} Check`, skill.bonus)}
+          />
         ))}
       </Box>
     </>
   );
 }
 
-function SkillRowView({ skill }: { skill: Skill }) {
+function SkillRowView({ skill, onRoll }: { skill: Skill; onRoll: () => void }) {
   return (
     <Stack
+      role="button"
+      tabIndex={0}
+      aria-label={`Roll ${skill.name} check`}
+      onClick={onRoll}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onRoll();
+        }
+      }}
       direction="row"
       alignItems="center"
       sx={{
         minHeight: 50,
         borderBottom: `1px solid ${dndColors.borderSoft}`,
+        cursor: 'pointer',
       }}
     >
       <Box
@@ -1116,8 +1201,16 @@ function AttackRow({
           {attack.range}
         </Typography>
       </Stack>
-      <RollBox>{attack.hitDc}</RollBox>
-      <RollBox>
+      <RollBox
+        ariaLabel={`Roll ${attack.name} attack`}
+        onRoll={() => rollD20(`${attack.name} Attack`, attack.hitDc)}
+      >
+        {attack.hitDc}
+      </RollBox>
+      <RollBox
+        ariaLabel={`Roll ${attack.name} damage`}
+        onRoll={() => rollDiceExpression(`${attack.name} Damage`, attack.damage)}
+      >
         {attack.damage}
         <Typography component="span" sx={{ color: dndColors.muted, fontSize: 11, ml: 0.4 }}>
           {attack.damageType[0]}
@@ -1142,9 +1235,31 @@ function GridHeader({ columns, labels }: { columns: string; labels: string[] }) 
   );
 }
 
-function RollBox({ children }: { children: ReactNode }) {
+function RollBox({
+  children,
+  onRoll,
+  ariaLabel,
+}: {
+  children: ReactNode;
+  onRoll?: () => void;
+  ariaLabel?: string;
+}) {
   return (
     <Box
+      role={onRoll ? 'button' : undefined}
+      tabIndex={onRoll ? 0 : undefined}
+      aria-label={ariaLabel}
+      onClick={onRoll}
+      onKeyDown={
+        onRoll
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onRoll();
+              }
+            }
+          : undefined
+      }
       sx={{
         minHeight: 37,
         border: `1px solid ${dndColors.border}`,
@@ -1155,7 +1270,9 @@ function RollBox({ children }: { children: ReactNode }) {
         fontSize: 18,
         fontWeight: 900,
         bgcolor: alpha('#000000', 0.08),
-        padding: `3px 8px 5px 8px`
+        padding: `3px 8px 5px 8px`,
+        cursor: onRoll ? 'pointer' : 'default',
+        '&:hover': onRoll ? { borderColor: dndColors.blue, color: dndColors.blue } : undefined,
       }}
     >
       {children}
@@ -1307,13 +1424,24 @@ function SpellRow({
           >
             {prepared ? 'Prep' : 'Book'}
           </Button>
-          <RollBox>{spell.hitDc}</RollBox>
+          <RollBox
+            ariaLabel={`Roll ${spell.name}`}
+            onRoll={() => rollD20(`${spell.name} Roll`, spell.hitDc)}
+          >
+            {spell.hitDc}
+          </RollBox>
         </Stack>
       </Stack>
       <Stack direction="row" spacing={1.2} sx={{ mt: 1 }}>
         <TinyStat label="Time" value={spell.castingTime} />
         <TinyStat label="Range" value={spell.range} />
-        {spell.damage ? <TinyStat label="Damage" value={spell.damage} /> : null}
+        {spell.damage ? (
+          <TinyStat
+            label="Damage"
+            value={spell.damage}
+            onClick={() => rollDiceExpression(`${spell.name} Damage`, spell.damage ?? '')}
+          />
+        ) : null}
       </Stack>
     </Box>
   );
@@ -1881,9 +2009,25 @@ function Metric({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function TinyStat({ label, value }: { label: string; value: string }) {
+function TinyStat({ label, value, onClick }: { label: string; value: string; onClick?: () => void }) {
   return (
-    <Box sx={{ flex: 1 }}>
+    <Box
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `Roll ${label}` : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      sx={{ flex: 1, cursor: onClick ? 'pointer' : 'default' }}
+    >
       <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900 }}>{label}</Typography>
       <Typography sx={{ color: dndColors.text, fontSize: 13, fontWeight: 800 }}>{value}</Typography>
     </Box>
@@ -4051,11 +4195,13 @@ function DungeonsAndDragons() {
   };
 
   const spendHitDie = (die: string) => {
+    let didSpend = false;
     setCharacter((current) => {
       const pool = current.hitPoints.hitDicePools.find((entry) => entry.die === die);
       if (!pool || pool.used >= pool.max || current.hitPoints.current >= current.hitPoints.max) {
         return current;
       }
+      didSpend = true;
       const constitutionScore = current.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
       const healAmount = hitDieAverageHeal(die, abilityModifier(constitutionScore));
       return {
@@ -4069,7 +4215,7 @@ function DungeonsAndDragons() {
         },
       };
     });
-    setUndoOpen(true);
+    if (didSpend) setUndoOpen(true);
   };
 
   const toggleInspiration = () => {

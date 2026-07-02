@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -18,7 +18,9 @@ import {
   dieSizes,
   isValidRollResult,
   toRollResult,
+  withRollMetadata,
 } from './diceRollResults';
+import { TABLETOP_ROLL_DICE_EVENT, type TabletopRollDiceDetail } from './rollEvents';
 
 const diceRailReveal = keyframes`
   from {
@@ -189,8 +191,10 @@ function countSelectedDice(dice: RollDie[], sides: DieSize) {
 
 function formatRollEquation(result: RollResult) {
   const values = result.rolls.map((roll) => roll.value);
-  if (values.length <= 6) return values.join('+');
-  return `${values.slice(0, 6).join('+')}+...`;
+  const base = values.length <= 6 ? values.join('+') : `${values.slice(0, 6).join('+')}+...`;
+  const modifier = result.modifier ?? 0;
+  if (modifier === 0) return base;
+  return `${base}${modifier > 0 ? '+' : ''}${modifier}`;
 }
 
 function formatRollNotation(result: RollResult) {
@@ -377,7 +381,7 @@ function ResultReadoutOverlay({
             textTransform: 'uppercase',
           }}
         >
-          Custom:{' '}
+          {result.label ?? 'Custom'}:{' '}
           <Box component="span" sx={{ color: accent }}>
             Roll
           </Box>
@@ -629,7 +633,7 @@ function DiceRoller() {
     setSelectedDice((current) => [...current, { id: Date.now() + current.length, sides }]);
   };
 
-  const fadeOutDisplayedRoll = () => {
+  const fadeOutDisplayedRoll = useCallback(() => {
     if (fadeOutPromiseRef.current) return fadeOutPromiseRef.current;
     if (!lastResult && !hasVisibleDice && !isRolling) return Promise.resolve();
 
@@ -647,7 +651,7 @@ function DiceRoller() {
     });
     fadeOutPromiseRef.current = fadePromise;
     return fadePromise;
-  };
+  }, [hasVisibleDice, isRolling, lastResult]);
 
   const dismissRollResult = () => {
     void fadeOutDisplayedRoll();
@@ -662,18 +666,25 @@ function DiceRoller() {
     }, 190);
   };
 
-  const rollSelectedDice = async () => {
-    if (!hasDice || isRolling || isResultDismissing || !diceBoxRef.current || !isDiceBoxReady) {
-      setIsExpanded(true);
+  const rollDice = useCallback(async (
+    dice: RollDie[],
+    options: { label?: string; modifier?: number; expandWhenUnavailable?: boolean } = {},
+  ) => {
+    if (!dice.length || isRolling || isResultDismissing || !diceBoxRef.current || !isDiceBoxReady) {
+      if (options.expandWhenUnavailable ?? true) setIsExpanded(true);
       return;
     }
 
+    setSelectedDice(dice);
+
+    const applyMetadata = (result: RollResult) =>
+      withRollMetadata(result, { label: options.label, modifier: options.modifier ?? 0 });
     const rollSequence = rollSequenceRef.current + 1;
     rollSequenceRef.current = rollSequence;
     await fadeOutDisplayedRoll();
     if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
 
-    const notation = toDiceBoxNotation(selectedDice, appAccent);
+    const notation = toDiceBoxNotation(dice, appAccent);
     setLastResult(null);
     setIsResultDismissing(false);
     setIsRolling(true);
@@ -699,15 +710,15 @@ function DiceRoller() {
       if (rollSequenceRef.current !== rollSequence) return;
 
       const result = toRollResult(results);
-      if (isValidRollResult(result, selectedDice)) {
-        setLastResult(result);
+      if (isValidRollResult(result, dice)) {
+        setLastResult(applyMetadata(result));
         return;
       }
 
       console.warn('[dice] DiceBox returned an invalid roll; using a valid fallback result', {
         result,
       });
-      setLastResult(createRandomRollResult(selectedDice));
+      setLastResult(applyMetadata(createRandomRollResult(dice)));
     } catch (error) {
       console.warn('[dice] DiceBox roll failed', error);
       diceBoxRef.current?.clear();
@@ -716,7 +727,31 @@ function DiceRoller() {
     } finally {
       if (rollSequenceRef.current === rollSequence) setIsRolling(false);
     }
+  }, [appAccent, fadeOutDisplayedRoll, isDiceBoxReady, isResultDismissing, isRolling]);
+
+  const rollSelectedDice = async () => {
+    if (!hasDice) {
+      setIsExpanded(true);
+      return;
+    }
+    await rollDice(selectedDice);
   };
+
+  useEffect(() => {
+    const onTabletopRoll = (event: Event) => {
+      const detail = (event as CustomEvent<TabletopRollDiceDetail>).detail;
+      if (!detail?.dice?.length) return;
+      const dice = detail.dice.map((sides, index) => ({ id: Date.now() + index, sides }));
+      void rollDice(dice, {
+        label: detail.label,
+        modifier: detail.modifier,
+        expandWhenUnavailable: false,
+      });
+    };
+
+    window.addEventListener(TABLETOP_ROLL_DICE_EVENT, onTabletopRoll);
+    return () => window.removeEventListener(TABLETOP_ROLL_DICE_EVENT, onTabletopRoll);
+  }, [appAccent, hasVisibleDice, isDiceBoxReady, isResultDismissing, isRolling, lastResult, rollDice]);
 
   const accent = appAccent;
   const railBackground =
