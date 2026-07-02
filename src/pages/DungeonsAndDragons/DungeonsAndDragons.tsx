@@ -147,7 +147,7 @@ function skillBonusFor(options: {
   proficient: boolean;
   expertise: boolean;
 }) {
-  const proficiencyMultiplier = options.expertise ? 2 : options.proficient ? 1 : 0;
+  const proficiencyMultiplier = options.proficient ? (options.expertise ? 2 : 1) : 0;
   return abilityModifier(options.abilityScore) + options.proficiencyBonus * proficiencyMultiplier;
 }
 
@@ -2157,7 +2157,17 @@ function CharacterEditDialog({
   onSave: () => void;
 }) {
   if (!form) return null;
-  const setField = (key: keyof CharacterForm, value: string) => onChange({ ...form, [key]: value });
+  const setField = (key: keyof CharacterForm, value: string) => {
+    if (key === 'classOneName') {
+      onChange({ ...form, classOneName: value, classOneSubclass: '' });
+      return;
+    }
+    if (key === 'classTwoName') {
+      onChange({ ...form, classTwoName: value, classTwoSubclass: '' });
+      return;
+    }
+    onChange({ ...form, [key]: value });
+  };
   const resolvedClassOptions = [
     ...new Set(
       [
@@ -2325,8 +2335,18 @@ function HitPointEditDialog({
     setAmount(Number.isNaN(parsed) ? 0 : Math.min(Math.max(max, 30), parsed));
   };
   const applyDelta = (direction: 1 | -1) => {
-    const next = Math.max(0, Math.min(max, current + direction * amount));
-    setField('current', String(next));
+    if (direction === 1) {
+      const next = Math.max(0, Math.min(max, current + amount));
+      setField('current', String(next));
+      return;
+    }
+    const absorbedByTemp = Math.min(temp, amount);
+    const remainingDamage = amount - absorbedByTemp;
+    onChange({
+      ...form,
+      temp: String(temp - absorbedByTemp),
+      current: String(Math.max(0, current - remainingDamage)),
+    });
   };
   const setDeathSave = (key: 'deathSuccesses' | 'deathFailures', next: number) => {
     setField(key, String(Math.max(0, Math.min(3, next))));
@@ -2996,6 +3016,8 @@ type SpellcastingForm = {
   slots: string;
 };
 
+const MAX_SPELL_SLOTS_PER_LEVEL = 20;
+
 function createSpellcastingForm(character: DndCharacter): SpellcastingForm {
   return {
     ability: character.spellcasting.ability,
@@ -3007,6 +3029,7 @@ function createSpellcastingForm(character: DndCharacter): SpellcastingForm {
 
 function parseSpellSlots(value: string, currentSlots: DndCharacter['spellcasting']['slots']) {
   const currentByLevel = new Map(currentSlots.map((slot) => [slot.level.toLowerCase(), slot]));
+  const seen = new Set<string>();
   return value
     .split('\n')
     .map((line) => line.trim())
@@ -3014,13 +3037,16 @@ function parseSpellSlots(value: string, currentSlots: DndCharacter['spellcasting
     .map((line) => {
       const [rawLevel, rawMax] = line.split(/[:,-]/, 2);
       const level = rawLevel?.trim();
+      const normalizedLevel = level?.toLowerCase();
       const max = Number.parseInt(rawMax?.replace(/[^0-9]/g, '') ?? '', 10);
-      if (!level || Number.isNaN(max) || max < 0) return null;
-      const current = currentByLevel.get(level.toLowerCase());
+      if (!level || !normalizedLevel || seen.has(normalizedLevel) || Number.isNaN(max) || max < 0) return null;
+      seen.add(normalizedLevel);
+      const clampedMax = Math.min(max, MAX_SPELL_SLOTS_PER_LEVEL);
+      const current = currentByLevel.get(normalizedLevel);
       return {
         level,
-        max,
-        used: Math.min(max, Math.max(0, current?.used ?? 0)),
+        max: clampedMax,
+        used: Math.min(clampedMax, Math.max(0, current?.used ?? 0)),
       };
     })
     .filter((slot): slot is DndCharacter['spellcasting']['slots'][number] => Boolean(slot));
