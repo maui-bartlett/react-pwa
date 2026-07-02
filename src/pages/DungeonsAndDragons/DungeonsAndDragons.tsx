@@ -1262,6 +1262,7 @@ function FeaturesScreen({
   onAddFeat,
   onEditFeat,
   onDeleteFeat,
+  onEditProficiencies,
   onDeleteFeature,
   onUpdateFeatureUses,
   onRestFeatures,
@@ -1272,6 +1273,7 @@ function FeaturesScreen({
   onAddFeat: () => void;
   onEditFeat: (feat: Feat) => void;
   onDeleteFeat: (id: string) => void;
+  onEditProficiencies: () => void;
   onDeleteFeature: (id: string) => void;
   onUpdateFeatureUses: (id: string, used: number) => void;
   onRestFeatures: (restType: 'short' | 'long') => void;
@@ -1334,7 +1336,16 @@ function FeaturesScreen({
             </Box>
           </SwipeRow>
         ))}
-        <Typography sx={subSectionSx}>Proficiencies & Training</Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 1 }}>
+          <Typography sx={{ ...subSectionSx, mt: 0, mb: 0 }}>Proficiencies & Training</Typography>
+          <Button
+            startIcon={<EditIcon />}
+            onClick={onEditProficiencies}
+            sx={{ ...inlineEditButtonSx, minHeight: 36 }}
+          >
+            Edit
+          </Button>
+        </Stack>
         <TagCloud values={[...character.proficiencies, ...character.languages]} />
         <Stack direction="row" spacing={1} sx={{ mt: 1.8, flexWrap: 'wrap' }}>
           <Button onClick={() => onSelectTab('skills')} sx={moreButtonSx}>
@@ -2676,6 +2687,34 @@ type BackgroundForm = {
   backstory: string;
 };
 
+type ProficiencyForm = {
+  proficiencies: string;
+  languages: string;
+};
+
+function joinListForEditing(values: string[]) {
+  return values.join('\n');
+}
+
+function parseEditableList(value: string) {
+  const seen = new Set<string>();
+  return value
+    .split(/[\n,]/)
+    .map((entry) => entry.trim())
+    .filter((entry) => {
+      if (!entry || seen.has(entry.toLowerCase())) return false;
+      seen.add(entry.toLowerCase());
+      return true;
+    });
+}
+
+function createProficiencyForm(character: DndCharacter): ProficiencyForm {
+  return {
+    proficiencies: joinListForEditing(character.proficiencies),
+    languages: joinListForEditing(character.languages),
+  };
+}
+
 function createBackgroundForm(character: DndCharacter): BackgroundForm {
   return {
     background: character.background,
@@ -2686,6 +2725,42 @@ function createBackgroundForm(character: DndCharacter): BackgroundForm {
     flaws: character.personality.flaws,
     backstory: character.personality.backstory,
   };
+}
+
+function ProficiencyEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: ProficiencyForm | null;
+  onChange: (form: ProficiencyForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  const setField = (key: keyof ProficiencyForm, value: string) => onChange({ ...form, [key]: value });
+  return (
+    <DndEditDialog title="Edit Proficiencies" open={open} onCancel={onCancel} onSave={onSave}>
+      <MultilineFormField
+        label="Proficiencies"
+        value={form.proficiencies}
+        minRows={6}
+        onChange={(value) => setField('proficiencies', value)}
+      />
+      <MultilineFormField
+        label="Languages"
+        value={form.languages}
+        minRows={4}
+        onChange={(value) => setField('languages', value)}
+      />
+      <Typography sx={{ color: dndColors.muted, fontSize: 12, lineHeight: 1.4 }}>
+        Enter one item per line, or separate entries with commas.
+      </Typography>
+    </DndEditDialog>
+  );
 }
 
 function BackgroundEditDialog({
@@ -3003,6 +3078,7 @@ function DungeonsAndDragons() {
   const [featForm, setFeatForm] = useState<FeatForm | null>(null);
   const [abilityForm, setAbilityForm] = useState<AbilityForm | null>(null);
   const [skillForm, setSkillForm] = useState<SkillForm | null>(null);
+  const [proficiencyForm, setProficiencyForm] = useState<ProficiencyForm | null>(null);
   const [backgroundForm, setBackgroundForm] = useState<BackgroundForm | null>(null);
   const [noteForm, setNoteForm] = useState<NoteForm | null>(null);
   const [moneyForm, setMoneyForm] = useState<MoneyForm | null>(null);
@@ -3306,6 +3382,16 @@ function DungeonsAndDragons() {
     setSkillForm(null);
   };
 
+  const saveProficiencies = () => {
+    if (!proficiencyForm) return;
+    setCharacter((current) => ({
+      ...current,
+      proficiencies: parseEditableList(proficiencyForm.proficiencies),
+      languages: parseEditableList(proficiencyForm.languages),
+    }));
+    setProficiencyForm(null);
+  };
+
   const saveBackground = () => {
     if (!backgroundForm) return;
     setCharacter((current) => ({
@@ -3455,6 +3541,7 @@ function DungeonsAndDragons() {
             onAddFeat={addFeat}
             onEditFeat={(feat) => setFeatForm({ ...feat })}
             onDeleteFeat={deleteFeat}
+            onEditProficiencies={() => setProficiencyForm(createProficiencyForm(character))}
             onDeleteFeature={(id) => deleteById('features', id)}
             onUpdateFeatureUses={updateFeatureUses}
             onRestFeatures={restFeatures}
@@ -3658,6 +3745,13 @@ function DungeonsAndDragons() {
           onChange={setFeatForm}
           onCancel={() => setFeatForm(null)}
           onSave={saveFeat}
+        />
+        <ProficiencyEditDialog
+          open={proficiencyForm !== null}
+          form={proficiencyForm}
+          onChange={setProficiencyForm}
+          onCancel={() => setProficiencyForm(null)}
+          onSave={saveProficiencies}
         />
         <AbilityEditDialog
           open={abilityForm !== null}
