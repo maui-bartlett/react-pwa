@@ -1664,6 +1664,8 @@ function InventoryRow({
 function FeaturesScreen({
   character,
   classCatalogByName,
+  onAddFeature,
+  onEditFeature,
   onAddFeat,
   onEditFeat,
   onDeleteFeat,
@@ -1675,6 +1677,8 @@ function FeaturesScreen({
 }: {
   character: DndCharacter;
   classCatalogByName: Map<string, DndClassInfo>;
+  onAddFeature: () => void;
+  onEditFeature: (feature: Feature) => void;
   onAddFeat: () => void;
   onEditFeat: (feat: Feat) => void;
   onDeleteFeat: (id: string) => void;
@@ -1704,15 +1708,33 @@ function FeaturesScreen({
             classInfo={classCatalogByName.get(entry.name)}
           />
         ))}
-        <Typography sx={subSectionSx}>Class Features</Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 1 }}>
+          <Typography sx={{ ...subSectionSx, mt: 0, mb: 0 }}>Class Features</Typography>
+          <Button startIcon={<AddIcon />} onClick={onAddFeature} sx={{ ...inlineEditButtonSx, minHeight: 36 }}>
+            Add Feature
+          </Button>
+        </Stack>
         {character.features.map((feature) => (
           <SwipeRow key={feature.id} onDelete={() => onDeleteFeature(feature.id)}>
-            <FeatureBlock
-              feature={feature}
-              onUpdateUses={
-                feature.uses ? (used) => onUpdateFeatureUses(feature.id, used) : undefined
-              }
-            />
+            <Box
+              role="button"
+              tabIndex={0}
+              onClick={() => onEditFeature(feature)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onEditFeature(feature);
+                }
+              }}
+              sx={{ cursor: 'pointer' }}
+            >
+              <FeatureBlock
+                feature={feature}
+                onUpdateUses={
+                  feature.uses ? (used) => onUpdateFeatureUses(feature.id, used) : undefined
+                }
+              />
+            </Box>
           </SwipeRow>
         ))}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 1 }}>
@@ -1939,7 +1961,10 @@ function FeatureBlock({
                 disabled={!onUpdateUses}
                 aria-label={`${feature.name}: set ${feature.uses!.label} used to ${index + 1} of ${feature.uses!.max}`}
                 aria-pressed={index < feature.uses!.used}
-                onClick={() => onUpdateUses?.(index + 1 === feature.uses!.used ? index : index + 1)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onUpdateUses?.(index + 1 === feature.uses!.used ? index : index + 1);
+                }}
                 sx={{
                   width: 28,
                   height: 28,
@@ -3487,6 +3512,7 @@ function MoneyEditDialog({
 type AttackForm = Attack;
 type SpellForm = Spell;
 type ItemForm = InventoryItem;
+type FeatureForm = Feature;
 type FeatForm = Feat;
 type SpellcastingForm = {
   ability: string;
@@ -3791,6 +3817,75 @@ function ItemEditDialog({
   );
 }
 
+function FeatureEditDialog({
+  open,
+  form,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  form: FeatureForm | null;
+  onChange: (form: FeatureForm) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  if (!form) return null;
+  const setField = (key: 'name' | 'source' | 'summary', value: string) =>
+    onChange({ ...form, [key]: value });
+  const uses = form.uses;
+  const updateUses = (next: Partial<NonNullable<Feature['uses']>>) =>
+    onChange({
+      ...form,
+      uses: {
+        label: uses?.label ?? form.name,
+        used: uses?.used ?? 0,
+        max: uses?.max ?? 1,
+        reset: uses?.reset ?? 'Long Rest',
+        ...next,
+      },
+    });
+
+  return (
+    <DndEditDialog title="Edit Feature" open={open} onCancel={onCancel} onSave={onSave}>
+      <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
+      <FormField label="Source" value={form.source} onChange={(value) => setField('source', value)} />
+      <MultilineFormField
+        label="Summary"
+        value={form.summary}
+        minRows={5}
+        onChange={(value) => setField('summary', value)}
+      />
+      <Button
+        onClick={() => onChange({ ...form, uses: uses ? undefined : { label: form.name, used: 0, max: 1, reset: 'Long Rest' } })}
+        sx={toggleButtonSx(Boolean(uses))}
+      >
+        {uses ? 'Tracks Uses' : 'No Use Tracking'}
+      </Button>
+      {uses ? (
+        <>
+          <FormField label="Use Label" value={uses.label} onChange={(value) => updateUses({ label: value })} />
+          <Stack direction="row" spacing={1}>
+            <FormField
+              label="Used"
+              value={String(uses.used)}
+              inputMode="numeric"
+              onChange={(value) => updateUses({ used: parseIntOrFallback(value, uses.used) })}
+            />
+            <FormField
+              label="Max"
+              value={String(uses.max)}
+              inputMode="numeric"
+              onChange={(value) => updateUses({ max: Math.max(1, parseIntOrFallback(value, uses.max)) })}
+            />
+          </Stack>
+          <FormField label="Reset" value={uses.reset} onChange={(value) => updateUses({ reset: value })} />
+        </>
+      ) : null}
+    </DndEditDialog>
+  );
+}
+
 function FeatEditDialog({
   open,
   form,
@@ -3896,6 +3991,7 @@ function DungeonsAndDragons() {
   const [spellForm, setSpellForm] = useState<SpellForm | null>(null);
   const [spellcastingForm, setSpellcastingForm] = useState<SpellcastingForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
+  const [featureForm, setFeatureForm] = useState<FeatureForm | null>(null);
   const [featForm, setFeatForm] = useState<FeatForm | null>(null);
   const [abilityForm, setAbilityForm] = useState<AbilityForm | null>(null);
   const [skillForm, setSkillForm] = useState<SkillForm | null>(null);
@@ -4108,6 +4204,38 @@ function DungeonsAndDragons() {
       ),
     }));
     setUndoOpen(true);
+  };
+
+  const addFeature = () => {
+    setFeatureForm({
+      id: createEntryId('feature'),
+      name: 'New Feature',
+      source: character.classes[0]?.name ?? 'Class',
+      summary: 'Describe what this feature allows the character to do.',
+    });
+  };
+
+  const saveFeature = () => {
+    if (!featureForm) return;
+    const normalizedFeature = {
+      ...featureForm,
+      uses: featureForm.uses
+        ? {
+            ...featureForm.uses,
+            used: Math.max(0, Math.min(featureForm.uses.max, featureForm.uses.used)),
+            max: Math.max(1, featureForm.uses.max),
+          }
+        : undefined,
+    };
+    setCharacter((current) => ({
+      ...current,
+      features: current.features.some((feature) => feature.id === normalizedFeature.id)
+        ? current.features.map((feature) =>
+            feature.id === normalizedFeature.id ? normalizedFeature : feature,
+          )
+        : [...current.features, normalizedFeature],
+    }));
+    setFeatureForm(null);
   };
 
   const addFeat = () => {
@@ -4468,6 +4596,10 @@ function DungeonsAndDragons() {
           <FeaturesScreen
             character={character}
             classCatalogByName={dndClassCatalogByName}
+            onAddFeature={addFeature}
+            onEditFeature={(feature) =>
+              setFeatureForm({ ...feature, uses: feature.uses ? { ...feature.uses } : undefined })
+            }
             onAddFeat={addFeat}
             onEditFeat={(feat) => setFeatForm({ ...feat })}
             onDeleteFeat={deleteFeat}
@@ -4677,6 +4809,13 @@ function DungeonsAndDragons() {
           onChange={setItemForm}
           onCancel={() => setItemForm(null)}
           onSave={saveItem}
+        />
+        <FeatureEditDialog
+          open={featureForm !== null}
+          form={featureForm}
+          onChange={setFeatureForm}
+          onCancel={() => setFeatureForm(null)}
+          onSave={saveFeature}
         />
         <MoneyEditDialog
           open={moneyForm !== null}

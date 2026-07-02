@@ -22,9 +22,10 @@ This tracker covers the requested Dungeons & Dragons feature set for Table-Top O
   - Current state: classes/subclasses can be edited and class attributes can be displayed.
   - Remaining: level-up flow, derived hit dice/saves/proficiencies/spellcasting/features, and multiclass rules application.
 
-- [ ] Add class feature/feat editing and usage tracking beyond the current basic feature-use boxes.
-  - Current state: feats can be added, edited, and deleted; class feature uses can be tracked and reset by rests.
-  - Remaining: richer class feature editing, catalog-backed feature add/select, and more detailed feature rules metadata.
+- [x] Add class feature/feat editing and usage tracking beyond the current basic feature-use boxes.
+  - Feats can be added, edited, and deleted.
+  - Class features can be added, edited, deleted, and configured with optional use tracking.
+  - Class feature uses can be tracked and reset by rests.
 
 - [x] Add spell catalog support, spell preparation, spell slots by level, and rest-based slot recovery.
   - Spells can be manually added/edited/deleted.
