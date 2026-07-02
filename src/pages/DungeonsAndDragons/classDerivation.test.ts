@@ -54,6 +54,34 @@ describe('Dungeons & Dragons class catalog derivation', () => {
     ]);
   });
 
+  it('merges multiclass hit dice that use the same die type', () => {
+    const derived = deriveDndClassFields({
+      classes: [
+        { name: 'Rogue', level: 3 },
+        { name: 'Bard', level: 2 },
+      ],
+      catalogByName: new Map([
+        ['Rogue', { className: 'Rogue', hitDie: 'd8', savingThrows: ['Dexterity'] }],
+        ['Bard', { className: 'Bard', hitDie: 'd8', savingThrows: ['Dexterity'] }],
+      ]),
+      currentHitDicePools: [{ die: 'd8', max: 4, used: 2 }],
+    });
+
+    expect(derived.hitDice).toBe('5d8');
+    expect(derived.hitDicePools).toEqual([{ die: 'd8', max: 5, used: 2 }]);
+  });
+
+  it('reports when primary class saving throw catalog data is missing', () => {
+    const derived = deriveDndClassFields({
+      classes: [{ name: 'Mystery Class', level: 1 }],
+      catalogByName: new Map([['Mystery Class', { className: 'Mystery Class', hitDie: 'd10' }]]),
+      currentHitDicePools: [],
+    });
+
+    expect(derived.hasSavingThrowData).toBe(false);
+    expect(derived.savingThrowKeys).toEqual([]);
+  });
+
   it('derives primary saves, proficiencies, spellcasting ability, and class summary features', () => {
     const derived = deriveDndClassFields({
       classes: [
@@ -66,6 +94,7 @@ describe('Dungeons & Dragons class catalog derivation', () => {
     });
 
     expect(derived.savingThrowKeys).toEqual(['dex', 'int']);
+    expect(derived.hasSavingThrowData).toBe(true);
     expect(derived.proficiencies).toEqual([
       'Light Armor',
       'Simple Weapons',

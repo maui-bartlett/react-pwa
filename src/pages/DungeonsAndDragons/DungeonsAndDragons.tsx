@@ -4947,7 +4947,9 @@ function DungeonsAndDragons() {
         ),
         abilities: current.abilities.map((ability) => ({
           ...ability,
-          proficientSave: derivedClassFields.savingThrowKeys.includes(ability.key),
+          proficientSave: derivedClassFields.hasSavingThrowData
+            ? derivedClassFields.savingThrowKeys.includes(ability.key)
+            : ability.proficientSave,
         })),
         hitPoints: {
           ...current.hitPoints,

@@ -56,25 +56,31 @@ function deriveDndClassFields(options: {
   const classInfos = options.classes
     .map((entry) => options.catalogByName.get(entry.name))
     .filter((classInfo): classInfo is DndCatalogClass => Boolean(classInfo?.className));
-  const hitDicePools = options.classes
-    .map((entry) => {
-      const classInfo = options.catalogByName.get(entry.name);
-      if (!classInfo?.hitDie) return null;
-      const max = Math.max(1, entry.level);
-      const previous = options.currentHitDicePools.find((pool) => pool.die === classInfo.hitDie);
-      return {
-        die: classInfo.hitDie,
-        max,
-        used: Math.min(max, Math.max(0, previous?.used ?? 0)),
-      };
-    })
-    .filter((pool): pool is HitDicePool => Boolean(pool));
+  const hitDiceMaximums = new Map<string, number>();
+  options.classes.forEach((entry) => {
+    const classInfo = options.catalogByName.get(entry.name);
+    if (!classInfo?.hitDie) return;
+    hitDiceMaximums.set(
+      classInfo.hitDie,
+      (hitDiceMaximums.get(classInfo.hitDie) ?? 0) + Math.max(1, entry.level),
+    );
+  });
+  const hitDicePools = Array.from(hitDiceMaximums.entries()).map(([die, max]) => {
+    const previous = options.currentHitDicePools.find((pool) => pool.die === die);
+    return {
+      die,
+      max,
+      used: Math.min(max, Math.max(0, previous?.used ?? 0)),
+    };
+  });
   const hitDice = hitDicePools.map((pool) => `${pool.max}${pool.die}`).join(' + ');
-  const savingThrowKeys = (
-    options.catalogByName.get(options.classes[0]?.name ?? '')?.savingThrows ?? []
-  )
+  const primarySavingThrows = options.catalogByName.get(
+    options.classes[0]?.name ?? '',
+  )?.savingThrows;
+  const savingThrowKeys = (primarySavingThrows ?? [])
     .map(abilityNameToKey)
     .filter((key): key is AbilityKey => Boolean(key));
+  const hasSavingThrowData = Boolean(primarySavingThrows);
   const proficiencies = [
     ...new Set(
       classInfos.flatMap((classInfo) => [
@@ -107,7 +113,15 @@ function deriveDndClassFields(options: {
         .join(' '),
     }));
 
-  return { hitDicePools, hitDice, savingThrowKeys, proficiencies, spellcastingAbility, features };
+  return {
+    hitDicePools,
+    hitDice,
+    savingThrowKeys,
+    hasSavingThrowData,
+    proficiencies,
+    spellcastingAbility,
+    features,
+  };
 }
 
 export { abilityNameToKey, deriveDndClassFields, formatSpellcasting };
