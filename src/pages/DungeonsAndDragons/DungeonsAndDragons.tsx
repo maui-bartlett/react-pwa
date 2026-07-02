@@ -1019,12 +1019,14 @@ function SpellsScreen({
   onDeleteSpell,
   onAddSpell,
   onEditSpell,
+  onTogglePrepared,
   onUpdateSpellSlot,
 }: {
   character: DndCharacter;
   onDeleteSpell: (id: string) => void;
   onAddSpell: () => void;
   onEditSpell: (spell: Spell) => void;
+  onTogglePrepared: (id: string) => void;
   onUpdateSpellSlot: (level: string, used: number) => void;
 }) {
   return (
@@ -1061,7 +1063,7 @@ function SpellsScreen({
             onDelete={() => onDeleteSpell(spell.id)}
             onEdit={() => onEditSpell(spell)}
           >
-            <SpellRow spell={spell} />
+            <SpellRow spell={spell} onTogglePrepared={() => onTogglePrepared(spell.id)} />
           </SwipeRow>
         ))}
       </Box>
@@ -1103,7 +1105,14 @@ function SlotTracker({
   );
 }
 
-function SpellRow({ spell }: { spell: Spell }) {
+function SpellRow({
+  spell,
+  onTogglePrepared,
+}: {
+  spell: Spell;
+  onTogglePrepared: () => void;
+}) {
+  const prepared = Boolean(spell.prepared);
   return (
     <Box sx={{ py: 1.25, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -1115,7 +1124,33 @@ function SpellRow({ spell }: { spell: Spell }) {
             {spell.level.toUpperCase()} • {spell.school.toUpperCase()}
           </Typography>
         </Stack>
-        <RollBox>{spell.hitDc}</RollBox>
+        <Stack direction="row" spacing={0.8} alignItems="center">
+          <Button
+            aria-pressed={prepared}
+            onClick={(event) => {
+              event.stopPropagation();
+              onTogglePrepared();
+            }}
+            sx={{
+              minWidth: 0,
+              minHeight: 34,
+              px: 1,
+              borderRadius: '999px',
+              border: `1px solid ${prepared ? dndColors.green : dndColors.border}`,
+              bgcolor: prepared ? alpha(dndColors.green, 0.22) : dndColors.panelStrong,
+              color: prepared ? '#ffffff' : dndColors.muted,
+              fontSize: 11,
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              '&:hover': {
+                bgcolor: prepared ? alpha(dndColors.green, 0.3) : alpha('#ffffff', 0.08),
+              },
+            }}
+          >
+            {prepared ? 'Prep' : 'Book'}
+          </Button>
+          <RollBox>{spell.hitDc}</RollBox>
+        </Stack>
       </Stack>
       <Stack direction="row" spacing={1.2} sx={{ mt: 1 }}>
         <TinyStat label="Time" value={spell.castingTime} />
@@ -3216,6 +3251,15 @@ function DungeonsAndDragons() {
     setSpellForm(null);
   };
 
+  const toggleSpellPrepared = (id: string) => {
+    setCharacter((current) => ({
+      ...current,
+      spells: current.spells.map((spell) =>
+        spell.id === id ? { ...spell, prepared: !spell.prepared } : spell,
+      ),
+    }));
+  };
+
   const addItem = () => {
     setItemForm({
       id: createEntryId('item'),
@@ -3520,6 +3564,7 @@ function DungeonsAndDragons() {
             onAddSpell={addSpell}
             onEditSpell={(spell) => setSpellForm({ ...spell })}
             onDeleteSpell={(id) => deleteById('spells', id)}
+            onTogglePrepared={toggleSpellPrepared}
             onUpdateSpellSlot={updateSpellSlot}
           />
         );
