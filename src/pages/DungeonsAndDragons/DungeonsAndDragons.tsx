@@ -61,13 +61,15 @@ import {
 } from './atoms';
 import { deriveDndClassFields, formatSpellcasting } from './classDerivation';
 import { DND_SCHEMA_VERSION, deserializeDndCharacter, serializeDndCharacter } from './persistence';
+import { applyDndRest, hitDieAverageHeal, spendDndHitDie } from './rest';
+import type { DndRestType } from './rest';
 import { useDndCharacterHistory } from './useCharacterHistory';
 
 const activeDndTabState = atom<DndTab>(initialDndTab);
 const DND_GAME_SYSTEM = 'dungeons-and-dragons';
 const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
 const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
-type RestType = 'short' | 'long';
+type RestType = DndRestType;
 
 const dndColors = {
   page: '#10181d',
@@ -389,6 +391,10 @@ function createDndCharacter() {
   };
 }
 
+function migrateDndLocalCharacter(_key: string, initialValue: DndCharacter) {
+  return normalizeDndCharacter(initialValue);
+}
+
 function describeDndCharacter(character: DndCharacter) {
   return character.name.trim() || 'Unnamed Character';
 }
@@ -423,22 +429,6 @@ function parseHitDicePools(value: string, fallback: HitDicePool[]) {
 function formatHitDicePools(pools: HitDicePool[]) {
   if (pools.length === 0) return 'No hit dice';
   return pools.map((pool) => `${pool.max - pool.used}/${pool.max}${pool.die}`).join(' + ');
-}
-
-function hitDieAverageHeal(die: string, constitutionModifier: number) {
-  const sides = Number.parseInt(die.replace(/[^0-9]/g, ''), 10);
-  if (!Number.isFinite(sides) || sides <= 0) return Math.max(1, constitutionModifier);
-  return Math.max(1, Math.floor(sides / 2) + 1 + constitutionModifier);
-}
-
-function recoverLongRestHitDice(pools: HitDicePool[]) {
-  const total = pools.reduce((sum, pool) => sum + pool.max, 0);
-  let remainingRecovery = Math.max(1, Math.floor(total / 2));
-  return pools.map((pool) => {
-    const recovered = Math.min(pool.used, remainingRecovery);
-    remainingRecovery -= recovered;
-    return { ...pool, used: pool.used - recovered };
-  });
 }
 
 function parseSignedModifier(value: string | number) {
@@ -2784,7 +2774,7 @@ function RestDialog({
             <Stack alignItems="flex-start" spacing={0.3}>
               <Typography sx={{ fontWeight: 900 }}>Short Rest</Typography>
               <Typography sx={{ color: dndColors.muted, fontSize: 13, textAlign: 'left' }}>
-                Reset class features that recover on a short rest.
+                Spend available hit dice to recover HP and reset short-rest features.
               </Typography>
             </Stack>
           </Button>
@@ -4585,8 +4575,7 @@ function DungeonsAndDragons() {
     (dndClassDocs ?? [])
       .map((doc) => doc.class)
       .filter(
-        (classInfo): classInfo is DndClassInfo =>
-          asNonEmptyString(classInfo?.className) !== null,
+        (classInfo): classInfo is DndClassInfo => asNonEmptyString(classInfo?.className) !== null,
       )
       .map((classInfo) => [classInfo.className!, classInfo] as const),
   );
@@ -4640,7 +4629,7 @@ function DungeonsAndDragons() {
     initialValue: initialDndCharacter,
     createCharacter: createDndCharacter,
     describeCharacter: describeDndCharacter,
-    migrate: (_key, initialValue) => normalizeDndCharacter(initialValue),
+    migrate: migrateDndLocalCharacter,
   });
   const selectRemoteCharacter = useCallback(
     (characterState: unknown) => {
@@ -5120,60 +5109,16 @@ function DungeonsAndDragons() {
   };
 
   const applyRest = (restType: RestType) => {
-    setCharacter((current) => ({
-      ...current,
-      features: current.features.map((feature) => {
-        if (!feature.uses) return feature;
-        const reset = feature.uses.reset.toLowerCase();
-        const resetsOnRest =
-          restType === 'long'
-            ? reset.includes('long rest') || reset.includes('short')
-            : reset.includes('short');
-        return resetsOnRest ? { ...feature, uses: { ...feature.uses, used: 0 } } : feature;
-      }),
-      ...(restType === 'long'
-        ? {
-            hitPoints: {
-              ...current.hitPoints,
-              current: current.hitPoints.max,
-              temp: 0,
-              hitDicePools: recoverLongRestHitDice(current.hitPoints.hitDicePools),
-              deathSaves: { successes: 0, failures: 0 },
-            },
-            spellcasting: {
-              ...current.spellcasting,
-              slots: current.spellcasting.slots.map((slot) => ({ ...slot, used: 0 })),
-            },
-          }
-        : {}),
-    }));
+    setCharacter(applyDndRest(character, restType));
     setRestOpen(false);
     setUndoOpen(true);
   };
 
   const spendHitDie = (die: string) => {
-    let didSpend = false;
-    setCharacter((current) => {
-      const pool = current.hitPoints.hitDicePools.find((entry) => entry.die === die);
-      if (!pool || pool.used >= pool.max || current.hitPoints.current >= current.hitPoints.max) {
-        return current;
-      }
-      didSpend = true;
-      const constitutionScore =
-        current.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
-      const healAmount = hitDieAverageHeal(die, abilityModifier(constitutionScore));
-      return {
-        ...current,
-        hitPoints: {
-          ...current.hitPoints,
-          current: Math.min(current.hitPoints.max, current.hitPoints.current + healAmount),
-          hitDicePools: current.hitPoints.hitDicePools.map((entry) =>
-            entry.die === die ? { ...entry, used: entry.used + 1 } : entry,
-          ),
-        },
-      };
-    });
-    if (didSpend) setUndoOpen(true);
+    const result = spendDndHitDie(character, die);
+    if (!result.didSpend) return;
+    setCharacter(result.character);
+    setUndoOpen(true);
   };
 
   const toggleInspiration = () => {
