@@ -141,6 +141,16 @@ function isAbilityKey(value: string): value is AbilityKey {
   return abilityKeys.includes(value as AbilityKey);
 }
 
+function skillBonusFor(options: {
+  abilityScore: number;
+  proficiencyBonus: number;
+  proficient: boolean;
+  expertise: boolean;
+}) {
+  const proficiencyMultiplier = options.expertise ? 2 : options.proficient ? 1 : 0;
+  return abilityModifier(options.abilityScore) + options.proficiencyBonus * proficiencyMultiplier;
+}
+
 function createEntryId(prefix: string) {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return `${prefix}-${crypto.randomUUID()}`;
@@ -2532,12 +2542,16 @@ function createAbilityForm(character: DndCharacter): AbilityForm {
 function AbilityEditDialog({
   open,
   form,
+  skills,
+  proficiencyBonus,
   onChange,
   onCancel,
   onSave,
 }: {
   open: boolean;
   form: AbilityForm | null;
+  skills: Skill[];
+  proficiencyBonus: number;
   onChange: (form: AbilityForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -2551,9 +2565,46 @@ function AbilityEditDialog({
       ),
     });
   };
+  const abilityScoreByKey = new Map(
+    form.abilities.map((ability) => [
+      ability.key,
+      parseIntOrFallback(ability.score, 10),
+    ]),
+  );
+  const derivedSkillBonus = (name: string) => {
+    const skill = skills.find((entry) => entry.name === name);
+    if (!skill) return 10;
+    return (
+      10 +
+      skillBonusFor({
+        abilityScore: abilityScoreByKey.get(skill.ability) ?? 10,
+        proficiencyBonus,
+        proficient: skill.proficient,
+        expertise: Boolean(skill.expertise),
+      })
+    );
+  };
+  const recalculate = () => {
+    onChange({
+      ...form,
+      abilities: form.abilities.map((ability) => ({
+        ...ability,
+        saveBonus: String(
+          abilityModifier(parseIntOrFallback(ability.score, 10)) +
+            (ability.proficientSave ? proficiencyBonus : 0),
+        ),
+      })),
+      passivePerception: String(derivedSkillBonus('Perception')),
+      passiveInvestigation: String(derivedSkillBonus('Investigation')),
+      passiveInsight: String(derivedSkillBonus('Insight')),
+    });
+  };
 
   return (
     <DndEditDialog title="Edit Abilities" open={open} onCancel={onCancel} onSave={onSave}>
+      <Button onClick={recalculate} sx={{ ...inlineEditButtonSx, alignSelf: 'flex-start' }}>
+        Recalculate Saves & Passives
+      </Button>
       {form.abilities.map((ability, index) => (
         <Box
           key={ability.key}
@@ -2634,12 +2685,16 @@ function createSkillForm(character: DndCharacter): SkillForm {
 function SkillEditDialog({
   open,
   form,
+  abilities,
+  proficiencyBonus,
   onChange,
   onCancel,
   onSave,
 }: {
   open: boolean;
   form: SkillForm | null;
+  abilities: AbilityScore[];
+  proficiencyBonus: number;
   onChange: (form: SkillForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -2648,9 +2703,28 @@ function SkillEditDialog({
   const updateSkill = (index: number, next: Partial<SkillForm[number]>) => {
     onChange(form.map((skill, skillIndex) => (skillIndex === index ? { ...skill, ...next } : skill)));
   };
+  const abilityScoreByKey = new Map(abilities.map((ability) => [ability.key, ability.score]));
+  const recalculate = () => {
+    onChange(
+      form.map((skill) => ({
+        ...skill,
+        bonus: String(
+          skillBonusFor({
+            abilityScore: abilityScoreByKey.get(skill.ability) ?? 10,
+            proficiencyBonus,
+            proficient: skill.proficient,
+            expertise: skill.expertise,
+          }),
+        ),
+      })),
+    );
+  };
 
   return (
     <DndEditDialog title="Edit Skills" open={open} onCancel={onCancel} onSave={onSave}>
+      <Button onClick={recalculate} sx={{ ...inlineEditButtonSx, alignSelf: 'flex-start' }}>
+        Recalculate Skill Bonuses
+      </Button>
       {form.map((skill, index) => (
         <Box
           key={skill.name}
@@ -3950,6 +4024,8 @@ function DungeonsAndDragons() {
         <AbilityEditDialog
           open={abilityForm !== null}
           form={abilityForm}
+          skills={character.skills}
+          proficiencyBonus={character.proficiencyBonus}
           onChange={setAbilityForm}
           onCancel={() => setAbilityForm(null)}
           onSave={saveAbilities}
@@ -3957,6 +4033,8 @@ function DungeonsAndDragons() {
         <SkillEditDialog
           open={skillForm !== null}
           form={skillForm}
+          abilities={character.abilities}
+          proficiencyBonus={character.proficiencyBonus}
           onChange={setSkillForm}
           onCancel={() => setSkillForm(null)}
           onSave={saveSkills}
