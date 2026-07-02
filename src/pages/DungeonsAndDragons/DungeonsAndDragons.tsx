@@ -465,6 +465,7 @@ function HeroHeader({
   onEditHitPoints,
   onOpenCharacters,
   onOpenRest,
+  onOpenBuilder,
   homeAction,
   accountAction,
 
@@ -474,6 +475,7 @@ function HeroHeader({
   onEditHitPoints: () => void;
   onOpenCharacters: () => void;
   onOpenRest: () => void;
+  onOpenBuilder: () => void;
   homeAction: ReactNode;
   accountAction: ReactNode;
 }) {
@@ -528,7 +530,7 @@ function HeroHeader({
         </Stack>
         <Stack spacing={1.1} alignItems="center">
           <DefenseBadge label="Initiative" value={formatModifier(character.initiative)} shape="hex" />
-          <SmallActionButton icon={<AutoFixHighIcon />} label="Manage" />
+          <SmallActionButton icon={<AutoFixHighIcon />} label="Manage" onClick={onOpenBuilder} />
         </Stack>
         <Stack spacing={1.1}>
           <Box
@@ -2626,6 +2628,108 @@ type CharacterForm = {
   proficiencyBonus: string;
 };
 
+type CharacterBuilderForm = {
+  name: string;
+  species: string;
+  className: string;
+  background: string;
+  alignment: string;
+  str: string;
+  dex: string;
+  con: string;
+  int: string;
+  wis: string;
+  cha: string;
+  proficiencies: string;
+  equipment: string;
+  spells: string;
+};
+
+function createCharacterBuilderForm(classOptions: string[]): CharacterBuilderForm {
+  return {
+    name: 'New Adventurer',
+    species: 'Human',
+    className: classOptions[0] ?? 'Fighter',
+    background: 'Adventurer',
+    alignment: 'Neutral',
+    str: '10',
+    dex: '10',
+    con: '10',
+    int: '10',
+    wis: '10',
+    cha: '10',
+    proficiencies: '',
+    equipment: '',
+    spells: '',
+  };
+}
+
+function buildCharacterFromGuide(form: CharacterBuilderForm): DndCharacter {
+  const base = createDndCharacter();
+  const abilityScores: Record<AbilityKey, number> = {
+    str: parseIntOrFallback(form.str, 10),
+    dex: parseIntOrFallback(form.dex, 10),
+    con: parseIntOrFallback(form.con, 10),
+    int: parseIntOrFallback(form.int, 10),
+    wis: parseIntOrFallback(form.wis, 10),
+    cha: parseIntOrFallback(form.cha, 10),
+  };
+  const proficiencies = parseEditableList(form.proficiencies);
+  const inventoryNames = parseEditableList(form.equipment);
+  const spellNames = parseEditableList(form.spells);
+  const inventory = inventoryNames.map((name) => {
+    const catalogItem = dndItemCatalog.find((item) => item.name.toLowerCase() === name.toLowerCase());
+    return {
+      id: createEntryId('item'),
+      ...(catalogItem ?? {
+        name,
+        category: 'Adventuring Gear',
+        weight: '--',
+        quantity: '1',
+        cost: '--',
+      }),
+      equipped: false,
+    };
+  });
+  const spells = spellNames.map((name) => {
+    const catalogSpell = dndSpellCatalog.find((spell) => spell.name.toLowerCase() === name.toLowerCase());
+    return {
+      id: createEntryId('spell'),
+      ...(catalogSpell ?? {
+        name,
+        level: '1st Level',
+        school: 'Arcane',
+        castingTime: '1 Action',
+        range: '60 ft.',
+        hitDc: formatModifier(base.spellcasting.attackBonus),
+      }),
+      prepared: false,
+    };
+  });
+
+  return {
+    ...base,
+    name: form.name.trim() || base.name,
+    species: form.species.trim() || base.species,
+    classes: [{ name: form.className.trim() || 'Fighter', level: 1 }],
+    level: 1,
+    background: form.background.trim() || base.background,
+    alignment: form.alignment.trim() || base.alignment,
+    abilities: base.abilities.map((ability) => ({
+      ...ability,
+      score: abilityScores[ability.key],
+      saveBonus: abilityModifier(abilityScores[ability.key]) + (ability.proficientSave ? base.proficiencyBonus : 0),
+    })),
+    skills: base.skills.map((skill) => ({
+      ...skill,
+      bonus: abilityModifier(abilityScores[skill.ability]) + (skill.proficient ? base.proficiencyBonus : 0),
+    })),
+    proficiencies,
+    inventory,
+    spells,
+  };
+}
+
 function createCharacterForm(character: DndCharacter): CharacterForm {
   return {
     name: character.name,
@@ -2789,6 +2893,121 @@ function ClassSelectField({
         ))}
       </Box>
     </Box>
+  );
+}
+
+function CharacterBuilderDialog({
+  open,
+  form,
+  classOptions,
+  onChange,
+  onCancel,
+  onCreate,
+}: {
+  open: boolean;
+  form: CharacterBuilderForm | null;
+  classOptions: string[];
+  onChange: (form: CharacterBuilderForm) => void;
+  onCancel: () => void;
+  onCreate: () => void;
+}) {
+  if (!form) return null;
+  const setField = (key: keyof CharacterBuilderForm, value: string) =>
+    onChange({ ...form, [key]: value });
+  const resolvedClassOptions = classOptions.length > 0 ? classOptions : [form.className || 'Fighter'];
+  return (
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
+    >
+      <DialogTitle sx={{ fontWeight: 900 }}>Guided Character Creation</DialogTitle>
+      <DialogContent>
+        <Stack spacing={1.2} sx={{ pt: 0.5 }}>
+          <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
+          <Stack direction="row" spacing={1}>
+            <FormField label="Species" value={form.species} onChange={(value) => setField('species', value)} />
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, mb: 0.4 }}>
+                CLASS
+              </Typography>
+              <Box
+                component="select"
+                value={form.className}
+                onChange={(event) => setField('className', event.target.value)}
+                sx={{
+                  width: '100%',
+                  minHeight: 42,
+                  border: `1px solid ${dndColors.border}`,
+                  borderRadius: '6px',
+                  bgcolor: dndColors.panelStrong,
+                  color: dndColors.text,
+                  px: 1,
+                  font: 'inherit',
+                  fontWeight: 800,
+                }}
+              >
+                {resolvedClassOptions.map((className) => (
+                  <option key={className} value={className}>
+                    {className}
+                  </option>
+                ))}
+              </Box>
+            </Box>
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            <FormField label="Background" value={form.background} onChange={(value) => setField('background', value)} />
+            <FormField label="Alignment" value={form.alignment} onChange={(value) => setField('alignment', value)} />
+          </Stack>
+          <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
+            Ability Scores
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+            {abilityKeys.map((ability) => (
+              <FormField
+                key={ability}
+                label={ability.toUpperCase()}
+                value={form[ability]}
+                inputMode="numeric"
+                onChange={(value) => setField(ability, value)}
+              />
+            ))}
+          </Box>
+          <MultilineFormField
+            label="Proficiencies"
+            value={form.proficiencies}
+            minRows={3}
+            onChange={(value) => setField('proficiencies', value)}
+          />
+          <MultilineFormField
+            label="Equipment"
+            value={form.equipment}
+            minRows={3}
+            onChange={(value) => setField('equipment', value)}
+          />
+          <MultilineFormField
+            label="Spells"
+            value={form.spells}
+            minRows={3}
+            onChange={(value) => setField('spells', value)}
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onCancel} sx={{ color: dndColors.text }}>
+          Cancel
+        </Button>
+        <Button
+          onClick={onCreate}
+          variant="contained"
+          sx={{ bgcolor: dndColors.red, '&:hover': { bgcolor: dndColors.redDark } }}
+        >
+          Create
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -3985,6 +4204,7 @@ function DungeonsAndDragons() {
     body: string;
   }>(null);
   const [undoOpen, setUndoOpen] = useState(false);
+  const [builderForm, setBuilderForm] = useState<CharacterBuilderForm | null>(null);
   const [characterForm, setCharacterForm] = useState<CharacterForm | null>(null);
   const [hitPointForm, setHitPointForm] = useState<HitPointForm | null>(null);
   const [attackForm, setAttackForm] = useState<AttackForm | null>(null);
@@ -4021,6 +4241,17 @@ function DungeonsAndDragons() {
   const setActiveTab = (tab: DndTab) => {
     setActiveTabRaw(tab);
     persistAppView('dungeons-and-dragons', 'tab', tab);
+  };
+
+  const openCharacterBuilder = () => {
+    setBuilderForm(createCharacterBuilderForm(dndClassOptions));
+  };
+
+  const createGuidedCharacter = () => {
+    if (!builderForm) return;
+    localCharacters.addCharacter(buildCharacterFromGuide(builderForm));
+    setBuilderForm(null);
+    setUndoOpen(false);
   };
 
   useEffect(() => {
@@ -4675,6 +4906,7 @@ function DungeonsAndDragons() {
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
             onOpenCharacters={() => setCharactersOpen(true)}
             onOpenRest={() => setRestOpen(true)}
+            onOpenBuilder={openCharacterBuilder}
             homeAction={
             <IconButton
               component={Link}
@@ -4773,6 +5005,14 @@ function DungeonsAndDragons() {
           onChange={setCharacterForm}
           onCancel={() => setCharacterForm(null)}
           onSave={saveCharacter}
+        />
+        <CharacterBuilderDialog
+          open={builderForm !== null}
+          form={builderForm}
+          classOptions={dndClassOptions}
+          onChange={setBuilderForm}
+          onCancel={() => setBuilderForm(null)}
+          onCreate={createGuidedCharacter}
         />
         <HitPointEditDialog
           open={hitPointForm !== null}

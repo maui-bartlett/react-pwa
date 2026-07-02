@@ -33,13 +33,13 @@ type UseLocalCharacterSlotsOptions<T> = {
   migrate?: (key: string, initialValue: T) => T;
 };
 
-type UseLocalCharacterSlotsResult = {
+type UseLocalCharacterSlotsResult<T = never> = {
   characters: LocalCharacterSummary[];
   activeId: string | null;
   hydrated: boolean;
   limit: number;
   canAdd: boolean;
-  addCharacter: () => void;
+  addCharacter: (character?: T) => void;
   selectCharacter: (id: string) => void;
   deleteCharacter: (id: string) => void;
 };
@@ -83,7 +83,7 @@ function useLocalCharacterSlots<T>({
   createCharacter,
   describeCharacter,
   migrate,
-}: UseLocalCharacterSlotsOptions<T>): UseLocalCharacterSlotsResult {
+}: UseLocalCharacterSlotsOptions<T>): UseLocalCharacterSlotsResult<T> {
   const [character, setCharacter] = useAtom(atom);
   const [slots, setSlots] = useState<Array<LocalCharacterSlot<T>>>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -183,9 +183,9 @@ function useLocalCharacterSlots<T>({
     persistSlots(nextSlots, activeIdRef.current);
   }, [character, describeCharacter, persistSlots]);
 
-  const addCharacter = useCallback(() => {
+  const addCharacter = useCallback((characterOverride?: T) => {
     if (slotsRef.current.length >= LOCAL_CHARACTER_LIMIT) return;
-    const nextCharacter = createCharacter();
+    const nextCharacter = characterOverride ?? createCharacter();
     const nextSlot = {
       id: createLocalCharacterId(),
       name: describeCharacter(nextCharacter),

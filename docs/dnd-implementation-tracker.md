@@ -14,9 +14,9 @@ This tracker covers the requested Dungeons & Dragons feature set for Table-Top O
   - Class 1 and Class 2 in the character editor now read from `classes.listDungeonsAndDragonsClasses`.
   - The Features tab shows selected class attributes from the Convex catalog.
 
-- [ ] Add guided character creation: species, class, abilities, background, proficiencies, equipment, spells.
-  - Current state: users can manually edit most of these areas after character creation.
-  - Remaining: build a guided creation flow/wizard with staged choices and catalog-backed defaults.
+- [x] Add guided character creation: species, class, abilities, background, proficiencies, equipment, spells.
+  - DnD Manage opens a guided creation flow covering identity, class, ability scores, background, proficiencies, equipment, and spells.
+  - The created character is added as a new local character slot and uses catalog data where names match.
 
 - [ ] Add class leveling/multiclass management that derives hit dice, saves, proficiency options, spellcasting, and features from Convex.
   - Current state: classes/subclasses can be edited and class attributes can be displayed.
