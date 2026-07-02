@@ -4,7 +4,6 @@ import { Link } from 'react-router';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import AddIcon from '@mui/icons-material/Add';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -14,7 +13,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PersonIcon from '@mui/icons-material/Person';
 import ShieldIcon from '@mui/icons-material/Shield';
 
-import { Backpack, Sword, ChevronRight, HandFist, House, Info, Pencil, Trash2 } from 'lucide-react';
+import { Backpack, House, Sword } from 'lucide-react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -179,29 +178,6 @@ function classLine(character: DndCharacter) {
     .join(' • ')}`;
 }
 
-function DragonMark() {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        width: 54,
-        height: 54,
-        borderRadius: '50%',
-        bgcolor: '#ffffff',
-        color: dndColors.red,
-        display: 'grid',
-        placeItems: 'center',
-        fontWeight: 900,
-        fontSize: 27,
-        fontFamily: 'Georgia, serif',
-        boxShadow: '0 8px 22px rgba(0,0,0,0.28)',
-      }}
-    >
-      D
-    </Box>
-  );
-}
-
 function DndCard({
   children,
   sx,
@@ -306,7 +282,7 @@ function HeroHeader({
 
   const hpPercent = Math.max(0, Math.min(100, (character.hitPoints.current / character.hitPoints.max) * 100));
 
-  const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
+  const [, setActiveTabRaw] = useAtom(activeDndTabState);
 
   const setActiveTab = (tab: DndTab) => {
     setActiveTabRaw(tab);
@@ -316,9 +292,6 @@ function HeroHeader({
   return (
     <Box sx={{ bgcolor: dndColors.chrome, px: 1.8, pt: 2.4, pb: 2 }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        {/* <IconButton component={Link} to="/home" aria-label="Back to TableTop home" sx={roundButtonSx}>
-          <ArrowBackIcon />
-        </IconButton> */}
         <Stack alignItems="start" spacing={0.2}>
           <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 700 }}>
             {character.name}
