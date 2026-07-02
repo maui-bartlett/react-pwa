@@ -320,6 +320,118 @@ function FabUSummary({ state }: { state: unknown }) {
   );
 }
 
+function DungeonsAndDragonsSummary({ state }: { state: unknown }) {
+  const fabUTokens = useFabUTokens();
+  const inner =
+    state && typeof state === 'object' && 'character' in state
+      ? (state as { character?: unknown }).character
+      : state;
+  const character = inner && typeof inner === 'object' ? (inner as Record<string, unknown>) : {};
+  const classes = Array.isArray(character.classes)
+    ? character.classes
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') return '';
+          const record = entry as Record<string, unknown>;
+          const name = typeof record.name === 'string' ? record.name : '';
+          const level = typeof record.level === 'number' ? record.level : null;
+          return name && level ? `${name} ${level}` : name;
+        })
+        .filter(Boolean)
+    : [];
+  const hitPoints =
+    character.hitPoints && typeof character.hitPoints === 'object'
+      ? (character.hitPoints as Record<string, unknown>)
+      : {};
+  const spellcasting =
+    character.spellcasting && typeof character.spellcasting === 'object'
+      ? (character.spellcasting as Record<string, unknown>)
+      : {};
+  const abilities = Array.isArray(character.abilities)
+    ? (character.abilities as Array<Record<string, unknown>>)
+    : [];
+  const inventory = Array.isArray(character.inventory)
+    ? (character.inventory as Array<Record<string, unknown>>)
+    : [];
+  const features = Array.isArray(character.features)
+    ? (character.features as Array<Record<string, unknown>>)
+    : [];
+
+  return (
+    <Stack spacing={0.6}>
+      <Typography
+        sx={{ fontSize: '0.82rem', fontWeight: 800, color: fabUTokens.color.textPrimary }}
+      >
+        Level {typeof character.level === 'number' ? character.level : '—'}
+        {classes.length ? ` · ${classes.join(', ')}` : ''}
+      </Typography>
+      <Typography sx={{ fontSize: '0.76rem', color: fabUTokens.color.textSecondary }}>
+        {[character.species, character.background]
+          .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+          .join(' · ') || 'Dungeons & Dragons character'}
+      </Typography>
+
+      <SectionLabel>Vitals</SectionLabel>
+      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+        <StatBox
+          label="HP"
+          value={`${typeof hitPoints.current === 'number' ? hitPoints.current : '—'}/${typeof hitPoints.max === 'number' ? hitPoints.max : '—'}`}
+        />
+        <StatBox
+          label="AC"
+          value={typeof character.armorClass === 'number' ? character.armorClass : '—'}
+        />
+        <StatBox
+          label="PB"
+          value={
+            typeof character.proficiencyBonus === 'number' ? `+${character.proficiencyBonus}` : '—'
+          }
+        />
+      </Box>
+
+      <SectionLabel>Abilities</SectionLabel>
+      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+        {abilities.slice(0, 6).map((ability) => (
+          <StatBox
+            key={String(ability.key ?? ability.label)}
+            label={String(ability.key ?? '').toUpperCase()}
+            value={typeof ability.score === 'number' ? ability.score : '—'}
+          />
+        ))}
+      </Box>
+
+      <SectionLabel>Spellcasting</SectionLabel>
+      <Typography sx={{ fontSize: '0.78rem', color: fabUTokens.color.textPrimary }}>
+        {typeof spellcasting.ability === 'string'
+          ? `${spellcasting.ability.toUpperCase()} · DC ${spellcasting.saveDc ?? '—'} · Attack ${spellcasting.attackBonus ?? '—'}`
+          : 'No spellcasting configured'}
+      </Typography>
+
+      <SectionLabel>Conditions</SectionLabel>
+      <ChipRow
+        items={Array.isArray(character.conditions) ? (character.conditions as string[]) : []}
+        empty="None"
+      />
+
+      <SectionLabel>Equipped Gear</SectionLabel>
+      <ChipRow
+        items={inventory
+          .filter((item) => item.equipped === true && typeof item.name === 'string')
+          .map((item) => item.name as string)}
+        empty="None"
+      />
+
+      <SectionLabel>Features</SectionLabel>
+      <ChipRow
+        items={features
+          .filter((feature) => typeof feature.name === 'string')
+          .slice(0, 6)
+          .map((feature) => feature.name as string)}
+        empty="None"
+      />
+    </Stack>
+  );
+}
+
 function ObjectiveClockEditor({ campaignId }: { campaignId: Id<'campaigns'> }) {
   const fabUTokens = useFabUTokens();
   const objective = useQuery(api.campaigns.getObjectiveClock, { campaignId });
@@ -575,6 +687,8 @@ function CampaignCharacterSheets({ campaignId }: { campaignId: Id<'campaigns'> }
             </Typography>
             {selected.gameSystem === 'avatar-legends' ? (
               <AvatarLegendsSummary state={selected.characterState} />
+            ) : selected.gameSystem === 'dungeons-and-dragons' ? (
+              <DungeonsAndDragonsSummary state={selected.characterState} />
             ) : (
               <FabUSummary state={selected.characterState} />
             )}

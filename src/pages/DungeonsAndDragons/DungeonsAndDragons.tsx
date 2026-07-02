@@ -1,7 +1,6 @@
 import { HTMLAttributes, ReactNode, useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router';
-
 import { ErrorBoundary } from 'react-error-boundary';
+import { Link } from 'react-router';
 
 import AddIcon from '@mui/icons-material/Add';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -12,9 +11,6 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PersonIcon from '@mui/icons-material/Person';
 import ShieldIcon from '@mui/icons-material/Shield';
-
-import { Backpack, House, Sword } from 'lucide-react';
-
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -31,10 +27,11 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
+import { Backpack, House, Sword } from 'lucide-react';
 
-import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
-import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
+import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
+import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
 import AccountSettings from '@/sections/AccountSettings';
 import { persistAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
@@ -42,7 +39,6 @@ import type { LocalCharacterSummary } from '@/state/useLocalCharacterSlots';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
 
 import { api } from '../../../convex/_generated/api';
-
 import type {
   AbilityKey,
   AbilityScore,
@@ -57,7 +53,13 @@ import type {
   Skill,
   Spell,
 } from './atoms';
-import { dndCharacterState, initialDndCharacter, initialDndTab, normalizeDndCharacter } from './atoms';
+import {
+  dndCharacterState,
+  initialDndCharacter,
+  initialDndTab,
+  normalizeDndCharacter,
+} from './atoms';
+import { deriveDndClassFields, formatSpellcasting } from './classDerivation';
 import { DND_SCHEMA_VERSION, deserializeDndCharacter, serializeDndCharacter } from './persistence';
 import { useDndCharacterHistory } from './useCharacterHistory';
 
@@ -104,20 +106,30 @@ const dndConditions = [
 ];
 
 const dndConditionDescriptions: Record<string, string> = {
-  Blinded: 'Cannot see; automatically fails sight checks. Attacks against you have advantage, and your attacks have disadvantage.',
-  Charmed: 'Cannot attack the charmer or target them with harmful abilities. The charmer has advantage on social checks against you.',
+  Blinded:
+    'Cannot see; automatically fails sight checks. Attacks against you have advantage, and your attacks have disadvantage.',
+  Charmed:
+    'Cannot attack the charmer or target them with harmful abilities. The charmer has advantage on social checks against you.',
   Deafened: 'Cannot hear and automatically fails checks that require hearing.',
-  Frightened: 'Disadvantage on checks and attacks while the source is in sight, and you cannot willingly move closer to it.',
+  Frightened:
+    'Disadvantage on checks and attacks while the source is in sight, and you cannot willingly move closer to it.',
   Grappled: 'Speed becomes 0. Ends if the grappler is incapacitated or you are moved out of reach.',
   Incapacitated: 'Cannot take actions or reactions.',
-  Invisible: 'Cannot be seen without special senses. Your attacks have advantage, and attacks against you have disadvantage.',
-  Paralyzed: 'Incapacitated, cannot move or speak, fails Strength/Dex saves, attacks against you have advantage, and nearby hits crit.',
-  Petrified: 'Transformed into inert stone-like material, incapacitated, unaware, resistant to damage, and immune to poison/disease.',
+  Invisible:
+    'Cannot be seen without special senses. Your attacks have advantage, and attacks against you have disadvantage.',
+  Paralyzed:
+    'Incapacitated, cannot move or speak, fails Strength/Dex saves, attacks against you have advantage, and nearby hits crit.',
+  Petrified:
+    'Transformed into inert stone-like material, incapacitated, unaware, resistant to damage, and immune to poison/disease.',
   Poisoned: 'Disadvantage on attack rolls and ability checks.',
-  Prone: 'Only crawl unless you stand. Your attacks have disadvantage; nearby attacks against you have advantage.',
-  Restrained: 'Speed becomes 0, attacks against you have advantage, your attacks have disadvantage, and Dex saves have disadvantage.',
-  Stunned: 'Incapacitated, cannot move, can speak falteringly, fails Strength/Dex saves, and attacks against you have advantage.',
-  Unconscious: 'Incapacitated, cannot move or speak, unaware, drops held items, falls prone, fails Strength/Dex saves, and nearby hits crit.',
+  Prone:
+    'Only crawl unless you stand. Your attacks have disadvantage; nearby attacks against you have advantage.',
+  Restrained:
+    'Speed becomes 0, attacks against you have advantage, your attacks have disadvantage, and Dex saves have disadvantage.',
+  Stunned:
+    'Incapacitated, cannot move, can speak falteringly, fails Strength/Dex saves, and attacks against you have advantage.',
+  Unconscious:
+    'Incapacitated, cannot move or speak, unaware, drops held items, falls prone, fails Strength/Dex saves, and nearby hits crit.',
 };
 
 const exhaustionEffects = [
@@ -131,15 +143,42 @@ const exhaustionEffects = [
 ];
 
 const dndItemCatalog: Array<Omit<InventoryItem, 'id' | 'equipped'>> = [
-  { name: 'Leather Armor', category: 'Light Armor', weight: '10 lb.', quantity: '1', cost: '10', armorClassModifier: 1 },
-  { name: 'Studded Leather Armor', category: 'Light Armor', weight: '13 lb.', quantity: '1', cost: '45', armorClassModifier: 2 },
-  { name: 'Shield', category: 'Shield', weight: '6 lb.', quantity: '1', cost: '10', armorClassModifier: 2 },
+  {
+    name: 'Leather Armor',
+    category: 'Light Armor',
+    weight: '10 lb.',
+    quantity: '1',
+    cost: '10',
+    armorClassModifier: 1,
+  },
+  {
+    name: 'Studded Leather Armor',
+    category: 'Light Armor',
+    weight: '13 lb.',
+    quantity: '1',
+    cost: '45',
+    armorClassModifier: 2,
+  },
+  {
+    name: 'Shield',
+    category: 'Shield',
+    weight: '6 lb.',
+    quantity: '1',
+    cost: '10',
+    armorClassModifier: 2,
+  },
   { name: 'Dagger', category: 'Melee Weapon', weight: '1 lb.', quantity: '1', cost: '2' },
   { name: 'Rapier', category: 'Melee Weapon', weight: '2 lb.', quantity: '1', cost: '25' },
   { name: 'Shortsword', category: 'Melee Weapon', weight: '2 lb.', quantity: '1', cost: '10' },
   { name: 'Crossbow, Hand', category: 'Ranged Weapon', weight: '3 lb.', quantity: '1', cost: '75' },
   { name: "Thieves' Tools", category: 'Tools', weight: '1 lb.', quantity: '1', cost: '25' },
-  { name: "Explorer's Pack", category: 'Adventuring Gear', weight: '59 lb.', quantity: '1', cost: '10' },
+  {
+    name: "Explorer's Pack",
+    category: 'Adventuring Gear',
+    weight: '59 lb.',
+    quantity: '1',
+    cost: '10',
+  },
   { name: 'Potion of Healing', category: 'Potion', weight: '0.5 lb.', quantity: '1', cost: '50' },
 ];
 
@@ -152,16 +191,99 @@ type SpellCatalogEntry = Omit<Spell, 'id' | 'prepared'> & {
 };
 
 const dndSpellCatalog: SpellCatalogEntry[] = [
-  { name: 'Fire Bolt', level: 'Cantrip', school: 'Evocation', castingTime: '1 Action', range: '120 ft.', hitDc: '+8', damage: '1d10', classes: ['Wizard'] },
-  { name: 'Ray of Frost', level: 'Cantrip', school: 'Evocation', castingTime: '1 Action', range: '60 ft.', hitDc: '+8', damage: '1d8', classes: ['Wizard'] },
-  { name: 'Mage Hand', level: 'Cantrip', school: 'Conjuration', castingTime: '1 Action', range: '30 ft.', hitDc: 'Utility', classes: ['Wizard'] },
-  { name: 'Shield', level: '1st Level', school: 'Abjuration', castingTime: '1 Reaction', range: 'Self', hitDc: '+5 AC', classes: ['Wizard'] },
-  { name: 'Absorb Elements', level: '1st Level', school: 'Abjuration', castingTime: '1 Reaction', range: 'Self', hitDc: 'Resistance', classes: ['Wizard'] },
-  { name: 'Silvery Barbs', level: '1st Level', school: 'Enchantment', castingTime: '1 Reaction', range: '60 ft.', hitDc: 'Reroll', classes: ['Wizard'] },
-  { name: 'Magic Missile', level: '1st Level', school: 'Evocation', castingTime: '1 Action', range: '120 ft.', hitDc: 'Auto', damage: '3d4+3', classes: ['Wizard'] },
-  { name: 'Detect Magic', level: '1st Level', school: 'Divination', castingTime: '1 Action', range: 'Self', hitDc: 'Utility', classes: ['Wizard'] },
-  { name: 'Misty Step', level: '2nd Level', school: 'Conjuration', castingTime: '1 Bonus Action', range: 'Self', hitDc: 'Utility', classes: ['Wizard'] },
-  { name: 'Invisibility', level: '2nd Level', school: 'Illusion', castingTime: '1 Action', range: 'Touch', hitDc: 'Utility', classes: ['Wizard'] },
+  {
+    name: 'Fire Bolt',
+    level: 'Cantrip',
+    school: 'Evocation',
+    castingTime: '1 Action',
+    range: '120 ft.',
+    hitDc: '+8',
+    damage: '1d10',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Ray of Frost',
+    level: 'Cantrip',
+    school: 'Evocation',
+    castingTime: '1 Action',
+    range: '60 ft.',
+    hitDc: '+8',
+    damage: '1d8',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Mage Hand',
+    level: 'Cantrip',
+    school: 'Conjuration',
+    castingTime: '1 Action',
+    range: '30 ft.',
+    hitDc: 'Utility',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Shield',
+    level: '1st Level',
+    school: 'Abjuration',
+    castingTime: '1 Reaction',
+    range: 'Self',
+    hitDc: '+5 AC',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Absorb Elements',
+    level: '1st Level',
+    school: 'Abjuration',
+    castingTime: '1 Reaction',
+    range: 'Self',
+    hitDc: 'Resistance',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Silvery Barbs',
+    level: '1st Level',
+    school: 'Enchantment',
+    castingTime: '1 Reaction',
+    range: '60 ft.',
+    hitDc: 'Reroll',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Magic Missile',
+    level: '1st Level',
+    school: 'Evocation',
+    castingTime: '1 Action',
+    range: '120 ft.',
+    hitDc: 'Auto',
+    damage: '3d4+3',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Detect Magic',
+    level: '1st Level',
+    school: 'Divination',
+    castingTime: '1 Action',
+    range: 'Self',
+    hitDc: 'Utility',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Misty Step',
+    level: '2nd Level',
+    school: 'Conjuration',
+    castingTime: '1 Bonus Action',
+    range: 'Self',
+    hitDc: 'Utility',
+    classes: ['Wizard'],
+  },
+  {
+    name: 'Invisibility',
+    level: '2nd Level',
+    school: 'Illusion',
+    castingTime: '1 Action',
+    range: 'Touch',
+    hitDc: 'Utility',
+    classes: ['Wizard'],
+  },
 ];
 
 type DndClassDoc = {
@@ -236,7 +358,10 @@ function createDndCharacter() {
     classes: initialDndCharacter.classes.map((entry) => ({ ...entry })),
     abilities: initialDndCharacter.abilities.map((entry) => ({ ...entry })),
     skills: initialDndCharacter.skills.map((entry) => ({ ...entry })),
-    attacks: initialDndCharacter.attacks.map((entry) => ({ ...entry, id: createEntryId('attack') })),
+    attacks: initialDndCharacter.attacks.map((entry) => ({
+      ...entry,
+      id: createEntryId('attack'),
+    })),
     spells: initialDndCharacter.spells.map((entry) => ({ ...entry, id: createEntryId('spell') })),
     spellcasting: {
       ...initialDndCharacter.spellcasting,
@@ -348,7 +473,7 @@ function rollDiceExpression(label: string, expression: string) {
 
 function equippedArmorClassModifier(character: DndCharacter) {
   return character.inventory.reduce(
-    (sum, item) => sum + (item.equipped ? item.armorClassModifier ?? 0 : 0),
+    (sum, item) => sum + (item.equipped ? (item.armorClassModifier ?? 0) : 0),
     0,
   );
 }
@@ -369,9 +494,7 @@ function encumbranceLabel(totalWeight: number, character: DndCharacter) {
 }
 
 function classLine(character: DndCharacter) {
-  return `${character.classes
-    .map((entry) => `${entry.name} ${entry.level}`)
-    .join(' • ')}`;
+  return `${character.classes.map((entry) => `${entry.name} ${entry.level}`).join(' • ')}`;
 }
 
 function DndCard({
@@ -468,7 +591,6 @@ function HeroHeader({
   onOpenBuilder,
   homeAction,
   accountAction,
-
 }: {
   character: DndCharacter;
   onEditCharacter: () => void;
@@ -479,8 +601,10 @@ function HeroHeader({
   homeAction: ReactNode;
   accountAction: ReactNode;
 }) {
-
-  const hpPercent = Math.max(0, Math.min(100, (character.hitPoints.current / character.hitPoints.max) * 100));
+  const hpPercent = Math.max(
+    0,
+    Math.min(100, (character.hitPoints.current / character.hitPoints.max) * 100),
+  );
 
   const [, setActiveTabRaw] = useAtom(activeDndTabState);
 
@@ -529,7 +653,11 @@ function HeroHeader({
           <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" onClick={onOpenRest} />
         </Stack>
         <Stack spacing={1.1} alignItems="center">
-          <DefenseBadge label="Initiative" value={formatModifier(character.initiative)} shape="hex" />
+          <DefenseBadge
+            label="Initiative"
+            value={formatModifier(character.initiative)}
+            shape="hex"
+          />
           <SmallActionButton icon={<AutoFixHighIcon />} label="Manage" onClick={onOpenBuilder} />
         </Stack>
         <Stack spacing={1.1}>
@@ -569,7 +697,7 @@ function HeroHeader({
               }}
             />
           </Box>
-          <ConditionsButton onChange={setActiveTab}/>
+          <ConditionsButton onChange={setActiveTab} />
         </Stack>
       </Box>
     </Box>
@@ -579,19 +707,19 @@ function HeroHeader({
 function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
   return (
     <Button
-            onClick={() => onChange('conditions')}
-            sx={{
-              minHeight: 43,
-              bgcolor: dndColors.panelStrong,
-              color: dndColors.text,
-              borderRadius: '6px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              '&:hover': { bgcolor: '#05090b' },
-            }}
-          >
-            Conditions
-    </Button> 
+      onClick={() => onChange('conditions')}
+      sx={{
+        minHeight: 43,
+        bgcolor: dndColors.panelStrong,
+        color: dndColors.text,
+        borderRadius: '6px',
+        fontWeight: 900,
+        textTransform: 'uppercase',
+        '&:hover': { bgcolor: '#05090b' },
+      }}
+    >
+      Conditions
+    </Button>
   );
 }
 
@@ -683,7 +811,13 @@ const tabOptions: Array<{ value: DndTab; label: string; icon: ReactNode }> = [
   { value: 'features', label: 'More', icon: <MenuBookIcon /> },
 ];
 
-function BottomNav({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab: DndTab) => void }) {
+function BottomNav({
+  activeTab,
+  onChange,
+}: {
+  activeTab: DndTab;
+  onChange: (tab: DndTab) => void;
+}) {
   return (
     <Box
       sx={{
@@ -919,7 +1053,10 @@ function AbilitiesScreen({
             +
           </Box>
           <Typography sx={{ color: dndColors.text, fontSize: 16 }}>
-            1 on saves <Box component="span" sx={{ color: dndColors.green, fontStyle: 'italic' }}>(Cloak of Protection)</Box>
+            1 on saves{' '}
+            <Box component="span" sx={{ color: dndColors.green, fontStyle: 'italic' }}>
+              (Cloak of Protection)
+            </Box>
           </Typography>
         </Stack>
         <DividerLabel title="Senses" />
@@ -939,7 +1076,7 @@ function AbilitiesScreen({
         >
           Inspiration
           <Box component="span">{character.inspiration ? 'Marked' : 'Unmarked'}</Box>
-        </Button>        
+        </Button>
       </Box>
     </>
   );
@@ -1035,11 +1172,17 @@ function ConditionsScreen({
                   height: 38,
                   borderRadius: '50%',
                   border: `1px solid ${character.exhaustion === level ? dndColors.red : dndColors.border}`,
-                  bgcolor: character.exhaustion === level ? alpha(dndColors.red, 0.22) : dndColors.panelStrong,
+                  bgcolor:
+                    character.exhaustion === level
+                      ? alpha(dndColors.red, 0.22)
+                      : dndColors.panelStrong,
                   color: character.exhaustion === level ? '#ffffff' : dndColors.muted,
                   fontWeight: 900,
                   '&:hover': {
-                    bgcolor: character.exhaustion === level ? alpha(dndColors.red, 0.3) : alpha('#ffffff', 0.08),
+                    bgcolor:
+                      character.exhaustion === level
+                        ? alpha(dndColors.red, 0.3)
+                        : alpha('#ffffff', 0.08),
                   },
                 }}
               >
@@ -1077,7 +1220,15 @@ function ConditionsScreen({
                   <Box component="span">{condition}</Box>
                   <Box component="span">{active ? 'Marked' : 'Clear'}</Box>
                 </Button>
-                <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 700, mt: 0.8, lineHeight: 1.35 }}>
+                <Typography
+                  sx={{
+                    color: dndColors.muted,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    mt: 0.8,
+                    lineHeight: 1.35,
+                  }}
+                >
                   {dndConditionDescriptions[condition]}
                 </Typography>
               </Box>
@@ -1203,13 +1354,7 @@ function ActionsScreen({
   );
 }
 
-function AttackRow({
-  attack,
-  onToggleEquipped,
-}: {
-  attack: Attack;
-  onToggleEquipped: () => void;
-}) {
+function AttackRow({ attack, onToggleEquipped }: { attack: Attack; onToggleEquipped: () => void }) {
   const equipped = Boolean(attack.equipped);
   return (
     <Box
@@ -1241,7 +1386,7 @@ function AttackRow({
           },
         }}
       >
-        {attack.kind.toLowerCase().includes('cantrip') ? <LocalFireDepartmentIcon /> : <Sword/>}
+        {attack.kind.toLowerCase().includes('cantrip') ? <LocalFireDepartmentIcon /> : <Sword />}
       </IconButton>
       <Stack>
         <Typography
@@ -1364,7 +1509,10 @@ function SpellsScreen({
         <DndCard sx={{ p: 1.4, mb: 1.4 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
             <Metric label="Spell Save DC" value={character.spellcasting.saveDc} />
-            <Metric label="Spell Attack" value={formatModifier(character.spellcasting.attackBonus)} />
+            <Metric
+              label="Spell Attack"
+              value={formatModifier(character.spellcasting.attackBonus)}
+            />
             <Metric label="Ability" value={character.spellcasting.ability.toUpperCase()} />
             <IconButton
               aria-label="Edit spellcasting"
@@ -1415,7 +1563,9 @@ function SlotTracker({
 }) {
   return (
     <Box sx={{ flex: 1 }}>
-      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>{slot.level}</Typography>
+      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
+        {slot.level}
+      </Typography>
       <Stack direction="row" spacing={0.4} sx={{ mt: 0.5 }}>
         {Array.from({ length: slot.max }).map((_, index) => (
           <Box
@@ -1440,16 +1590,12 @@ function SlotTracker({
   );
 }
 
-function SpellRow({
-  spell,
-  onTogglePrepared,
-}: {
-  spell: Spell;
-  onTogglePrepared: () => void;
-}) {
+function SpellRow({ spell, onTogglePrepared }: { spell: Spell; onTogglePrepared: () => void }) {
   const prepared = Boolean(spell.prepared);
   return (
-    <Box sx={{ py: 1.25, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}>
+    <Box
+      sx={{ py: 1.25, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}
+    >
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Stack>
           <Typography sx={{ color: dndColors.text, fontSize: 18, fontWeight: 900 }}>
@@ -1525,7 +1671,9 @@ function InventoryScreen({
   const totalWeight = character.inventory.reduce((sum, item) => {
     const numeric = Number.parseFloat(item.weight);
     const quantity = Number.parseFloat(item.quantity);
-    return Number.isFinite(numeric) ? sum + numeric * (Number.isFinite(quantity) ? quantity : 1) : sum;
+    return Number.isFinite(numeric)
+      ? sum + numeric * (Number.isFinite(quantity) ? quantity : 1)
+      : sum;
   }, 0);
   const encumbrance = encumbranceLabel(totalWeight, character);
   const acModifier = equippedArmorClassModifier(character);
@@ -1545,18 +1693,24 @@ function InventoryScreen({
           >
             <Stack direction="row" justifyContent="space-between">
               <Stack>
-                <Typography sx={{ color: dndColors.muted, fontWeight: 900 }}>WEIGHT CARRIED</Typography>
+                <Typography sx={{ color: dndColors.muted, fontWeight: 900 }}>
+                  WEIGHT CARRIED
+                </Typography>
                 <Typography sx={{ color: dndColors.text, fontSize: 25, fontWeight: 900 }}>
                   {totalWeight} lb.
                 </Typography>
-                <Typography sx={{ color: dndColors.muted, fontWeight: 800 }}>{encumbrance}</Typography>
+                <Typography sx={{ color: dndColors.muted, fontWeight: 800 }}>
+                  {encumbrance}
+                </Typography>
                 <Typography sx={{ color: dndColors.blue, fontSize: 12, fontWeight: 900, mt: 0.5 }}>
                   AC {character.armorClass}
                   {acModifier ? ` + ${acModifier} equipped` : ''}
                 </Typography>
               </Stack>
               <Stack alignItems="flex-end">
-                <Typography sx={{ color: dndColors.muted, fontWeight: 900 }}>TOTAL CURRENCY</Typography>
+                <Typography sx={{ color: dndColors.muted, fontWeight: 900 }}>
+                  TOTAL CURRENCY
+                </Typography>
                 <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 900 }}>
                   {character.money.gp} gp
                 </Typography>
@@ -1645,13 +1799,22 @@ function InventoryRow({
         <Box sx={{ width: 12, height: 12, bgcolor: '#ffffff' }} />
       </IconButton>
       <Stack>
-        <Typography sx={{ color: equipped ? dndColors.green : dndColors.text, fontSize: 18, fontWeight: 900, fontStyle: equipped ? 'italic' : 'normal' }}>
+        <Typography
+          sx={{
+            color: equipped ? dndColors.green : dndColors.text,
+            fontSize: 18,
+            fontWeight: 900,
+            fontStyle: equipped ? 'italic' : 'normal',
+          }}
+        >
           {item.name}
         </Typography>
         <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
           {item.category.toUpperCase()}
         </Typography>
-        <Typography sx={{ color: dndColors.text, fontWeight: 900, mt: 0.7 }}>{item.weight}</Typography>
+        <Typography sx={{ color: dndColors.text, fontWeight: 900, mt: 0.7 }}>
+          {item.weight}
+        </Typography>
       </Stack>
       <Typography sx={{ color: dndColors.muted, fontWeight: 900, textAlign: 'center' }}>
         {item.quantity}
@@ -1710,9 +1873,18 @@ function FeaturesScreen({
             classInfo={classCatalogByName.get(entry.name)}
           />
         ))}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 1 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mt: 2, mb: 1 }}
+        >
           <Typography sx={{ ...subSectionSx, mt: 0, mb: 0 }}>Class Features</Typography>
-          <Button startIcon={<AddIcon />} onClick={onAddFeature} sx={{ ...inlineEditButtonSx, minHeight: 36 }}>
+          <Button
+            startIcon={<AddIcon />}
+            onClick={onAddFeature}
+            sx={{ ...inlineEditButtonSx, minHeight: 36 }}
+          >
             Add Feature
           </Button>
         </Stack>
@@ -1739,9 +1911,18 @@ function FeaturesScreen({
             </Box>
           </SwipeRow>
         ))}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 1 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mt: 2, mb: 1 }}
+        >
           <Typography sx={{ ...subSectionSx, mt: 0, mb: 0 }}>Feats</Typography>
-          <Button startIcon={<AddIcon />} onClick={onAddFeat} sx={{ ...inlineEditButtonSx, minHeight: 36 }}>
+          <Button
+            startIcon={<AddIcon />}
+            onClick={onAddFeat}
+            sx={{ ...inlineEditButtonSx, minHeight: 36 }}
+          >
             Add Feat
           </Button>
         </Stack>
@@ -1765,7 +1946,12 @@ function FeaturesScreen({
             </Box>
           </SwipeRow>
         ))}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 1 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ mt: 2, mb: 1 }}
+        >
           <Typography sx={{ ...subSectionSx, mt: 0, mb: 0 }}>Proficiencies & Training</Typography>
           <Button
             startIcon={<EditIcon />}
@@ -1798,17 +1984,6 @@ function formatClassList(values: string[] | string | undefined) {
   return 'None';
 }
 
-function formatSpellcasting(spellcasting: DndClassInfo['spellcasting']) {
-  if (!spellcasting) return 'No spellcasting';
-  const pieces = [
-    spellcasting.ability,
-    spellcasting.preparation,
-    spellcasting.type,
-    spellcasting.ritualCasting ? 'rituals' : null,
-  ].filter(Boolean);
-  return pieces.length > 0 ? pieces.join(' • ') : 'Spellcasting';
-}
-
 function ClassAttributeBlock({
   entry,
   classInfo,
@@ -1824,7 +1999,9 @@ function ClassAttributeBlock({
         classInfo.classResource.name,
         classInfo.classResource.ability,
         classInfo.classResource.resource,
-      ].filter(Boolean).join(' • ')
+      ]
+        .filter(Boolean)
+        .join(' • ')
     : null;
 
   return (
@@ -1847,23 +2024,14 @@ function ClassAttributeBlock({
       {classInfo ? (
         <Box sx={{ display: 'grid', gap: 0.75, mt: 1 }}>
           <ClassAttributeLine label="Hit Die" value={classInfo.hitDie ?? 'Unknown'} />
-          <ClassAttributeLine
-            label="Primary"
-            value={formatClassList(classInfo.primaryAbilities)}
-          />
+          <ClassAttributeLine label="Primary" value={formatClassList(classInfo.primaryAbilities)} />
           <ClassAttributeLine label="Saves" value={formatClassList(classInfo.savingThrows)} />
-          <ClassAttributeLine
-            label="Armor"
-            value={formatClassList(classInfo.armorProficiencies)}
-          />
+          <ClassAttributeLine label="Armor" value={formatClassList(classInfo.armorProficiencies)} />
           <ClassAttributeLine
             label="Weapons"
             value={formatClassList(classInfo.weaponProficiencies)}
           />
-          <ClassAttributeLine
-            label="Tools"
-            value={formatClassList(classInfo.toolProficiencies)}
-          />
+          <ClassAttributeLine label="Tools" value={formatClassList(classInfo.toolProficiencies)} />
           <ClassAttributeLine label="Skills" value={skillChoices} />
           <ClassAttributeLine label="Magic" value={formatSpellcasting(classInfo.spellcasting)} />
           {resource ? <ClassAttributeLine label="Resource" value={resource} /> : null}
@@ -1933,7 +2101,9 @@ function FeatureBlock({
   onUpdateUses?: (used: number) => void;
 }) {
   return (
-    <Box sx={{ py: 1.2, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}>
+    <Box
+      sx={{ py: 1.2, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}
+    >
       <Typography sx={{ color: dndColors.text, fontSize: 19, fontWeight: 900 }}>
         {feature.name}{' '}
         <Box component="span" sx={{ color: dndColors.red }}>
@@ -2084,7 +2254,9 @@ function NotesScreen({
 function Detail({ title, value }: { title: string; value: string }) {
   return (
     <Box sx={{ mt: 1.2 }}>
-      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }}>
+      <Typography
+        sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }}
+      >
         {title}
       </Typography>
       <Typography sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.5 }}>{value}</Typography>
@@ -2095,13 +2267,23 @@ function Detail({ title, value }: { title: string; value: string }) {
 function Metric({ label, value }: { label: string; value: ReactNode }) {
   return (
     <Stack alignItems="center">
-      <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900 }}>{label}</Typography>
+      <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900 }}>
+        {label}
+      </Typography>
       <Typography sx={{ color: dndColors.text, fontSize: 22, fontWeight: 900 }}>{value}</Typography>
     </Stack>
   );
 }
 
-function TinyStat({ label, value, onClick }: { label: string; value: string; onClick?: () => void }) {
+function TinyStat({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  onClick?: () => void;
+}) {
   return (
     <Box
       role={onClick ? 'button' : undefined}
@@ -2120,7 +2302,9 @@ function TinyStat({ label, value, onClick }: { label: string; value: string; onC
       }
       sx={{ flex: 1, cursor: onClick ? 'pointer' : 'default' }}
     >
-      <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900 }}>{label}</Typography>
+      <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900 }}>
+        {label}
+      </Typography>
       <Typography sx={{ color: dndColors.text, fontSize: 13, fontWeight: 800 }}>{value}</Typography>
     </Box>
   );
@@ -2173,14 +2357,22 @@ function ConfirmDeleteDialog({
   body: string;
 }) {
   return (
-    <Dialog open={open} onClose={onCancel} PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}>
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
+    >
       <DialogTitle sx={{ fontWeight: 900 }}>{title}</DialogTitle>
       <DialogContent sx={{ color: dndColors.muted }}>{body}</DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onCancel} sx={{ color: dndColors.text }}>
           Cancel
         </Button>
-        <Button onClick={onConfirm} variant="contained" sx={{ bgcolor: dndColors.red, '&:hover': { bgcolor: dndColors.redDark } }}>
+        <Button
+          onClick={onConfirm}
+          variant="contained"
+          sx={{ bgcolor: dndColors.red, '&:hover': { bgcolor: dndColors.redDark } }}
+        >
           Delete
         </Button>
       </DialogActions>
@@ -2288,7 +2480,15 @@ function CharacterSwitcherDialog({
   );
 }
 
-function UndoToast({ open, onUndo, onClose }: { open: boolean; onUndo: () => void; onClose: () => void }) {
+function UndoToast({
+  open,
+  onUndo,
+  onClose,
+}: {
+  open: boolean;
+  onUndo: () => void;
+  onClose: () => void;
+}) {
   useEffect(() => {
     if (!open) return;
     const timeout = window.setTimeout(onClose, 5000);
@@ -2512,7 +2712,8 @@ function RestDialog({
   onApplyRest: (restType: RestType) => void;
   onSpendHitDie: (die: string) => void;
 }) {
-  const constitutionScore = character.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
+  const constitutionScore =
+    character.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
   const constitutionModifier = abilityModifier(constitutionScore);
   const hitDicePools = character.hitPoints.hitDicePools;
   return (
@@ -2545,7 +2746,9 @@ function RestDialog({
                 return (
                   <Button
                     key={pool.die}
-                    disabled={available <= 0 || character.hitPoints.current >= character.hitPoints.max}
+                    disabled={
+                      available <= 0 || character.hitPoints.current >= character.hitPoints.max
+                    }
                     onClick={() => onSpendHitDie(pool.die)}
                     sx={{
                       border: `1px solid ${available > 0 ? dndColors.blue : dndColors.border}`,
@@ -2596,7 +2799,8 @@ function RestDialog({
             <Stack alignItems="flex-start" spacing={0.3}>
               <Typography sx={{ fontWeight: 900 }}>Long Rest</Typography>
               <Typography sx={{ color: dndColors.muted, fontSize: 13, textAlign: 'left' }}>
-                Restore hit points, clear temporary HP and death saves, refresh spell slots, and reset rest features.
+                Restore hit points, clear temporary HP and death saves, refresh spell slots, and
+                reset rest features.
               </Typography>
             </Stack>
           </Button>
@@ -2678,7 +2882,9 @@ function buildCharacterFromGuide(form: CharacterBuilderForm): DndCharacter {
   const inventoryNames = parseEditableList(form.equipment);
   const spellNames = parseEditableList(form.spells);
   const inventory = inventoryNames.map((name) => {
-    const catalogItem = dndItemCatalog.find((item) => item.name.toLowerCase() === name.toLowerCase());
+    const catalogItem = dndItemCatalog.find(
+      (item) => item.name.toLowerCase() === name.toLowerCase(),
+    );
     return {
       id: createEntryId('item'),
       ...(catalogItem ?? {
@@ -2692,7 +2898,9 @@ function buildCharacterFromGuide(form: CharacterBuilderForm): DndCharacter {
     };
   });
   const spells = spellNames.map((name) => {
-    const catalogSpell = dndSpellCatalog.find((spell) => spell.name.toLowerCase() === name.toLowerCase());
+    const catalogSpell = dndSpellCatalog.find(
+      (spell) => spell.name.toLowerCase() === name.toLowerCase(),
+    );
     return {
       id: createEntryId('spell'),
       ...(catalogSpell ?? {
@@ -2718,11 +2926,15 @@ function buildCharacterFromGuide(form: CharacterBuilderForm): DndCharacter {
     abilities: base.abilities.map((ability) => ({
       ...ability,
       score: abilityScores[ability.key],
-      saveBonus: abilityModifier(abilityScores[ability.key]) + (ability.proficientSave ? base.proficiencyBonus : 0),
+      saveBonus:
+        abilityModifier(abilityScores[ability.key]) +
+        (ability.proficientSave ? base.proficiencyBonus : 0),
     })),
     skills: base.skills.map((skill) => ({
       ...skill,
-      bonus: abilityModifier(abilityScores[skill.ability]) + (skill.proficient ? base.proficiencyBonus : 0),
+      bonus:
+        abilityModifier(abilityScores[skill.ability]) +
+        (skill.proficient ? base.proficiencyBonus : 0),
     })),
     proficiencies,
     inventory,
@@ -2778,19 +2990,29 @@ function CharacterEditDialog({
   };
   const resolvedClassOptions = [
     ...new Set(
-      [
-        form.classOneName,
-        form.classTwoName,
-        ...classOptions,
-      ].filter((value) => value.trim().length > 0),
+      [form.classOneName, form.classTwoName, ...classOptions].filter(
+        (value) => value.trim().length > 0,
+      ),
     ),
   ].sort((a, b) => a.localeCompare(b));
   return (
     <DndEditDialog title="Edit Character" open={open} onCancel={onCancel} onSave={onSave}>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
-      <FormField label="Species" value={form.species} onChange={(value) => setField('species', value)} />
-      <FormField label="Background" value={form.background} onChange={(value) => setField('background', value)} />
-      <FormField label="Alignment" value={form.alignment} onChange={(value) => setField('alignment', value)} />
+      <FormField
+        label="Species"
+        value={form.species}
+        onChange={(value) => setField('species', value)}
+      />
+      <FormField
+        label="Background"
+        value={form.background}
+        onChange={(value) => setField('background', value)}
+      />
+      <FormField
+        label="Alignment"
+        value={form.alignment}
+        onChange={(value) => setField('alignment', value)}
+      />
       <Stack direction="row" spacing={1}>
         <ClassSelectField
           label="Class 1"
@@ -2830,9 +3052,24 @@ function CharacterEditDialog({
         onChange={(value) => setField('classTwoSubclass', value)}
       />
       <Stack direction="row" spacing={1}>
-        <FormField label="AC" value={form.armorClass} inputMode="numeric" onChange={(value) => setField('armorClass', value)} />
-        <FormField label="Init" value={form.initiative} inputMode="numeric" onChange={(value) => setField('initiative', value)} />
-        <FormField label="Speed" value={form.speed} inputMode="numeric" onChange={(value) => setField('speed', value)} />
+        <FormField
+          label="AC"
+          value={form.armorClass}
+          inputMode="numeric"
+          onChange={(value) => setField('armorClass', value)}
+        />
+        <FormField
+          label="Init"
+          value={form.initiative}
+          inputMode="numeric"
+          onChange={(value) => setField('initiative', value)}
+        />
+        <FormField
+          label="Speed"
+          value={form.speed}
+          inputMode="numeric"
+          onChange={(value) => setField('speed', value)}
+        />
       </Stack>
       <FormField
         label="Proficiency Bonus"
@@ -2914,7 +3151,8 @@ function CharacterBuilderDialog({
   if (!form) return null;
   const setField = (key: keyof CharacterBuilderForm, value: string) =>
     onChange({ ...form, [key]: value });
-  const resolvedClassOptions = classOptions.length > 0 ? classOptions : [form.className || 'Fighter'];
+  const resolvedClassOptions =
+    classOptions.length > 0 ? classOptions : [form.className || 'Fighter'];
   return (
     <Dialog
       open={open}
@@ -2928,7 +3166,11 @@ function CharacterBuilderDialog({
         <Stack spacing={1.2} sx={{ pt: 0.5 }}>
           <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
           <Stack direction="row" spacing={1}>
-            <FormField label="Species" value={form.species} onChange={(value) => setField('species', value)} />
+            <FormField
+              label="Species"
+              value={form.species}
+              onChange={(value) => setField('species', value)}
+            />
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, mb: 0.4 }}>
                 CLASS
@@ -2958,8 +3200,16 @@ function CharacterBuilderDialog({
             </Box>
           </Stack>
           <Stack direction="row" spacing={1}>
-            <FormField label="Background" value={form.background} onChange={(value) => setField('background', value)} />
-            <FormField label="Alignment" value={form.alignment} onChange={(value) => setField('alignment', value)} />
+            <FormField
+              label="Background"
+              value={form.background}
+              onChange={(value) => setField('background', value)}
+            />
+            <FormField
+              label="Alignment"
+              value={form.alignment}
+              onChange={(value) => setField('alignment', value)}
+            />
           </Stack>
           <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
             Ability Scores
@@ -3091,7 +3341,10 @@ function HitPointEditDialog({
         </Typography>
         <Typography sx={{ fontSize: 34, fontWeight: 900, color: dndColors.blue, lineHeight: 1.1 }}>
           {current}
-          <Typography component="span" sx={{ color: dndColors.muted, fontSize: 19, fontWeight: 800 }}>
+          <Typography
+            component="span"
+            sx={{ color: dndColors.muted, fontSize: 19, fontWeight: 800 }}
+          >
             {' / '}
             {max}
           </Typography>
@@ -3111,8 +3364,18 @@ function HitPointEditDialog({
       >
         <Stack spacing={0.8}>
           <Stack direction="row" spacing={1}>
-            <FormField label="Max" value={form.max} inputMode="numeric" onChange={(value) => setField('max', value)} />
-            <FormField label="Temp" value={form.temp} inputMode="numeric" onChange={(value) => setField('temp', value)} />
+            <FormField
+              label="Max"
+              value={form.max}
+              inputMode="numeric"
+              onChange={(value) => setField('max', value)}
+            />
+            <FormField
+              label="Temp"
+              value={form.temp}
+              inputMode="numeric"
+              onChange={(value) => setField('temp', value)}
+            />
           </Stack>
           <Button
             onClick={() => applyDelta(1)}
@@ -3190,8 +3453,17 @@ function HitPointEditDialog({
         </Box>
       </Box>
 
-      <FormField label="Current" value={form.current} inputMode="numeric" onChange={(value) => setField('current', value)} />
-      <FormField label="Hit Dice" value={form.hitDice} onChange={(value) => setField('hitDice', value)} />
+      <FormField
+        label="Current"
+        value={form.current}
+        inputMode="numeric"
+        onChange={(value) => setField('current', value)}
+      />
+      <FormField
+        label="Hit Dice"
+        value={form.hitDice}
+        onChange={(value) => setField('hitDice', value)}
+      />
       <Stack direction="row" spacing={1} sx={{ mt: 0.4 }}>
         <DeathSaveTrack
           label="Successes"
@@ -3309,10 +3581,7 @@ function AbilityEditDialog({
     });
   };
   const abilityScoreByKey = new Map(
-    form.abilities.map((ability) => [
-      ability.key,
-      parseIntOrFallback(ability.score, 10),
-    ]),
+    form.abilities.map((ability) => [ability.key, parseIntOrFallback(ability.score, 10)]),
   );
   const derivedSkillBonus = (name: string) => {
     const skill = skills.find((entry) => entry.name === name);
@@ -3444,7 +3713,9 @@ function SkillEditDialog({
 }) {
   if (!form) return null;
   const updateSkill = (index: number, next: Partial<SkillForm[number]>) => {
-    onChange(form.map((skill, skillIndex) => (skillIndex === index ? { ...skill, ...next } : skill)));
+    onChange(
+      form.map((skill, skillIndex) => (skillIndex === index ? { ...skill, ...next } : skill)),
+    );
   };
   const abilityScoreByKey = new Map(abilities.map((ability) => [ability.key, ability.score]));
   const recalculate = () => {
@@ -3602,7 +3873,8 @@ function ProficiencyEditDialog({
   onSave: () => void;
 }) {
   if (!form) return null;
-  const setField = (key: keyof ProficiencyForm, value: string) => onChange({ ...form, [key]: value });
+  const setField = (key: keyof ProficiencyForm, value: string) =>
+    onChange({ ...form, [key]: value });
   return (
     <DndEditDialog title="Edit Proficiencies" open={open} onCancel={onCancel} onSave={onSave}>
       <MultilineFormField
@@ -3638,15 +3910,40 @@ function BackgroundEditDialog({
   onSave: () => void;
 }) {
   if (!form) return null;
-  const setField = (key: keyof BackgroundForm, value: string) => onChange({ ...form, [key]: value });
+  const setField = (key: keyof BackgroundForm, value: string) =>
+    onChange({ ...form, [key]: value });
   return (
     <DndEditDialog title="Edit Background" open={open} onCancel={onCancel} onSave={onSave}>
-      <FormField label="Background" value={form.background} onChange={(value) => setField('background', value)} />
-      <FormField label="Alignment" value={form.alignment} onChange={(value) => setField('alignment', value)} />
-      <MultilineFormField label="Personality Traits" value={form.traits} onChange={(value) => setField('traits', value)} />
-      <MultilineFormField label="Ideals" value={form.ideals} onChange={(value) => setField('ideals', value)} />
-      <MultilineFormField label="Bonds" value={form.bonds} onChange={(value) => setField('bonds', value)} />
-      <MultilineFormField label="Flaws" value={form.flaws} onChange={(value) => setField('flaws', value)} />
+      <FormField
+        label="Background"
+        value={form.background}
+        onChange={(value) => setField('background', value)}
+      />
+      <FormField
+        label="Alignment"
+        value={form.alignment}
+        onChange={(value) => setField('alignment', value)}
+      />
+      <MultilineFormField
+        label="Personality Traits"
+        value={form.traits}
+        onChange={(value) => setField('traits', value)}
+      />
+      <MultilineFormField
+        label="Ideals"
+        value={form.ideals}
+        onChange={(value) => setField('ideals', value)}
+      />
+      <MultilineFormField
+        label="Bonds"
+        value={form.bonds}
+        onChange={(value) => setField('bonds', value)}
+      />
+      <MultilineFormField
+        label="Flaws"
+        value={form.flaws}
+        onChange={(value) => setField('flaws', value)}
+      />
       <MultilineFormField
         label="Backstory"
         value={form.backstory}
@@ -3675,7 +3972,11 @@ function NoteEditDialog({
   if (!form) return null;
   return (
     <DndEditDialog title="Edit Note" open={open} onCancel={onCancel} onSave={onSave}>
-      <FormField label="Title" value={form.title} onChange={(title) => onChange({ ...form, title })} />
+      <FormField
+        label="Title"
+        value={form.title}
+        onChange={(title) => onChange({ ...form, title })}
+      />
       <MultilineFormField
         label="Body"
         value={form.body}
@@ -3716,13 +4017,38 @@ function MoneyEditDialog({
   return (
     <DndEditDialog title="Edit Money" open={open} onCancel={onCancel} onSave={onSave}>
       <Stack direction="row" spacing={1}>
-        <FormField label="CP" value={form.cp} inputMode="numeric" onChange={(value) => setField('cp', value)} />
-        <FormField label="SP" value={form.sp} inputMode="numeric" onChange={(value) => setField('sp', value)} />
-        <FormField label="EP" value={form.ep} inputMode="numeric" onChange={(value) => setField('ep', value)} />
+        <FormField
+          label="CP"
+          value={form.cp}
+          inputMode="numeric"
+          onChange={(value) => setField('cp', value)}
+        />
+        <FormField
+          label="SP"
+          value={form.sp}
+          inputMode="numeric"
+          onChange={(value) => setField('sp', value)}
+        />
+        <FormField
+          label="EP"
+          value={form.ep}
+          inputMode="numeric"
+          onChange={(value) => setField('ep', value)}
+        />
       </Stack>
       <Stack direction="row" spacing={1}>
-        <FormField label="GP" value={form.gp} inputMode="numeric" onChange={(value) => setField('gp', value)} />
-        <FormField label="PP" value={form.pp} inputMode="numeric" onChange={(value) => setField('pp', value)} />
+        <FormField
+          label="GP"
+          value={form.gp}
+          inputMode="numeric"
+          onChange={(value) => setField('gp', value)}
+        />
+        <FormField
+          label="PP"
+          value={form.pp}
+          inputMode="numeric"
+          onChange={(value) => setField('pp', value)}
+        />
       </Stack>
     </DndEditDialog>
   );
@@ -3763,7 +4089,8 @@ function parseSpellSlots(value: string, currentSlots: DndCharacter['spellcasting
       const level = rawLevel?.trim();
       const normalizedLevel = level?.toLowerCase();
       const max = Number.parseInt(rawMax?.replace(/[^0-9]/g, '') ?? '', 10);
-      if (!level || !normalizedLevel || seen.has(normalizedLevel) || Number.isNaN(max) || max < 0) return null;
+      if (!level || !normalizedLevel || seen.has(normalizedLevel) || Number.isNaN(max) || max < 0)
+        return null;
       seen.add(normalizedLevel);
       const clampedMax = Math.min(max, MAX_SPELL_SLOTS_PER_LEVEL);
       const current = currentByLevel.get(normalizedLevel);
@@ -3796,12 +4123,28 @@ function AttackEditDialog({
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <FormField label="Kind" value={form.kind} onChange={(value) => setField('kind', value)} />
       <Stack direction="row" spacing={1}>
-        <FormField label="Range" value={form.range} onChange={(value) => setField('range', value)} />
-        <FormField label="Hit/DC" value={form.hitDc} onChange={(value) => setField('hitDc', value)} />
+        <FormField
+          label="Range"
+          value={form.range}
+          onChange={(value) => setField('range', value)}
+        />
+        <FormField
+          label="Hit/DC"
+          value={form.hitDc}
+          onChange={(value) => setField('hitDc', value)}
+        />
       </Stack>
       <Stack direction="row" spacing={1}>
-        <FormField label="Damage" value={form.damage} onChange={(value) => setField('damage', value)} />
-        <FormField label="Type" value={form.damageType} onChange={(value) => setField('damageType', value)} />
+        <FormField
+          label="Damage"
+          value={form.damage}
+          onChange={(value) => setField('damage', value)}
+        />
+        <FormField
+          label="Type"
+          value={form.damageType}
+          onChange={(value) => setField('damageType', value)}
+        />
       </Stack>
       <Button
         onClick={() => onChange({ ...form, equipped: !form.equipped })}
@@ -3867,16 +4210,40 @@ function SpellEditDialog({
       </Stack>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <Stack direction="row" spacing={1}>
-        <FormField label="Level" value={form.level} onChange={(value) => setField('level', value)} />
-        <FormField label="School" value={form.school} onChange={(value) => setField('school', value)} />
+        <FormField
+          label="Level"
+          value={form.level}
+          onChange={(value) => setField('level', value)}
+        />
+        <FormField
+          label="School"
+          value={form.school}
+          onChange={(value) => setField('school', value)}
+        />
       </Stack>
       <Stack direction="row" spacing={1}>
-        <FormField label="Time" value={form.castingTime} onChange={(value) => setField('castingTime', value)} />
-        <FormField label="Range" value={form.range} onChange={(value) => setField('range', value)} />
+        <FormField
+          label="Time"
+          value={form.castingTime}
+          onChange={(value) => setField('castingTime', value)}
+        />
+        <FormField
+          label="Range"
+          value={form.range}
+          onChange={(value) => setField('range', value)}
+        />
       </Stack>
       <Stack direction="row" spacing={1}>
-        <FormField label="Hit/DC" value={form.hitDc} onChange={(value) => setField('hitDc', value)} />
-        <FormField label="Damage" value={form.damage ?? ''} onChange={(value) => onChange({ ...form, damage: value })} />
+        <FormField
+          label="Hit/DC"
+          value={form.hitDc}
+          onChange={(value) => setField('hitDc', value)}
+        />
+        <FormField
+          label="Damage"
+          value={form.damage ?? ''}
+          onChange={(value) => onChange({ ...form, damage: value })}
+        />
       </Stack>
       <Button
         onClick={() => onChange({ ...form, prepared: !form.prepared })}
@@ -3977,10 +4344,8 @@ function ItemEditDialog({
   onSave: () => void;
 }) {
   if (!form) return null;
-  const setField = (
-    key: 'name' | 'category' | 'weight' | 'quantity' | 'cost',
-    value: string,
-  ) => onChange({ ...form, [key]: value });
+  const setField = (key: 'name' | 'category' | 'weight' | 'quantity' | 'cost', value: string) =>
+    onChange({ ...form, [key]: value });
   const applyCatalogItem = (catalogItem: Omit<InventoryItem, 'id' | 'equipped'>) => {
     onChange({
       ...form,
@@ -4012,10 +4377,22 @@ function ItemEditDialog({
         ))}
       </Stack>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
-      <FormField label="Category" value={form.category} onChange={(value) => setField('category', value)} />
+      <FormField
+        label="Category"
+        value={form.category}
+        onChange={(value) => setField('category', value)}
+      />
       <Stack direction="row" spacing={1}>
-        <FormField label="Weight" value={form.weight} onChange={(value) => setField('weight', value)} />
-        <FormField label="Qty" value={form.quantity} onChange={(value) => setField('quantity', value)} />
+        <FormField
+          label="Weight"
+          value={form.weight}
+          onChange={(value) => setField('weight', value)}
+        />
+        <FormField
+          label="Qty"
+          value={form.quantity}
+          onChange={(value) => setField('quantity', value)}
+        />
         <FormField label="Cost" value={form.cost} onChange={(value) => setField('cost', value)} />
       </Stack>
       <FormField
@@ -4068,7 +4445,11 @@ function FeatureEditDialog({
   return (
     <DndEditDialog title="Edit Feature" open={open} onCancel={onCancel} onSave={onSave}>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
-      <FormField label="Source" value={form.source} onChange={(value) => setField('source', value)} />
+      <FormField
+        label="Source"
+        value={form.source}
+        onChange={(value) => setField('source', value)}
+      />
       <MultilineFormField
         label="Summary"
         value={form.summary}
@@ -4076,14 +4457,23 @@ function FeatureEditDialog({
         onChange={(value) => setField('summary', value)}
       />
       <Button
-        onClick={() => onChange({ ...form, uses: uses ? undefined : { label: form.name, used: 0, max: 1, reset: 'Long Rest' } })}
+        onClick={() =>
+          onChange({
+            ...form,
+            uses: uses ? undefined : { label: form.name, used: 0, max: 1, reset: 'Long Rest' },
+          })
+        }
         sx={toggleButtonSx(Boolean(uses))}
       >
         {uses ? 'Tracks Uses' : 'No Use Tracking'}
       </Button>
       {uses ? (
         <>
-          <FormField label="Use Label" value={uses.label} onChange={(value) => updateUses({ label: value })} />
+          <FormField
+            label="Use Label"
+            value={uses.label}
+            onChange={(value) => updateUses({ label: value })}
+          />
           <Stack direction="row" spacing={1}>
             <FormField
               label="Used"
@@ -4095,10 +4485,16 @@ function FeatureEditDialog({
               label="Max"
               value={String(uses.max)}
               inputMode="numeric"
-              onChange={(value) => updateUses({ max: Math.max(1, parseIntOrFallback(value, uses.max)) })}
+              onChange={(value) =>
+                updateUses({ max: Math.max(1, parseIntOrFallback(value, uses.max)) })
+              }
             />
           </Stack>
-          <FormField label="Reset" value={uses.reset} onChange={(value) => updateUses({ reset: value })} />
+          <FormField
+            label="Reset"
+            value={uses.reset}
+            onChange={(value) => updateUses({ reset: value })}
+          />
         </>
       ) : null}
     </DndEditDialog>
@@ -4273,10 +4669,7 @@ function DungeonsAndDragons() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [history]);
 
-  const confirmDelete = (
-    mutation: () => void,
-    options?: { title?: string; body?: string },
-  ) =>
+  const confirmDelete = (mutation: () => void, options?: { title?: string; body?: string }) =>
     setPendingDelete({
       confirm: mutation,
       title: options?.title,
@@ -4520,25 +4913,61 @@ function DungeonsAndDragons() {
         ? [
             {
               name: secondClassName,
-              level: parseIntOrFallback(characterForm.classTwoLevel, character.classes[1]?.level ?? 1),
+              level: parseIntOrFallback(
+                characterForm.classTwoLevel,
+                character.classes[1]?.level ?? 1,
+              ),
               subclass: secondSubclass || undefined,
             },
           ]
         : []),
     ];
-    setCharacter((current) => ({
-      ...current,
-      name: characterForm.name.trim() || current.name,
-      species: characterForm.species.trim() || current.species,
-      background: characterForm.background.trim() || current.background,
-      alignment: characterForm.alignment.trim() || current.alignment,
-      classes: nextClasses,
-      level: nextClasses.reduce((sum, entry) => sum + entry.level, 0),
-      armorClass: parseIntOrFallback(characterForm.armorClass, current.armorClass),
-      initiative: parseIntOrFallback(characterForm.initiative, current.initiative),
-      speed: parseIntOrFallback(characterForm.speed, current.speed),
-      proficiencyBonus: parseIntOrFallback(characterForm.proficiencyBonus, current.proficiencyBonus),
-    }));
+    setCharacter((current) => {
+      const derivedClassFields = deriveDndClassFields({
+        classes: nextClasses,
+        catalogByName: dndClassCatalogByName,
+        currentHitDicePools: current.hitPoints.hitDicePools,
+        existingFeatureIds: new Set(current.features.map((feature) => feature.id)),
+      });
+
+      return {
+        ...current,
+        name: characterForm.name.trim() || current.name,
+        species: characterForm.species.trim() || current.species,
+        background: characterForm.background.trim() || current.background,
+        alignment: characterForm.alignment.trim() || current.alignment,
+        classes: nextClasses,
+        level: nextClasses.reduce((sum, entry) => sum + entry.level, 0),
+        armorClass: parseIntOrFallback(characterForm.armorClass, current.armorClass),
+        initiative: parseIntOrFallback(characterForm.initiative, current.initiative),
+        speed: parseIntOrFallback(characterForm.speed, current.speed),
+        proficiencyBonus: parseIntOrFallback(
+          characterForm.proficiencyBonus,
+          current.proficiencyBonus,
+        ),
+        abilities: current.abilities.map((ability) => ({
+          ...ability,
+          proficientSave: derivedClassFields.savingThrowKeys.includes(ability.key),
+        })),
+        hitPoints: {
+          ...current.hitPoints,
+          hitDice: derivedClassFields.hitDice || current.hitPoints.hitDice,
+          hitDicePools:
+            derivedClassFields.hitDicePools.length > 0
+              ? derivedClassFields.hitDicePools
+              : current.hitPoints.hitDicePools,
+        },
+        spellcasting: derivedClassFields.spellcastingAbility
+          ? { ...current.spellcasting, ability: derivedClassFields.spellcastingAbility }
+          : current.spellcasting,
+        proficiencies: [
+          ...new Set(
+            [...current.proficiencies, ...derivedClassFields.proficiencies].filter(Boolean),
+          ),
+        ],
+        features: [...current.features, ...derivedClassFields.features],
+      };
+    });
     setCharacterForm(null);
   };
 
@@ -4586,7 +5015,10 @@ function DungeonsAndDragons() {
             }
           : ability;
       }),
-      passivePerception: parseIntOrFallback(abilityForm.passivePerception, current.passivePerception),
+      passivePerception: parseIntOrFallback(
+        abilityForm.passivePerception,
+        current.passivePerception,
+      ),
       passiveInvestigation: parseIntOrFallback(
         abilityForm.passiveInvestigation,
         current.passiveInvestigation,
@@ -4680,9 +5112,7 @@ function DungeonsAndDragons() {
           restType === 'long'
             ? reset.includes('long rest') || reset.includes('short')
             : reset.includes('short');
-        return resetsOnRest
-          ? { ...feature, uses: { ...feature.uses, used: 0 } }
-          : feature;
+        return resetsOnRest ? { ...feature, uses: { ...feature.uses, used: 0 } } : feature;
       }),
       ...(restType === 'long'
         ? {
@@ -4712,7 +5142,8 @@ function DungeonsAndDragons() {
         return current;
       }
       didSpend = true;
-      const constitutionScore = current.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
+      const constitutionScore =
+        current.abilities.find((ability) => ability.key === 'con')?.score ?? 10;
       const healAmount = hitDieAverageHeal(die, abilityModifier(constitutionScore));
       return {
         ...current,
@@ -4756,9 +5187,7 @@ function DungeonsAndDragons() {
       spellcasting: {
         ...current.spellcasting,
         slots: current.spellcasting.slots.map((slot) =>
-          slot.level === level
-            ? { ...slot, used: Math.min(slot.max, Math.max(0, used)) }
-            : slot,
+          slot.level === level ? { ...slot, used: Math.min(slot.max, Math.max(0, used)) } : slot,
         ),
       },
     }));
@@ -4908,23 +5337,23 @@ function DungeonsAndDragons() {
             onOpenRest={() => setRestOpen(true)}
             onOpenBuilder={openCharacterBuilder}
             homeAction={
-            <IconButton
-              component={Link}
-              to="/"
-              aria-label="Back to Table Top home"
-              sx={{
-                width: 34,
-                height: 34,
-                borderRadius: '8px',
-                bgcolor: alpha('#ffffff', 0.16),
-                color: '#ffffff',
-                '&:hover': {
-                  bgcolor: alpha('#ffffff', 0.22),
-                },
-              }}
-            >
-              <House size={18} strokeWidth={2} />
-            </IconButton>
+              <IconButton
+                component={Link}
+                to="/"
+                aria-label="Back to Table Top home"
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '8px',
+                  bgcolor: alpha('#ffffff', 0.16),
+                  color: '#ffffff',
+                  '&:hover': {
+                    bgcolor: alpha('#ffffff', 0.22),
+                  },
+                }}
+              >
+                <House size={18} strokeWidth={2} />
+              </IconButton>
             }
             accountAction={
               <AccountSettings
