@@ -919,11 +919,13 @@ function ActionsScreen({
   onDeleteAttack,
   onAddAttack,
   onEditAttack,
+  onToggleAttackEquipped,
 }: {
   character: DndCharacter;
   onDeleteAttack: (id: string) => void;
   onAddAttack: () => void;
   onEditAttack: (attack: Attack) => void;
+  onToggleAttackEquipped: (id: string) => void;
 }) {
   return (
     <>
@@ -947,7 +949,7 @@ function ActionsScreen({
             onDelete={() => onDeleteAttack(attack.id)}
             onEdit={() => onEditAttack(attack)}
           >
-            <AttackRow attack={attack} />
+            <AttackRow attack={attack} onToggleEquipped={() => onToggleAttackEquipped(attack.id)} />
           </SwipeRow>
         ))}
       </Box>
@@ -955,7 +957,14 @@ function ActionsScreen({
   );
 }
 
-function AttackRow({ attack }: { attack: Attack }) {
+function AttackRow({
+  attack,
+  onToggleEquipped,
+}: {
+  attack: Attack;
+  onToggleEquipped: () => void;
+}) {
+  const equipped = Boolean(attack.equipped);
   return (
     <Box
       sx={{
@@ -968,16 +977,33 @@ function AttackRow({ attack }: { attack: Attack }) {
         bgcolor: dndColors.page,
       }}
     >
-      <Box sx={{ color: dndColors.text, display: 'grid', placeItems: 'center' }}>
+      <IconButton
+        aria-label={`${equipped ? 'Unequip' : 'Equip'} ${attack.name}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleEquipped();
+        }}
+        sx={{
+          width: 34,
+          height: 34,
+          borderRadius: '6px',
+          border: `1px solid ${equipped ? dndColors.green : dndColors.border}`,
+          bgcolor: equipped ? alpha(dndColors.green, 0.16) : dndColors.panelStrong,
+          color: equipped ? dndColors.green : dndColors.text,
+          '&:hover': {
+            bgcolor: equipped ? alpha(dndColors.green, 0.24) : alpha('#ffffff', 0.08),
+          },
+        }}
+      >
         {attack.kind.toLowerCase().includes('cantrip') ? <LocalFireDepartmentIcon /> : <Sword/>}
-      </Box>
+      </IconButton>
       <Stack>
         <Typography
           sx={{
-            color: attack.equipped ? dndColors.green : dndColors.text,
+            color: equipped ? dndColors.green : dndColors.text,
             fontSize: 18,
             fontWeight: 800,
-            fontStyle: attack.equipped ? 'italic' : 'normal',
+            fontStyle: equipped ? 'italic' : 'normal',
           }}
         >
           {attack.name}
@@ -1198,12 +1224,14 @@ function InventoryScreen({
   onAddItem,
   onEditItem,
   onEditMoney,
+  onToggleItemEquipped,
 }: {
   character: DndCharacter;
   onDeleteItem: (id: string) => void;
   onAddItem: () => void;
   onEditItem: (item: InventoryItem) => void;
   onEditMoney: () => void;
+  onToggleItemEquipped: (id: string) => void;
 }) {
   const totalWeight = character.inventory.reduce((sum, item) => {
     const numeric = Number.parseFloat(item.weight);
@@ -1270,7 +1298,7 @@ function InventoryScreen({
             onDelete={() => onDeleteItem(item.id)}
             onEdit={() => onEditItem(item)}
           >
-            <InventoryRow item={item} />
+            <InventoryRow item={item} onToggleEquipped={() => onToggleItemEquipped(item.id)} />
           </SwipeRow>
         ))}
       </Box>
@@ -1278,7 +1306,14 @@ function InventoryScreen({
   );
 }
 
-function InventoryRow({ item }: { item: InventoryItem }) {
+function InventoryRow({
+  item,
+  onToggleEquipped,
+}: {
+  item: InventoryItem;
+  onToggleEquipped: () => void;
+}) {
+  const equipped = Boolean(item.equipped);
   return (
     <Box
       sx={{
@@ -1291,20 +1326,30 @@ function InventoryRow({ item }: { item: InventoryItem }) {
         bgcolor: dndColors.page,
       }}
     >
-      <Box
+      <IconButton
+        aria-label={`${equipped ? 'Unequip' : 'Equip'} ${item.name}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleEquipped();
+        }}
         sx={{
           width: 32,
           height: 32,
-          bgcolor: dndColors.redDark,
+          bgcolor: equipped ? alpha(dndColors.green, 0.16) : dndColors.redDark,
+          border: `1px solid ${equipped ? dndColors.green : 'transparent'}`,
           borderRadius: '5px',
           display: 'grid',
           placeItems: 'center',
+          color: equipped ? dndColors.green : '#ffffff',
+          '&:hover': {
+            bgcolor: equipped ? alpha(dndColors.green, 0.24) : dndColors.red,
+          },
         }}
       >
         <Box sx={{ width: 12, height: 12, bgcolor: '#ffffff' }} />
-      </Box>
+      </IconButton>
       <Stack>
-        <Typography sx={{ color: item.equipped ? dndColors.green : dndColors.text, fontSize: 18, fontWeight: 900, fontStyle: 'italic' }}>
+        <Typography sx={{ color: equipped ? dndColors.green : dndColors.text, fontSize: 18, fontWeight: 900, fontStyle: equipped ? 'italic' : 'normal' }}>
           {item.name}
         </Typography>
         <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
@@ -3532,6 +3577,16 @@ function DungeonsAndDragons() {
     setAttackForm(null);
   };
 
+  const toggleAttackEquipped = (id: string) => {
+    setCharacter((current) => ({
+      ...current,
+      attacks: current.attacks.map((attack) =>
+        attack.id === id ? { ...attack, equipped: !attack.equipped } : attack,
+      ),
+    }));
+    setUndoOpen(true);
+  };
+
   const addSpell = () => {
     setSpellForm({
       id: createEntryId('spell'),
@@ -3606,6 +3661,16 @@ function DungeonsAndDragons() {
         : [...current.inventory, itemForm],
     }));
     setItemForm(null);
+  };
+
+  const toggleItemEquipped = (id: string) => {
+    setCharacter((current) => ({
+      ...current,
+      inventory: current.inventory.map((item) =>
+        item.id === id ? { ...item, equipped: !item.equipped } : item,
+      ),
+    }));
+    setUndoOpen(true);
   };
 
   const addFeat = () => {
@@ -3896,6 +3961,7 @@ function DungeonsAndDragons() {
             onAddAttack={addAttack}
             onEditAttack={(attack) => setAttackForm({ ...attack })}
             onDeleteAttack={(id) => deleteById('attacks', id)}
+            onToggleAttackEquipped={toggleAttackEquipped}
           />
         );
       case 'spells':
@@ -3918,6 +3984,7 @@ function DungeonsAndDragons() {
             onEditItem={(item) => setItemForm({ ...item })}
             onDeleteItem={(id) => deleteById('inventory', id)}
             onEditMoney={() => setMoneyForm(createMoneyForm(character.money))}
+            onToggleItemEquipped={toggleItemEquipped}
           />
         );
       case 'features':
