@@ -30,6 +30,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
 import { atom, useAtom } from 'jotai';
+import { useQuery } from 'convex/react';
 
 import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
 import AccountSettings from '@/sections/AccountSettings';
@@ -37,6 +38,8 @@ import { persistAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import type { LocalCharacterSummary } from '@/state/useLocalCharacterSlots';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
+
+import { api } from '../../../convex/_generated/api';
 
 import type {
   AbilityKey,
@@ -94,6 +97,16 @@ const dndConditions = [
   'Stunned',
   'Unconscious',
 ];
+
+type DndClassDoc = {
+  class?: {
+    className?: string;
+    hitDie?: string;
+    primaryAbilities?: string[];
+    savingThrows?: string[];
+    spellcasting?: unknown;
+  };
+};
 
 function abilityModifier(score: number) {
   return Math.floor((score - 10) / 2);
@@ -1898,18 +1911,29 @@ function createCharacterForm(character: DndCharacter): CharacterForm {
 function CharacterEditDialog({
   open,
   form,
+  classOptions,
   onChange,
   onCancel,
   onSave,
 }: {
   open: boolean;
   form: CharacterForm | null;
+  classOptions: string[];
   onChange: (form: CharacterForm) => void;
   onCancel: () => void;
   onSave: () => void;
 }) {
   if (!form) return null;
   const setField = (key: keyof CharacterForm, value: string) => onChange({ ...form, [key]: value });
+  const resolvedClassOptions = [
+    ...new Set(
+      [
+        form.classOneName,
+        form.classTwoName,
+        ...classOptions,
+      ].filter((value) => value.trim().length > 0),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
   return (
     <DndEditDialog title="Edit Character" open={open} onCancel={onCancel} onSave={onSave}>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
@@ -1917,7 +1941,12 @@ function CharacterEditDialog({
       <FormField label="Background" value={form.background} onChange={(value) => setField('background', value)} />
       <FormField label="Alignment" value={form.alignment} onChange={(value) => setField('alignment', value)} />
       <Stack direction="row" spacing={1}>
-        <FormField label="Class 1" value={form.classOneName} onChange={(value) => setField('classOneName', value)} />
+        <ClassSelectField
+          label="Class 1"
+          value={form.classOneName}
+          options={resolvedClassOptions}
+          onChange={(value) => setField('classOneName', value)}
+        />
         <FormField
           label="Level"
           value={form.classOneLevel}
@@ -1926,7 +1955,12 @@ function CharacterEditDialog({
         />
       </Stack>
       <Stack direction="row" spacing={1}>
-        <FormField label="Class 2" value={form.classTwoName} onChange={(value) => setField('classTwoName', value)} />
+        <ClassSelectField
+          label="Class 2"
+          value={form.classTwoName}
+          options={['', ...resolvedClassOptions]}
+          onChange={(value) => setField('classTwoName', value)}
+        />
         <FormField
           label="Level"
           value={form.classTwoLevel}
@@ -1946,6 +1980,58 @@ function CharacterEditDialog({
         onChange={(value) => setField('proficiencyBonus', value)}
       />
     </DndEditDialog>
+  );
+}
+
+function ClassSelectField({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900, mb: 0.5 }}>
+        {label}
+      </Typography>
+      <Box
+        component="select"
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        sx={{
+          width: '100%',
+          minHeight: 40,
+          border: `1px solid ${dndColors.border}`,
+          borderRadius: '8px',
+          bgcolor: dndColors.panelStrong,
+          color: dndColors.text,
+          px: 1,
+          font: 'inherit',
+          fontWeight: 800,
+          outline: 'none',
+          '&:focus-visible': {
+            borderColor: dndColors.blue,
+            boxShadow: `0 0 0 2px ${alpha(dndColors.blue, 0.22)}`,
+          },
+          '& option': {
+            color: '#11191e',
+            backgroundColor: '#ffffff',
+          },
+        }}
+      >
+        {options.map((option) => (
+          <option key={option || 'none'} value={option}>
+            {option || 'None'}
+          </option>
+        ))}
+      </Box>
+    </Box>
   );
 }
 
@@ -2683,6 +2769,13 @@ function ConvexCharacterSyncMount() {
 function DungeonsAndDragons() {
   const [character, setCharacter, history] = useDndCharacterHistory();
   const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
+  const dndClassDocs = useQuery(api.classes.listDungeonsAndDragonsClasses) as
+    | DndClassDoc[]
+    | undefined;
+  const dndClassOptions = (dndClassDocs ?? [])
+    .map((doc) => doc.class?.className)
+    .filter((className): className is string => Boolean(className))
+    .sort((a, b) => a.localeCompare(b));
   const [pendingDelete, setPendingDelete] = useState<null | {
     confirm: () => void;
     title?: string;
@@ -2863,12 +2956,14 @@ function DungeonsAndDragons() {
 
   const saveCharacter = () => {
     if (!characterForm) return;
-    const firstClass = {
-      name: characterForm.classOneName.trim() || 'Adventurer',
-      level: parseIntOrFallback(characterForm.classOneLevel, character.classes[0]?.level ?? 1),
-      subclass: character.classes[0]?.subclass,
-    };
+    const firstClassName = characterForm.classOneName.trim() || 'Adventurer';
     const secondClassName = characterForm.classTwoName.trim();
+    const firstClass = {
+      name: firstClassName,
+      level: parseIntOrFallback(characterForm.classOneLevel, character.classes[0]?.level ?? 1),
+      subclass:
+        character.classes[0]?.name === firstClassName ? character.classes[0]?.subclass : undefined,
+    };
     const nextClasses = [
       firstClass,
       ...(secondClassName
@@ -2876,7 +2971,10 @@ function DungeonsAndDragons() {
             {
               name: secondClassName,
               level: parseIntOrFallback(characterForm.classTwoLevel, character.classes[1]?.level ?? 1),
-              subclass: character.classes[1]?.subclass,
+              subclass:
+                character.classes[1]?.name === secondClassName
+                  ? character.classes[1]?.subclass
+                  : undefined,
             },
           ]
         : []),
@@ -3269,6 +3367,7 @@ function DungeonsAndDragons() {
         <CharacterEditDialog
           open={characterForm !== null}
           form={characterForm}
+          classOptions={dndClassOptions}
           onChange={setCharacterForm}
           onCancel={() => setCharacterForm(null)}
           onSave={saveCharacter}
