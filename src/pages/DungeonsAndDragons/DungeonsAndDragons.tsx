@@ -62,6 +62,7 @@ const DND_GAME_SYSTEM = 'dungeons-and-dragons';
 const DND_SCHEMA_VERSION = 1;
 const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
 const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
+type RestType = 'short' | 'long';
 
 const dndColors = {
   page: '#10181d',
@@ -312,6 +313,7 @@ function HeroHeader({
   onEditCharacter,
   onEditHitPoints,
   onOpenCharacters,
+  onOpenRest,
   homeAction,
   accountAction,
 
@@ -320,6 +322,7 @@ function HeroHeader({
   onEditCharacter: () => void;
   onEditHitPoints: () => void;
   onOpenCharacters: () => void;
+  onOpenRest: () => void;
   homeAction: ReactNode;
   accountAction: ReactNode;
 }) {
@@ -370,7 +373,7 @@ function HeroHeader({
       >
         <Stack spacing={1.1}>
           <DefenseBadge label="Armor Class" value={character.armorClass} shape="shield" />
-          <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" />
+          <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" onClick={onOpenRest} />
         </Stack>
         <Stack spacing={1.1} alignItems="center">
           <DefenseBadge label="Initiative" value={formatModifier(character.initiative)} shape="hex" />
@@ -492,10 +495,19 @@ function DefenseBadge({
   );
 }
 
-function SmallActionButton({ icon, label }: { icon: ReactNode; label: string }) {
+function SmallActionButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick?: () => void;
+}) {
   return (
     <Button
       aria-label={label}
+      onClick={onClick}
       sx={{
         minWidth: 64,
         minHeight: 44,
@@ -1330,7 +1342,7 @@ function FeaturesScreen({
   onEditProficiencies: () => void;
   onDeleteFeature: (id: string) => void;
   onUpdateFeatureUses: (id: string, used: number) => void;
-  onRestFeatures: (restType: 'short' | 'long') => void;
+  onRestFeatures: (restType: RestType) => void;
   onSelectTab: (tab: DndTab) => void;
 }) {
   return (
@@ -2099,6 +2111,77 @@ function DndEditDialog({
           sx={{ bgcolor: dndColors.red, '&:hover': { bgcolor: dndColors.redDark } }}
         >
           Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function RestDialog({
+  open,
+  onClose,
+  onApplyRest,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onApplyRest: (restType: RestType) => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
+    >
+      <DialogTitle sx={{ fontWeight: 900 }}>Take a Rest</DialogTitle>
+      <DialogContent>
+        <Stack spacing={1.2} sx={{ pt: 0.5 }}>
+          <Button
+            onClick={() => onApplyRest('short')}
+            sx={{
+              justifyContent: 'flex-start',
+              border: `1px solid ${dndColors.border}`,
+              bgcolor: dndColors.panelStrong,
+              color: dndColors.text,
+              borderRadius: '8px',
+              p: 1.4,
+              textTransform: 'none',
+              '&:hover': { bgcolor: alpha('#ffffff', 0.08) },
+            }}
+          >
+            <Stack alignItems="flex-start" spacing={0.3}>
+              <Typography sx={{ fontWeight: 900 }}>Short Rest</Typography>
+              <Typography sx={{ color: dndColors.muted, fontSize: 13, textAlign: 'left' }}>
+                Reset class features that recover on a short rest.
+              </Typography>
+            </Stack>
+          </Button>
+          <Button
+            onClick={() => onApplyRest('long')}
+            sx={{
+              justifyContent: 'flex-start',
+              border: `1px solid ${dndColors.border}`,
+              bgcolor: dndColors.panelStrong,
+              color: dndColors.text,
+              borderRadius: '8px',
+              p: 1.4,
+              textTransform: 'none',
+              '&:hover': { bgcolor: alpha('#ffffff', 0.08) },
+            }}
+          >
+            <Stack alignItems="flex-start" spacing={0.3}>
+              <Typography sx={{ fontWeight: 900 }}>Long Rest</Typography>
+              <Typography sx={{ color: dndColors.muted, fontSize: 13, textAlign: 'left' }}>
+                Restore hit points, clear temporary HP and death saves, refresh spell slots, and reset rest features.
+              </Typography>
+            </Stack>
+          </Button>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ color: dndColors.text }}>
+          Close
         </Button>
       </DialogActions>
     </Dialog>
@@ -3339,6 +3422,7 @@ function DungeonsAndDragons() {
   const [noteForm, setNoteForm] = useState<NoteForm | null>(null);
   const [moneyForm, setMoneyForm] = useState<MoneyForm | null>(null);
   const [charactersOpen, setCharactersOpen] = useState(false);
+  const [restOpen, setRestOpen] = useState(false);
 
   const localCharacters = useLocalCharacterSlots({
     atom: dndCharacterState,
@@ -3721,7 +3805,7 @@ function DungeonsAndDragons() {
     }));
   };
 
-  const restFeatures = (restType: 'short' | 'long') => {
+  const applyRest = (restType: RestType) => {
     setCharacter((current) => ({
       ...current,
       features: current.features.map((feature) => {
@@ -3735,7 +3819,23 @@ function DungeonsAndDragons() {
           ? { ...feature, uses: { ...feature.uses, used: 0 } }
           : feature;
       }),
+      ...(restType === 'long'
+        ? {
+            hitPoints: {
+              ...current.hitPoints,
+              current: current.hitPoints.max,
+              temp: 0,
+              deathSaves: { successes: 0, failures: 0 },
+            },
+            spellcasting: {
+              ...current.spellcasting,
+              slots: current.spellcasting.slots.map((slot) => ({ ...slot, used: 0 })),
+            },
+          }
+        : {}),
     }));
+    setRestOpen(false);
+    setUndoOpen(true);
   };
 
   const toggleInspiration = () => {
@@ -3831,7 +3931,7 @@ function DungeonsAndDragons() {
             onEditProficiencies={() => setProficiencyForm(createProficiencyForm(character))}
             onDeleteFeature={(id) => deleteById('features', id)}
             onUpdateFeatureUses={updateFeatureUses}
-            onRestFeatures={restFeatures}
+            onRestFeatures={applyRest}
             onSelectTab={setActiveTab}
           />
         );
@@ -3899,6 +3999,7 @@ function DungeonsAndDragons() {
             onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
             onOpenCharacters={() => setCharactersOpen(true)}
+            onOpenRest={() => setRestOpen(true)}
             homeAction={
             <IconButton
               component={Link}
@@ -3982,6 +4083,11 @@ function DungeonsAndDragons() {
             );
           }}
           onClose={() => setCharactersOpen(false)}
+        />
+        <RestDialog
+          open={restOpen}
+          onClose={() => setRestOpen(false)}
+          onApplyRest={applyRest}
         />
         <CharacterEditDialog
           open={characterForm !== null}
