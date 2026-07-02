@@ -29,8 +29,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { atom, useAtom } from 'jotai';
 import { useQuery } from 'convex/react';
+import { atom, useAtom } from 'jotai';
 
 import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
 import AccountSettings from '@/sections/AccountSettings';
@@ -104,9 +104,29 @@ type DndClassDoc = {
     hitDie?: string;
     primaryAbilities?: string[];
     savingThrows?: string[];
-    spellcasting?: unknown;
+    armorProficiencies?: string[];
+    weaponProficiencies?: string[];
+    toolProficiencies?: string[];
+    skillChoices?: {
+      choose?: number;
+      from?: string[] | string;
+    };
+    spellcasting?: {
+      type?: string;
+      ability?: string;
+      ritualCasting?: boolean;
+      preparation?: string;
+    } | null;
+    classResource?: {
+      name?: string;
+      ability?: string;
+      resource?: string;
+    };
+    sourceType?: string;
   };
 };
+
+type DndClassInfo = NonNullable<DndClassDoc['class']>;
 
 function abilityModifier(score: number) {
   return Math.floor((score - 10) / 2);
@@ -1237,12 +1257,14 @@ function InventoryRow({ item }: { item: InventoryItem }) {
 
 function FeaturesScreen({
   character,
+  classCatalogByName,
   onDeleteFeature,
   onUpdateFeatureUses,
   onRestFeatures,
   onSelectTab,
 }: {
   character: DndCharacter;
+  classCatalogByName: Map<string, DndClassInfo>;
   onDeleteFeature: (id: string) => void;
   onUpdateFeatureUses: (id: string, used: number) => void;
   onRestFeatures: (restType: 'short' | 'long') => void;
@@ -1260,6 +1282,14 @@ function FeaturesScreen({
             Long Rest
           </Button>
         </Stack>
+        <Typography sx={subSectionSx}>Class Attributes</Typography>
+        {character.classes.map((entry) => (
+          <ClassAttributeBlock
+            key={`${entry.name}-${entry.level}`}
+            entry={entry}
+            classInfo={classCatalogByName.get(entry.name)}
+          />
+        ))}
         <Typography sx={subSectionSx}>Class Features</Typography>
         {character.features.map((feature) => (
           <SwipeRow key={feature.id} onDelete={() => onDeleteFeature(feature.id)}>
@@ -1290,6 +1320,111 @@ function FeaturesScreen({
         </Stack>
       </Box>
     </>
+  );
+}
+
+function formatClassList(values: string[] | string | undefined) {
+  if (Array.isArray(values)) return values.length > 0 ? values.join(', ') : 'None';
+  if (typeof values === 'string' && values.trim()) return values;
+  return 'None';
+}
+
+function formatSpellcasting(spellcasting: DndClassInfo['spellcasting']) {
+  if (!spellcasting) return 'No spellcasting';
+  const pieces = [
+    spellcasting.ability,
+    spellcasting.preparation,
+    spellcasting.type,
+    spellcasting.ritualCasting ? 'rituals' : null,
+  ].filter(Boolean);
+  return pieces.length > 0 ? pieces.join(' • ') : 'Spellcasting';
+}
+
+function ClassAttributeBlock({
+  entry,
+  classInfo,
+}: {
+  entry: DndCharacter['classes'][number];
+  classInfo?: DndClassInfo;
+}) {
+  const skillChoices = classInfo?.skillChoices
+    ? `Choose ${classInfo.skillChoices.choose ?? '?'} from ${formatClassList(classInfo.skillChoices.from)}`
+    : 'None';
+  const resource = classInfo?.classResource
+    ? [
+        classInfo.classResource.name,
+        classInfo.classResource.ability,
+        classInfo.classResource.resource,
+      ].filter(Boolean).join(' • ')
+    : null;
+
+  return (
+    <Box
+      sx={{
+        border: `1px solid ${dndColors.borderSoft}`,
+        borderRadius: '8px',
+        bgcolor: dndColors.panel,
+        p: 1.2,
+        mb: 1,
+      }}
+    >
+      <Typography sx={{ color: dndColors.text, fontSize: 18, fontWeight: 900 }}>
+        {entry.name}{' '}
+        <Box component="span" sx={{ color: dndColors.muted, fontSize: 13 }}>
+          Level {entry.level}
+          {entry.subclass ? ` • ${entry.subclass}` : ''}
+        </Box>
+      </Typography>
+      {classInfo ? (
+        <Box sx={{ display: 'grid', gap: 0.75, mt: 1 }}>
+          <ClassAttributeLine label="Hit Die" value={classInfo.hitDie ?? 'Unknown'} />
+          <ClassAttributeLine
+            label="Primary"
+            value={formatClassList(classInfo.primaryAbilities)}
+          />
+          <ClassAttributeLine label="Saves" value={formatClassList(classInfo.savingThrows)} />
+          <ClassAttributeLine
+            label="Armor"
+            value={formatClassList(classInfo.armorProficiencies)}
+          />
+          <ClassAttributeLine
+            label="Weapons"
+            value={formatClassList(classInfo.weaponProficiencies)}
+          />
+          <ClassAttributeLine
+            label="Tools"
+            value={formatClassList(classInfo.toolProficiencies)}
+          />
+          <ClassAttributeLine label="Skills" value={skillChoices} />
+          <ClassAttributeLine label="Magic" value={formatSpellcasting(classInfo.spellcasting)} />
+          {resource ? <ClassAttributeLine label="Resource" value={resource} /> : null}
+        </Box>
+      ) : (
+        <Typography sx={{ color: dndColors.muted, fontSize: 14, mt: 0.8 }}>
+          Class catalog details are not available for this class yet.
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+function ClassAttributeLine({ label, value }: { label: string; value: string }) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: '82px 1fr',
+        gap: 1,
+        alignItems: 'baseline',
+      }}
+    >
+      <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900 }}>
+        {label.toUpperCase()}
+      </Typography>
+      <Typography sx={{ color: dndColors.text, fontSize: 13.5, lineHeight: 1.35 }}>
+        {value}
+      </Typography>
+    </Box>
   );
 }
 
@@ -1882,8 +2017,10 @@ type CharacterForm = {
   background: string;
   alignment: string;
   classOneName: string;
+  classOneSubclass: string;
   classOneLevel: string;
   classTwoName: string;
+  classTwoSubclass: string;
   classTwoLevel: string;
   armorClass: string;
   initiative: string;
@@ -1898,8 +2035,10 @@ function createCharacterForm(character: DndCharacter): CharacterForm {
     background: character.background,
     alignment: character.alignment,
     classOneName: character.classes[0]?.name ?? '',
+    classOneSubclass: character.classes[0]?.subclass ?? '',
     classOneLevel: String(character.classes[0]?.level ?? 1),
     classTwoName: character.classes[1]?.name ?? '',
+    classTwoSubclass: character.classes[1]?.subclass ?? '',
     classTwoLevel: String(character.classes[1]?.level ?? 1),
     armorClass: String(character.armorClass),
     initiative: String(character.initiative),
@@ -1954,6 +2093,11 @@ function CharacterEditDialog({
           onChange={(value) => setField('classOneLevel', value)}
         />
       </Stack>
+      <FormField
+        label="Class 1 Subclass"
+        value={form.classOneSubclass}
+        onChange={(value) => setField('classOneSubclass', value)}
+      />
       <Stack direction="row" spacing={1}>
         <ClassSelectField
           label="Class 2"
@@ -1968,6 +2112,11 @@ function CharacterEditDialog({
           onChange={(value) => setField('classTwoLevel', value)}
         />
       </Stack>
+      <FormField
+        label="Class 2 Subclass"
+        value={form.classTwoSubclass}
+        onChange={(value) => setField('classTwoSubclass', value)}
+      />
       <Stack direction="row" spacing={1}>
         <FormField label="AC" value={form.armorClass} inputMode="numeric" onChange={(value) => setField('armorClass', value)} />
         <FormField label="Init" value={form.initiative} inputMode="numeric" onChange={(value) => setField('initiative', value)} />
@@ -2776,6 +2925,12 @@ function DungeonsAndDragons() {
     .map((doc) => doc.class?.className)
     .filter((className): className is string => Boolean(className))
     .sort((a, b) => a.localeCompare(b));
+  const dndClassCatalogByName = new Map(
+    (dndClassDocs ?? [])
+      .map((doc) => doc.class)
+      .filter((classInfo): classInfo is DndClassInfo => Boolean(classInfo?.className))
+      .map((classInfo) => [classInfo.className!, classInfo] as const),
+  );
   const [pendingDelete, setPendingDelete] = useState<null | {
     confirm: () => void;
     title?: string;
@@ -2958,11 +3113,12 @@ function DungeonsAndDragons() {
     if (!characterForm) return;
     const firstClassName = characterForm.classOneName.trim() || 'Adventurer';
     const secondClassName = characterForm.classTwoName.trim();
+    const firstSubclass = characterForm.classOneSubclass.trim();
+    const secondSubclass = characterForm.classTwoSubclass.trim();
     const firstClass = {
       name: firstClassName,
       level: parseIntOrFallback(characterForm.classOneLevel, character.classes[0]?.level ?? 1),
-      subclass:
-        character.classes[0]?.name === firstClassName ? character.classes[0]?.subclass : undefined,
+      subclass: firstSubclass || undefined,
     };
     const nextClasses = [
       firstClass,
@@ -2971,10 +3127,7 @@ function DungeonsAndDragons() {
             {
               name: secondClassName,
               level: parseIntOrFallback(characterForm.classTwoLevel, character.classes[1]?.level ?? 1),
-              subclass:
-                character.classes[1]?.name === secondClassName
-                  ? character.classes[1]?.subclass
-                  : undefined,
+              subclass: secondSubclass || undefined,
             },
           ]
         : []),
@@ -3210,6 +3363,7 @@ function DungeonsAndDragons() {
         return (
           <FeaturesScreen
             character={character}
+            classCatalogByName={dndClassCatalogByName}
             onDeleteFeature={(id) => deleteById('features', id)}
             onUpdateFeatureUses={updateFeatureUses}
             onRestFeatures={restFeatures}
