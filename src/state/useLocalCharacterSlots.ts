@@ -183,20 +183,23 @@ function useLocalCharacterSlots<T>({
     persistSlots(nextSlots, activeIdRef.current);
   }, [character, describeCharacter, persistSlots]);
 
-  const addCharacter = useCallback((characterOverride?: T) => {
-    if (slotsRef.current.length >= LOCAL_CHARACTER_LIMIT) return;
-    const nextCharacter = characterOverride ?? createCharacter();
-    const nextSlot = {
-      id: createLocalCharacterId(),
-      name: describeCharacter(nextCharacter),
-      character: nextCharacter,
-    };
-    const nextSlots = [...slotsRef.current, nextSlot];
-    writeJsonRef.current = JSON.stringify(nextCharacter);
-    hydratedRef.current = true;
-    persistSlots(nextSlots, nextSlot.id);
-    setCharacter(nextCharacter);
-  }, [createCharacter, describeCharacter, persistSlots, setCharacter]);
+  const addCharacter = useCallback(
+    (characterOverride?: T) => {
+      if (slotsRef.current.length >= LOCAL_CHARACTER_LIMIT) return;
+      const nextCharacter = characterOverride ?? createCharacter();
+      const nextSlot = {
+        id: createLocalCharacterId(),
+        name: describeCharacter(nextCharacter),
+        character: nextCharacter,
+      };
+      const nextSlots = [...slotsRef.current, nextSlot];
+      writeJsonRef.current = JSON.stringify(nextCharacter);
+      hydratedRef.current = true;
+      persistSlots(nextSlots, nextSlot.id);
+      setCharacter(nextCharacter);
+    },
+    [createCharacter, describeCharacter, persistSlots, setCharacter],
+  );
 
   const selectCharacter = useCallback(
     (id: string) => {

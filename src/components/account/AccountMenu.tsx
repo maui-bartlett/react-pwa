@@ -1106,7 +1106,9 @@ function AccountMenu({
                                   <InputBase
                                     value={editingFabUName[key] ?? ''}
                                     autoFocus={index === 0}
-                                    inputProps={{ 'aria-label': `Character ${label.toLowerCase()}` }}
+                                    inputProps={{
+                                      'aria-label': `Character ${label.toLowerCase()}`,
+                                    }}
                                     onChange={(event) =>
                                       setEditingFabUName((current) => ({
                                         ...current,

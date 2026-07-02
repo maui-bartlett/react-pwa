@@ -315,6 +315,11 @@ type DndClassDoc = {
 };
 
 type DndClassInfo = NonNullable<DndClassDoc['class']>;
+function asNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 function abilityModifier(score: number) {
   return Math.floor((score - 10) / 2);
@@ -4573,13 +4578,16 @@ function DungeonsAndDragons() {
     | DndClassDoc[]
     | undefined;
   const dndClassOptions = (dndClassDocs ?? [])
-    .map((doc) => doc.class?.className)
-    .filter((className): className is string => Boolean(className))
+    .map((doc) => asNonEmptyString(doc.class?.className))
+    .filter((className): className is string => className !== null)
     .sort((a, b) => a.localeCompare(b));
   const dndClassCatalogByName = new Map(
     (dndClassDocs ?? [])
       .map((doc) => doc.class)
-      .filter((classInfo): classInfo is DndClassInfo => Boolean(classInfo?.className))
+      .filter(
+        (classInfo): classInfo is DndClassInfo =>
+          asNonEmptyString(classInfo?.className) !== null,
+      )
       .map((classInfo) => [classInfo.className!, classInfo] as const),
   );
   const dndCatalogItems = useQuery(api.items.listByGameSystem, {
@@ -4587,11 +4595,18 @@ function DungeonsAndDragons() {
   }) as Array<SpellCatalogEntry & { meta?: { gameSystem?: string } }> | undefined;
   const dndSpellOptions = (dndCatalogItems ?? [])
     .filter((entry) => entry.type === 'spell' || entry.category === 'Spell')
-    .filter((entry): entry is SpellCatalogEntry => Boolean(entry.name));
+    .filter((entry): entry is SpellCatalogEntry => asNonEmptyString(entry.name) !== null);
   const spellCatalogSource = dndSpellOptions.length > 0 ? dndSpellOptions : dndSpellCatalog;
-  const characterClassNames = new Set(character.classes.map((entry) => entry.name.toLowerCase()));
+  const characterClassNames = new Set(
+    character.classes
+      .map((entry) => asNonEmptyString(entry.name)?.toLowerCase() ?? null)
+      .filter((name): name is string => name !== null),
+  );
   const classSpellCatalog = spellCatalogSource.filter((spell) =>
-    spell.classes?.some((className) => characterClassNames.has(className.toLowerCase())),
+    (Array.isArray(spell.classes) ? spell.classes : [])
+      .map((className) => asNonEmptyString(className)?.toLowerCase() ?? null)
+      .filter((className): className is string => className !== null)
+      .some((className) => characterClassNames.has(className)),
   );
   const spellCatalogOptions = classSpellCatalog.length > 0 ? classSpellCatalog : spellCatalogSource;
   const [pendingDelete, setPendingDelete] = useState<null | {

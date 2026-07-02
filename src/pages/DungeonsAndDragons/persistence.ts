@@ -11,9 +11,8 @@ function serializeDndCharacter(character: DndCharacter) {
 }
 
 function deserializeDndCharacter(raw: unknown): DndCharacter {
-  const maybeState = raw && typeof raw === 'object' && !Array.isArray(raw)
-    ? (raw as { character?: unknown })
-    : null;
+  const maybeState =
+    raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as { character?: unknown }) : null;
   return normalizeDndCharacter(maybeState?.character ?? raw);
 }
 

@@ -8,9 +8,9 @@ import {
   FabUTokens,
   avatarDarkTokens,
   avatarLightTokens,
+  darkFabUTokens,
   dndDarkTokens,
   dndLightTokens,
-  darkFabUTokens,
   fabUTokens,
 } from '@/components/account/tokens';
 import type { UseLocalCharacterSlotsResult } from '@/state/useLocalCharacterSlots';

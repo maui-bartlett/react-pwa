@@ -666,70 +666,79 @@ function DiceRoller() {
     }, 190);
   };
 
-  const rollDice = useCallback(async (
-    dice: RollDie[],
-    options: { label?: string; modifier?: number; expandWhenUnavailable?: boolean } = {},
-  ) => {
-    if (!dice.length || isRolling || isResultDismissing || !diceBoxRef.current || !isDiceBoxReady) {
-      if (options.expandWhenUnavailable ?? true) setIsExpanded(true);
-      return;
-    }
-
-    if (options.expandWhenUnavailable ?? true) {
-      setSelectedDice(dice);
-    }
-
-    const applyMetadata = (result: RollResult) =>
-      withRollMetadata(result, { label: options.label, modifier: options.modifier ?? 0 });
-    const rollSequence = rollSequenceRef.current + 1;
-    rollSequenceRef.current = rollSequence;
-    await fadeOutDisplayedRoll();
-    if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
-
-    const notation = toDiceBoxNotation(dice, appAccent);
-    setLastResult(null);
-    setIsResultDismissing(false);
-    setIsRolling(true);
-    setHasVisibleDice(true);
-    setDiceTrayStyle(getDiceTrayMetrics(true));
-
-    try {
-      await waitForNextPaint();
-      window.dispatchEvent(new Event('resize'));
-      diceBoxRef.current.show();
-      await waitForNextPaint();
-
-      // Pin the throw origin to the upper-left corner of the (now sized) tray.
-      // With newStartPoint:false the worker reuses this position instead of
-      // picking a random edge, so every roll launches from the same corner.
-      await diceBoxRef.current.updateConfig({ startPosition: getUpperLeftStartPosition() });
-      if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
-
-      const results = await diceBoxRef.current.roll(notation, {
-        themeColor: appAccent,
-        newStartPoint: false,
-      });
-      if (rollSequenceRef.current !== rollSequence) return;
-
-      const result = toRollResult(results);
-      if (isValidRollResult(result, dice)) {
-        setLastResult(applyMetadata(result));
+  const rollDice = useCallback(
+    async (
+      dice: RollDie[],
+      options: { label?: string; modifier?: number; expandWhenUnavailable?: boolean } = {},
+    ) => {
+      if (
+        !dice.length ||
+        isRolling ||
+        isResultDismissing ||
+        !diceBoxRef.current ||
+        !isDiceBoxReady
+      ) {
+        if (options.expandWhenUnavailable ?? true) setIsExpanded(true);
         return;
       }
 
-      console.warn('[dice] DiceBox returned an invalid roll; using a valid fallback result', {
-        result,
-      });
-      setLastResult(applyMetadata(createRandomRollResult(dice)));
-    } catch (error) {
-      console.warn('[dice] DiceBox roll failed', error);
-      diceBoxRef.current?.clear();
-      diceBoxRef.current?.hide();
-      setHasVisibleDice(false);
-    } finally {
-      if (rollSequenceRef.current === rollSequence) setIsRolling(false);
-    }
-  }, [appAccent, fadeOutDisplayedRoll, isDiceBoxReady, isResultDismissing, isRolling]);
+      if (options.expandWhenUnavailable ?? true) {
+        setSelectedDice(dice);
+      }
+
+      const applyMetadata = (result: RollResult) =>
+        withRollMetadata(result, { label: options.label, modifier: options.modifier ?? 0 });
+      const rollSequence = rollSequenceRef.current + 1;
+      rollSequenceRef.current = rollSequence;
+      await fadeOutDisplayedRoll();
+      if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
+
+      const notation = toDiceBoxNotation(dice, appAccent);
+      setLastResult(null);
+      setIsResultDismissing(false);
+      setIsRolling(true);
+      setHasVisibleDice(true);
+      setDiceTrayStyle(getDiceTrayMetrics(true));
+
+      try {
+        await waitForNextPaint();
+        window.dispatchEvent(new Event('resize'));
+        diceBoxRef.current.show();
+        await waitForNextPaint();
+
+        // Pin the throw origin to the upper-left corner of the (now sized) tray.
+        // With newStartPoint:false the worker reuses this position instead of
+        // picking a random edge, so every roll launches from the same corner.
+        await diceBoxRef.current.updateConfig({ startPosition: getUpperLeftStartPosition() });
+        if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
+
+        const results = await diceBoxRef.current.roll(notation, {
+          themeColor: appAccent,
+          newStartPoint: false,
+        });
+        if (rollSequenceRef.current !== rollSequence) return;
+
+        const result = toRollResult(results);
+        if (isValidRollResult(result, dice)) {
+          setLastResult(applyMetadata(result));
+          return;
+        }
+
+        console.warn('[dice] DiceBox returned an invalid roll; using a valid fallback result', {
+          result,
+        });
+        setLastResult(applyMetadata(createRandomRollResult(dice)));
+      } catch (error) {
+        console.warn('[dice] DiceBox roll failed', error);
+        diceBoxRef.current?.clear();
+        diceBoxRef.current?.hide();
+        setHasVisibleDice(false);
+      } finally {
+        if (rollSequenceRef.current === rollSequence) setIsRolling(false);
+      }
+    },
+    [appAccent, fadeOutDisplayedRoll, isDiceBoxReady, isResultDismissing, isRolling],
+  );
 
   const rollSelectedDice = async () => {
     if (!hasDice) {
@@ -753,7 +762,15 @@ function DiceRoller() {
 
     window.addEventListener(TABLETOP_ROLL_DICE_EVENT, onTabletopRoll);
     return () => window.removeEventListener(TABLETOP_ROLL_DICE_EVENT, onTabletopRoll);
-  }, [appAccent, hasVisibleDice, isDiceBoxReady, isResultDismissing, isRolling, lastResult, rollDice]);
+  }, [
+    appAccent,
+    hasVisibleDice,
+    isDiceBoxReady,
+    isResultDismissing,
+    isRolling,
+    lastResult,
+    rollDice,
+  ]);
 
   const accent = appAccent;
   const railBackground =

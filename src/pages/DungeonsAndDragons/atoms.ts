@@ -412,7 +412,8 @@ const initialDndCharacter: DndCharacter = {
       id: 'breath-weapon',
       name: 'Breath Weapon',
       source: 'Dragonborn',
-      summary: 'Exhale destructive energy. Save DC and damage are tracked with your species feature.',
+      summary:
+        'Exhale destructive energy. Save DC and damage are tracked with your species feature.',
       uses: { label: 'Breath Weapon', used: 0, max: 1, reset: 'Short or Long Rest' },
     },
   ],
@@ -458,11 +459,17 @@ const initialDndCharacter: DndCharacter = {
 function normalizeDndCharacter(value: unknown): DndCharacter {
   if (!value || typeof value !== 'object') return initialDndCharacter;
   const partial = value as Partial<DndCharacter>;
-  const hitDicePools = normalizeHitDicePools(partial.hitPoints?.hitDicePools, partial.hitPoints?.hitDice);
+  const hitDicePools = normalizeHitDicePools(
+    partial.hitPoints?.hitDicePools,
+    partial.hitPoints?.hitDice,
+  );
   return {
     ...initialDndCharacter,
     ...partial,
-    exhaustion: Math.max(0, Math.min(6, Number.isFinite(partial.exhaustion) ? Number(partial.exhaustion) : 0)),
+    exhaustion: Math.max(
+      0,
+      Math.min(6, Number.isFinite(partial.exhaustion) ? Number(partial.exhaustion) : 0),
+    ),
     hitPoints: {
       ...initialDndCharacter.hitPoints,
       ...partial.hitPoints,
