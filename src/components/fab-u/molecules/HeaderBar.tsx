@@ -26,7 +26,7 @@ function HeaderBar({
 }: HeaderBarProps) {
   const fabUTokens = useFabUTokens();
   const compact = variant === 'compact';
-  const topRowPaddingRight = action || navigationAction ? (compact ? 8 : 9) : 0;
+  const topRowPaddingRight = action || navigationAction ? (compact ? 9 : 10) : 0;
 
   return (
     <Stack
@@ -124,7 +124,7 @@ function HeaderBar({
           sx={{
             position: 'absolute',
             top: compact ? 9 : 'max(12px, calc(env(safe-area-inset-top) + 8px))',
-            right: compact ? 58 : 60,
+            right: compact ? 64 : 66,
             zIndex: 1,
           }}
         >

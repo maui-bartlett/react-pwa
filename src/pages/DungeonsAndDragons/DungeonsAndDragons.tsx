@@ -299,6 +299,10 @@ const dndDamageTypeLabels: Record<string, string> = {
   thunder: 'Thunder',
 };
 
+function getDndConditionActiveColor(condition: string) {
+  return condition === 'Invisible' ? dndColors.blue : dndColors.red;
+}
+
 function formatDamageTypeLabel(value: string) {
   const trimmed = value.trim();
   return dndDamageTypeLabels[trimmed.toLowerCase()] ?? trimmed;
@@ -940,7 +944,7 @@ function HeroHeader({
             <ClassLine character={character} />
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={1.15} justifyContent="flex-end" sx={{ mt: '-12px' }}>
+        <Stack direction="row" spacing={1.35} justifyContent="flex-end" sx={{ mt: '-12px' }}>
           <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
           {homeAction}
           {accountAction}
@@ -965,7 +969,13 @@ function HeroHeader({
             onClick={onEditHitPoints}
           />
         </Stack>
-        <Stack direction="row" spacing={0.45} justifyContent="flex-end" alignItems="center">
+        <Stack
+          direction="row"
+          spacing={0.2}
+          justifyContent="flex-end"
+          alignItems="center"
+          sx={{ mr: 0.45 }}
+        >
           <DefenseBadge
             compact
             label="Armor Class"
@@ -1017,18 +1027,32 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
       sx={{
         minWidth: 0,
         width: 42,
-        height: 38,
-        borderRadius: '999px',
-        bgcolor: active ? alpha(dndColors.gold, 0.26) : alpha('#ffffff', 0.16),
-        border: `1px solid ${active ? dndColors.gold : alpha('#ffffff', 0.28)}`,
+        height: 42,
+        borderRadius: '8px',
+        bgcolor: dndColors.panelStrong,
+        border: `1px solid ${active ? alpha(dndColors.gold, 0.72) : dndColors.border}`,
         color: active ? dndColors.gold : '#ffffff',
         p: 0,
+        position: 'relative',
         '&:hover': {
-          bgcolor: active ? alpha(dndColors.gold, 0.34) : alpha('#ffffff', 0.22),
+          bgcolor: '#05090b',
+        },
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 5,
+          left: '50%',
+          width: 22,
+          height: 8,
+          opacity: active ? 1 : 0,
+          transform: 'translateX(-50%)',
+          transition: 'opacity 140ms ease',
+          background: `linear-gradient(90deg, transparent 0 2px, ${dndColors.gold} 2px 4px, transparent 4px 9px, ${dndColors.gold} 9px 13px, transparent 13px 18px, ${dndColors.gold} 18px 20px, transparent 20px)`,
+          clipPath: 'polygon(0 70%, 18% 0, 28% 100%, 50% 0, 62% 100%, 82% 0, 100% 70%)',
         },
       }}
     >
-      <Lightbulb size={20} strokeWidth={2.3} />
+      <Lightbulb size={21} strokeWidth={2.3} />
     </Button>
   );
 }
@@ -1123,8 +1147,8 @@ function DefenseBadge({
       {...interactiveProps}
       sx={{
         position: 'relative',
-        width: isArmorClass ? 76 : 84,
-        pt: isArmorClass ? 0.9 : 0,
+        width: isArmorClass ? 76 : 78,
+        pt: 0.9,
         pb: 1.25,
         cursor: onRoll ? 'pointer' : 'default',
         outline: 'none',
@@ -1615,13 +1639,14 @@ function ConditionsScreen({
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 0.9 }}>
           {dndConditions.map((condition) => {
             const active = character.conditions.includes(condition);
+            const activeColor = getDndConditionActiveColor(condition);
             return (
               <Box
                 key={condition}
                 sx={{
-                  border: `1px solid ${active ? dndColors.green : dndColors.border}`,
+                  border: `1px solid ${active ? activeColor : dndColors.border}`,
                   borderRadius: '8px',
-                  bgcolor: active ? alpha(dndColors.green, 0.12) : dndColors.panelSoft,
+                  bgcolor: active ? alpha(activeColor, 0.12) : dndColors.panelSoft,
                   p: 1.2,
                 }}
               >
@@ -1632,9 +1657,14 @@ function ConditionsScreen({
                   sx={{
                     ...toggleButtonSx(active),
                     minHeight: 38,
+                    borderColor: active ? activeColor : dndColors.border,
+                    bgcolor: active ? alpha(activeColor, 0.24) : dndColors.panelStrong,
                     fontSize: 13,
                     justifyContent: 'space-between',
                     px: 1.2,
+                    '&:hover': {
+                      bgcolor: active ? alpha(activeColor, 0.32) : alpha('#ffffff', 0.08),
+                    },
                   }}
                 >
                   <Box component="span">{condition}</Box>
@@ -5907,8 +5937,8 @@ function DungeonsAndDragons() {
                 to="/"
                 aria-label="Back to Table Top home"
                 sx={{
-                  width: 38,
-                  height: 38,
+                  width: 42,
+                  height: 42,
                   borderRadius: '8px',
                   bgcolor: alpha('#ffffff', 0.16),
                   color: '#ffffff',
@@ -5917,7 +5947,7 @@ function DungeonsAndDragons() {
                   },
                 }}
               >
-                <House size={20} strokeWidth={2} />
+                <House size={22} strokeWidth={2} />
               </IconButton>
             }
             accountAction={

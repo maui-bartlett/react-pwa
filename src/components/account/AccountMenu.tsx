@@ -786,8 +786,8 @@ function AccountMenu({
         size="small"
         aria-label="Open settings"
         sx={{
-          width: 38,
-          height: 38,
+          width: 42,
+          height: 42,
           borderRadius: '8px',
           bgcolor: user ? alpha('#ffffff', 0.96) : alpha('#ffffff', 0.16),
           border: `1px solid ${alpha('#ffffff', user ? 0.7 : 0.28)}`,
@@ -803,17 +803,17 @@ function AccountMenu({
             src={user.image}
             alt={user.name || user.email || 'Account'}
             sx={{
-              width: 29,
-              height: 29,
+              width: 32,
+              height: 32,
               fontSize: '0.72rem',
               bgcolor: fabUTokens.color.brand,
               color: '#ffffff',
             }}
           />
         ) : user ? (
-          <CheckCircle size={19} />
+          <CheckCircle size={21} />
         ) : (
-          <Settings size={19} />
+          <Settings size={21} />
         )}
       </IconButton>
 

@@ -8312,15 +8312,15 @@ function AvatarLegends() {
                   </Typography>
                 </Stack>
               )}
-              <Stack direction="row" alignItems="center" spacing={1.15}>
+              <Stack direction="row" alignItems="center" spacing={1.35}>
                 <Button
                   component={Link}
                   to="/"
                   aria-label="Back to Table Top home"
                   sx={{
-                    minWidth: 38,
-                    width: 38,
-                    height: 38,
+                    minWidth: 42,
+                    width: 42,
+                    height: 42,
                     borderRadius: '8px',
                     bgcolor: alpha('#ffffff', 0.16),
                     color: chromeText,
@@ -8330,7 +8330,7 @@ function AvatarLegends() {
                     },
                   }}
                 >
-                  <House size={20} strokeWidth={2} />
+                  <House size={22} strokeWidth={2} />
                 </Button>
                 <AccountSettings
                   gameSystem="avatar-legends"

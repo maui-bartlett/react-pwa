@@ -2952,8 +2952,8 @@ function FabU() {
         to="/"
         aria-label="Back to Table Top home"
         sx={{
-          width: 38,
-          height: 38,
+          width: 42,
+          height: 42,
           borderRadius: '8px',
           bgcolor: alpha('#ffffff', 0.16),
           color: '#ffffff',
@@ -2962,7 +2962,7 @@ function FabU() {
           },
         }}
       >
-        <House size={20} strokeWidth={2} />
+        <House size={22} strokeWidth={2} />
       </IconButton>
     );
     const settingsAction = (
