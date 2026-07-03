@@ -8,6 +8,11 @@ test.describe('Dungeons & Dragons app', () => {
     await expect(page.getByText('Dragonborn')).toBeVisible();
     await expect(page.getByText('Rogue 10 • Wizard 2')).toBeVisible();
 
+    await page.getByRole('button', { name: 'Open Dungeons & Dragons tab menu' }).click();
+    await expect(page.getByText('View Character on Website')).toBeVisible();
+    await page.getByRole('button', { name: 'Inventory' }).last().click();
+    await expect(page.getByText('Equipment (4)')).toBeVisible();
+
     await page.getByRole('button', { name: 'More' }).click();
     await expect(page.getByText('Features & Traits')).toBeVisible();
     await expect(page.getByText('Class Attributes')).toBeVisible();

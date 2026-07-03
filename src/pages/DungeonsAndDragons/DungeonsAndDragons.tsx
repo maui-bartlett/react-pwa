@@ -27,7 +27,7 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
-import { Backpack, House, Sword } from 'lucide-react';
+import { Backpack, ExternalLink, House, Sword, X } from 'lucide-react';
 
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
@@ -69,6 +69,7 @@ const activeDndTabState = atom<DndTab>(initialDndTab);
 const DND_GAME_SYSTEM = 'dungeons-and-dragons';
 const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
 const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
+const DND_OPEN_TAB_MENU_EVENT = 'dnd-open-tab-menu';
 type RestType = DndRestType;
 
 const dndColors = {
@@ -561,18 +562,25 @@ function SectionHeader({
           {title}
         </Typography>
       </Stack>
-      <Box
+      <Button
+        aria-label="Open Dungeons & Dragons tab menu"
+        onClick={() => window.dispatchEvent(new CustomEvent(DND_OPEN_TAB_MENU_EVENT))}
         sx={{
           alignSelf: 'stretch',
           width: 70,
+          minWidth: 70,
+          borderRadius: 0,
           display: 'grid',
           placeItems: 'center',
           bgcolor: alpha('#000000', mode === 'grid' ? 0.08 : 0.18),
           color: mode === 'grid' ? dndColors.red : '#ffffff',
+          fontSize: 21,
+          fontWeight: 900,
+          '&:hover': { bgcolor: alpha('#000000', 0.22) },
         }}
       >
         {mode === 'grid' ? '▦' : '☷'}
-      </Box>
+      </Button>
     </Stack>
   );
 }
@@ -2558,6 +2566,151 @@ function AppMenu({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab: D
         );
       })}
     </Box>
+  );
+}
+
+const dndTabMenuItems: Array<{ tab: DndTab; label: string; icon: ReactNode }> = [
+  { tab: 'abilities', label: 'Abilities, Saves, Senses', icon: <ShieldIcon /> },
+  { tab: 'conditions', label: 'Conditions', icon: <AutoAwesomeIcon /> },
+  { tab: 'skills', label: 'Skills', icon: <AutoAwesomeIcon /> },
+  { tab: 'actions', label: 'Actions', icon: <Sword /> },
+  { tab: 'inventory', label: 'Inventory', icon: <Backpack /> },
+  { tab: 'spells', label: 'Spells', icon: <LocalFireDepartmentIcon /> },
+  { tab: 'features', label: 'Features & Traits', icon: <PersonIcon /> },
+  { tab: 'background', label: 'Background', icon: <MenuBookIcon /> },
+  { tab: 'notes', label: 'Notes', icon: <MenuBookIcon /> },
+];
+
+function TabMenuDialog({
+  open,
+  activeTab,
+  onClose,
+  onSelectTab,
+}: {
+  open: boolean;
+  activeTab: DndTab;
+  onClose: () => void;
+  onSelectTab: (tab: DndTab) => void;
+}) {
+  const selectTab = (tab: DndTab) => {
+    onSelectTab(tab);
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{
+        sx: {
+          m: 1.2,
+          borderRadius: '28px',
+          bgcolor: dndColors.chrome,
+          color: dndColors.text,
+          minHeight: 'min(760px, calc(100vh - 24px))',
+          boxShadow: '0 26px 60px rgba(0,0,0,0.48)',
+        },
+      }}
+    >
+      <Box sx={{ px: 2.4, pt: 2.2, pb: 3 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.4 }}>
+          <IconButton
+            aria-label="Close Dungeons & Dragons tab menu"
+            onClick={onClose}
+            sx={{
+              width: 54,
+              height: 54,
+              bgcolor: dndColors.panelStrong,
+              color: '#ffffff',
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+              '&:hover': { bgcolor: '#05090b' },
+            }}
+          >
+            <X size={31} />
+          </IconButton>
+          <Button
+            onClick={onClose}
+            sx={{
+              minWidth: 78,
+              minHeight: 54,
+              borderRadius: '24px',
+              bgcolor: dndColors.panelStrong,
+              color: '#ffffff',
+              fontSize: 18,
+              fontWeight: 800,
+              textTransform: 'none',
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+              '&:hover': { bgcolor: '#05090b' },
+            }}
+          >
+            Edit
+          </Button>
+        </Stack>
+
+        <Stack spacing={1.15}>
+          {dndTabMenuItems.map((item) => {
+            const selected = item.tab === activeTab;
+            return (
+              <Button
+                key={item.tab}
+                fullWidth
+                onClick={() => selectTab(item.tab)}
+                startIcon={item.icon}
+                sx={{
+                  minHeight: 55,
+                  justifyContent: 'flex-start',
+                  px: 2,
+                  borderRadius: '4px',
+                  border: `1px solid ${selected ? dndColors.red : 'transparent'}`,
+                  bgcolor: dndColors.panelSoft,
+                  color: dndColors.text,
+                  textTransform: 'none',
+                  fontSize: 18,
+                  fontWeight: 900,
+                  '& .MuiButton-startIcon': {
+                    color: selected ? '#ffffff' : dndColors.muted,
+                    mr: 1.5,
+                    '& svg': { fontSize: 23 },
+                  },
+                  '&:hover': { bgcolor: '#243640' },
+                }}
+              >
+                {item.label}
+              </Button>
+            );
+          })}
+
+          <Button
+            component={Link}
+            to="/dungeons-and-dragons"
+            onClick={onClose}
+            fullWidth
+            startIcon={<ExternalLink />}
+            sx={{
+              minHeight: 55,
+              justifyContent: 'flex-start',
+              px: 2,
+              borderRadius: '4px',
+              bgcolor: dndColors.panelSoft,
+              color: dndColors.text,
+              textTransform: 'none',
+              fontSize: 18,
+              fontWeight: 900,
+              '& .MuiButton-startIcon': {
+                color: dndColors.blue,
+                mr: 1.5,
+                '& svg': { fontSize: 24 },
+              },
+              '&:hover': { bgcolor: '#243640' },
+            }}
+          >
+            View Character on Website
+          </Button>
+        </Stack>
+      </Box>
+    </Dialog>
   );
 }
 
@@ -4621,6 +4774,7 @@ function DungeonsAndDragons() {
   const [moneyForm, setMoneyForm] = useState<MoneyForm | null>(null);
   const [charactersOpen, setCharactersOpen] = useState(false);
   const [restOpen, setRestOpen] = useState(false);
+  const [tabMenuOpen, setTabMenuOpen] = useState(false);
 
   const localCharacters = useLocalCharacterSlots({
     atom: dndCharacterState,
@@ -4672,6 +4826,12 @@ function DungeonsAndDragons() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [history]);
+
+  useEffect(() => {
+    const openTabMenu = () => setTabMenuOpen(true);
+    window.addEventListener(DND_OPEN_TAB_MENU_EVENT, openTabMenu);
+    return () => window.removeEventListener(DND_OPEN_TAB_MENU_EVENT, openTabMenu);
+  }, []);
 
   const confirmDelete = (mutation: () => void, options?: { title?: string; body?: string }) =>
     setPendingDelete({
@@ -5388,6 +5548,12 @@ function DungeonsAndDragons() {
           onClose={() => setRestOpen(false)}
           onApplyRest={applyRest}
           onSpendHitDie={spendHitDie}
+        />
+        <TabMenuDialog
+          open={tabMenuOpen}
+          activeTab={activeTab}
+          onClose={() => setTabMenuOpen(false)}
+          onSelectTab={setActiveTab}
         />
         <CharacterEditDialog
           open={characterForm !== null}
