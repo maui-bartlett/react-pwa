@@ -98,7 +98,45 @@ const dndColors = {
   gold: '#f0b948',
 };
 
+const diceRollBoxGlowSx = {
+  borderColor: alpha('#ffffff', 0.62),
+  boxShadow: `0 0 9px ${alpha('#ffffff', 0.24)}, inset 0 0 7px ${alpha('#ffffff', 0.08)}`,
+};
+
 const abilityKeys: readonly AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+const dndDamageTypeLabels: Record<string, string> = {
+  a: 'Acid',
+  acid: 'Acid',
+  b: 'Bludgeoning',
+  bludgeoning: 'Bludgeoning',
+  c: 'Cold',
+  cold: 'Cold',
+  f: 'Fire',
+  fire: 'Fire',
+  force: 'Force',
+  l: 'Lightning',
+  lightning: 'Lightning',
+  n: 'Necrotic',
+  necrotic: 'Necrotic',
+  p: 'Piercing',
+  piercing: 'Piercing',
+  po: 'Poison',
+  poison: 'Poison',
+  ps: 'Psychic',
+  psychic: 'Psychic',
+  r: 'Radiant',
+  radiant: 'Radiant',
+  s: 'Slashing',
+  slashing: 'Slashing',
+  t: 'Thunder',
+  thunder: 'Thunder',
+};
+
+function formatDamageTypeLabel(value: string) {
+  const trimmed = value.trim();
+  return dndDamageTypeLabels[trimmed.toLowerCase()] ?? trimmed;
+}
 
 const dndConditions = [
   'Blinded',
@@ -921,10 +959,11 @@ function DefenseBadge({
           bgcolor: dndColors.panelStrong,
           display: 'grid',
           placeItems: 'center',
-          transition: 'filter 160ms ease, box-shadow 160ms ease',
+          transition: 'border-color 160ms ease, filter 160ms ease, box-shadow 160ms ease',
+          ...diceRollBoxGlowSx,
           ...(onRoll
             ? {
-                boxShadow: `inset 0 0 0 1px ${alpha(dndColors.red, 0.32)}`,
+                boxShadow: `${diceRollBoxGlowSx.boxShadow}, inset 0 0 0 1px ${alpha(dndColors.red, 0.32)}`,
                 '&:hover': {
                   filter: 'brightness(1.1)',
                 },
@@ -1095,6 +1134,7 @@ function AbilityTile({ ability, onRoll }: { ability: AbilityScore; onRoll: () =>
           borderRadius: '5px',
           border: `1px solid ${dndColors.border}`,
           bgcolor: alpha('#000000', 0.12),
+          ...diceRollBoxGlowSx,
         }}
       >
         <Typography sx={{ color: dndColors.text, fontSize: 31, fontWeight: 900 }}>
@@ -1177,6 +1217,7 @@ function SavePill({ ability, onRoll }: { ability: AbilityScore; onRoll: () => vo
           placeItems: 'center',
           borderLeft: `2px solid ${dndColors.border}`,
           bgcolor: alpha('#000000', 0.12),
+          ...diceRollBoxGlowSx,
         }}
       >
         <Typography sx={{ color: dndColors.text, fontSize: 20, fontWeight: 900 }}>
@@ -1486,6 +1527,7 @@ function SkillRowView({ skill, onRoll }: { skill: Skill; onRoll: () => void }) {
           border: `2px solid ${dndColors.border}`,
           borderRadius: '8px',
           bgcolor: alpha('#000000', 0.12),
+          ...diceRollBoxGlowSx,
         }}
       >
         <Typography sx={{ color: dndColors.text, fontSize: 22, fontWeight: 900, lineHeight: 1 }}>
@@ -1603,7 +1645,7 @@ function AttackRow({ attack, onToggleEquipped }: { attack: Attack; onToggleEquip
       >
         {attack.damage}
         <Typography component="span" sx={{ color: dndColors.muted, fontSize: 11, ml: 0.4 }}>
-          {attack.damageType[0]}
+          {formatDamageTypeLabel(attack.damageType)}
         </Typography>
       </RollBox>
     </Box>
@@ -1662,6 +1704,7 @@ function RollBox({
         bgcolor: alpha('#000000', 0.08),
         padding: `3px 8px 5px 8px`,
         cursor: onRoll ? 'pointer' : 'default',
+        ...diceRollBoxGlowSx,
         '&:hover': onRoll ? { borderColor: dndColors.blue, color: dndColors.blue } : undefined,
       }}
     >

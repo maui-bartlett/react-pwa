@@ -56,6 +56,37 @@ const diceRollButtonReveal = keyframes`
   }
 `;
 
+const criticalPulseWave = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.24);
+  }
+  16% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(3.3);
+  }
+`;
+
+const criticalPulseFlash = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.45);
+  }
+`;
+
 type DiceBoxInstance = {
   init: () => Promise<unknown>;
   roll: (
@@ -193,6 +224,10 @@ function toDiceBoxNotation(dice: RollDie[], themeColor: string) {
 
 function countSelectedDice(dice: RollDie[], sides: DieSize) {
   return dice.filter((die) => die.sides === sides).length;
+}
+
+function hasNaturalD20Critical(result: RollResult) {
+  return result.rolls.some((roll) => roll.sides === 20 && roll.value === 20);
 }
 
 function formatRollEquation(result: RollResult) {
@@ -465,6 +500,63 @@ function ResultReadoutOverlay({
   );
 }
 
+function CriticalPulseOverlay({
+  activeKey,
+  trayStyle,
+}: {
+  activeKey: number;
+  trayStyle: DiceTrayStyle;
+}) {
+  if (!activeKey) return null;
+
+  return (
+    <Box
+      key={activeKey}
+      aria-hidden="true"
+      sx={{
+        position: 'fixed',
+        left: `${trayStyle.left}px`,
+        top: `${trayStyle.top}px`,
+        width: `${trayStyle.width}px`,
+        height: `${trayStyle.height}px`,
+        zIndex: (theme) => theme.zIndex.tooltip + 16,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: '42%',
+          width: 118,
+          height: 118,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${alpha('#ffffff', 0.95)} 0%, ${alpha('#1ea7ff', 0.58)} 28%, ${alpha(DND_DICE_ACCENT, 0.22)} 52%, transparent 72%)`,
+          filter: 'blur(2px)',
+          animation: `${criticalPulseFlash} 620ms ease-out both`,
+        }}
+      />
+      {[0, 130, 260].map((delay, index) => (
+        <Box
+          key={delay}
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: '42%',
+            width: 96 + index * 18,
+            height: 96 + index * 18,
+            borderRadius: '50%',
+            border: `2px solid ${alpha(index === 0 ? '#ffffff' : '#1ea7ff', 0.82)}`,
+            boxShadow: `0 0 18px ${alpha('#ffffff', 0.55)}, 0 0 34px ${alpha('#1ea7ff', 0.5)}, inset 0 0 18px ${alpha(DND_DICE_ACCENT, 0.28)}`,
+            animation: `${criticalPulseWave} 1180ms ${delay}ms cubic-bezier(.08,.72,.16,1) both`,
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
 function DiceRoller() {
   const theme = useTheme();
   const location = useLocation();
@@ -478,6 +570,7 @@ function DiceRoller() {
   const [isRailClosing, setIsRailClosing] = useState(false);
   const [diceTrayStyle, setDiceTrayStyle] = useState<DiceTrayStyle>(defaultDiceTrayStyle);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
+  const [criticalPulseKey, setCriticalPulseKey] = useState(0);
   const diceBoxRef = useRef<DiceBoxInstance | null>(null);
   const initialDiceBoxConfigRef = useRef({
     themeColor: appAccent,
@@ -485,6 +578,7 @@ function DiceRoller() {
   });
   const rollSequenceRef = useRef(0);
   const fadeOutPromiseRef = useRef<Promise<void> | null>(null);
+  const criticalPulseTimeoutRef = useRef(0);
 
   const hasDice = selectedDice.length > 0;
   const isDndApp = location.pathname.startsWith('/dungeons-and-dragons');
@@ -511,6 +605,19 @@ function DiceRoller() {
     [appAccent, isDndApp, theme.palette.common.white, theme.palette.mode],
   );
   const accent = dicePalette.accent;
+
+  const triggerCriticalPulse = useCallback(() => {
+    window.clearTimeout(criticalPulseTimeoutRef.current);
+    setCriticalPulseKey((key) => key + 1);
+    criticalPulseTimeoutRef.current = window.setTimeout(() => setCriticalPulseKey(0), 1500);
+  }, []);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(criticalPulseTimeoutRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     let animationFrame = 0;
@@ -753,6 +860,7 @@ function DiceRoller() {
 
         const result = toRollResult(results);
         if (isValidRollResult(result, dice)) {
+          if (isDndApp && hasNaturalD20Critical(result)) triggerCriticalPulse();
           setLastResult(applyMetadata(result));
           return;
         }
@@ -760,7 +868,9 @@ function DiceRoller() {
         console.warn('[dice] DiceBox returned an invalid roll; using a valid fallback result', {
           result,
         });
-        setLastResult(applyMetadata(createRandomRollResult(dice)));
+        const fallbackResult = createRandomRollResult(dice);
+        if (isDndApp && hasNaturalD20Critical(fallbackResult)) triggerCriticalPulse();
+        setLastResult(applyMetadata(fallbackResult));
       } catch (error) {
         console.warn('[dice] DiceBox roll failed', error);
         diceBoxRef.current?.clear();
@@ -770,7 +880,15 @@ function DiceRoller() {
         if (rollSequenceRef.current === rollSequence) setIsRolling(false);
       }
     },
-    [accent, fadeOutDisplayedRoll, isDiceBoxReady, isResultDismissing, isRolling],
+    [
+      accent,
+      fadeOutDisplayedRoll,
+      isDiceBoxReady,
+      isDndApp,
+      isResultDismissing,
+      isRolling,
+      triggerCriticalPulse,
+    ],
   );
 
   const rollSelectedDice = async () => {
@@ -824,6 +942,7 @@ function DiceRoller() {
           },
         }}
       />
+      <CriticalPulseOverlay activeKey={criticalPulseKey} trayStyle={diceTrayStyle} />
       <ResultReadoutOverlay
         result={isRolling ? null : lastResult}
         accent={accent}
