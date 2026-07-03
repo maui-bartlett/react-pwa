@@ -1010,9 +1010,9 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: { xs: 76, sm: 108 },
+        width: { xs: 81, sm: 113 },
         minWidth: 0,
-        minHeight: 48,
+        minHeight: 58,
         px: { xs: 0.65, sm: 1.1 },
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
@@ -1068,23 +1068,23 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 5,
-                left: { xs: 6, sm: 7 },
-                width: 9,
+                top: 3,
+                left: { xs: 8, sm: 10 },
+                width: 5,
                 height: 2,
                 borderRadius: '999px',
                 bgcolor: dndColors.gold,
-                transform: 'rotate(42deg)',
+                transform: 'rotate(-42deg)',
                 transformOrigin: 'right center',
               }}
             />
             <Box
               sx={{
                 position: 'absolute',
-                top: 1,
+                top: 0,
                 left: '50%',
                 width: 2,
-                height: 10,
+                height: 5,
                 borderRadius: '999px',
                 bgcolor: dndColors.gold,
                 transform: 'translateX(-50%)',
@@ -1093,13 +1093,13 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 5,
-                right: { xs: 6, sm: 7 },
-                width: 9,
+                top: 3,
+                right: { xs: 8, sm: 10 },
+                width: 5,
                 height: 2,
                 borderRadius: '999px',
                 bgcolor: dndColors.gold,
-                transform: 'rotate(-42deg)',
+                transform: 'rotate(42deg)',
                 transformOrigin: 'left center',
               }}
             />
@@ -1147,7 +1147,7 @@ function HitPointsButton({
       sx={{
         width: { xs: 98, sm: 118 },
         minWidth: 0,
-        minHeight: 48,
+        minHeight: 58,
         bgcolor: dndColors.panelStrong,
         border: 0,
         borderRadius: '6px',
@@ -1276,10 +1276,11 @@ function DefenseBadge({
           transition: 'border-color 160ms ease, filter 160ms ease, box-shadow 160ms ease',
           ...(onRoll
             ? {
-                ...diceRollBoxGlowSx,
-                boxShadow: `${diceRollBoxGlowSx.boxShadow}, inset 0 0 0 1px ${alpha(dndColors.red, 0.32)}`,
+                borderColor: alpha('#ffffff', 0.72),
+                filter: `drop-shadow(0 0 4px ${alpha('#ffffff', 0.55)}) drop-shadow(0 0 9px ${alpha('#ffffff', 0.28)})`,
+                boxShadow: `inset 0 0 0 1px ${alpha(dndColors.red, 0.32)}`,
                 '&:hover': {
-                  filter: 'brightness(1.1)',
+                  filter: `brightness(1.1) drop-shadow(0 0 5px ${alpha('#ffffff', 0.62)}) drop-shadow(0 0 10px ${alpha('#ffffff', 0.32)})`,
                 },
               }
             : {}),
@@ -1331,9 +1332,9 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        width: { xs: 44, sm: 56 },
+        width: { xs: 49, sm: 61 },
         minWidth: 0,
-        minHeight: 48,
+        minHeight: 58,
         px: 1,
         bgcolor: dndColors.panelStrong,
         color: '#ffffff',
