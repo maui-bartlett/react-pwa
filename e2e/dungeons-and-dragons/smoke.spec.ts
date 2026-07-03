@@ -10,9 +10,8 @@ test.describe('Dungeons & Dragons app', () => {
 
     await page.getByRole('button', { name: 'Open Dungeons & Dragons tab menu' }).click();
     await expect(page.getByRole('button', { name: 'Abilities, Saves, Senses' })).toBeVisible();
-    await page.getByRole('button', { name: 'Edit' }).click();
-    await expect(page.getByText('Edit Abilities')).toBeVisible();
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Close Dungeons & Dragons tab menu' }).click();
 
     await page.getByRole('button', { name: 'Open Dungeons & Dragons tab menu' }).click();
     await page.getByRole('button', { name: 'Inventory' }).last().click();

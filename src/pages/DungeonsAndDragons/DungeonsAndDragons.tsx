@@ -551,9 +551,10 @@ function SectionHeader({
       direction="row"
       alignItems="center"
       sx={{
-        mx: 1.6,
+        mx: 'auto',
         mt: 1.6,
         mb: 1.6,
+        width: '95%',
         minHeight: 48,
         bgcolor: dndColors.chrome,
         borderRadius: '6px',
@@ -629,7 +630,7 @@ function HeroHeader({
           alignItems: 'center',
         }}
       >
-        <Stack alignItems="flex-start" spacing={0.15} sx={{ minWidth: 0 }}>
+        <Stack alignItems="flex-start" spacing={0.2} sx={{ minWidth: 0 }}>
           <Typography
             sx={{
               color: dndColors.text,
@@ -643,15 +644,24 @@ function HeroHeader({
             }}
           >
             {character.name}
-            <Box component="span" sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
-              {' '}
-              · {character.species}
-            </Box>
           </Typography>
           <Typography
             sx={{
               color: dndColors.muted,
-              fontSize: 13,
+              fontSize: 14,
+              fontWeight: 800,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+          >
+            {character.species}
+          </Typography>
+          <Typography
+            sx={{
+              color: dndColors.muted,
+              fontSize: 12,
               fontWeight: 800,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -662,7 +672,7 @@ function HeroHeader({
             {classLine(character)}
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={0.7} justifyContent="flex-end">
+        <Stack direction="row" spacing={0.7} justifyContent="flex-end" sx={{ mt: '-12px' }}>
           {homeAction}
           {accountAction}
         </Stack>
@@ -673,10 +683,10 @@ function HeroHeader({
           display: 'flex',
           justifyContent: 'space-between',
           gap: 0.8,
-          alignItems: 'flex-start',
+          alignItems: 'center',
         }}
       >
-        <Stack direction="row" spacing={0.7} alignItems="stretch">
+        <Stack direction="row" spacing={0.7} alignItems="center">
           <SmallActionButton icon={<FlameKindling size={21} />} label="Rest" onClick={onOpenRest} />
           <ConditionsButton onChange={setActiveTab} />
           <HitPointsButton
@@ -686,7 +696,7 @@ function HeroHeader({
             onClick={onEditHitPoints}
           />
         </Stack>
-        <Stack direction="row" spacing={0.45} justifyContent="flex-end" alignItems="flex-start">
+        <Stack direction="row" spacing={0.45} justifyContent="flex-end" alignItems="center">
           <DefenseBadge
             compact
             label="Armor Class"
@@ -712,10 +722,12 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
       sx={{
         width: 108,
         minWidth: 0,
-        minHeight: 43,
+        minHeight: 48,
+        px: 1.1,
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
         borderRadius: '6px',
+        fontSize: 13,
         fontWeight: 900,
         textTransform: 'uppercase',
         '&:hover': { bgcolor: '#05090b' },
@@ -744,9 +756,9 @@ function HitPointsButton({
       aria-label="Edit hit points"
       onClick={onClick}
       sx={{
-        width: 86,
+        width: 98,
         minWidth: 0,
-        minHeight: 43,
+        minHeight: 48,
         bgcolor: dndColors.panelStrong,
         border: 0,
         borderRadius: '6px',
@@ -759,10 +771,10 @@ function HitPointsButton({
         '&:hover': { bgcolor: '#05090b' },
       }}
     >
-      <Typography sx={{ color: dndColors.text, fontSize: 10, fontWeight: 900, lineHeight: 1 }}>
+      <Typography sx={{ color: dndColors.text, fontSize: 11, fontWeight: 900, lineHeight: 1 }}>
         HP
       </Typography>
-      <Typography sx={{ color: dndColors.text, fontSize: 15, fontWeight: 900, lineHeight: 1.15 }}>
+      <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 900, lineHeight: 1.15 }}>
         {current}/{max}
       </Typography>
       <LinearProgress
@@ -794,8 +806,8 @@ function DefenseBadge({
     <Stack alignItems="center" spacing={0.1}>
       <Box
         sx={{
-          width: compact ? 48 : 62,
-          height: compact ? 48 : 62,
+          width: compact ? 54 : 62,
+          height: compact ? 54 : 62,
           clipPath:
             shape === 'shield'
               ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
@@ -806,14 +818,14 @@ function DefenseBadge({
           placeItems: 'center',
         }}
       >
-        <Typography sx={{ color: dndColors.text, fontSize: compact ? 19 : 25, fontWeight: 900 }}>
+        <Typography sx={{ color: dndColors.text, fontSize: compact ? 21 : 25, fontWeight: 900 }}>
           {value}
         </Typography>
       </Box>
       <Typography
         sx={{
           color: dndColors.text,
-          fontSize: compact ? 8 : 11,
+          fontSize: compact ? 9 : 11,
           fontWeight: 900,
           textAlign: 'center',
           textTransform: 'uppercase',
@@ -841,7 +853,8 @@ function SmallActionButton({
       sx={{
         width: 56,
         minWidth: 0,
-        minHeight: 43,
+        minHeight: 48,
+        px: 1,
         bgcolor: dndColors.panelStrong,
         color: '#ffffff',
         borderRadius: '6px',
@@ -2645,21 +2658,14 @@ function TabMenuDialog({
   activeTab,
   onClose,
   onSelectTab,
-  onEditActiveTab,
 }: {
   open: boolean;
   activeTab: DndTab;
   onClose: () => void;
   onSelectTab: (tab: DndTab) => void;
-  onEditActiveTab: (() => void) | null;
 }) {
   const selectTab = (tab: DndTab) => {
     onSelectTab(tab);
-    onClose();
-  };
-
-  const editActiveTab = () => {
-    onEditActiveTab?.();
     onClose();
   };
 
@@ -2681,7 +2687,7 @@ function TabMenuDialog({
       }}
     >
       <Box sx={{ px: 2.4, pt: 2.2, pb: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.4 }}>
+        <Stack direction="row" justifyContent="flex-start" alignItems="center" sx={{ mb: 2.4 }}>
           <IconButton
             aria-label="Close Dungeons & Dragons tab menu"
             onClick={onClose}
@@ -2696,25 +2702,6 @@ function TabMenuDialog({
           >
             <X size={31} />
           </IconButton>
-          {onEditActiveTab ? (
-            <Button
-              onClick={editActiveTab}
-              sx={{
-                minWidth: 78,
-                minHeight: 54,
-                borderRadius: '24px',
-                bgcolor: dndColors.panelStrong,
-                color: '#ffffff',
-                fontSize: 18,
-                fontWeight: 800,
-                textTransform: 'none',
-                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
-                '&:hover': { bgcolor: '#05090b' },
-              }}
-            >
-              Edit
-            </Button>
-          ) : null}
         </Stack>
 
         <Stack spacing={1.15}>
@@ -5348,25 +5335,6 @@ function DungeonsAndDragons() {
     }));
   };
 
-  const editActiveTab = (() => {
-    switch (activeTab) {
-      case 'abilities':
-        return () => setAbilityForm(createAbilityForm(character));
-      case 'skills':
-        return () => setSkillForm(createSkillForm(character));
-      case 'spells':
-        return () => setSpellcastingForm(createSpellcastingForm(character));
-      case 'inventory':
-        return () => setMoneyForm(createMoneyForm(character.money));
-      case 'features':
-        return () => setProficiencyForm(createProficiencyForm(character));
-      case 'background':
-        return () => setBackgroundForm(createBackgroundForm(character));
-      default:
-        return null;
-    }
-  })();
-
   const content = (() => {
     switch (activeTab) {
       case 'abilities':
@@ -5604,7 +5572,6 @@ function DungeonsAndDragons() {
           activeTab={activeTab}
           onClose={() => setTabMenuOpen(false)}
           onSelectTab={setActiveTab}
-          onEditActiveTab={editActiveTab}
         />
         <CharacterEditDialog
           open={characterForm !== null}
