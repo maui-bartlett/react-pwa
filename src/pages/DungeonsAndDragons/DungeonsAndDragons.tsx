@@ -1074,7 +1074,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
                 height: 2,
                 borderRadius: '999px',
                 bgcolor: dndColors.gold,
-                transform: 'rotate(-42deg)',
+                transform: 'rotate(42deg)',
                 transformOrigin: 'right center',
               }}
             />
@@ -1099,7 +1099,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
                 height: 2,
                 borderRadius: '999px',
                 bgcolor: dndColors.gold,
-                transform: 'rotate(42deg)',
+                transform: 'rotate(-42deg)',
                 transformOrigin: 'left center',
               }}
             />
@@ -1163,9 +1163,10 @@ function HitPointsButton({
       <Typography
         sx={{
           color: dndColors.text,
-          fontSize: { xs: 10, sm: 11 },
+          fontSize: { xs: 11, sm: 12 },
           fontWeight: 900,
           lineHeight: 1,
+          mb: 0.35,
         }}
       >
         HP
@@ -1176,6 +1177,7 @@ function HitPointsButton({
           fontSize: { xs: 14, sm: 16 },
           fontWeight: 900,
           lineHeight: 1.15,
+          mt: 0.25,
         }}
       >
         {current}/{max}
@@ -1332,7 +1334,7 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        width: { xs: 49, sm: 61 },
+        width: { xs: 54, sm: 66 },
         minWidth: 0,
         minHeight: 58,
         px: 1,
@@ -1980,15 +1982,17 @@ function AttackRow({ attack, onToggleEquipped }: { attack: Attack; onToggleEquip
       >
         {attack.hitDc}
       </RollBox>
-      <RollBox
-        ariaLabel={`Roll ${attack.name} damage`}
-        onRoll={() => rollDiceExpression(`${attack.name} Damage`, attack.damage)}
-      >
-        {attack.damage}
-        <Typography component="span" sx={{ color: dndColors.muted, fontSize: 11, ml: 0.4 }}>
+      <Stack alignItems="center" spacing={0.35}>
+        <RollBox
+          ariaLabel={`Roll ${attack.name} damage`}
+          onRoll={() => rollDiceExpression(`${attack.name} Damage`, attack.damage)}
+        >
+          {attack.damage}
+        </RollBox>
+        <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, lineHeight: 1 }}>
           {formatDamageTypeLabel(attack.damageType)}
         </Typography>
-      </RollBox>
+      </Stack>
     </Box>
   );
 }
@@ -2062,6 +2066,7 @@ function SpellsScreen({
   onEditSpellcasting,
   onTogglePrepared,
   onUpdateSpellSlot,
+  onCastSpell,
 }: {
   character: DndCharacter;
   onDeleteSpell: (id: string) => void;
@@ -2070,6 +2075,7 @@ function SpellsScreen({
   onEditSpellcasting: () => void;
   onTogglePrepared: (id: string) => void;
   onUpdateSpellSlot: (level: string, used: number) => void;
+  onCastSpell: (spell: Spell) => boolean;
 }) {
   return (
     <>
@@ -2115,7 +2121,12 @@ function SpellsScreen({
             onDelete={() => onDeleteSpell(spell.id)}
             onEdit={() => onEditSpell(spell)}
           >
-            <SpellRow spell={spell} onTogglePrepared={() => onTogglePrepared(spell.id)} />
+            <SpellRow
+              spell={spell}
+              spellSlots={character.spellcasting.slots}
+              onTogglePrepared={() => onTogglePrepared(spell.id)}
+              onCast={() => onCastSpell(spell)}
+            />
           </SwipeRow>
         ))}
       </Box>
@@ -2159,8 +2170,28 @@ function SlotTracker({
   );
 }
 
-function SpellRow({ spell, onTogglePrepared }: { spell: Spell; onTogglePrepared: () => void }) {
+function SpellRow({
+  spell,
+  spellSlots,
+  onTogglePrepared,
+  onCast,
+}: {
+  spell: Spell;
+  spellSlots: DndCharacter['spellcasting']['slots'];
+  onTogglePrepared: () => void;
+  onCast: () => boolean;
+}) {
   const prepared = Boolean(spell.prepared);
+  const slotLevel = getSpellSlotLevel(spell.level);
+  const slot = slotLevel ? findUsableSpellSlot(spellSlots, slotLevel) : undefined;
+  const canCast = !slotLevel || Boolean(slot);
+  const castAndMaybeRoll = () => {
+    if (!onCast()) return;
+    if (spell.damage) {
+      rollDiceExpression(`${spell.name} Damage`, spell.damage);
+    }
+  };
+
   return (
     <Box
       sx={{ py: 1.25, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}
@@ -2199,26 +2230,92 @@ function SpellRow({ spell, onTogglePrepared }: { spell: Spell; onTogglePrepared:
           >
             {prepared ? 'Prep' : 'Book'}
           </Button>
-          <RollBox
-            ariaLabel={`Roll ${spell.name}`}
-            onRoll={() => rollD20(`${spell.name} Roll`, spell.hitDc)}
-          >
-            {spell.hitDc}
-          </RollBox>
+          {spell.damage ? (
+            <RollBox
+              ariaLabel={`Cast ${spell.name}`}
+              onRoll={canCast ? castAndMaybeRoll : undefined}
+            >
+              {spell.damage}
+            </RollBox>
+          ) : (
+            <Button
+              disabled={!canCast}
+              onClick={(event) => {
+                event.stopPropagation();
+                onCast();
+              }}
+              sx={{
+                minWidth: 62,
+                minHeight: 37,
+                borderRadius: '5px',
+                border: `1px solid ${dndColors.border}`,
+                bgcolor: alpha('#000000', 0.08),
+                color: dndColors.text,
+                fontSize: 12,
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                '&:hover': { borderColor: dndColors.blue, color: dndColors.blue },
+                '&.Mui-disabled': {
+                  borderColor: alpha(dndColors.border, 0.52),
+                  color: alpha(dndColors.muted, 0.62),
+                },
+              }}
+            >
+              Cast
+            </Button>
+          )}
         </Stack>
       </Stack>
-      <Stack direction="row" spacing={1.2} sx={{ mt: 1 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr) 86px 70px', sm: 'minmax(0, 1fr) 98px 82px' },
+          columnGap: 1.2,
+          alignItems: 'start',
+          mt: 1,
+          pr: { xs: 0.4, sm: 0.8 },
+        }}
+      >
         <TinyStat label="Time" value={spell.castingTime} />
         <TinyStat label="Range" value={spell.range} />
-        {spell.damage ? (
-          <TinyStat
-            label="Damage"
-            value={spell.damage}
-            onClick={() => rollDiceExpression(`${spell.name} Damage`, spell.damage ?? '')}
-          />
-        ) : null}
-      </Stack>
+        <TinyStat label="Hit/DC" value={spell.hitDc} />
+      </Box>
     </Box>
+  );
+}
+
+function getSpellSlotLevel(level: string) {
+  const normalized = level.trim().toLowerCase();
+  if (!normalized || normalized.includes('cantrip') || normalized === '0') return null;
+  const match = normalized.match(/^(\d+)(?:st|nd|rd|th)?/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (value === 1) return '1st';
+  if (value === 2) return '2nd';
+  if (value === 3) return '3rd';
+  return `${value}th`;
+}
+
+function getSpellSlotRank(level: string) {
+  const normalized = level.trim().toLowerCase();
+  const match = normalized.match(/^(\d+)(?:st|nd|rd|th)?/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function findUsableSpellSlot(slots: DndCharacter['spellcasting']['slots'], spellLevel: string) {
+  const minimumRank = getSpellSlotRank(spellLevel);
+  if (!minimumRank) return null;
+  return (
+    slots
+      .map((slot) => ({ slot, rank: getSpellSlotRank(slot.level) }))
+      .filter(
+        (entry): entry is { slot: DndCharacter['spellcasting']['slots'][number]; rank: number } =>
+          entry.rank !== null && entry.rank >= minimumRank && entry.slot.used < entry.slot.max,
+      )
+      .sort((left, right) => left.rank - right.rank)[0]?.slot ?? null
   );
 }
 
@@ -5886,6 +5983,30 @@ function DungeonsAndDragons() {
     }));
   };
 
+  const castSpell = (spell: Spell) => {
+    const slotLevel = getSpellSlotLevel(spell.level);
+    if (!slotLevel) return true;
+
+    const matchingSlot = findUsableSpellSlot(character.spellcasting.slots, slotLevel);
+    if (!matchingSlot) return false;
+
+    setCharacter((current) => {
+      return {
+        ...current,
+        spellcasting: {
+          ...current.spellcasting,
+          slots: current.spellcasting.slots.map((slot) =>
+            slot.level === matchingSlot.level
+              ? { ...slot, used: Math.min(slot.max, slot.used + 1) }
+              : slot,
+          ),
+        },
+      };
+    });
+    setUndoOpen(true);
+    return true;
+  };
+
   const content = (() => {
     switch (activeTab) {
       case 'abilities':
@@ -5930,6 +6051,7 @@ function DungeonsAndDragons() {
             onDeleteSpell={(id) => deleteById('spells', id)}
             onTogglePrepared={toggleSpellPrepared}
             onUpdateSpellSlot={updateSpellSlot}
+            onCastSpell={castSpell}
           />
         );
       case 'inventory':
