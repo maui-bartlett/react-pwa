@@ -111,7 +111,7 @@ function HeaderBar({
           sx={{
             position: 'absolute',
             top: compact ? 9 : 'max(12px, calc(env(safe-area-inset-top) + 8px))',
-            right: compact ? 10 : 12,
+            right: compact ? 20 : 22,
             zIndex: 1,
           }}
         >
@@ -124,7 +124,7 @@ function HeaderBar({
           sx={{
             position: 'absolute',
             top: compact ? 9 : 'max(12px, calc(env(safe-area-inset-top) + 8px))',
-            right: compact ? 64 : 66,
+            right: compact ? 74 : 76,
             zIndex: 1,
           }}
         >

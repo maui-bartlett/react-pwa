@@ -8312,7 +8312,12 @@ function AvatarLegends() {
                   </Typography>
                 </Stack>
               )}
-              <Stack direction="row" alignItems="center" spacing={1.35}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1.35}
+                sx={{ transform: 'translateX(-10px)' }}
+              >
                 <Button
                   component={Link}
                   to="/"

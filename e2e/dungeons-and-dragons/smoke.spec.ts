@@ -21,8 +21,9 @@ test.describe('Dungeons & Dragons app', () => {
     await page.getByRole('button', { name: 'More' }).click();
     await expect(page.getByText('Features & Traits')).toBeVisible();
     await expect(page.getByText('Class Attributes')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Short Rest', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Long Rest', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Skills', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Background', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Notes', exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: 'Inventory' }).click();
     await expect(page.getByText('Inventory').first()).toBeVisible();

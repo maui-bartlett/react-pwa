@@ -944,7 +944,12 @@ function HeroHeader({
             <ClassLine character={character} />
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={1.35} justifyContent="flex-end" sx={{ mt: '-12px' }}>
+        <Stack
+          direction="row"
+          spacing={1.35}
+          justifyContent="flex-end"
+          sx={{ mt: '-12px', transform: 'translateX(-10px)' }}
+        >
           {homeAction}
           {accountAction}
         </Stack>
@@ -977,7 +982,7 @@ function HeroHeader({
             flex: '0 0 auto',
             mr: { xs: 0, sm: 0.45 },
             justifyContent: 'space-between',
-            minWidth: { xs: 146, sm: 218 },
+            minWidth: { xs: 140, sm: 218 },
           }}
         >
           <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
@@ -1005,14 +1010,14 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: { xs: 58, sm: 108 },
+        width: { xs: 76, sm: 108 },
         minWidth: 0,
         minHeight: 48,
         px: { xs: 0.65, sm: 1.1 },
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
         borderRadius: '6px',
-        fontSize: { xs: 8.5, sm: 13 },
+        fontSize: { xs: 10, sm: 13 },
         fontWeight: 900,
         textTransform: 'uppercase',
         '&:hover': { bgcolor: '#05090b' },
@@ -1063,20 +1068,20 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 4,
-                left: { xs: 9, sm: 11 },
-                width: 10,
+                top: 5,
+                left: { xs: 6, sm: 7 },
+                width: 9,
                 height: 2,
                 borderRadius: '999px',
                 bgcolor: dndColors.gold,
-                transform: 'rotate(-42deg)',
+                transform: 'rotate(42deg)',
                 transformOrigin: 'right center',
               }}
             />
             <Box
               sx={{
                 position: 'absolute',
-                top: 2,
+                top: 1,
                 left: '50%',
                 width: 2,
                 height: 10,
@@ -1088,13 +1093,13 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 4,
-                right: { xs: 9, sm: 11 },
-                width: 10,
+                top: 5,
+                right: { xs: 6, sm: 7 },
+                width: 9,
                 height: 2,
                 borderRadius: '999px',
                 bgcolor: dndColors.gold,
-                transform: 'rotate(42deg)',
+                transform: 'rotate(-42deg)',
                 transformOrigin: 'left center',
               }}
             />
@@ -1326,7 +1331,7 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        width: { xs: 38, sm: 56 },
+        width: { xs: 44, sm: 56 },
         minWidth: 0,
         minHeight: 48,
         px: 1,
@@ -1348,10 +1353,20 @@ const tabOptions: Array<{ value: DndTab; label: string; icon: ReactNode }> = [
   { value: 'inventory', label: 'Inventory', icon: <Backpack /> },
   { value: 'features', label: 'More', icon: <MenuBookIcon /> },
 ];
-const swipeNavigationTabs = tabOptions.map((tab) => tab.value);
+const swipeNavigationTabs: DndTab[] = [
+  'abilities',
+  'conditions',
+  'skills',
+  'actions',
+  'inventory',
+  'spells',
+  'features',
+  'background',
+  'notes',
+];
 
 function navigationTabFor(activeTab: DndTab) {
-  return tabOptions.some((tab) => tab.value === activeTab) ? activeTab : 'features';
+  return swipeNavigationTabs.includes(activeTab) ? activeTab : 'features';
 }
 
 function BottomNav({
@@ -2390,7 +2405,6 @@ function FeaturesScreen({
   onEditProficiencies,
   onDeleteFeature,
   onUpdateFeatureUses,
-  onRestFeatures,
   onSelectTab,
 }: {
   character: DndCharacter;
@@ -2403,19 +2417,21 @@ function FeaturesScreen({
   onEditProficiencies: () => void;
   onDeleteFeature: (id: string) => void;
   onUpdateFeatureUses: (id: string, used: number) => void;
-  onRestFeatures: (restType: RestType) => void;
   onSelectTab: (tab: DndTab) => void;
 }) {
   return (
     <>
       <SectionHeader icon={<PersonIcon />} title="Features & Traits" />
       <Box sx={{ px: 1.6, pb: 12 }}>
-        <Stack direction="row" spacing={1} sx={{ mt: 1.4 }}>
-          <Button onClick={() => onRestFeatures('short')} sx={moreButtonSx}>
-            Short Rest
+        <Stack direction="row" spacing={1} sx={{ mt: 1.4, flexWrap: 'wrap' }}>
+          <Button onClick={() => onSelectTab('skills')} sx={moreButtonSx}>
+            Skills
           </Button>
-          <Button onClick={() => onRestFeatures('long')} sx={moreButtonSx}>
-            Long Rest
+          <Button onClick={() => onSelectTab('background')} sx={moreButtonSx}>
+            Background
+          </Button>
+          <Button onClick={() => onSelectTab('notes')} sx={moreButtonSx}>
+            Notes
           </Button>
         </Stack>
         <Typography sx={subSectionSx}>Class Attributes</Typography>
@@ -2515,17 +2531,6 @@ function FeaturesScreen({
           </Button>
         </Stack>
         <TagCloud values={[...character.proficiencies, ...character.languages]} />
-        <Stack direction="row" spacing={1} sx={{ mt: 1.8, flexWrap: 'wrap' }}>
-          <Button onClick={() => onSelectTab('skills')} sx={moreButtonSx}>
-            Skills
-          </Button>
-          <Button onClick={() => onSelectTab('background')} sx={moreButtonSx}>
-            Background
-          </Button>
-          <Button onClick={() => onSelectTab('notes')} sx={moreButtonSx}>
-            Notes
-          </Button>
-        </Stack>
       </Box>
     </>
   );
@@ -5952,7 +5957,6 @@ function DungeonsAndDragons() {
             onEditProficiencies={() => setProficiencyForm(createProficiencyForm(character))}
             onDeleteFeature={(id) => deleteById('features', id)}
             onUpdateFeatureUses={updateFeatureUses}
-            onRestFeatures={applyRest}
             onSelectTab={setActiveTab}
           />
         );
