@@ -27,7 +27,7 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
-import { Backpack, House, Sword, X } from 'lucide-react';
+import { Backpack, FlameKindling, House, Sword, X } from 'lucide-react';
 
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
@@ -623,26 +623,12 @@ function HeroHeader({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1.25fr',
+          gridTemplateColumns: 'minmax(0, 1fr) auto',
           gap: 1.2,
-          alignItems: 'center',
+          alignItems: 'start',
         }}
       >
-        <Stack spacing={1.1}>
-          <DefenseBadge label="Armor Class" value={effectiveArmorClass(character)} shape="shield" />
-        </Stack>
-        <Stack spacing={1.1} alignItems="center">
-          <DefenseBadge
-            label="Initiative"
-            value={formatModifier(character.initiative)}
-            shape="hex"
-          />
-        </Stack>
-        <Stack spacing={1.1}>
-          <Stack direction="row" spacing={0.7} justifyContent="flex-end">
-            {homeAction}
-            {accountAction}
-          </Stack>
+        <Stack spacing={1.1} sx={{ minWidth: 0 }}>
           <Stack alignItems="flex-start" spacing={0.15}>
             <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 800 }}>
               {character.name}
@@ -655,18 +641,30 @@ function HeroHeader({
               {classLine(character)}
             </Typography>
           </Stack>
+          <Stack direction="row" spacing={0.7} sx={{ mt: '60px' }}>
+            {homeAction}
+            {accountAction}
+          </Stack>
+        </Stack>
+        <Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="flex-start">
+          <DefenseBadge label="Armor Class" value={effectiveArmorClass(character)} shape="shield" />
+          <DefenseBadge
+            label="Initiative"
+            value={formatModifier(character.initiative)}
+            shape="hex"
+          />
         </Stack>
       </Box>
       <Box
         sx={{
           mt: 1.4,
           display: 'flex',
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-start',
           gap: 1,
           alignItems: 'stretch',
         }}
       >
-        <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" onClick={onOpenRest} />
+        <SmallActionButton icon={<FlameKindling size={22} />} label="Rest" onClick={onOpenRest} />
         <ConditionsButton onChange={setActiveTab} />
         <HitPointsButton
           current={character.hitPoints.current}
@@ -684,7 +682,7 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: 86,
+        width: 122,
         minWidth: 0,
         minHeight: 43,
         bgcolor: dndColors.panelStrong,
@@ -811,7 +809,7 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        width: 86,
+        width: 62,
         minWidth: 0,
         minHeight: 43,
         bgcolor: dndColors.panelStrong,
