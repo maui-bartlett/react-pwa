@@ -892,7 +892,7 @@ function HeroHeader({
   };
 
   return (
-    <Box sx={{ bgcolor: dndColors.chrome, px: 1.8, pt: 2.4, pb: 2 }}>
+    <Box sx={{ bgcolor: dndColors.chrome, px: { xs: 1.35, sm: 1.8 }, pt: 2.4, pb: 2 }}>
       <Box
         sx={{
           mt: 5.4,
@@ -955,11 +955,11 @@ function HeroHeader({
           mt: 1.3,
           display: 'flex',
           justifyContent: 'space-between',
-          gap: 0.8,
+          gap: { xs: 0.35, sm: 0.8 },
           alignItems: 'center',
         }}
       >
-        <Stack direction="row" spacing={0.7} alignItems="center">
+        <Stack direction="row" spacing={{ xs: 0.45, sm: 0.7 }} alignItems="center">
           <SmallActionButton icon={<FlameKindling size={21} />} label="Rest" onClick={onOpenRest} />
           <ConditionsButton onChange={setActiveTab} />
           <HitPointsButton
@@ -974,7 +974,7 @@ function HeroHeader({
           spacing={0.2}
           justifyContent="flex-end"
           alignItems="center"
-          sx={{ mr: 0.45 }}
+          sx={{ flex: '0 0 auto', mr: { xs: 0, sm: 0.45 } }}
         >
           <DefenseBadge
             compact
@@ -1000,14 +1000,14 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: 108,
+        width: { xs: 86, sm: 108 },
         minWidth: 0,
         minHeight: 48,
-        px: 1.1,
+        px: { xs: 0.65, sm: 1.1 },
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
         borderRadius: '6px',
-        fontSize: 13,
+        fontSize: { xs: 11, sm: 13 },
         fontWeight: 900,
         textTransform: 'uppercase',
         '&:hover': { bgcolor: '#05090b' },
@@ -1075,7 +1075,7 @@ function HitPointsButton({
       aria-label="Edit hit points"
       onClick={onClick}
       sx={{
-        width: 98,
+        width: { xs: 78, sm: 98 },
         minWidth: 0,
         minHeight: 48,
         bgcolor: dndColors.panelStrong,
@@ -1084,16 +1084,30 @@ function HitPointsButton({
         color: dndColors.text,
         cursor: 'pointer',
         font: 'inherit',
-        px: 1,
+        px: { xs: 0.55, sm: 1 },
         py: 0.75,
         textAlign: 'center',
         '&:hover': { bgcolor: '#05090b' },
       }}
     >
-      <Typography sx={{ color: dndColors.text, fontSize: 11, fontWeight: 900, lineHeight: 1 }}>
+      <Typography
+        sx={{
+          color: dndColors.text,
+          fontSize: { xs: 10, sm: 11 },
+          fontWeight: 900,
+          lineHeight: 1,
+        }}
+      >
         HP
       </Typography>
-      <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 900, lineHeight: 1.15 }}>
+      <Typography
+        sx={{
+          color: dndColors.text,
+          fontSize: { xs: 14, sm: 16 },
+          fontWeight: 900,
+          lineHeight: 1.15,
+        }}
+      >
         {current}/{max}
       </Typography>
       <LinearProgress
@@ -1124,7 +1138,7 @@ function DefenseBadge({
   onRoll?: () => void;
 }) {
   const isArmorClass = label === 'Armor Class';
-  const badgeSize = compact ? 58 : 68;
+  const badgeSize = compact ? { xs: 50, sm: 58 } : 68;
   const interactiveProps = onRoll
     ? {
         role: 'button',
@@ -1147,7 +1161,7 @@ function DefenseBadge({
       {...interactiveProps}
       sx={{
         position: 'relative',
-        width: isArmorClass ? 76 : 78,
+        width: compact ? { xs: isArmorClass ? 62 : 66, sm: isArmorClass ? 76 : 78 } : 84,
         pt: 0.9,
         pb: 1.25,
         cursor: onRoll ? 'pointer' : 'default',
@@ -1165,7 +1179,7 @@ function DefenseBadge({
             left: '50%',
             zIndex: 2,
             color: dndColors.text,
-            fontSize: compact ? 12 : 14,
+            fontSize: compact ? { xs: 10.5, sm: 12 } : 14,
             fontWeight: 900,
             lineHeight: 1,
             textTransform: 'uppercase',
@@ -1201,7 +1215,13 @@ function DefenseBadge({
             : {}),
         }}
       >
-        <Typography sx={{ color: dndColors.text, fontSize: compact ? 23 : 27, fontWeight: 900 }}>
+        <Typography
+          sx={{
+            color: dndColors.text,
+            fontSize: compact ? { xs: 20, sm: 23 } : 27,
+            fontWeight: 900,
+          }}
+        >
           {value}
         </Typography>
       </Box>
@@ -1212,7 +1232,7 @@ function DefenseBadge({
           left: '50%',
           zIndex: 2,
           color: dndColors.text,
-          fontSize: compact ? 12 : 14,
+          fontSize: compact ? { xs: 10.5, sm: 12 } : 14,
           fontWeight: 900,
           lineHeight: 1,
           textAlign: 'center',
@@ -1241,7 +1261,7 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        width: 56,
+        width: { xs: 48, sm: 56 },
         minWidth: 0,
         minHeight: 48,
         px: 1,
