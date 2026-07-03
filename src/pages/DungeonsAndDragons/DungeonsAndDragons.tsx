@@ -5,7 +5,6 @@ import { Link } from 'react-router';
 import AddIcon from '@mui/icons-material/Add';
 import AppsIcon from '@mui/icons-material/Apps';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
@@ -28,7 +27,7 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
-import { Backpack, ExternalLink, House, Sword, X } from 'lucide-react';
+import { Backpack, House, Sword, X } from 'lucide-react';
 
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
@@ -596,20 +595,14 @@ function SectionHeader({
 
 function HeroHeader({
   character,
-  onEditCharacter,
   onEditHitPoints,
-  onOpenCharacters,
   onOpenRest,
-  onOpenBuilder,
   homeAction,
   accountAction,
 }: {
   character: DndCharacter;
-  onEditCharacter: () => void;
   onEditHitPoints: () => void;
-  onOpenCharacters: () => void;
   onOpenRest: () => void;
-  onOpenBuilder: () => void;
   homeAction: ReactNode;
   accountAction: ReactNode;
 }) {
@@ -627,33 +620,8 @@ function HeroHeader({
 
   return (
     <Box sx={{ bgcolor: dndColors.chrome, px: 1.8, pt: 2.4, pb: 2 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Stack alignItems="start" spacing={0.2}>
-          <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 700 }}>
-            {character.name}
-          </Typography>
-          <Typography sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
-            {character.species}
-          </Typography>
-          <Typography sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
-            {classLine(character)}
-          </Typography>
-        </Stack>
-        <Stack direction="row" spacing={0.7}>
-          {homeAction}
-          {accountAction}
-          <IconButton aria-label="Switch character" onClick={onOpenCharacters} sx={roundButtonSx}>
-            <PersonIcon />
-          </IconButton>
-          <IconButton aria-label="Edit character" onClick={onEditCharacter} sx={roundButtonSx}>
-            <EditIcon />
-          </IconButton>
-        </Stack>
-      </Stack>
-
       <Box
         sx={{
-          mt: 2,
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1.25fr',
           gap: 1.2,
@@ -662,7 +630,6 @@ function HeroHeader({
       >
         <Stack spacing={1.1}>
           <DefenseBadge label="Armor Class" value={effectiveArmorClass(character)} shape="shield" />
-          <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" onClick={onOpenRest} />
         </Stack>
         <Stack spacing={1.1} alignItems="center">
           <DefenseBadge
@@ -670,47 +637,43 @@ function HeroHeader({
             value={formatModifier(character.initiative)}
             shape="hex"
           />
-          <SmallActionButton icon={<AutoFixHighIcon />} label="Manage" onClick={onOpenBuilder} />
         </Stack>
         <Stack spacing={1.1}>
-          <Box
-            role="button"
-            tabIndex={0}
-            onClick={onEditHitPoints}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onEditHitPoints();
-              }
-            }}
-            sx={{
-              bgcolor: dndColors.panelStrong,
-              borderRadius: '6px',
-              px: 1.4,
-              py: 1.1,
-              textAlign: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <Typography sx={{ color: dndColors.text, fontSize: 12, fontWeight: 900 }}>
-              HIT POINTS
+          <Stack direction="row" spacing={0.7} justifyContent="flex-end">
+            {homeAction}
+            {accountAction}
+          </Stack>
+          <Stack alignItems="flex-start" spacing={0.15}>
+            <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 800 }}>
+              {character.name}
+              <Box component="span" sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
+                {' '}
+                · {character.species}
+              </Box>
             </Typography>
-            <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 900 }}>
-              {character.hitPoints.current}/{character.hitPoints.max}
+            <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 800 }}>
+              {classLine(character)}
             </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={hpPercent}
-              sx={{
-                mt: 0.8,
-                height: 4,
-                bgcolor: dndColors.border,
-                '& .MuiLinearProgress-bar': { bgcolor: dndColors.blue },
-              }}
-            />
-          </Box>
-          <ConditionsButton onChange={setActiveTab} />
+          </Stack>
         </Stack>
+      </Box>
+      <Box
+        sx={{
+          mt: 1.4,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 1,
+          alignItems: 'stretch',
+        }}
+      >
+        <SmallActionButton icon={<LocalFireDepartmentIcon />} label="Rest" onClick={onOpenRest} />
+        <ConditionsButton onChange={setActiveTab} />
+        <HitPointsButton
+          current={character.hitPoints.current}
+          max={character.hitPoints.max}
+          percent={hpPercent}
+          onClick={onEditHitPoints}
+        />
       </Box>
     </Box>
   );
@@ -721,6 +684,8 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
+        width: 86,
+        minWidth: 0,
         minHeight: 43,
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
@@ -735,14 +700,58 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
   );
 }
 
-const roundButtonSx = {
-  width: 50,
-  height: 50,
-  bgcolor: alpha('#000000', 0.24),
-  color: '#ffffff',
-  border: `1px solid ${dndColors.border}`,
-  '&:hover': { bgcolor: alpha('#000000', 0.36) },
-};
+function HitPointsButton({
+  current,
+  max,
+  percent,
+  onClick,
+}: {
+  current: number;
+  max: number;
+  percent: number;
+  onClick: () => void;
+}) {
+  return (
+    <Box
+      component="button"
+      type="button"
+      aria-label="Edit hit points"
+      onClick={onClick}
+      sx={{
+        width: 86,
+        minWidth: 0,
+        minHeight: 43,
+        bgcolor: dndColors.panelStrong,
+        border: 0,
+        borderRadius: '6px',
+        color: dndColors.text,
+        cursor: 'pointer',
+        font: 'inherit',
+        px: 1,
+        py: 0.75,
+        textAlign: 'center',
+        '&:hover': { bgcolor: '#05090b' },
+      }}
+    >
+      <Typography sx={{ color: dndColors.text, fontSize: 10, fontWeight: 900, lineHeight: 1 }}>
+        HP
+      </Typography>
+      <Typography sx={{ color: dndColors.text, fontSize: 15, fontWeight: 900, lineHeight: 1.15 }}>
+        {current}/{max}
+      </Typography>
+      <LinearProgress
+        variant="determinate"
+        value={percent}
+        sx={{
+          mt: 0.45,
+          height: 3,
+          bgcolor: dndColors.border,
+          '& .MuiLinearProgress-bar': { bgcolor: dndColors.blue },
+        }}
+      />
+    </Box>
+  );
+}
 
 function DefenseBadge({
   label,
@@ -802,8 +811,9 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        minWidth: 64,
-        minHeight: 44,
+        width: 86,
+        minWidth: 0,
+        minHeight: 43,
         bgcolor: dndColors.panelStrong,
         color: '#ffffff',
         borderRadius: '6px',
@@ -2711,33 +2721,6 @@ function TabMenuDialog({
               </Button>
             );
           })}
-
-          <Button
-            component={Link}
-            to="/dungeons-and-dragons"
-            onClick={onClose}
-            fullWidth
-            startIcon={<ExternalLink />}
-            sx={{
-              minHeight: 55,
-              justifyContent: 'flex-start',
-              px: 2,
-              borderRadius: '4px',
-              bgcolor: dndColors.panelSoft,
-              color: dndColors.text,
-              textTransform: 'none',
-              fontSize: 18,
-              fontWeight: 900,
-              '& .MuiButton-startIcon': {
-                color: dndColors.blue,
-                mr: 1.5,
-                '& svg': { fontSize: 24 },
-              },
-              '&:hover': { bgcolor: '#243640' },
-            }}
-          >
-            View Character on Website
-          </Button>
         </Stack>
       </Box>
     </Dialog>
@@ -3026,25 +3009,6 @@ type CharacterBuilderForm = {
   equipment: string;
   spells: string;
 };
-
-function createCharacterBuilderForm(classOptions: string[]): CharacterBuilderForm {
-  return {
-    name: 'New Adventurer',
-    species: 'Human',
-    className: classOptions[0] ?? 'Fighter',
-    background: 'Adventurer',
-    alignment: 'Neutral',
-    str: '10',
-    dex: '10',
-    con: '10',
-    int: '10',
-    wis: '10',
-    cha: '10',
-    proficiencies: '',
-    equipment: '',
-    spells: '',
-  };
-}
 
 function buildCharacterFromGuide(form: CharacterBuilderForm): DndCharacter {
   const base = createDndCharacter();
@@ -4789,6 +4753,9 @@ function DungeonsAndDragons() {
   const [undoOpen, setUndoOpen] = useState(false);
   const [builderForm, setBuilderForm] = useState<CharacterBuilderForm | null>(null);
   const [characterForm, setCharacterForm] = useState<CharacterForm | null>(null);
+  const [pendingLocalCharacterEditId, setPendingLocalCharacterEditId] = useState<string | null>(
+    null,
+  );
   const [hitPointForm, setHitPointForm] = useState<HitPointForm | null>(null);
   const [attackForm, setAttackForm] = useState<AttackForm | null>(null);
   const [spellForm, setSpellForm] = useState<SpellForm | null>(null);
@@ -4822,13 +4789,21 @@ function DungeonsAndDragons() {
     [history],
   );
 
+  useEffect(() => {
+    if (!pendingLocalCharacterEditId) return;
+    if (localCharacters.activeId !== pendingLocalCharacterEditId) return;
+    setCharacterForm(createCharacterForm(character));
+    setPendingLocalCharacterEditId(null);
+  }, [character, localCharacters.activeId, pendingLocalCharacterEditId]);
+
+  const editLocalCharacter = (id: string) => {
+    setPendingLocalCharacterEditId(id);
+    localCharacters.selectCharacter(id);
+  };
+
   const setActiveTab = (tab: DndTab) => {
     setActiveTabRaw(tab);
     persistAppView('dungeons-and-dragons', 'tab', tab);
-  };
-
-  const openCharacterBuilder = () => {
-    setBuilderForm(createCharacterBuilderForm(dndClassOptions));
   };
 
   const createGuidedCharacter = () => {
@@ -5502,11 +5477,8 @@ function DungeonsAndDragons() {
         <Box sx={{ height: '100%', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <HeroHeader
             character={character}
-            onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
-            onOpenCharacters={() => setCharactersOpen(true)}
             onOpenRest={() => setRestOpen(true)}
-            onOpenBuilder={openCharacterBuilder}
             homeAction={
               <IconButton
                 component={Link}
@@ -5539,6 +5511,7 @@ function DungeonsAndDragons() {
                   };
                 }}
                 onSelectCharacterState={selectRemoteCharacter}
+                onEditLocalCharacter={editLocalCharacter}
                 selectCharacterEventName={DND_SELECT_CHARACTER_EVENT}
               />
             }

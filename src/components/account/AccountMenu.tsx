@@ -81,6 +81,7 @@ type AccountMenuProps = {
     characterState: unknown;
   };
   onSelectCharacterState?: (characterState: unknown) => void;
+  onEditLocalCharacter?: (id: string) => void;
   selectCharacterEventName?: string;
 };
 
@@ -464,6 +465,7 @@ function AccountMenu({
   themeMode,
   createCharacterPayload,
   onSelectCharacterState,
+  onEditLocalCharacter,
   selectCharacterEventName = FAB_U_SELECT_CHARACTER_EVENT,
 }: AccountMenuProps) {
   const fabUTokens = useFabUTokens();
@@ -943,15 +945,25 @@ function AccountMenu({
                       <SwipeableCard
                         key={character.id}
                         actions={
-                          localCharacters && localCharacters.characters.length > 1
+                          localCharacters
                             ? [
-                                {
-                                  icon: <Trash2 size={18} />,
-                                  color: fabUTokens.color.danger,
-                                  ariaLabel: 'Delete local character',
-                                  onClick: () => localCharacters.deleteCharacter(character.id),
-                                },
-                              ]
+                                onEditLocalCharacter
+                                  ? {
+                                      icon: <Pencil size={18} />,
+                                      color: fabUTokens.color.highlight,
+                                      ariaLabel: 'Edit local character',
+                                      onClick: () => onEditLocalCharacter(character.id),
+                                    }
+                                  : null,
+                                localCharacters.characters.length > 1
+                                  ? {
+                                      icon: <Trash2 size={18} />,
+                                      color: fabUTokens.color.danger,
+                                      ariaLabel: 'Delete local character',
+                                      onClick: () => localCharacters.deleteCharacter(character.id),
+                                    }
+                                  : null,
+                              ].filter((action) => action !== null)
                             : []
                         }
                       >
