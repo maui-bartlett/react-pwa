@@ -2884,12 +2884,14 @@ function DndEditDialog({
   children,
   onCancel,
   onSave,
+  hideTitle = false,
 }: {
   title: string;
   open: boolean;
   children: ReactNode;
   onCancel: () => void;
   onSave: () => void;
+  hideTitle?: boolean;
 }) {
   return (
     <Dialog
@@ -2899,8 +2901,8 @@ function DndEditDialog({
       maxWidth="xs"
       PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
     >
-      <DialogTitle sx={{ fontWeight: 900 }}>{title}</DialogTitle>
-      <DialogContent>
+      {hideTitle ? null : <DialogTitle sx={{ fontWeight: 900 }}>{title}</DialogTitle>}
+      <DialogContent sx={{ pt: hideTitle ? 2.5 : undefined }}>
         <Stack spacing={1.2} sx={{ pt: 0.5 }}>
           {children}
         </Stack>
@@ -3529,7 +3531,13 @@ function HitPointEditDialog({
   };
   const wheelMax = Math.max(max, 30);
   return (
-    <DndEditDialog title="Edit Hit Points" open={open} onCancel={onCancel} onSave={onSave}>
+    <DndEditDialog
+      title="Edit Hit Points"
+      open={open}
+      onCancel={onCancel}
+      onSave={onSave}
+      hideTitle
+    >
       <Stack alignItems="center" sx={{ mb: 1 }}>
         <Typography
           sx={{
@@ -3627,6 +3635,7 @@ function HitPointEditDialog({
 
         <Box
           sx={{
+            mt: 1.4,
             maxHeight: 176,
             overflowY: 'auto',
             border: `1px solid ${dndColors.border}`,
