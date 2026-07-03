@@ -3,6 +3,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
 
 import AddIcon from '@mui/icons-material/Add';
+import AppsIcon from '@mui/icons-material/Apps';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -544,6 +545,10 @@ function SectionHeader({
 }) {
   return (
     <Stack
+      component="button"
+      type="button"
+      aria-label="Open Dungeons & Dragons tab menu"
+      onClick={() => window.dispatchEvent(new CustomEvent(DND_OPEN_TAB_MENU_EVENT))}
       direction="row"
       alignItems="center"
       sx={{
@@ -553,7 +558,15 @@ function SectionHeader({
         minHeight: 48,
         bgcolor: dndColors.chrome,
         borderRadius: '6px',
+        border: 0,
         overflow: 'hidden',
+        p: 0,
+        cursor: 'pointer',
+        font: 'inherit',
+        textAlign: 'left',
+        '&:hover .dnd-section-header-menu-slot': {
+          bgcolor: alpha('#000000', 0.22),
+        },
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1.2} sx={{ flex: 1, px: 1.5 }}>
@@ -562,25 +575,21 @@ function SectionHeader({
           {title}
         </Typography>
       </Stack>
-      <Button
-        aria-label="Open Dungeons & Dragons tab menu"
-        onClick={() => window.dispatchEvent(new CustomEvent(DND_OPEN_TAB_MENU_EVENT))}
+      <Box
+        className="dnd-section-header-menu-slot"
         sx={{
           alignSelf: 'stretch',
           width: 70,
           minWidth: 70,
-          borderRadius: 0,
           display: 'grid',
           placeItems: 'center',
           bgcolor: alpha('#000000', mode === 'grid' ? 0.08 : 0.18),
           color: mode === 'grid' ? dndColors.red : '#ffffff',
-          fontSize: 21,
-          fontWeight: 900,
-          '&:hover': { bgcolor: alpha('#000000', 0.22) },
+          transition: 'background-color 160ms ease',
         }}
       >
-        {mode === 'grid' ? '▦' : '☷'}
-      </Button>
+        <AppsIcon sx={{ fontSize: 28 }} />
+      </Box>
     </Stack>
   );
 }
