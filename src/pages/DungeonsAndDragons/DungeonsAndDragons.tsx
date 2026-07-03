@@ -956,7 +956,7 @@ function HeroHeader({
       </Box>
       <Box
         sx={{
-          mt: 1.3,
+          mt: '15px',
           display: 'flex',
           justifyContent: 'space-between',
           gap: { xs: 0.35, sm: 0.8 },
@@ -975,14 +975,13 @@ function HeroHeader({
         </Stack>
         <Stack
           direction="row"
-          spacing={0.2}
           justifyContent="flex-end"
-          alignItems="center"
+          alignItems="flex-start"
           sx={{
             flex: '0 0 auto',
             mr: { xs: 0, sm: 0.45 },
             justifyContent: 'space-between',
-            minWidth: { xs: 140, sm: 218 },
+            width: { xs: 166, sm: 234 },
           }}
         >
           <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
@@ -1036,8 +1035,8 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
       onClick={onToggle}
       sx={{
         minWidth: 0,
-        width: { xs: 38, sm: 42 },
-        height: 58,
+        width: { xs: 48, sm: 54 },
+        height: 64,
         borderRadius: '8px',
         color: dndColors.text,
         p: 0,
@@ -1049,8 +1048,8 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
     >
       <Box
         sx={{
-          width: { xs: 38, sm: 42 },
-          height: { xs: 38, sm: 42 },
+          width: { xs: 44, sm: 50 },
+          height: { xs: 44, sm: 50 },
           borderRadius: '8px',
           bgcolor: dndColors.panelStrong,
           border: `1px solid ${active ? alpha(dndColors.gold, 0.72) : dndColors.border}`,
@@ -1068,8 +1067,8 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 3,
-                left: { xs: 8, sm: 10 },
+                top: 4,
+                left: { xs: 11, sm: 13 },
                 width: 5,
                 height: 2,
                 borderRadius: '999px',
@@ -1081,7 +1080,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 0,
+                top: 1,
                 left: '50%',
                 width: 2,
                 height: 5,
@@ -1093,8 +1092,8 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 3,
-                right: { xs: 8, sm: 10 },
+                top: 4,
+                right: { xs: 11, sm: 13 },
                 width: 5,
                 height: 2,
                 borderRadius: '999px',
@@ -1105,7 +1104,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             />
           </>
         ) : null}
-        <Lightbulb size={21} strokeWidth={2.3} />
+        <Lightbulb size={24} strokeWidth={2.3} />
       </Box>
       <Typography
         sx={{
@@ -1113,7 +1112,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
           bottom: 0,
           left: '50%',
           color: dndColors.text,
-          fontSize: { xs: 8, sm: 10.5 },
+          fontSize: { xs: 8.5, sm: 10.5 },
           fontWeight: 900,
           lineHeight: 1,
           textTransform: 'uppercase',
@@ -1210,7 +1209,7 @@ function DefenseBadge({
   onRoll?: () => void;
 }) {
   const isArmorClass = label === 'Armor Class';
-  const badgeSize = compact ? { xs: 42, sm: 58 } : 68;
+  const badgeSize = compact ? { xs: 48, sm: 62 } : 68;
   const interactiveProps = onRoll
     ? {
         role: 'button',
@@ -1233,9 +1232,9 @@ function DefenseBadge({
       {...interactiveProps}
       sx={{
         position: 'relative',
-        width: compact ? { xs: isArmorClass ? 48 : 52, sm: isArmorClass ? 76 : 78 } : 84,
-        pt: 0.9,
-        pb: 1.25,
+        width: compact ? { xs: isArmorClass ? 54 : 58, sm: isArmorClass ? 78 : 80 } : 84,
+        pt: 0.25,
+        pb: 1.15,
         cursor: onRoll ? 'pointer' : 'default',
         outline: 'none',
         '&:focus-visible > .dnd-defense-badge-box': {
@@ -1251,7 +1250,7 @@ function DefenseBadge({
             left: '50%',
             zIndex: 2,
             color: dndColors.text,
-            fontSize: compact ? { xs: 8.5, sm: 12 } : 14,
+            fontSize: compact ? { xs: 9, sm: 12 } : 14,
             fontWeight: 900,
             lineHeight: 1,
             textTransform: 'uppercase',
@@ -1291,7 +1290,7 @@ function DefenseBadge({
         <Typography
           sx={{
             color: dndColors.text,
-            fontSize: compact ? { xs: 18, sm: 23 } : 27,
+            fontSize: compact ? { xs: 20, sm: 24 } : 27,
             fontWeight: 900,
           }}
         >
@@ -1305,7 +1304,7 @@ function DefenseBadge({
           left: '50%',
           zIndex: 2,
           color: dndColors.text,
-          fontSize: compact ? { xs: 8.5, sm: 12 } : 14,
+          fontSize: compact ? { xs: 9, sm: 12 } : 14,
           fontWeight: 900,
           lineHeight: 1,
           textAlign: 'center',
@@ -2077,7 +2076,7 @@ function SpellsScreen({
   onUpdateSpellSlot: (level: string, used: number) => void;
   onCastSpell: (spell: Spell) => boolean;
 }) {
-  const spellSections = createSpellSections(character.spells);
+  const spellSections = createSpellSections(character.spells, character.spellcasting.slots);
 
   return (
     <>
@@ -2211,11 +2210,27 @@ function SlotTracker({
   );
 }
 
-function createSpellSections(spells: Spell[]) {
+function createSpellSections(spells: Spell[], slots: DndCharacter['spellcasting']['slots']) {
   const grouped = new Map<
     string,
     { key: string; label: string; rank: number; slotLevel: string | null; spells: Spell[] }
   >();
+
+  slots
+    .filter((slot) => slot.max > 0)
+    .forEach((slot) => {
+      const rank = getSpellSlotRank(slot.level) ?? 99;
+      const key = slot.level;
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          key,
+          label: `${slot.level} Level Spells`,
+          rank,
+          slotLevel: slot.level,
+          spells: [],
+        });
+      }
+    });
 
   spells.forEach((spell) => {
     const slotLevel = getSpellSlotLevel(spell.level);
