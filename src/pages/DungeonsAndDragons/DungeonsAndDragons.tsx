@@ -964,7 +964,6 @@ function HeroHeader({
         }}
       >
         <Stack direction="row" spacing={{ xs: 0.45, sm: 0.7 }} alignItems="center">
-          <SmallActionButton icon={<FlameKindling size={21} />} label="Rest" onClick={onOpenRest} />
           <ConditionsButton onChange={setActiveTab} />
           <HitPointsButton
             current={character.hitPoints.current}
@@ -981,9 +980,10 @@ function HeroHeader({
             flex: '0 0 auto',
             mr: { xs: 0, sm: 0.45 },
             justifyContent: 'space-between',
-            width: { xs: 166, sm: 234 },
+            width: { xs: 220, sm: 294 },
           }}
         >
+          <HeaderIconControl icon={<FlameKindling size={24} />} label="Rest" onClick={onOpenRest} />
           <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
           <DefenseBadge
             compact
@@ -1035,8 +1035,8 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
       onClick={onToggle}
       sx={{
         minWidth: 0,
-        width: { xs: 48, sm: 54 },
-        height: 64,
+        width: { xs: 52, sm: 58 },
+        height: 60,
         borderRadius: '8px',
         color: dndColors.text,
         p: 0,
@@ -1121,6 +1121,69 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
         }}
       >
         Inspiration
+      </Typography>
+    </Button>
+  );
+}
+
+function HeaderIconControl({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick?: () => void;
+}) {
+  return (
+    <Button
+      aria-label={label}
+      onClick={onClick}
+      sx={{
+        minWidth: 0,
+        width: { xs: 50, sm: 58 },
+        height: 60,
+        borderRadius: '8px',
+        color: dndColors.text,
+        p: 0,
+        position: 'relative',
+        display: 'grid',
+        placeItems: 'center',
+        overflow: 'visible',
+      }}
+    >
+      <Box
+        sx={{
+          width: { xs: 44, sm: 50 },
+          height: { xs: 44, sm: 50 },
+          borderRadius: '8px',
+          bgcolor: dndColors.panelStrong,
+          border: `1px solid ${dndColors.border}`,
+          color: '#ffffff',
+          display: 'grid',
+          placeItems: 'center',
+          '&:hover': {
+            bgcolor: '#05090b',
+          },
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: '50%',
+          color: dndColors.text,
+          fontSize: { xs: 8.5, sm: 10.5 },
+          fontWeight: 900,
+          lineHeight: 1,
+          textTransform: 'uppercase',
+          transform: 'translateX(-50%)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
       </Typography>
     </Button>
   );
@@ -1232,7 +1295,7 @@ function DefenseBadge({
       {...interactiveProps}
       sx={{
         position: 'relative',
-        width: compact ? { xs: isArmorClass ? 54 : 58, sm: isArmorClass ? 78 : 80 } : 84,
+        width: compact ? { xs: isArmorClass ? 50 : 54, sm: isArmorClass ? 66 : 68 } : 84,
         pt: 0.25,
         pb: 1.15,
         cursor: onRoll ? 'pointer' : 'default',
@@ -1316,35 +1379,6 @@ function DefenseBadge({
         {isArmorClass ? 'Class' : label}
       </Typography>
     </Stack>
-  );
-}
-
-function SmallActionButton({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick?: () => void;
-}) {
-  return (
-    <Button
-      aria-label={label}
-      onClick={onClick}
-      sx={{
-        width: { xs: 54, sm: 66 },
-        minWidth: 0,
-        minHeight: 58,
-        px: 1,
-        bgcolor: dndColors.panelStrong,
-        color: '#ffffff',
-        borderRadius: '6px',
-        '&:hover': { bgcolor: '#05090b' },
-      }}
-    >
-      {icon}
-    </Button>
   );
 }
 
