@@ -1,4 +1,11 @@
-import { HTMLAttributes, ReactNode, useCallback, useEffect, useState } from 'react';
+import {
+  HTMLAttributes,
+  KeyboardEvent as ReactKeyboardEvent,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
 
@@ -708,6 +715,7 @@ function HeroHeader({
             label="Initiative"
             value={formatModifier(character.initiative)}
             shape="hex"
+            onRoll={() => rollD20('Initiative', character.initiative)}
           />
         </Stack>
       </Box>
@@ -796,15 +804,44 @@ function DefenseBadge({
   value,
   shape,
   compact = false,
+  onRoll,
 }: {
   label: string;
   value: string | number;
   shape: 'shield' | 'hex';
   compact?: boolean;
+  onRoll?: () => void;
 }) {
+  const interactiveProps = onRoll
+    ? {
+        role: 'button',
+        tabIndex: 0,
+        'aria-label': `Roll ${label}`,
+        onClick: onRoll,
+        onKeyDown: (event: ReactKeyboardEvent) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onRoll();
+          }
+        },
+      }
+    : {};
+
   return (
-    <Stack alignItems="center" spacing={0.1}>
+    <Stack
+      alignItems="center"
+      spacing={0.1}
+      {...interactiveProps}
+      sx={{
+        cursor: onRoll ? 'pointer' : 'default',
+        outline: 'none',
+        '&:focus-visible > .dnd-defense-badge-box': {
+          boxShadow: `0 0 0 3px ${alpha(dndColors.red, 0.45)}`,
+        },
+      }}
+    >
       <Box
+        className="dnd-defense-badge-box"
         sx={{
           width: compact ? 54 : 62,
           height: compact ? 54 : 62,
@@ -816,6 +853,15 @@ function DefenseBadge({
           bgcolor: dndColors.panelStrong,
           display: 'grid',
           placeItems: 'center',
+          transition: 'filter 160ms ease, box-shadow 160ms ease',
+          ...(onRoll
+            ? {
+                boxShadow: `inset 0 0 0 1px ${alpha(dndColors.red, 0.32)}`,
+                '&:hover': {
+                  filter: 'brightness(1.1)',
+                },
+              }
+            : {}),
         }}
       >
         <Typography sx={{ color: dndColors.text, fontSize: compact ? 21 : 25, fontWeight: 900 }}>
