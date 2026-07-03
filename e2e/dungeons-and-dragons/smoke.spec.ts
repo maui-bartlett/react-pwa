@@ -6,7 +6,8 @@ test.describe('Dungeons & Dragons app', () => {
 
     await expect(page.getByText('Gellin McFellon')).toBeVisible();
     await expect(page.getByText('Dragonborn')).toBeVisible();
-    await expect(page.getByText('Rogue 10 • Wizard 2')).toBeVisible();
+    await expect(page.getByText('Rogue 10')).toBeVisible();
+    await expect(page.getByText('Wizard 2')).toBeVisible();
 
     await page.getByRole('button', { name: 'Open Dungeons & Dragons tab menu' }).click();
     await expect(page.getByRole('button', { name: 'Abilities, Saves, Senses' })).toBeVisible();

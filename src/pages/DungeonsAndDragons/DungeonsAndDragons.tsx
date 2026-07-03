@@ -2,8 +2,10 @@ import {
   HTMLAttributes,
   KeyboardEvent as ReactKeyboardEvent,
   ReactNode,
+  PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -34,7 +36,7 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
-import { Backpack, FlameKindling, House, Sword, X } from 'lucide-react';
+import { Backpack, FlameKindling, House, Lightbulb, Sword, X } from 'lucide-react';
 
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
@@ -496,8 +498,21 @@ function encumbranceLabel(totalWeight: number, character: DndCharacter) {
   return 'UNENCUMBERED';
 }
 
-function classLine(character: DndCharacter) {
-  return `${character.classes.map((entry) => `${entry.name} ${entry.level}`).join(' • ')}`;
+function ClassLine({ character }: { character: DndCharacter }) {
+  return (
+    <>
+      {character.classes.map((entry, index) => (
+        <Box component="span" key={`${entry.name}-${index}`}>
+          {index > 0 ? (
+            <Box component="span" sx={{ color: dndColors.red, mx: 0.45 }}>
+              •
+            </Box>
+          ) : null}
+          {entry.name} {entry.level}
+        </Box>
+      ))}
+    </>
+  );
 }
 
 function DndCard({
@@ -591,7 +606,7 @@ function SectionHeader({
           display: 'grid',
           placeItems: 'center',
           bgcolor: alpha('#000000', mode === 'grid' ? 0.08 : 0.18),
-          color: mode === 'grid' ? dndColors.red : '#ffffff',
+          color: dndColors.red,
           transition: 'background-color 160ms ease',
         }}
       >
@@ -605,12 +620,14 @@ function HeroHeader({
   character,
   onEditHitPoints,
   onOpenRest,
+  onToggleInspiration,
   homeAction,
   accountAction,
 }: {
   character: DndCharacter;
   onEditHitPoints: () => void;
   onOpenRest: () => void;
+  onToggleInspiration: () => void;
   homeAction: ReactNode;
   accountAction: ReactNode;
 }) {
@@ -676,10 +693,11 @@ function HeroHeader({
               width: '100%',
             }}
           >
-            {classLine(character)}
+            <ClassLine character={character} />
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={0.7} justifyContent="flex-end" sx={{ mt: '-12px' }}>
+        <Stack direction="row" spacing={1.15} justifyContent="flex-end" sx={{ mt: '-12px' }}>
+          <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
           {homeAction}
           {accountAction}
         </Stack>
@@ -742,6 +760,31 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
       }}
     >
       Conditions
+    </Button>
+  );
+}
+
+function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  return (
+    <Button
+      aria-label={active ? 'Clear inspiration' : 'Mark inspiration'}
+      aria-pressed={active}
+      onClick={onToggle}
+      sx={{
+        minWidth: 0,
+        width: 42,
+        height: 38,
+        borderRadius: '999px',
+        bgcolor: active ? alpha(dndColors.gold, 0.26) : alpha('#ffffff', 0.16),
+        border: `1px solid ${active ? dndColors.gold : alpha('#ffffff', 0.28)}`,
+        color: active ? dndColors.gold : '#ffffff',
+        p: 0,
+        '&:hover': {
+          bgcolor: active ? alpha(dndColors.gold, 0.34) : alpha('#ffffff', 0.22),
+        },
+      }}
+    >
+      <Lightbulb size={20} strokeWidth={2.3} />
     </Button>
   );
 }
@@ -812,6 +855,8 @@ function DefenseBadge({
   compact?: boolean;
   onRoll?: () => void;
 }) {
+  const isArmorClass = label === 'Armor Class';
+  const badgeSize = compact ? 58 : 68;
   const interactiveProps = onRoll
     ? {
         role: 'button',
@@ -833,6 +878,10 @@ function DefenseBadge({
       spacing={0.1}
       {...interactiveProps}
       sx={{
+        position: 'relative',
+        width: isArmorClass ? 76 : 84,
+        pt: isArmorClass ? 0.9 : 0,
+        pb: 1.25,
         cursor: onRoll ? 'pointer' : 'default',
         outline: 'none',
         '&:focus-visible > .dnd-defense-badge-box': {
@@ -840,11 +889,30 @@ function DefenseBadge({
         },
       }}
     >
+      {isArmorClass ? (
+        <Typography
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: '50%',
+            zIndex: 2,
+            color: dndColors.text,
+            fontSize: compact ? 12 : 14,
+            fontWeight: 900,
+            lineHeight: 1,
+            textTransform: 'uppercase',
+            transform: 'translate(-50%, 0)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Armor
+        </Typography>
+      ) : null}
       <Box
         className="dnd-defense-badge-box"
         sx={{
-          width: compact ? 54 : 62,
-          height: compact ? 54 : 62,
+          width: badgeSize,
+          height: badgeSize,
           clipPath:
             shape === 'shield'
               ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
@@ -864,20 +932,27 @@ function DefenseBadge({
             : {}),
         }}
       >
-        <Typography sx={{ color: dndColors.text, fontSize: compact ? 21 : 25, fontWeight: 900 }}>
+        <Typography sx={{ color: dndColors.text, fontSize: compact ? 23 : 27, fontWeight: 900 }}>
           {value}
         </Typography>
       </Box>
       <Typography
         sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: '50%',
+          zIndex: 2,
           color: dndColors.text,
-          fontSize: compact ? 9 : 11,
+          fontSize: compact ? 12 : 14,
           fontWeight: 900,
+          lineHeight: 1,
           textAlign: 'center',
           textTransform: 'uppercase',
+          transform: 'translate(-50%, 0)',
+          whiteSpace: 'nowrap',
         }}
       >
-        {label}
+        {isArmorClass ? 'Class' : label}
       </Typography>
     </Stack>
   );
@@ -919,6 +994,11 @@ const tabOptions: Array<{ value: DndTab; label: string; icon: ReactNode }> = [
   { value: 'inventory', label: 'Inventory', icon: <Backpack /> },
   { value: 'features', label: 'More', icon: <MenuBookIcon /> },
 ];
+const swipeNavigationTabs = tabOptions.map((tab) => tab.value);
+
+function navigationTabFor(activeTab: DndTab) {
+  return tabOptions.some((tab) => tab.value === activeTab) ? activeTab : 'features';
+}
 
 function BottomNav({
   activeTab,
@@ -1110,11 +1190,9 @@ function SavePill({ ability, onRoll }: { ability: AbilityScore; onRoll: () => vo
 function AbilitiesScreen({
   character,
   onEditStats,
-  onToggleInspiration,
 }: {
   character: DndCharacter;
   onEditStats: () => void;
-  onToggleInspiration: () => void;
 }) {
   return (
     <>
@@ -1172,20 +1250,6 @@ function AbilitiesScreen({
         <SenseRow label="Passive Perception" value={character.passivePerception} />
         <SenseRow label="Passive Investigation" value={character.passiveInvestigation} />
         <SenseRow label="Passive Insight" value={character.passiveInsight} />
-        <DividerLabel title="Inspiration & Conditions" />
-        <Button
-          fullWidth
-          onClick={onToggleInspiration}
-          sx={{
-            ...toggleButtonSx(character.inspiration),
-            minHeight: 48,
-            justifyContent: 'space-between',
-            px: 1.4,
-          }}
-        >
-          Inspiration
-          <Box component="span">{character.inspiration ? 'Marked' : 'Unmarked'}</Box>
-        </Button>
       </Box>
     </>
   );
@@ -4781,6 +4845,7 @@ function ConvexCharacterSyncMount() {
 function DungeonsAndDragons() {
   const [character, setCharacter, history] = useDndCharacterHistory();
   const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
+  const bodySwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const dndClassDocs = useQuery(api.classes.listDungeonsAndDragonsClasses) as
     | DndClassDoc[]
     | undefined;
@@ -4874,6 +4939,29 @@ function DungeonsAndDragons() {
   const setActiveTab = (tab: DndTab) => {
     setActiveTabRaw(tab);
     persistAppView('dungeons-and-dragons', 'tab', tab);
+  };
+
+  const navigateSwipeTab = (direction: 1 | -1) => {
+    const currentTab = navigationTabFor(activeTab);
+    const currentIndex = swipeNavigationTabs.indexOf(currentTab);
+    const nextIndex =
+      (currentIndex + direction + swipeNavigationTabs.length) % swipeNavigationTabs.length;
+    setActiveTab(swipeNavigationTabs[nextIndex]);
+  };
+
+  const startBodySwipe = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!event.isPrimary) return;
+    bodySwipeStartRef.current = { x: event.clientX, y: event.clientY };
+  };
+
+  const endBodySwipe = (event: ReactPointerEvent<HTMLElement>) => {
+    const start = bodySwipeStartRef.current;
+    bodySwipeStartRef.current = null;
+    if (!start || !event.isPrimary) return;
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 72 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
+    navigateSwipeTab(deltaX < 0 ? 1 : -1);
   };
 
   const createGuidedCharacter = () => {
@@ -5397,7 +5485,6 @@ function DungeonsAndDragons() {
           <AbilitiesScreen
             character={character}
             onEditStats={() => setAbilityForm(createAbilityForm(character))}
-            onToggleInspiration={toggleInspiration}
           />
         );
       case 'conditions':
@@ -5530,14 +5617,15 @@ function DungeonsAndDragons() {
             character={character}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
             onOpenRest={() => setRestOpen(true)}
+            onToggleInspiration={toggleInspiration}
             homeAction={
               <IconButton
                 component={Link}
                 to="/"
                 aria-label="Back to Table Top home"
                 sx={{
-                  width: 34,
-                  height: 34,
+                  width: 38,
+                  height: 38,
                   borderRadius: '8px',
                   bgcolor: alpha('#ffffff', 0.16),
                   color: '#ffffff',
@@ -5546,7 +5634,7 @@ function DungeonsAndDragons() {
                   },
                 }}
               >
-                <House size={18} strokeWidth={2} />
+                <House size={20} strokeWidth={2} />
               </IconButton>
             }
             accountAction={
@@ -5567,7 +5655,16 @@ function DungeonsAndDragons() {
               />
             }
           />
-          {content}
+          <Box
+            onPointerDown={startBodySwipe}
+            onPointerUp={endBodySwipe}
+            onPointerCancel={() => {
+              bodySwipeStartRef.current = null;
+            }}
+            sx={{ touchAction: 'pan-y' }}
+          >
+            {content}
+          </Box>
         </Box>
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
         <UndoToast
