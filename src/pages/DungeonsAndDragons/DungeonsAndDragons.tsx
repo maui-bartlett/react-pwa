@@ -4951,6 +4951,7 @@ function DungeonsAndDragons() {
 
   const startBodySwipe = (event: ReactPointerEvent<HTMLElement>) => {
     if (!event.isPrimary) return;
+    if (event.pointerType === 'mouse') return;
     bodySwipeStartRef.current = { x: event.clientX, y: event.clientY };
   };
 
@@ -4958,6 +4959,7 @@ function DungeonsAndDragons() {
     const start = bodySwipeStartRef.current;
     bodySwipeStartRef.current = null;
     if (!start || !event.isPrimary) return;
+    if (event.pointerType === 'mouse') return;
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
     if (Math.abs(deltaX) < 72 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
