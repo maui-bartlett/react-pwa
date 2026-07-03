@@ -624,6 +624,8 @@ function AccountMenu({
   const accountModalBg = fabUTokens.color.surface;
   const accountActionBg = fabUTokens.color.brand;
   const accountActionHoverBg = fabUTokens.color.brandStrong;
+  const swipeEditActionBg =
+    gameSystem === 'dungeons-and-dragons' ? '#687782' : fabUTokens.color.brand;
   const accountBackdropBg = avatarBackdropOverride ?? accountActionBg;
   const accountModalBorder = themeMode === 'dark' ? '#ffffff' : '#d8dde3';
   const accountSectionHeadingSx = {
@@ -950,7 +952,10 @@ function AccountMenu({
                                 onEditLocalCharacter
                                   ? {
                                       icon: <Pencil size={18} />,
-                                      color: fabUTokens.color.highlight,
+                                      color:
+                                        gameSystem === 'dungeons-and-dragons'
+                                          ? swipeEditActionBg
+                                          : fabUTokens.color.highlight,
                                       ariaLabel: 'Edit local character',
                                       onClick: () => onEditLocalCharacter(character.id),
                                     }
@@ -1071,7 +1076,7 @@ function AccountMenu({
                             // for AL, green for FabU — so the edit
                             // channel feels native to whichever app the
                             // dialog is rendered against.
-                            color: fabUTokens.color.brand,
+                            color: swipeEditActionBg,
                             ariaLabel: 'Rename character',
                             onClick: () =>
                               beginEdit('character', character._id, displayName, {
@@ -1323,7 +1328,7 @@ function AccountMenu({
                           },
                           {
                             icon: <Pencil size={18} />,
-                            color: fabUTokens.color.brand,
+                            color: swipeEditActionBg,
                             ariaLabel: 'Rename campaign',
                             onClick: () =>
                               beginEdit('campaign', item.campaign._id, item.campaign.name),

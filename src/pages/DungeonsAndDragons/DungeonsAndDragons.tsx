@@ -98,12 +98,178 @@ const dndColors = {
   gold: '#f0b948',
 };
 
+const dndSwipeEditColor = '#687782';
+
 const diceRollBoxGlowSx = {
   borderColor: alpha('#ffffff', 0.62),
   boxShadow: `0 0 9px ${alpha('#ffffff', 0.24)}, inset 0 0 7px ${alpha('#ffffff', 0.08)}`,
 };
 
 const abilityKeys: readonly AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+const dndSubclassOptionsByClass: Record<string, string[]> = {
+  artificer: ['Alchemist', 'Armorer', 'Artillerist', 'Battle Smith'],
+  barbarian: [
+    'Path of the Ancestral Guardian',
+    'Path of the Battlerager',
+    'Path of the Beast',
+    'Path of the Berserker',
+    'Path of the Giant',
+    'Path of the Storm Herald',
+    'Path of the Totem Warrior',
+    'Path of Wild Magic',
+    'Path of the World Tree',
+    'Path of the Zealot',
+  ],
+  bard: [
+    'College of Creation',
+    'College of Dance',
+    'College of Eloquence',
+    'College of Glamour',
+    'College of Lore',
+    'College of Spirits',
+    'College of Swords',
+    'College of Valor',
+    'College of Whispers',
+  ],
+  'blood hunter': [
+    'Order of the Ghostslayer',
+    'Order of the Lycan',
+    'Order of the Mutant',
+    'Order of the Profane Soul',
+  ],
+  cleric: [
+    'Arcana Domain',
+    'Death Domain',
+    'Forge Domain',
+    'Grave Domain',
+    'Knowledge Domain',
+    'Life Domain',
+    'Light Domain',
+    'Nature Domain',
+    'Order Domain',
+    'Peace Domain',
+    'Tempest Domain',
+    'Trickery Domain',
+    'Twilight Domain',
+    'War Domain',
+  ],
+  druid: [
+    'Circle of Dreams',
+    'Circle of the Land',
+    'Circle of the Moon',
+    'Circle of the Sea',
+    'Circle of the Shepherd',
+    'Circle of Spores',
+    'Circle of Stars',
+    'Circle of Wildfire',
+  ],
+  fighter: [
+    'Arcane Archer',
+    'Battle Master',
+    'Cavalier',
+    'Champion',
+    'Echo Knight',
+    'Eldritch Knight',
+    'Psi Warrior',
+    'Purple Dragon Knight',
+    'Rune Knight',
+    'Samurai',
+  ],
+  monk: [
+    'Way of the Ascendant Dragon',
+    'Way of the Astral Self',
+    'Way of the Cobalt Soul',
+    'Way of the Drunken Master',
+    'Way of the Four Elements',
+    'Way of the Kensei',
+    'Way of the Long Death',
+    'Way of Mercy',
+    'Way of the Open Hand',
+    'Way of Shadow',
+    'Way of the Sun Soul',
+  ],
+  mystic: ['Order of the Awakened', 'Order of the Immortal', 'Order of the Nomad'],
+  paladin: [
+    'Oath of the Ancients',
+    'Oath of Conquest',
+    'Oath of the Crown',
+    'Oath of Devotion',
+    'Oath of Glory',
+    'Oathbreaker',
+    'Oath of Redemption',
+    'Oath of the Watchers',
+    'Oath of Vengeance',
+  ],
+  pugilist: [
+    'Arena Royale',
+    'Bloodhound Bruisers',
+    'Dog & Hound',
+    'Hand of Dread',
+    'Lead Eaters',
+    'Piss & Vinegar',
+    'Pledges of the Goodmother',
+    'The Squared Circle',
+    'The Sweet Science',
+  ],
+  ranger: [
+    'Beast Master',
+    'Drakewarden',
+    'Fey Wanderer',
+    'Gloom Stalker',
+    'Horizon Walker',
+    'Hunter',
+    'Monster Slayer',
+    'Swarmkeeper',
+  ],
+  rogue: [
+    'Arcane Trickster',
+    'Assassin',
+    'Inquisitive',
+    'Mastermind',
+    'Phantom',
+    'Scout',
+    'Soulknife',
+    'Swashbuckler',
+    'Thief',
+  ],
+  sorcerer: [
+    'Aberrant Mind',
+    'Clockwork Soul',
+    'Divine Soul',
+    'Draconic Sorcery',
+    'Lunar Sorcery',
+    'Shadow Magic',
+    'Storm Sorcery',
+    'Wild Magic',
+  ],
+  warlock: [
+    'The Archfey',
+    'The Celestial',
+    'The Fathomless',
+    'The Fiend',
+    'The Genie',
+    'The Great Old One',
+    'The Hexblade',
+    'The Undead',
+    'The Undying',
+  ],
+  wizard: [
+    'Abjuration',
+    'Bladesinging',
+    'Chronurgy Magic',
+    'Conjuration',
+    'Divination',
+    'Enchantment',
+    'Evocation',
+    'Graviturgy Magic',
+    'Illusion',
+    'Necromancy',
+    'Order of Scribes',
+    'Transmutation',
+    'War Magic',
+  ],
+};
 
 const dndDamageTypeLabels: Record<string, string> = {
   a: 'Acid',
@@ -339,6 +505,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
 type DndClassDoc = {
   class?: {
     className?: string;
+    subclasses?: unknown[];
     hitDie?: string;
     primaryAbilities?: string[];
     savingThrows?: string[];
@@ -369,6 +536,45 @@ function asNonEmptyString(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeClassCatalogKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function getCatalogSubclassName(value: unknown): string | null {
+  if (typeof value === 'string') return asNonEmptyString(value);
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as { name?: unknown; subclassName?: unknown; title?: unknown };
+  return (
+    asNonEmptyString(candidate.name) ??
+    asNonEmptyString(candidate.subclassName) ??
+    asNonEmptyString(candidate.title)
+  );
+}
+
+function getCatalogSubclassOptions(classInfo?: DndClassInfo) {
+  return Array.isArray(classInfo?.subclasses)
+    ? classInfo.subclasses
+        .map(getCatalogSubclassName)
+        .filter((subclass): subclass is string => subclass !== null)
+    : [];
+}
+
+function getSubclassOptionsForClass(
+  className: string,
+  currentValue: string,
+  subclassOptionsByClassName: Map<string, string[]>,
+) {
+  const options = subclassOptionsByClassName.get(normalizeClassCatalogKey(className)) ?? [];
+  return [
+    '',
+    ...new Set([currentValue, ...options].map((value) => value.trim()).filter(Boolean)),
+  ].sort((a, b) => {
+    if (!a) return -1;
+    if (!b) return 1;
+    return a.localeCompare(b);
+  });
 }
 
 function abilityModifier(score: number) {
@@ -2557,7 +2763,7 @@ function SwipeRow({
     onEdit
       ? {
           icon: <EditIcon />,
-          color: dndColors.blue,
+          color: dndSwipeEditColor,
           ariaLabel: 'Edit',
           onClick: onEdit,
         }
@@ -3277,6 +3483,7 @@ function CharacterEditDialog({
   open,
   form,
   classOptions,
+  subclassOptionsByClassName,
   onChange,
   onCancel,
   onSave,
@@ -3284,6 +3491,7 @@ function CharacterEditDialog({
   open: boolean;
   form: CharacterForm | null;
   classOptions: string[];
+  subclassOptionsByClassName: Map<string, string[]>;
   onChange: (form: CharacterForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -3307,6 +3515,16 @@ function CharacterEditDialog({
       ),
     ),
   ].sort((a, b) => a.localeCompare(b));
+  const classOneSubclassOptions = getSubclassOptionsForClass(
+    form.classOneName,
+    form.classOneSubclass,
+    subclassOptionsByClassName,
+  );
+  const classTwoSubclassOptions = getSubclassOptionsForClass(
+    form.classTwoName,
+    form.classTwoSubclass,
+    subclassOptionsByClassName,
+  );
   return (
     <DndEditDialog title="Edit Character" open={open} onCancel={onCancel} onSave={onSave}>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
@@ -3339,9 +3557,10 @@ function CharacterEditDialog({
           onChange={(value) => setField('classOneLevel', value)}
         />
       </Stack>
-      <FormField
+      <ClassSelectField
         label="Class 1 Subclass"
         value={form.classOneSubclass}
+        options={classOneSubclassOptions}
         onChange={(value) => setField('classOneSubclass', value)}
       />
       <Stack direction="row" spacing={1}>
@@ -3358,9 +3577,10 @@ function CharacterEditDialog({
           onChange={(value) => setField('classTwoLevel', value)}
         />
       </Stack>
-      <FormField
+      <ClassSelectField
         label="Class 2 Subclass"
         value={form.classTwoSubclass}
+        options={classTwoSubclassOptions}
         onChange={(value) => setField('classTwoSubclass', value)}
       />
       <Stack direction="row" spacing={1}>
@@ -4904,6 +5124,24 @@ function DungeonsAndDragons() {
       )
       .map((classInfo) => [classInfo.className!, classInfo] as const),
   );
+  const dndSubclassOptionsByClassName = new Map(
+    [
+      ...Object.keys(dndSubclassOptionsByClass),
+      ...(dndClassDocs ?? [])
+        .map((doc) => asNonEmptyString(doc.class?.className))
+        .filter((className): className is string => className !== null),
+    ].map((className) => {
+      const key = normalizeClassCatalogKey(className);
+      const catalogInfo = Array.from(dndClassCatalogByName.values()).find(
+        (classInfo) => normalizeClassCatalogKey(classInfo.className ?? '') === key,
+      );
+      const options = [
+        ...getCatalogSubclassOptions(catalogInfo),
+        ...(dndSubclassOptionsByClass[key] ?? []),
+      ].sort((a, b) => a.localeCompare(b));
+      return [key, Array.from(new Set(options))] as [string, string[]];
+    }),
+  );
   const dndCatalogItems = useQuery(api.items.listByGameSystem, {
     gameSystem: DND_GAME_SYSTEM,
   }) as Array<SpellCatalogEntry & { meta?: { gameSystem?: string } }> | undefined;
@@ -5774,6 +6012,7 @@ function DungeonsAndDragons() {
           open={characterForm !== null}
           form={characterForm}
           classOptions={dndClassOptions}
+          subclassOptionsByClassName={dndSubclassOptionsByClassName}
           onChange={setCharacterForm}
           onCancel={() => setCharacterForm(null)}
           onSave={saveCharacter}
