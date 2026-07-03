@@ -1307,9 +1307,21 @@ function SkillRowView({ skill, onRoll }: { skill: Skill; onRoll: () => void }) {
       <Typography sx={{ color: dndColors.muted, fontWeight: 900, mr: 1.5 }}>
         {skill.ability.toUpperCase()}
       </Typography>
-      <Typography sx={{ color: dndColors.text, fontSize: 22, fontWeight: 900, minWidth: 44 }}>
-        {formatModifier(skill.bonus)}
-      </Typography>
+      <Box
+        sx={{
+          width: 58,
+          minHeight: 38,
+          display: 'grid',
+          placeItems: 'center',
+          border: `2px solid ${dndColors.border}`,
+          borderRadius: '8px',
+          bgcolor: alpha('#000000', 0.12),
+        }}
+      >
+        <Typography sx={{ color: dndColors.text, fontSize: 22, fontWeight: 900, lineHeight: 1 }}>
+          {formatModifier(skill.bonus)}
+        </Typography>
+      </Box>
     </Stack>
   );
 }

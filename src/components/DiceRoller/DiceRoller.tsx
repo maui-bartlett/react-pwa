@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router';
 
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -74,6 +75,11 @@ type DiceBoxInstance = {
 const DICE_BOX_SIZE = 9.5;
 const DICE_BOX_EDGE_MARGIN = 0.5;
 const DICE_BOX_STARTING_HEIGHT = 4;
+const DND_DICE_ACCENT = '#e40712';
+const DND_DICE_PANEL = '#11191e';
+const DND_DICE_CHROME = '#22313a';
+const DND_DICE_PANEL_STRONG = '#0b1114';
+const DND_DICE_TEXT = '#f2f5f6';
 
 function getUpperLeftStartPosition(): [number, number, number] {
   let aspect = 1;
@@ -309,12 +315,14 @@ function DieGlyph({ sides, size = 28 }: { sides: DieSize; size?: number }) {
 function ResultReadoutOverlay({
   result,
   accent,
+  backgroundColor,
   textColor,
   isDismissing,
   onClose,
 }: {
   result: RollResult | null;
   accent: string;
+  backgroundColor: string;
   textColor: string;
   isDismissing: boolean;
   onClose: () => void;
@@ -339,7 +347,7 @@ function ResultReadoutOverlay({
         gap: 1.1,
         border: `1.5px solid ${accent}`,
         borderRadius: 2,
-        background: alpha('#05070a', 0.9),
+        background: backgroundColor,
         boxShadow: `0 12px 28px ${alpha('#000000', 0.36)}`,
         opacity: isDismissing ? 0 : 1,
         px: 1.4,
@@ -354,10 +362,10 @@ function ResultReadoutOverlay({
           onClick={onClose}
           sx={{
             position: 'absolute',
-            top: -10,
-            right: -10,
-            width: 24,
-            height: 24,
+            top: { xs: -13, sm: -10 },
+            right: { xs: -13, sm: -10 },
+            width: { xs: 31, sm: 24 },
+            height: { xs: 31, sm: 24 },
             border: `1px solid ${alpha(textColor, 0.22)}`,
             background: alpha('#05070a', 0.96),
             boxShadow: `0 3px 8px ${alpha('#000000', 0.34)}`,
@@ -367,7 +375,7 @@ function ResultReadoutOverlay({
             },
           }}
         >
-          <X size={21} strokeWidth={2.8} />
+          <X size={26} strokeWidth={2.8} />
         </IconButton>
       </Tooltip>
       <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
@@ -459,6 +467,7 @@ function ResultReadoutOverlay({
 
 function DiceRoller() {
   const theme = useTheme();
+  const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDice, setSelectedDice] = useState<RollDie[]>([]);
   const [lastResult, setLastResult] = useState<RollResult | null>(null);
@@ -478,6 +487,30 @@ function DiceRoller() {
   const fadeOutPromiseRef = useRef<Promise<void> | null>(null);
 
   const hasDice = selectedDice.length > 0;
+  const isDndApp = location.pathname.startsWith('/dungeons-and-dragons');
+  const dicePalette = useMemo(
+    () =>
+      isDndApp
+        ? {
+            accent: DND_DICE_ACCENT,
+            railBackground: alpha(DND_DICE_CHROME, 0.94),
+            railButtonBackground: alpha(DND_DICE_PANEL_STRONG, 0.96),
+            railIconColor: alpha(DND_DICE_TEXT, 0.94),
+            resultBackground: alpha(DND_DICE_PANEL, 0.94),
+            resultText: DND_DICE_TEXT,
+          }
+        : {
+            accent: appAccent,
+            railBackground:
+              theme.palette.mode === 'dark' ? alpha('#82919a', 0.9) : alpha('#a8b4bb', 0.92),
+            railButtonBackground: alpha('#03070b', 0.92),
+            railIconColor: alpha('#9badb9', 0.95),
+            resultBackground: alpha('#05070a', 0.9),
+            resultText: theme.palette.common.white,
+          },
+    [appAccent, isDndApp, theme.palette.common.white, theme.palette.mode],
+  );
+  const accent = dicePalette.accent;
 
   useEffect(() => {
     let animationFrame = 0;
@@ -693,7 +726,7 @@ function DiceRoller() {
       await fadeOutDisplayedRoll();
       if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
 
-      const notation = toDiceBoxNotation(dice, appAccent);
+      const notation = toDiceBoxNotation(dice, accent);
       setLastResult(null);
       setIsResultDismissing(false);
       setIsRolling(true);
@@ -713,7 +746,7 @@ function DiceRoller() {
         if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
 
         const results = await diceBoxRef.current.roll(notation, {
-          themeColor: appAccent,
+          themeColor: accent,
           newStartPoint: false,
         });
         if (rollSequenceRef.current !== rollSequence) return;
@@ -737,7 +770,7 @@ function DiceRoller() {
         if (rollSequenceRef.current === rollSequence) setIsRolling(false);
       }
     },
-    [appAccent, fadeOutDisplayedRoll, isDiceBoxReady, isResultDismissing, isRolling],
+    [accent, fadeOutDisplayedRoll, isDiceBoxReady, isResultDismissing, isRolling],
   );
 
   const rollSelectedDice = async () => {
@@ -762,21 +795,11 @@ function DiceRoller() {
 
     window.addEventListener(TABLETOP_ROLL_DICE_EVENT, onTabletopRoll);
     return () => window.removeEventListener(TABLETOP_ROLL_DICE_EVENT, onTabletopRoll);
-  }, [
-    appAccent,
-    hasVisibleDice,
-    isDiceBoxReady,
-    isResultDismissing,
-    isRolling,
-    lastResult,
-    rollDice,
-  ]);
+  }, [accent, hasVisibleDice, isDiceBoxReady, isResultDismissing, isRolling, lastResult, rollDice]);
 
-  const accent = appAccent;
-  const railBackground =
-    theme.palette.mode === 'dark' ? alpha('#82919a', 0.9) : alpha('#a8b4bb', 0.92);
-  const railButtonBackground = alpha('#03070b', 0.92);
-  const railIconColor = alpha('#9badb9', 0.95);
+  const railBackground = dicePalette.railBackground;
+  const railButtonBackground = dicePalette.railButtonBackground;
+  const railIconColor = dicePalette.railIconColor;
   const selectedSummary = useMemo(() => formatDice(selectedDice), [selectedDice]);
 
   return (
@@ -804,7 +827,8 @@ function DiceRoller() {
       <ResultReadoutOverlay
         result={isRolling ? null : lastResult}
         accent={accent}
-        textColor={theme.palette.common.white}
+        backgroundColor={dicePalette.resultBackground}
+        textColor={dicePalette.resultText}
         isDismissing={isResultDismissing}
         onClose={dismissRollResult}
       />
