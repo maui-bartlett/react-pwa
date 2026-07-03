@@ -2586,14 +2586,21 @@ function TabMenuDialog({
   activeTab,
   onClose,
   onSelectTab,
+  onEditActiveTab,
 }: {
   open: boolean;
   activeTab: DndTab;
   onClose: () => void;
   onSelectTab: (tab: DndTab) => void;
+  onEditActiveTab: (() => void) | null;
 }) {
   const selectTab = (tab: DndTab) => {
     onSelectTab(tab);
+    onClose();
+  };
+
+  const editActiveTab = () => {
+    onEditActiveTab?.();
     onClose();
   };
 
@@ -2630,23 +2637,25 @@ function TabMenuDialog({
           >
             <X size={31} />
           </IconButton>
-          <Button
-            onClick={onClose}
-            sx={{
-              minWidth: 78,
-              minHeight: 54,
-              borderRadius: '24px',
-              bgcolor: dndColors.panelStrong,
-              color: '#ffffff',
-              fontSize: 18,
-              fontWeight: 800,
-              textTransform: 'none',
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
-              '&:hover': { bgcolor: '#05090b' },
-            }}
-          >
-            Edit
-          </Button>
+          {onEditActiveTab ? (
+            <Button
+              onClick={editActiveTab}
+              sx={{
+                minWidth: 78,
+                minHeight: 54,
+                borderRadius: '24px',
+                bgcolor: dndColors.panelStrong,
+                color: '#ffffff',
+                fontSize: 18,
+                fontWeight: 800,
+                textTransform: 'none',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+                '&:hover': { bgcolor: '#05090b' },
+              }}
+            >
+              Edit
+            </Button>
+          ) : null}
         </Stack>
 
         <Stack spacing={1.15}>
@@ -5315,6 +5324,25 @@ function DungeonsAndDragons() {
     }));
   };
 
+  const editActiveTab = (() => {
+    switch (activeTab) {
+      case 'abilities':
+        return () => setAbilityForm(createAbilityForm(character));
+      case 'skills':
+        return () => setSkillForm(createSkillForm(character));
+      case 'spells':
+        return () => setSpellcastingForm(createSpellcastingForm(character));
+      case 'inventory':
+        return () => setMoneyForm(createMoneyForm(character.money));
+      case 'features':
+        return () => setProficiencyForm(createProficiencyForm(character));
+      case 'background':
+        return () => setBackgroundForm(createBackgroundForm(character));
+      default:
+        return null;
+    }
+  })();
+
   const content = (() => {
     switch (activeTab) {
       case 'abilities':
@@ -5554,6 +5582,7 @@ function DungeonsAndDragons() {
           activeTab={activeTab}
           onClose={() => setTabMenuOpen(false)}
           onSelectTab={setActiveTab}
+          onEditActiveTab={editActiveTab}
         />
         <CharacterEditDialog
           open={characterForm !== null}
