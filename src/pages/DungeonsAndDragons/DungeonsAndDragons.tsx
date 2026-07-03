@@ -622,56 +622,84 @@ function HeroHeader({
     <Box sx={{ bgcolor: dndColors.chrome, px: 1.8, pt: 2.4, pb: 2 }}>
       <Box
         sx={{
+          mt: 5.4,
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) auto',
-          gap: 1.2,
-          alignItems: 'start',
+          gap: 1,
+          alignItems: 'center',
         }}
       >
-        <Stack spacing={1.1} sx={{ minWidth: 0 }}>
-          <Stack alignItems="flex-start" spacing={0.15}>
-            <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 800 }}>
-              {character.name}
-              <Box component="span" sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
-                {' '}
-                · {character.species}
-              </Box>
-            </Typography>
-            <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 800 }}>
-              {classLine(character)}
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={0.7} sx={{ mt: '60px' }}>
-            {homeAction}
-            {accountAction}
-          </Stack>
+        <Stack alignItems="flex-start" spacing={0.15} sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{
+              color: dndColors.text,
+              fontSize: 21,
+              fontWeight: 800,
+              lineHeight: 1.1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+          >
+            {character.name}
+            <Box component="span" sx={{ color: dndColors.muted, fontSize: 14, fontWeight: 800 }}>
+              {' '}
+              · {character.species}
+            </Box>
+          </Typography>
+          <Typography
+            sx={{
+              color: dndColors.muted,
+              fontSize: 13,
+              fontWeight: 800,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+          >
+            {classLine(character)}
+          </Typography>
         </Stack>
-        <Stack direction="row" spacing={0.75} justifyContent="flex-end" alignItems="flex-start">
-          <DefenseBadge label="Armor Class" value={effectiveArmorClass(character)} shape="shield" />
+        <Stack direction="row" spacing={0.7} justifyContent="flex-end">
+          {homeAction}
+          {accountAction}
+        </Stack>
+      </Box>
+      <Box
+        sx={{
+          mt: 1.3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 0.8,
+          alignItems: 'flex-start',
+        }}
+      >
+        <Stack direction="row" spacing={0.7} alignItems="stretch">
+          <SmallActionButton icon={<FlameKindling size={21} />} label="Rest" onClick={onOpenRest} />
+          <ConditionsButton onChange={setActiveTab} />
+          <HitPointsButton
+            current={character.hitPoints.current}
+            max={character.hitPoints.max}
+            percent={hpPercent}
+            onClick={onEditHitPoints}
+          />
+        </Stack>
+        <Stack direction="row" spacing={0.45} justifyContent="flex-end" alignItems="flex-start">
           <DefenseBadge
+            compact
+            label="Armor Class"
+            value={effectiveArmorClass(character)}
+            shape="shield"
+          />
+          <DefenseBadge
+            compact
             label="Initiative"
             value={formatModifier(character.initiative)}
             shape="hex"
           />
         </Stack>
-      </Box>
-      <Box
-        sx={{
-          mt: 1.4,
-          display: 'flex',
-          justifyContent: 'flex-start',
-          gap: 1,
-          alignItems: 'stretch',
-        }}
-      >
-        <SmallActionButton icon={<FlameKindling size={22} />} label="Rest" onClick={onOpenRest} />
-        <ConditionsButton onChange={setActiveTab} />
-        <HitPointsButton
-          current={character.hitPoints.current}
-          max={character.hitPoints.max}
-          percent={hpPercent}
-          onClick={onEditHitPoints}
-        />
       </Box>
     </Box>
   );
@@ -682,7 +710,7 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: 122,
+        width: 108,
         minWidth: 0,
         minHeight: 43,
         bgcolor: dndColors.panelStrong,
@@ -755,17 +783,19 @@ function DefenseBadge({
   label,
   value,
   shape,
+  compact = false,
 }: {
   label: string;
   value: string | number;
   shape: 'shield' | 'hex';
+  compact?: boolean;
 }) {
   return (
     <Stack alignItems="center" spacing={0.1}>
       <Box
         sx={{
-          width: 62,
-          height: 62,
+          width: compact ? 48 : 62,
+          height: compact ? 48 : 62,
           clipPath:
             shape === 'shield'
               ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
@@ -776,14 +806,14 @@ function DefenseBadge({
           placeItems: 'center',
         }}
       >
-        <Typography sx={{ color: dndColors.text, fontSize: 25, fontWeight: 900 }}>
+        <Typography sx={{ color: dndColors.text, fontSize: compact ? 19 : 25, fontWeight: 900 }}>
           {value}
         </Typography>
       </Box>
       <Typography
         sx={{
           color: dndColors.text,
-          fontSize: 11,
+          fontSize: compact ? 8 : 11,
           fontWeight: 900,
           textAlign: 'center',
           textTransform: 'uppercase',
@@ -809,7 +839,7 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        width: 62,
+        width: 56,
         minWidth: 0,
         minHeight: 43,
         bgcolor: dndColors.panelStrong,
