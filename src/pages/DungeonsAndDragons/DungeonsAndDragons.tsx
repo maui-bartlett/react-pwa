@@ -945,7 +945,6 @@ function HeroHeader({
           </Typography>
         </Stack>
         <Stack direction="row" spacing={1.35} justifyContent="flex-end" sx={{ mt: '-12px' }}>
-          <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
           {homeAction}
           {accountAction}
         </Stack>
@@ -974,8 +973,14 @@ function HeroHeader({
           spacing={0.2}
           justifyContent="flex-end"
           alignItems="center"
-          sx={{ flex: '0 0 auto', mr: { xs: 0, sm: 0.45 } }}
+          sx={{
+            flex: '0 0 auto',
+            mr: { xs: 0, sm: 0.45 },
+            justifyContent: 'space-between',
+            minWidth: { xs: 146, sm: 218 },
+          }}
         >
+          <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
           <DefenseBadge
             compact
             label="Armor Class"
@@ -1000,14 +1005,14 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: { xs: 86, sm: 108 },
+        width: { xs: 58, sm: 108 },
         minWidth: 0,
         minHeight: 48,
         px: { xs: 0.65, sm: 1.1 },
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
         borderRadius: '6px',
-        fontSize: { xs: 11, sm: 13 },
+        fontSize: { xs: 8.5, sm: 13 },
         fontWeight: 900,
         textTransform: 'uppercase',
         '&:hover': { bgcolor: '#05090b' },
@@ -1026,33 +1031,93 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
       onClick={onToggle}
       sx={{
         minWidth: 0,
-        width: 42,
-        height: 42,
+        width: { xs: 38, sm: 42 },
+        height: 58,
         borderRadius: '8px',
-        bgcolor: dndColors.panelStrong,
-        border: `1px solid ${active ? alpha(dndColors.gold, 0.72) : dndColors.border}`,
-        color: active ? dndColors.gold : '#ffffff',
+        color: dndColors.text,
         p: 0,
         position: 'relative',
-        '&:hover': {
-          bgcolor: '#05090b',
-        },
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 5,
-          left: '50%',
-          width: 22,
-          height: 8,
-          opacity: active ? 1 : 0,
-          transform: 'translateX(-50%)',
-          transition: 'opacity 140ms ease',
-          background: `linear-gradient(90deg, transparent 0 2px, ${dndColors.gold} 2px 4px, transparent 4px 9px, ${dndColors.gold} 9px 13px, transparent 13px 18px, ${dndColors.gold} 18px 20px, transparent 20px)`,
-          clipPath: 'polygon(0 70%, 18% 0, 28% 100%, 50% 0, 62% 100%, 82% 0, 100% 70%)',
-        },
+        display: 'grid',
+        placeItems: 'center',
+        overflow: 'visible',
       }}
     >
-      <Lightbulb size={21} strokeWidth={2.3} />
+      <Box
+        sx={{
+          width: { xs: 38, sm: 42 },
+          height: { xs: 38, sm: 42 },
+          borderRadius: '8px',
+          bgcolor: dndColors.panelStrong,
+          border: `1px solid ${active ? alpha(dndColors.gold, 0.72) : dndColors.border}`,
+          color: active ? dndColors.gold : '#ffffff',
+          position: 'relative',
+          display: 'grid',
+          placeItems: 'center',
+          '&:hover': {
+            bgcolor: '#05090b',
+          },
+        }}
+      >
+        {active ? (
+          <>
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 4,
+                left: { xs: 9, sm: 11 },
+                width: 10,
+                height: 2,
+                borderRadius: '999px',
+                bgcolor: dndColors.gold,
+                transform: 'rotate(-42deg)',
+                transformOrigin: 'right center',
+              }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 2,
+                left: '50%',
+                width: 2,
+                height: 10,
+                borderRadius: '999px',
+                bgcolor: dndColors.gold,
+                transform: 'translateX(-50%)',
+              }}
+            />
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 4,
+                right: { xs: 9, sm: 11 },
+                width: 10,
+                height: 2,
+                borderRadius: '999px',
+                bgcolor: dndColors.gold,
+                transform: 'rotate(42deg)',
+                transformOrigin: 'left center',
+              }}
+            />
+          </>
+        ) : null}
+        <Lightbulb size={21} strokeWidth={2.3} />
+      </Box>
+      <Typography
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: '50%',
+          color: dndColors.text,
+          fontSize: { xs: 8, sm: 10.5 },
+          fontWeight: 900,
+          lineHeight: 1,
+          textTransform: 'uppercase',
+          transform: 'translateX(-50%)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Inspiration
+      </Typography>
     </Button>
   );
 }
@@ -1075,7 +1140,7 @@ function HitPointsButton({
       aria-label="Edit hit points"
       onClick={onClick}
       sx={{
-        width: { xs: 78, sm: 98 },
+        width: { xs: 98, sm: 118 },
         minWidth: 0,
         minHeight: 48,
         bgcolor: dndColors.panelStrong,
@@ -1084,7 +1149,7 @@ function HitPointsButton({
         color: dndColors.text,
         cursor: 'pointer',
         font: 'inherit',
-        px: { xs: 0.55, sm: 1 },
+        px: { xs: 0.6, sm: 1 },
         py: 0.75,
         textAlign: 'center',
         '&:hover': { bgcolor: '#05090b' },
@@ -1138,7 +1203,7 @@ function DefenseBadge({
   onRoll?: () => void;
 }) {
   const isArmorClass = label === 'Armor Class';
-  const badgeSize = compact ? { xs: 50, sm: 58 } : 68;
+  const badgeSize = compact ? { xs: 42, sm: 58 } : 68;
   const interactiveProps = onRoll
     ? {
         role: 'button',
@@ -1161,7 +1226,7 @@ function DefenseBadge({
       {...interactiveProps}
       sx={{
         position: 'relative',
-        width: compact ? { xs: isArmorClass ? 62 : 66, sm: isArmorClass ? 76 : 78 } : 84,
+        width: compact ? { xs: isArmorClass ? 48 : 52, sm: isArmorClass ? 76 : 78 } : 84,
         pt: 0.9,
         pb: 1.25,
         cursor: onRoll ? 'pointer' : 'default',
@@ -1179,7 +1244,7 @@ function DefenseBadge({
             left: '50%',
             zIndex: 2,
             color: dndColors.text,
-            fontSize: compact ? { xs: 10.5, sm: 12 } : 14,
+            fontSize: compact ? { xs: 8.5, sm: 12 } : 14,
             fontWeight: 900,
             lineHeight: 1,
             textTransform: 'uppercase',
@@ -1204,9 +1269,9 @@ function DefenseBadge({
           display: 'grid',
           placeItems: 'center',
           transition: 'border-color 160ms ease, filter 160ms ease, box-shadow 160ms ease',
-          ...diceRollBoxGlowSx,
           ...(onRoll
             ? {
+                ...diceRollBoxGlowSx,
                 boxShadow: `${diceRollBoxGlowSx.boxShadow}, inset 0 0 0 1px ${alpha(dndColors.red, 0.32)}`,
                 '&:hover': {
                   filter: 'brightness(1.1)',
@@ -1218,7 +1283,7 @@ function DefenseBadge({
         <Typography
           sx={{
             color: dndColors.text,
-            fontSize: compact ? { xs: 20, sm: 23 } : 27,
+            fontSize: compact ? { xs: 18, sm: 23 } : 27,
             fontWeight: 900,
           }}
         >
@@ -1232,7 +1297,7 @@ function DefenseBadge({
           left: '50%',
           zIndex: 2,
           color: dndColors.text,
-          fontSize: compact ? { xs: 10.5, sm: 12 } : 14,
+          fontSize: compact ? { xs: 8.5, sm: 12 } : 14,
           fontWeight: 900,
           lineHeight: 1,
           textAlign: 'center',
@@ -1261,7 +1326,7 @@ function SmallActionButton({
       aria-label={label}
       onClick={onClick}
       sx={{
-        width: { xs: 48, sm: 56 },
+        width: { xs: 38, sm: 56 },
         minWidth: 0,
         minHeight: 48,
         px: 1,
@@ -1430,7 +1495,7 @@ function SavePill({ ability, onRoll }: { ability: AbilityScore; onRoll: () => vo
       sx={{
         minHeight: 48,
         border: `2px solid ${dndColors.border}`,
-        borderRadius: '28px',
+        borderRadius: '28px 8px 8px 28px',
         overflow: 'hidden',
         bgcolor: dndColors.panelSoft,
         cursor: 'pointer',
@@ -1465,7 +1530,8 @@ function SavePill({ ability, onRoll }: { ability: AbilityScore; onRoll: () => vo
           alignSelf: 'stretch',
           display: 'grid',
           placeItems: 'center',
-          borderLeft: `2px solid ${dndColors.border}`,
+          border: `2px solid ${dndColors.border}`,
+          borderRadius: '8px 6px 6px 8px',
           bgcolor: alpha('#000000', 0.12),
           ...diceRollBoxGlowSx,
         }}
@@ -1578,11 +1644,14 @@ function SenseRow({ label, value }: { label: string; value: number }) {
       <Box
         sx={{
           width: 56,
-          alignSelf: 'stretch',
+          height: 40,
+          ml: 0.45,
+          alignSelf: 'center',
           display: 'grid',
           placeItems: 'center',
-          borderRight: `2px solid ${dndColors.border}`,
-          borderRadius: '10px 0 0 10px',
+          border: `2px solid ${dndColors.border}`,
+          borderRadius: '999px',
+          bgcolor: dndColors.panelStrong,
         }}
       >
         <Typography sx={{ color: dndColors.text, fontWeight: 900, fontSize: 19 }}>
