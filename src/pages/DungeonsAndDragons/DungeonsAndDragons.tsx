@@ -2077,6 +2077,8 @@ function SpellsScreen({
   onUpdateSpellSlot: (level: string, used: number) => void;
   onCastSpell: (spell: Spell) => boolean;
 }) {
+  const spellSections = createSpellSections(character.spells);
+
   return (
     <>
       <SectionHeader icon={<LocalFireDepartmentIcon />} title="Spells" />
@@ -2097,15 +2099,6 @@ function SpellsScreen({
               <EditIcon fontSize="small" />
             </IconButton>
           </Stack>
-          <Stack direction="row" spacing={1} sx={{ mt: 1.3 }}>
-            {character.spellcasting.slots.map((slot) => (
-              <SlotTracker
-                key={slot.level}
-                slot={slot}
-                onUpdate={(used) => onUpdateSpellSlot(slot.level, used)}
-              />
-            ))}
-          </Stack>
         </DndCard>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography sx={{ color: dndColors.text, fontSize: 21, fontWeight: 900 }}>
@@ -2115,22 +2108,69 @@ function SpellsScreen({
             <AddIcon />
           </IconButton>
         </Stack>
-        {character.spells.map((spell) => (
-          <SwipeRow
-            key={spell.id}
-            onDelete={() => onDeleteSpell(spell.id)}
-            onEdit={() => onEditSpell(spell)}
-          >
-            <SpellRow
-              spell={spell}
-              spellSlots={character.spellcasting.slots}
-              onTogglePrepared={() => onTogglePrepared(spell.id)}
-              onCast={() => onCastSpell(spell)}
-            />
-          </SwipeRow>
-        ))}
+        {spellSections.map((section) => {
+          const slot = section.slotLevel
+            ? character.spellcasting.slots.find((entry) => entry.level === section.slotLevel)
+            : undefined;
+          return (
+            <Box key={section.key} sx={{ mt: 1.25 }}>
+              <SpellSectionHeader
+                label={section.label}
+                slot={slot}
+                onUpdateSlot={slot ? (used) => onUpdateSpellSlot(slot.level, used) : undefined}
+              />
+              {section.spells.map((spell) => (
+                <SwipeRow
+                  key={spell.id}
+                  onDelete={() => onDeleteSpell(spell.id)}
+                  onEdit={() => onEditSpell(spell)}
+                >
+                  <SpellRow
+                    spell={spell}
+                    spellSlots={character.spellcasting.slots}
+                    onTogglePrepared={() => onTogglePrepared(spell.id)}
+                    onCast={() => onCastSpell(spell)}
+                  />
+                </SwipeRow>
+              ))}
+            </Box>
+          );
+        })}
       </Box>
     </>
+  );
+}
+
+function SpellSectionHeader({
+  label,
+  slot,
+  onUpdateSlot,
+}: {
+  label: string;
+  slot?: { level: string; used: number; max: number };
+  onUpdateSlot?: (used: number) => void;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1.2,
+        borderTop: `1px solid ${dndColors.borderSoft}`,
+        borderBottom: `1px solid ${dndColors.borderSoft}`,
+        bgcolor: alpha(dndColors.panelStrong, 0.78),
+        px: 1,
+        py: 0.85,
+      }}
+    >
+      <Typography
+        sx={{ color: dndColors.text, fontSize: 15, fontWeight: 900, textTransform: 'uppercase' }}
+      >
+        {label}
+      </Typography>
+      {slot && onUpdateSlot ? <SlotTracker slot={slot} onUpdate={onUpdateSlot} /> : null}
+    </Box>
   );
 }
 
@@ -2142,11 +2182,8 @@ function SlotTracker({
   onUpdate: (used: number) => void;
 }) {
   return (
-    <Box sx={{ flex: 1 }}>
-      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
-        {slot.level}
-      </Typography>
-      <Stack direction="row" spacing={0.4} sx={{ mt: 0.5 }}>
+    <Box>
+      <Stack direction="row" spacing={0.45}>
         {Array.from({ length: slot.max }).map((_, index) => (
           <Box
             component="button"
@@ -2155,19 +2192,47 @@ function SlotTracker({
             aria-label={`${slot.level} spell slot ${index + 1}`}
             onClick={() => onUpdate(index + 1 === slot.used ? index : index + 1)}
             sx={{
-              width: 18,
-              height: 18,
-              borderRadius: '50%',
+              width: { xs: 19, sm: 22 },
+              height: { xs: 19, sm: 22 },
+              borderRadius: '6px',
               border: `2px solid ${dndColors.blue}`,
               bgcolor: index < slot.used ? dndColors.blue : 'transparent',
               cursor: 'pointer',
               p: 0,
+              transition: 'background-color 140ms ease, border-color 140ms ease',
+              '&:hover': {
+                borderColor: alpha(dndColors.blue, 0.72),
+              },
             }}
           />
         ))}
       </Stack>
     </Box>
   );
+}
+
+function createSpellSections(spells: Spell[]) {
+  const grouped = new Map<
+    string,
+    { key: string; label: string; rank: number; slotLevel: string | null; spells: Spell[] }
+  >();
+
+  spells.forEach((spell) => {
+    const slotLevel = getSpellSlotLevel(spell.level);
+    const rank = slotLevel ? (getSpellSlotRank(slotLevel) ?? 99) : 0;
+    const key = slotLevel ?? 'cantrip';
+    const label = slotLevel ? `${slotLevel} Level Spells` : 'Cantrips';
+    const section = grouped.get(key) ?? { key, label, rank, slotLevel, spells: [] };
+    section.spells.push(spell);
+    grouped.set(key, section);
+  });
+
+  return Array.from(grouped.values())
+    .sort((left, right) => left.rank - right.rank)
+    .map((section) => ({
+      ...section,
+      spells: [...section.spells].sort((left, right) => left.name.localeCompare(right.name)),
+    }));
 }
 
 function SpellRow({
