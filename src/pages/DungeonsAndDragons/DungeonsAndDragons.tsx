@@ -917,20 +917,7 @@ function HeroHeader({
           >
             {character.name}
           </Typography>
-          <Typography
-            sx={{
-              color: dndColors.muted,
-              fontSize: 14,
-              fontWeight: 800,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              width: '100%',
-            }}
-          >
-            {character.species}
-          </Typography>
-          <Typography
+          <Box
             sx={{
               color: dndColors.muted,
               fontSize: 12,
@@ -941,8 +928,14 @@ function HeroHeader({
               width: '100%',
             }}
           >
+            <Box component="span" sx={{ fontSize: 14 }}>
+              {character.species}
+            </Box>
+            <Box component="span" sx={{ color: dndColors.red, mx: 0.55 }}>
+              •
+            </Box>
             <ClassLine character={character} />
-          </Typography>
+          </Box>
         </Stack>
         <Stack
           direction="row"
@@ -1050,6 +1043,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
         sx={{
           width: { xs: 44, sm: 50 },
           height: { xs: 44, sm: 50 },
+          transform: 'translateY(-4px)',
           borderRadius: '8px',
           bgcolor: dndColors.panelStrong,
           border: `1px solid ${active ? alpha(dndColors.gold, 0.72) : dndColors.border}`,
@@ -1156,6 +1150,7 @@ function HeaderIconControl({
         sx={{
           width: { xs: 44, sm: 50 },
           height: { xs: 44, sm: 50 },
+          transform: 'translateY(-4px)',
           borderRadius: '8px',
           bgcolor: dndColors.panelStrong,
           border: `1px solid ${dndColors.border}`,
@@ -1207,7 +1202,7 @@ function HitPointsButton({
       aria-label="Edit hit points"
       onClick={onClick}
       sx={{
-        width: { xs: 98, sm: 118 },
+        width: { xs: 104, sm: 124 },
         minWidth: 0,
         minHeight: 58,
         bgcolor: dndColors.panelStrong,
@@ -1231,7 +1226,7 @@ function HitPointsButton({
           mb: 0.35,
         }}
       >
-        HP
+        Hit Points
       </Typography>
       <Typography
         sx={{
