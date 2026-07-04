@@ -626,6 +626,8 @@ function AccountMenu({
   const accountActionHoverBg = fabUTokens.color.brandStrong;
   const swipeEditActionBg =
     gameSystem === 'dungeons-and-dragons' ? '#687782' : fabUTokens.color.brand;
+  const activeCharacterCardBorder =
+    gameSystem === 'dungeons-and-dragons' ? '#687782' : fabUTokens.color.highlight;
   const accountBackdropBg = avatarBackdropOverride ?? accountActionBg;
   const accountModalBorder = themeMode === 'dark' ? '#ffffff' : '#d8dde3';
   const accountSectionHeadingSx = {
@@ -982,9 +984,7 @@ function AccountMenu({
                             textTransform: 'none',
                             minHeight: 54,
                             border: `1px solid ${
-                              character.active
-                                ? fabUTokens.color.highlight
-                                : fabUTokens.color.border
+                              character.active ? activeCharacterCardBorder : fabUTokens.color.border
                             }`,
                             borderRadius: '9px',
                             bgcolor: character.active
