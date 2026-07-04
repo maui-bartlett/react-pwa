@@ -2559,12 +2559,9 @@ function SpellRow({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: {
-            xs: 'minmax(76px, 1fr) 52px 58px 68px 56px auto',
-            sm: 'minmax(120px, 1fr) 62px 72px 92px 72px auto',
-          },
-          columnGap: { xs: 0.55, sm: 0.9 },
-          alignItems: 'start',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr) 54px auto', sm: 'minmax(0, 1fr) 62px auto' },
+          columnGap: { xs: 0.65, sm: 0.9 },
+          alignItems: 'center',
         }}
       >
         <Stack sx={{ minWidth: 0 }}>
@@ -2600,9 +2597,6 @@ function SpellRow({
         >
           {prepared ? 'Prep' : 'Book'}
         </Button>
-        <TinyStat label="Time" value={spell.castingTime} />
-        <TinyStat label="Range" value={spell.range} />
-        <TinyStat label="Hit/DC" value={spell.hitDc} />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           {spell.damage ? (
             <RollBox
@@ -2639,6 +2633,20 @@ function SpellRow({
             </Button>
           )}
         </Box>
+      </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr) 88px 70px', sm: 'minmax(0, 1fr) 102px 82px' },
+          columnGap: 1.2,
+          alignItems: 'start',
+          mt: 1,
+          pr: { xs: 0.4, sm: 0.8 },
+        }}
+      >
+        <TinyStat label="Time" value={spell.castingTime} />
+        <TinyStat label="Range" value={spell.range} />
+        <TinyStat label="Hit/DC" value={spell.hitDc} />
       </Box>
     </Box>
   );
