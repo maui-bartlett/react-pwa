@@ -4173,8 +4173,8 @@ function AppMenu({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab: D
     { tab: 'abilities', label: 'Abilities, Saves, Senses', icon: <ShieldIcon /> },
     { tab: 'skills', label: 'Skills', icon: <AutoAwesomeIcon /> },
     { tab: 'actions', label: 'Actions', icon: <Sword /> },
-    { tab: 'inventory', label: 'Inventory', icon: <Backpack /> },
     { tab: 'spells', label: 'Spells', icon: <LocalFireDepartmentIcon /> },
+    { tab: 'inventory', label: 'Inventory', icon: <Backpack /> },
     { tab: 'features', label: 'Features & Traits', icon: <PersonIcon /> },
     { tab: 'background', label: 'Background', icon: <MenuBookIcon /> },
     { tab: 'notes', label: 'Notes', icon: <MenuBookIcon /> },
@@ -4216,11 +4216,10 @@ function AppMenu({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab: D
 
 const dndTabMenuItems: Array<{ tab: DndTab; label: string; icon: ReactNode }> = [
   { tab: 'abilities', label: 'Abilities, Saves, Senses', icon: <ShieldIcon /> },
-  { tab: 'conditions', label: 'Conditions', icon: <AutoAwesomeIcon /> },
   { tab: 'skills', label: 'Skills', icon: <AutoAwesomeIcon /> },
   { tab: 'actions', label: 'Actions', icon: <Sword /> },
-  { tab: 'inventory', label: 'Inventory', icon: <Backpack /> },
   { tab: 'spells', label: 'Spells', icon: <LocalFireDepartmentIcon /> },
+  { tab: 'inventory', label: 'Inventory', icon: <Backpack /> },
   { tab: 'features', label: 'Features & Traits', icon: <PersonIcon /> },
   { tab: 'background', label: 'Background', icon: <MenuBookIcon /> },
   { tab: 'notes', label: 'Notes', icon: <MenuBookIcon /> },
