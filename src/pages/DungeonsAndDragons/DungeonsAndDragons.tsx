@@ -4600,6 +4600,7 @@ type CharacterForm = {
   alignment: string;
   classes: CharacterClassForm[];
   abilityScores: Record<AbilityKey, number>;
+  spells: Spell[];
   armorClass: string;
   initiative: string;
   speed: string;
@@ -4712,6 +4713,7 @@ function createCharacterForm(character: DndCharacter): CharacterForm {
     abilityScores: Object.fromEntries(
       character.abilities.map((ability) => [ability.key, ability.score]),
     ) as Record<AbilityKey, number>,
+    spells: character.spells.map((spell) => ({ ...spell })),
     armorClass: String(character.armorClass),
     initiative: String(character.initiative),
     speed: String(character.speed),
@@ -4802,6 +4804,7 @@ function CharacterEditDialog({
   form,
   classOptions,
   subclassOptionsByClassName,
+  spellCatalog,
   onChange,
   onCancel,
   onSave,
@@ -4810,13 +4813,27 @@ function CharacterEditDialog({
   form: CharacterForm | null;
   classOptions: string[];
   subclassOptionsByClassName: Map<string, string[]>;
+  spellCatalog: SpellCatalogEntry[];
   onChange: (form: CharacterForm) => void;
   onCancel: () => void;
   onSave: () => void;
 }) {
+  const [activeStep, setActiveStep] = useState(0);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [expandedClassIndex, setExpandedClassIndex] = useState(0);
+  const [classPanel, setClassPanel] = useState<'features' | 'spells'>('features');
   if (!form) return null;
   const setField = (key: keyof CharacterForm, value: string) => {
     onChange({ ...form, [key]: value });
+  };
+  const setAbilityScore = (key: AbilityKey, value: string) => {
+    onChange({
+      ...form,
+      abilityScores: {
+        ...form.abilityScores,
+        [key]: Math.max(1, Math.min(30, parseIntOrFallback(value, form.abilityScores[key]))),
+      },
+    });
   };
   const updateClass = (index: number, patch: Partial<CharacterClassForm>) => {
     onChange({
@@ -4851,6 +4868,36 @@ function CharacterEditDialog({
       classes: [...form.classes, { name: nextName, subclass: '', level: '1' }],
     });
   };
+  const addCatalogSpell = (spell: SpellCatalogEntry) => {
+    const existingNames = new Set(form.spells.map((entry) => entry.name.toLowerCase()));
+    if (existingNames.has(spell.name.toLowerCase())) {
+      setCatalogOpen(false);
+      return;
+    }
+    onChange({
+      ...form,
+      spells: [
+        ...form.spells,
+        {
+          id: createEntryId('spell'),
+          ...spell,
+          prepared: false,
+        },
+      ],
+    });
+    setCatalogOpen(false);
+  };
+  const removeSpellFromWizard = (id: string) => {
+    onChange({ ...form, spells: form.spells.filter((spell) => spell.id !== id) });
+  };
+  const toggleWizardSpellPrepared = (id: string) => {
+    onChange({
+      ...form,
+      spells: form.spells.map((spell) =>
+        spell.id === id ? { ...spell, prepared: !spell.prepared } : spell,
+      ),
+    });
+  };
   const resolvedClassOptions = [
     ...new Set(
       [...form.classes.map((entry) => entry.name), ...classOptions].filter(
@@ -4863,169 +4910,743 @@ function CharacterEditDialog({
     (sum, entry) => sum + Math.max(0, parseIntOrFallback(entry.level, 0)),
     0,
   );
+  const wizardClassNames = new Set(
+    form.classes
+      .map((entry) => asNonEmptyString(entry.name)?.toLowerCase() ?? null)
+      .filter((name): name is string => name !== null),
+  );
+  const wizardClassSpellCatalog = spellCatalog.filter((spell) =>
+    (Array.isArray(spell.classes) ? spell.classes : [])
+      .map((className) => asNonEmptyString(className)?.toLowerCase() ?? null)
+      .filter((className): className is string => className !== null)
+      .some((className) => wizardClassNames.has(className)),
+  );
+  const wizardSpellCatalog =
+    wizardClassSpellCatalog.length > 0 ? wizardClassSpellCatalog : spellCatalog;
+  const wizardSteps = ['Class', 'Background', 'Species', 'Abilities', 'Details', 'Spells'];
+  const goPrevious = () => setActiveStep((step) => Math.max(0, step - 1));
+  const goNext = () => setActiveStep((step) => Math.min(wizardSteps.length - 1, step + 1));
+
   return (
-    <DndEditDialog
-      title="Edit Character"
-      open={open}
-      onCancel={onCancel}
-      onSave={onSave}
-      saveDisabled={classErrors.length > 0}
-    >
-      <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
-      <FormField
-        label="Species"
-        value={form.species}
-        onChange={(value) => setField('species', value)}
-      />
-      <FormField
-        label="Background"
-        value={form.background}
-        onChange={(value) => setField('background', value)}
-      />
-      <FormField
-        label="Alignment"
-        value={form.alignment}
-        onChange={(value) => setField('alignment', value)}
-      />
-      <Box
-        sx={{
-          border: `1px solid ${dndColors.border}`,
-          borderRadius: '10px',
-          bgcolor: alpha(dndColors.panelStrong, 0.52),
-          p: 1,
+    <>
+      <Dialog
+        fullScreen
+        open={open}
+        onClose={onCancel}
+        PaperProps={{
+          sx: {
+            bgcolor: dndColors.page,
+            color: dndColors.text,
+            maxWidth: '100vw',
+            overflowX: 'hidden',
+          },
         }}
       >
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+        <Box
+          sx={{
+            minHeight: '100dvh',
+            display: 'grid',
+            gridTemplateRows: 'auto 1fr auto',
+            bgcolor: dndColors.page,
+            maxWidth: '100vw',
+            overflowX: 'hidden',
+          }}
+        >
           <Box>
-            <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 950 }}>
-              Classes
-            </Typography>
-            <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 800 }}>
-              Total level {totalLevel}/20
-            </Typography>
-          </Box>
-          <Button
-            startIcon={<AddIcon />}
-            disabled={totalLevel >= 20}
-            onClick={addClass}
-            sx={{
-              minHeight: 34,
-              border: `1px solid ${dndColors.border}`,
-              color: dndColors.blue,
-              fontWeight: 900,
-              textTransform: 'none',
-            }}
-          >
-            Class
-          </Button>
-        </Stack>
-        <Stack spacing={1.1}>
-          {form.classes.map((entry, index) => {
-            const subclassOptions = getSubclassOptionsForClass(
-              entry.name,
-              entry.subclass,
-              subclassOptionsByClassName,
-            );
-            const requirement = formatClassRequirement(entry.name);
-            const requirementMet =
-              form.classes.length <= 1 || meetsClassRequirement(entry.name, form.abilityScores);
-            return (
-              <Box
-                key={`${index}-${entry.name}`}
+            <Stack
+              direction="row"
+              alignItems="center"
+              gap={2}
+              sx={{
+                px: 2.6,
+                pt: 'max(22px, env(safe-area-inset-top))',
+                pb: 2,
+                bgcolor: dndColors.chrome,
+                borderBottom: `1px solid ${alpha('#ffffff', 0.1)}`,
+              }}
+            >
+              <IconButton
+                aria-label="Cancel character wizard"
+                onClick={onCancel}
                 sx={{
-                  border: `1px solid ${requirementMet ? dndColors.borderSoft : dndColors.red}`,
-                  borderRadius: '8px',
-                  p: 1,
-                  bgcolor: alpha('#000000', 0.12),
+                  width: 54,
+                  height: 54,
+                  bgcolor: '#dce4eb',
+                  color: dndColors.page,
+                  '&:hover': { bgcolor: '#eef3f7' },
                 }}
               >
-                <Stack direction="row" spacing={1} alignItems="flex-end">
-                  <ClassSelectField
-                    label={`Class ${index + 1}`}
-                    value={entry.name}
-                    options={resolvedClassOptions}
-                    onChange={(value) => updateClass(index, { name: value })}
-                  />
-                  <FormField
-                    label="Level"
-                    value={entry.level}
-                    inputMode="numeric"
-                    onChange={(value) => updateClass(index, { level: value })}
-                  />
-                  <IconButton
-                    aria-label={`Remove class ${index + 1}`}
-                    disabled={form.classes.length <= 1}
-                    onClick={() => removeClass(index)}
-                    sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: '8px',
-                      border: `1px solid ${dndColors.border}`,
-                      color: form.classes.length <= 1 ? dndColors.muted : dndColors.red,
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-                <ClassSelectField
-                  label="Subclass"
-                  value={entry.subclass}
-                  options={['', ...subclassOptions]}
-                  onChange={(value) => updateClass(index, { subclass: value })}
-                />
-                {requirement ? (
-                  <Typography
-                    sx={{
-                      color: requirementMet ? dndColors.muted : dndColors.red,
-                      fontSize: 11,
-                      fontWeight: 850,
-                      mt: 0.7,
-                    }}
-                  >
-                    Multiclass requirement: {requirement}
-                  </Typography>
-                ) : null}
-              </Box>
-            );
-          })}
-        </Stack>
-        {classErrors.length > 0 ? (
-          <Stack spacing={0.35} sx={{ mt: 1 }}>
-            {classErrors.map((error) => (
-              <Typography key={error} sx={{ color: dndColors.red, fontSize: 12, fontWeight: 850 }}>
-                {error}
+                <X size={30} />
+              </IconButton>
+              <Typography sx={{ color: dndColors.text, fontSize: 24, fontWeight: 900 }}>
+                Character Builder
               </Typography>
-            ))}
+            </Stack>
+            <Stack
+              direction="row"
+              alignItems="stretch"
+              sx={{
+                bgcolor: '#2f2f2f',
+                backgroundImage:
+                  'linear-gradient(90deg, rgba(0,0,0,0.35), rgba(255,255,255,0.04), rgba(0,0,0,0.35))',
+                overflowX: 'auto',
+                maxWidth: '100vw',
+                minWidth: 0,
+                scrollbarWidth: 'none',
+                '&::-webkit-scrollbar': { display: 'none' },
+              }}
+            >
+              {wizardSteps.map((step, index) => (
+                <Box
+                  key={step}
+                  component="button"
+                  type="button"
+                  onClick={() => setActiveStep(index)}
+                  sx={{
+                    minWidth: { xs: 136, sm: 160 },
+                    px: 1.4,
+                    py: 1.6,
+                    border: 0,
+                    bgcolor: 'transparent',
+                    color: index === activeStep ? '#ffffff' : alpha('#ffffff', 0.76),
+                    font: 'inherit',
+                    fontSize: 18,
+                    fontWeight: 850,
+                    textTransform: 'uppercase',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      left: '30%',
+                      right: '30%',
+                      bottom: 8,
+                      height: 4,
+                      bgcolor: index === activeStep ? dndColors.red : 'transparent',
+                    },
+                  }}
+                >
+                  {index + 1}. {step}
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+
+          <Box
+            sx={{
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              pb: 12,
+              bgcolor: '#f4f4f2',
+              color: '#080b0e',
+            }}
+          >
+            <Box sx={{ px: { xs: 2.4, sm: 4 }, py: 2.7 }}>
+              <Box sx={{ mb: 3 }}>
+                <Typography sx={{ color: '#080b0e', fontSize: 22, fontWeight: 950, mb: 0.8 }}>
+                  Character Name
+                </Typography>
+                <Box
+                  component="input"
+                  value={form.name}
+                  onChange={(event) => setField('name', event.target.value)}
+                  sx={wizardInputSx}
+                />
+                <Typography sx={{ mt: 1.2, color: '#212529', fontSize: 15, fontWeight: 850 }}>
+                  SHOW SUGGESTIONS
+                </Typography>
+              </Box>
+
+              {activeStep === 0 ? (
+                <Stack spacing={2.3}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    alignItems="center"
+                    justifyContent="space-between"
+                    gap={1.2}
+                    sx={{
+                      borderBottom: `1px solid ${alpha('#000000', 0.12)}`,
+                      pb: 2,
+                      alignItems: { xs: 'flex-start', sm: 'center' },
+                    }}
+                  >
+                    <Typography sx={{ color: '#050607', fontSize: 27, fontWeight: 950 }}>
+                      Character Level: {totalLevel}
+                    </Typography>
+                    <Typography sx={{ color: '#111', fontSize: 21, fontWeight: 500 }}>
+                      Milestone Advancement
+                    </Typography>
+                  </Stack>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    justifyContent="space-between"
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    gap={1.4}
+                  >
+                    <Box>
+                      <Typography sx={{ color: '#050607', fontSize: 20, fontWeight: 950 }}>
+                        Max Hit Points:{' '}
+                        <Box component="span" sx={{ fontWeight: 500 }}>
+                          {form.abilityScores.con + totalLevel * 6}
+                        </Box>
+                      </Typography>
+                      <Typography sx={{ color: '#050607', fontSize: 20, fontWeight: 950 }}>
+                        Hit Dice:{' '}
+                        <Box component="span" sx={{ fontWeight: 500 }}>
+                          {form.classes
+                            .map((entry) => `${entry.level} ${entry.name || 'class'}`)
+                            .join(' + ')}
+                        </Box>
+                      </Typography>
+                    </Box>
+                    <Button
+                      disabled
+                      sx={{
+                        minHeight: 46,
+                        px: 2.4,
+                        bgcolor: dndColors.red,
+                        color: '#ffffff',
+                        borderRadius: '3px',
+                        fontWeight: 900,
+                        textTransform: 'uppercase',
+                        alignSelf: { xs: 'flex-start', sm: 'center' },
+                      }}
+                    >
+                      Manage HP
+                    </Button>
+                  </Stack>
+                  {form.classes.map((entry, index) => {
+                    const subclassOptions = getSubclassOptionsForClass(
+                      entry.name,
+                      entry.subclass,
+                      subclassOptionsByClassName,
+                    );
+                    const requirement = formatClassRequirement(entry.name);
+                    const requirementMet =
+                      form.classes.length <= 1 ||
+                      meetsClassRequirement(entry.name, form.abilityScores);
+                    return (
+                      <Box
+                        key={`${index}-${entry.name}`}
+                        sx={{
+                          borderTop: `1px solid ${alpha('#000000', 0.11)}`,
+                          pt: 2,
+                        }}
+                      >
+                        <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0 }}>
+                          <Box
+                            sx={{
+                              width: 58,
+                              height: 58,
+                              borderRadius: '4px',
+                              bgcolor: dndColors.chrome,
+                              display: 'grid',
+                              placeItems: 'center',
+                              color: '#ffffff',
+                              fontSize: 26,
+                              fontWeight: 950,
+                            }}
+                          >
+                            {entry.name.slice(0, 1) || '?'}
+                          </Box>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <ClassSelectField
+                              label={index === 0 ? 'Starting Class' : 'Class'}
+                              value={entry.name}
+                              options={resolvedClassOptions}
+                              onChange={(value) => updateClass(index, { name: value })}
+                              mode="wizard"
+                            />
+                            <ClassSelectField
+                              label="Subclass"
+                              value={entry.subclass}
+                              options={subclassOptions}
+                              onChange={(value) => updateClass(index, { subclass: value })}
+                              mode="wizard"
+                            />
+                          </Box>
+                          <Box sx={{ width: { xs: 72, sm: 92 }, flex: '0 0 auto' }}>
+                            <FormField
+                              label="Level"
+                              value={entry.level}
+                              inputMode="numeric"
+                              onChange={(value) => updateClass(index, { level: value })}
+                            />
+                          </Box>
+                          <IconButton
+                            aria-label={`Remove class ${index + 1}`}
+                            disabled={form.classes.length <= 1}
+                            onClick={() => removeClass(index)}
+                            sx={{
+                              color: form.classes.length <= 1 ? '#a8b0b7' : dndColors.red,
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Stack>
+                        {requirement ? (
+                          <Typography
+                            sx={{
+                              color: requirementMet ? '#6d7780' : dndColors.red,
+                              fontSize: 12,
+                              fontWeight: 850,
+                              mt: 1,
+                            }}
+                          >
+                            Multiclass requirement: {requirement}
+                          </Typography>
+                        ) : null}
+                        <Stack direction="row" gap={2} sx={{ mt: 1.6 }}>
+                          <Button
+                            onClick={() => {
+                              setExpandedClassIndex(index);
+                              setClassPanel('features');
+                            }}
+                            sx={wizardSubtabSx(
+                              expandedClassIndex === index && classPanel === 'features',
+                            )}
+                          >
+                            Class Features
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setExpandedClassIndex(index);
+                              setClassPanel('spells');
+                            }}
+                            sx={wizardSubtabSx(
+                              expandedClassIndex === index && classPanel === 'spells',
+                            )}
+                          >
+                            Spells
+                          </Button>
+                        </Stack>
+                        {expandedClassIndex === index ? (
+                          <Stack spacing={1.2} sx={{ mt: 1.4 }}>
+                            {classPanel === 'features' ? (
+                              <>
+                                <WizardFeatureCard title="Hit Points" subtitle="1st level" />
+                                <WizardFeatureCard
+                                  title="Proficiencies"
+                                  subtitle={index === 0 ? '4 Choices • 1st level' : '1st level'}
+                                  body="Armor, weapons, tools, and saving throw proficiencies are derived from the selected class catalog when saved."
+                                />
+                                <WizardFeatureCard
+                                  title={entry.subclass ? `${entry.subclass} Features` : 'Subclass'}
+                                  subtitle={entry.subclass ? 'Selected' : '1 Choice'}
+                                  body="Choose a subclass from the dropdown above. Additional feature text is added from the class catalog when available."
+                                />
+                              </>
+                            ) : (
+                              <>
+                                {form.spells.slice(0, 4).map((spell) => (
+                                  <WizardSpellRow
+                                    key={spell.id}
+                                    spell={spell}
+                                    onTogglePrepared={() => toggleWizardSpellPrepared(spell.id)}
+                                    onRemove={() => removeSpellFromWizard(spell.id)}
+                                  />
+                                ))}
+                                <Button
+                                  startIcon={<AddIcon />}
+                                  onClick={() => setCatalogOpen(true)}
+                                  sx={wizardLinkButtonSx}
+                                >
+                                  Add Spells from Catalog
+                                </Button>
+                              </>
+                            )}
+                          </Stack>
+                        ) : null}
+                      </Box>
+                    );
+                  })}
+                  <Button
+                    startIcon={<AddIcon />}
+                    disabled={totalLevel >= 20}
+                    onClick={addClass}
+                    sx={wizardLinkButtonSx}
+                  >
+                    Add Another Class
+                  </Button>
+                </Stack>
+              ) : null}
+
+              {activeStep === 1 ? (
+                <WizardTextPane
+                  title="Choose Origin: Background"
+                  intro="Check your source settings if you can't find the background you want. Expand your library in the Marketplace for more Background options."
+                >
+                  <FormField
+                    label="Background"
+                    value={form.background}
+                    onChange={(value) => setField('background', value)}
+                  />
+                  <WizardFeatureCard
+                    title="Skill Proficiencies"
+                    body="Insight, Religion, or the proficiencies already tracked on your sheet."
+                  />
+                  <WizardFeatureCard title="Languages" subtitle="Background Language" />
+                  <WizardFeatureCard title="Feature" subtitle={form.background || 'Background'} />
+                </WizardTextPane>
+              ) : null}
+
+              {activeStep === 2 ? (
+                <WizardTextPane
+                  title={form.species || 'Species'}
+                  intro={`${form.species || 'Your species'} traits and story details are tracked here.`}
+                >
+                  <FormField
+                    label="Species"
+                    value={form.species}
+                    onChange={(value) => setField('species', value)}
+                  />
+                  <WizardFeatureCard
+                    title="Species Traits"
+                    body="Ability score increases, movement, senses, and ancestry traits are reflected in the character sheet."
+                  />
+                  <WizardFeatureCard title="Draconic Ancestry" subtitle="1 Choice" />
+                  <WizardFeatureCard title="Breath Weapon" />
+                </WizardTextPane>
+              ) : null}
+
+              {activeStep === 3 ? (
+                <WizardTextPane
+                  title="Set Ability Scores"
+                  intro="Adjust each score directly. Saving throws and skills recalculate from class data elsewhere on the sheet."
+                >
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' },
+                      gap: 1.3,
+                    }}
+                  >
+                    {(Object.keys(abilityLabels) as AbilityKey[]).map((key) => (
+                      <Box
+                        key={key}
+                        sx={{
+                          border: `1px solid ${alpha('#000000', 0.16)}`,
+                          bgcolor: '#ffffff',
+                          p: 1.3,
+                          boxShadow: `0 2px 8px ${alpha('#000000', 0.08)}`,
+                        }}
+                      >
+                        <Typography sx={{ color: '#6d7780', fontWeight: 950, fontSize: 13 }}>
+                          {abilityLabels[key]}
+                        </Typography>
+                        <Box
+                          component="input"
+                          value={form.abilityScores[key]}
+                          inputMode="numeric"
+                          onChange={(event) => setAbilityScore(key, event.target.value)}
+                          sx={{ ...wizardInputSx, mt: 0.6, textAlign: 'center', fontWeight: 950 }}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                </WizardTextPane>
+              ) : null}
+
+              {activeStep === 4 ? (
+                <WizardTextPane
+                  title="Character Details"
+                  intro="Fine tune combat basics and identity."
+                >
+                  <FormField
+                    label="Alignment"
+                    value={form.alignment}
+                    onChange={(value) => setField('alignment', value)}
+                  />
+                  <Stack direction="row" spacing={1}>
+                    <FormField
+                      label="AC"
+                      value={form.armorClass}
+                      inputMode="numeric"
+                      onChange={(value) => setField('armorClass', value)}
+                    />
+                    <FormField
+                      label="Init"
+                      value={form.initiative}
+                      inputMode="numeric"
+                      onChange={(value) => setField('initiative', value)}
+                    />
+                    <FormField
+                      label="Speed"
+                      value={form.speed}
+                      inputMode="numeric"
+                      onChange={(value) => setField('speed', value)}
+                    />
+                  </Stack>
+                  <FormField
+                    label="Proficiency Bonus"
+                    value={form.proficiencyBonus}
+                    inputMode="numeric"
+                    onChange={(value) => setField('proficiencyBonus', value)}
+                  />
+                </WizardTextPane>
+              ) : null}
+
+              {activeStep === 5 ? (
+                <WizardTextPane
+                  title="Add Spells"
+                  intro="Choose spells from the catalog, then mark whether each spell is prepared or in the book."
+                >
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={() => setCatalogOpen(true)}
+                    sx={{ ...wizardLinkButtonSx, alignSelf: 'flex-start' }}
+                  >
+                    Add Spells from Catalog
+                  </Button>
+                  <Stack spacing={1.2}>
+                    {form.spells.map((spell) => (
+                      <WizardSpellRow
+                        key={spell.id}
+                        spell={spell}
+                        onTogglePrepared={() => toggleWizardSpellPrepared(spell.id)}
+                        onRemove={() => removeSpellFromWizard(spell.id)}
+                      />
+                    ))}
+                  </Stack>
+                </WizardTextPane>
+              ) : null}
+
+              {classErrors.length > 0 ? (
+                <Stack spacing={0.35} sx={{ mt: 2 }}>
+                  {classErrors.map((error) => (
+                    <Typography
+                      key={error}
+                      sx={{ color: dndColors.red, fontSize: 13, fontWeight: 900 }}
+                    >
+                      {error}
+                    </Typography>
+                  ))}
+                </Stack>
+              ) : null}
+            </Box>
+          </Box>
+
+          <Stack
+            direction="row"
+            sx={{
+              position: 'sticky',
+              bottom: 0,
+              height: 78,
+              bgcolor: '#2e2e2e',
+              borderTop: `1px solid ${alpha('#ffffff', 0.12)}`,
+              zIndex: 2,
+              pb: 'env(safe-area-inset-bottom)',
+            }}
+          >
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', pl: 2.7 }}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '50%',
+                  bgcolor: dndColors.redDark,
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: '#ffffff',
+                  fontSize: 26,
+                  fontWeight: 950,
+                }}
+              >
+                {activeStep + 1}
+              </Box>
+            </Box>
+            <Button onClick={goPrevious} disabled={activeStep === 0} sx={wizardFooterButtonSx}>
+              &lt; Prev
+            </Button>
+            {activeStep === wizardSteps.length - 1 ? (
+              <Button onClick={onSave} disabled={classErrors.length > 0} sx={wizardFooterButtonSx}>
+                Save
+              </Button>
+            ) : (
+              <Button onClick={goNext} sx={wizardFooterButtonSx}>
+                Next &gt;
+              </Button>
+            )}
           </Stack>
-        ) : null}
-      </Box>
-      <Stack direction="row" spacing={1}>
-        <FormField
-          label="AC"
-          value={form.armorClass}
-          inputMode="numeric"
-          onChange={(value) => setField('armorClass', value)}
-        />
-        <FormField
-          label="Init"
-          value={form.initiative}
-          inputMode="numeric"
-          onChange={(value) => setField('initiative', value)}
-        />
-        <FormField
-          label="Speed"
-          value={form.speed}
-          inputMode="numeric"
-          onChange={(value) => setField('speed', value)}
-        />
-      </Stack>
-      <FormField
-        label="Proficiency Bonus"
-        value={form.proficiencyBonus}
-        inputMode="numeric"
-        onChange={(value) => setField('proficiencyBonus', value)}
+        </Box>
+      </Dialog>
+      <SpellCatalogDialog
+        open={catalogOpen}
+        spells={wizardSpellCatalog}
+        selectedName=""
+        onSelect={addCatalogSpell}
+        onClose={() => setCatalogOpen(false)}
       />
-    </DndEditDialog>
+    </>
+  );
+}
+
+const wizardInputSx = {
+  width: '100%',
+  minHeight: 54,
+  border: `1px solid ${alpha('#000000', 0.16)}`,
+  borderRadius: '3px',
+  bgcolor: '#ffffff',
+  color: '#050607',
+  px: 1.4,
+  font: 'inherit',
+  fontSize: 22,
+  outline: 'none',
+  boxShadow: `inset 0 1px 4px ${alpha('#000000', 0.09)}`,
+  '&:focus': {
+    borderColor: dndColors.red,
+    boxShadow: `0 0 0 2px ${alpha(dndColors.red, 0.18)}`,
+  },
+};
+
+const wizardLinkButtonSx = {
+  color: dndColors.red,
+  fontSize: 18,
+  fontWeight: 850,
+  justifyContent: 'flex-start',
+  textTransform: 'none',
+  '&:hover': { bgcolor: alpha(dndColors.red, 0.08) },
+};
+
+const wizardFooterButtonSx = {
+  minWidth: 128,
+  height: '100%',
+  borderLeft: `1px solid ${alpha('#ffffff', 0.14)}`,
+  borderRadius: 0,
+  color: '#ffffff',
+  fontSize: 19,
+  fontWeight: 950,
+  textTransform: 'uppercase',
+  '&.Mui-disabled': { color: alpha('#ffffff', 0.32) },
+};
+
+function wizardSubtabSx(active: boolean) {
+  return {
+    color: active ? '#050607' : '#7b858e',
+    borderRadius: 0,
+    borderBottom: `4px solid ${active ? dndColors.green : 'transparent'}`,
+    fontSize: 18,
+    fontWeight: 950,
+    textTransform: 'uppercase',
+    px: 0,
+    '&:hover': { bgcolor: 'transparent', color: '#050607' },
+  };
+}
+
+function WizardTextPane({
+  title,
+  intro,
+  children,
+}: {
+  title: string;
+  intro: string;
+  children: ReactNode;
+}) {
+  return (
+    <Stack spacing={2.2}>
+      <Box sx={{ textAlign: 'center', py: 1.8 }}>
+        <Typography sx={{ color: '#050607', fontSize: 32, fontWeight: 500 }}>{title}</Typography>
+      </Box>
+      <Typography sx={{ color: '#111', fontSize: 22, lineHeight: 1.45 }}>{intro}</Typography>
+      {children}
+    </Stack>
+  );
+}
+
+function WizardFeatureCard({
+  title,
+  subtitle,
+  body,
+}: {
+  title: string;
+  subtitle?: string;
+  body?: string;
+}) {
+  return (
+    <Box
+      sx={{
+        bgcolor: '#ffffff',
+        color: '#050607',
+        border: `1px solid ${alpha('#000000', 0.13)}`,
+        boxShadow: `0 2px 10px ${alpha('#000000', 0.1)}`,
+      }}
+    >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 1.8 }}>
+        <Box>
+          <Typography sx={{ color: '#050607', fontSize: 22, fontWeight: 850 }}>{title}</Typography>
+          {subtitle ? (
+            <Typography sx={{ color: '#7b858e', fontSize: 17, fontWeight: 650 }}>
+              {subtitle}
+            </Typography>
+          ) : null}
+        </Box>
+        <Typography sx={{ color: '#9aa3aa', fontSize: 34, lineHeight: 1 }}>⌄</Typography>
+      </Stack>
+      {body ? (
+        <Typography sx={{ px: 1.8, pb: 1.8, color: '#111', fontSize: 17, lineHeight: 1.45 }}>
+          {body}
+        </Typography>
+      ) : null}
+    </Box>
+  );
+}
+
+function WizardSpellRow({
+  spell,
+  onTogglePrepared,
+  onRemove,
+}: {
+  spell: Spell;
+  onTogglePrepared: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      gap={1.4}
+      sx={{
+        bgcolor: '#ffffff',
+        color: '#050607',
+        border: `1px solid ${alpha('#000000', 0.13)}`,
+        boxShadow: `0 2px 10px ${alpha('#000000', 0.1)}`,
+        p: 1.3,
+        flexWrap: { xs: 'wrap', sm: 'nowrap' },
+      }}
+    >
+      <SpellSchoolIcon school={spell.school} size={52} />
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          sx={{
+            color: '#050607',
+            fontSize: 21,
+            fontStyle: 'italic',
+            fontWeight: 850,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {spell.name}
+        </Typography>
+        <Typography sx={{ color: '#7b858e', fontSize: 16, fontWeight: 650 }}>
+          {getSpellCatalogSubtitle(spell)}
+        </Typography>
+      </Box>
+      <Button
+        onClick={onTogglePrepared}
+        sx={{ ...toggleButtonSx(Boolean(spell.prepared)), minWidth: 70 }}
+      >
+        {spell.prepared ? 'Prep' : 'Book'}
+      </Button>
+      <IconButton
+        aria-label={`Remove ${spell.name}`}
+        onClick={onRemove}
+        sx={{ color: dndColors.red }}
+      >
+        <DeleteIcon />
+      </IconButton>
+    </Stack>
   );
 }
 
@@ -5034,15 +5655,25 @@ function ClassSelectField({
   value,
   options,
   onChange,
+  mode = 'default',
 }: {
   label: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
+  mode?: 'default' | 'wizard';
 }) {
   return (
     <Box sx={{ flex: 1, minWidth: 0 }}>
-      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900, mb: 0.5 }}>
+      <Typography
+        sx={{
+          color: mode === 'wizard' ? '#7b858e' : dndColors.muted,
+          fontSize: mode === 'wizard' ? 13 : 12,
+          fontWeight: 900,
+          mb: 0.5,
+          textTransform: mode === 'wizard' ? 'uppercase' : 'none',
+        }}
+      >
         {label}
       </Typography>
       <Box
@@ -5052,18 +5683,20 @@ function ClassSelectField({
         onChange={(event) => onChange(event.target.value)}
         sx={{
           width: '100%',
-          minHeight: 40,
-          border: `1px solid ${dndColors.border}`,
-          borderRadius: '8px',
-          bgcolor: dndColors.panelStrong,
-          color: dndColors.text,
+          minHeight: mode === 'wizard' ? 46 : 40,
+          border: `1px solid ${mode === 'wizard' ? alpha('#000000', 0.16) : dndColors.border}`,
+          borderRadius: mode === 'wizard' ? '3px' : '8px',
+          bgcolor: mode === 'wizard' ? '#ffffff' : dndColors.panelStrong,
+          color: mode === 'wizard' ? '#050607' : dndColors.text,
           px: 1,
           font: 'inherit',
+          fontSize: mode === 'wizard' ? 20 : undefined,
           fontWeight: 800,
           outline: 'none',
+          boxShadow: mode === 'wizard' ? `inset 0 1px 4px ${alpha('#000000', 0.09)}` : 'none',
           '&:focus-visible': {
-            borderColor: dndColors.blue,
-            boxShadow: `0 0 0 2px ${alpha(dndColors.blue, 0.22)}`,
+            borderColor: mode === 'wizard' ? dndColors.red : dndColors.blue,
+            boxShadow: `0 0 0 2px ${alpha(mode === 'wizard' ? dndColors.red : dndColors.blue, 0.22)}`,
           },
           '& option': {
             color: '#11191e',
@@ -7576,6 +8209,10 @@ function DungeonsAndDragons() {
         currentHitDicePools: current.hitPoints.hitDicePools,
         existingFeatureIds: new Set(current.features.map((feature) => feature.id)),
       });
+      const nextProficiencyBonus = parseIntOrFallback(
+        characterForm.proficiencyBonus,
+        current.proficiencyBonus,
+      );
 
       return {
         ...current,
@@ -7588,15 +8225,23 @@ function DungeonsAndDragons() {
         armorClass: parseIntOrFallback(characterForm.armorClass, current.armorClass),
         initiative: parseIntOrFallback(characterForm.initiative, current.initiative),
         speed: parseIntOrFallback(characterForm.speed, current.speed),
-        proficiencyBonus: parseIntOrFallback(
-          characterForm.proficiencyBonus,
-          current.proficiencyBonus,
-        ),
+        proficiencyBonus: nextProficiencyBonus,
         abilities: current.abilities.map((ability) => ({
           ...ability,
+          score: characterForm.abilityScores[ability.key] ?? ability.score,
+          saveBonus:
+            abilityModifier(characterForm.abilityScores[ability.key] ?? ability.score) +
+            (ability.proficientSave ? nextProficiencyBonus : 0),
           proficientSave: derivedClassFields.hasSavingThrowData
             ? derivedClassFields.savingThrowKeys.includes(ability.key)
             : ability.proficientSave,
+        })),
+        skills: current.skills.map((skill) => ({
+          ...skill,
+          bonus:
+            abilityModifier(characterForm.abilityScores[skill.ability] ?? 10) +
+            (skill.proficient ? nextProficiencyBonus : 0) +
+            (skill.expertise ? nextProficiencyBonus : 0),
         })),
         hitPoints: {
           ...current.hitPoints,
@@ -7615,6 +8260,7 @@ function DungeonsAndDragons() {
           ),
         ],
         features: [...current.features, ...derivedClassFields.features],
+        spells: characterForm.spells,
       };
     });
     setCharacterForm(null);
@@ -8129,6 +8775,7 @@ function DungeonsAndDragons() {
           form={characterForm}
           classOptions={dndClassOptions}
           subclassOptionsByClassName={dndSubclassOptionsByClassName}
+          spellCatalog={spellCatalogSource}
           onChange={setCharacterForm}
           onCancel={() => setCharacterForm(null)}
           onSave={saveCharacter}
