@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router';
 
 import Box from '@mui/material/Box';
@@ -644,11 +651,70 @@ function ResultReadoutOverlay({
   isDismissing: boolean;
   onClose: () => void;
 }) {
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const dragStartRef = useRef<{
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    offsetX: number;
+    offsetY: number;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+  } | null>(null);
+
+  useEffect(() => {
+    setDragOffset({ x: 0, y: 0 });
+    dragStartRef.current = null;
+  }, [result?.id]);
+
   if (!result) return null;
+
+  const startDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    const card = event.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const margin = 8;
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      offsetX: dragOffset.x,
+      offsetY: dragOffset.y,
+      minX: margin - rect.left + dragOffset.x,
+      maxX: window.innerWidth - margin - rect.right + dragOffset.x,
+      minY: margin - rect.top + dragOffset.y,
+      maxY: window.innerHeight - margin - rect.bottom + dragOffset.y,
+    };
+    card.setPointerCapture(event.pointerId);
+  };
+
+  const updateDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current;
+    if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+    const nextX = dragStart.offsetX + event.clientX - dragStart.clientX;
+    const nextY = dragStart.offsetY + event.clientY - dragStart.clientY;
+    setDragOffset({
+      x: Math.min(Math.max(nextX, dragStart.minX), dragStart.maxX),
+      y: Math.min(Math.max(nextY, dragStart.minY), dragStart.maxY),
+    });
+  };
+
+  const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current;
+    if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+    dragStartRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  };
 
   return (
     <Box
       aria-live="polite"
+      onPointerDown={startDrag}
+      onPointerMove={updateDrag}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       sx={{
         position: 'fixed',
         left: { xs: 32, sm: 38 },
@@ -659,7 +725,7 @@ function ResultReadoutOverlay({
         width: 'auto',
         maxWidth: { xs: 'none', md: 300 },
         minHeight: 78,
-        transform: 'none',
+        transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
         alignItems: 'flex-start',
         gap: 1.1,
         border: `1.5px solid ${accent}`,
@@ -670,12 +736,19 @@ function ResultReadoutOverlay({
         px: 1.4,
         py: 1,
         pointerEvents: 'auto',
-        transition: 'opacity 180ms ease',
+        touchAction: 'none',
+        userSelect: 'none',
+        cursor: dragStartRef.current ? 'grabbing' : 'grab',
+        transition: 'opacity 180ms ease, box-shadow 160ms ease',
+        '&:active': {
+          cursor: 'grabbing',
+        },
       }}
     >
       <Tooltip title="Close roll result" placement="top">
         <IconButton
           aria-label="Close roll result"
+          onPointerDown={(event) => event.stopPropagation()}
           onClick={onClose}
           sx={{
             position: 'absolute',
