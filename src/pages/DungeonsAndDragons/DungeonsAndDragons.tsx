@@ -1684,6 +1684,7 @@ function DefenseBadge({
 
 const tabOptions: Array<{ value: DndTab; label: string; icon: ReactNode }> = [
   { value: 'abilities', label: 'Stats', icon: <ShieldIcon /> },
+  { value: 'skills', label: 'Skills', icon: <AutoAwesomeIcon /> },
   { value: 'actions', label: 'Actions', icon: <Sword /> },
   { value: 'spells', label: 'Spells', icon: <LocalFireDepartmentIcon /> },
   { value: 'inventory', label: 'Inventory', icon: <Backpack /> },
@@ -1747,7 +1748,7 @@ function BottomNav({
       {tabOptions.map((tab) => {
         const selected =
           activeTab === tab.value ||
-          (tab.value === 'features' && ['skills', 'background', 'notes'].includes(activeTab));
+          (tab.value === 'features' && ['background', 'notes'].includes(activeTab));
         return (
           <Button
             key={tab.value}
@@ -1759,17 +1760,17 @@ function BottomNav({
             }}
             sx={{
               minWidth: 0,
-              minHeight: 58,
+              minHeight: 54,
               borderRadius: '34px',
               color: selected ? dndColors.red : dndColors.text,
               bgcolor: selected ? alpha('#ffffff', 0.13) : 'transparent',
               display: 'flex',
               flexDirection: 'column',
-              gap: 0.3,
+              gap: 0.2,
               textTransform: 'none',
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 800,
-              '& svg': { fontSize: 23 },
+              '& svg': { fontSize: 21 },
               '&:hover': { bgcolor: alpha('#ffffff', 0.1) },
               '&:focus, &:focus-visible': {
                 outline: 'none',
@@ -3686,19 +3687,16 @@ const moreButtonSx = {
   fontWeight: 800,
 };
 
-type MoreDetailTab = Extract<DndTab, 'features' | 'skills' | 'background' | 'notes'>;
+type MoreDetailTab = Extract<DndTab, 'features' | 'background' | 'notes'>;
 
 const moreDetailTabs: Array<{ tab: MoreDetailTab; label: string }> = [
   { tab: 'features', label: 'Features' },
-  { tab: 'skills', label: 'Skills' },
   { tab: 'background', label: 'Background' },
   { tab: 'notes', label: 'Notes' },
 ];
 
 function moreScreenTitle(tab: DndTab) {
   switch (tab) {
-    case 'skills':
-      return 'Skills';
     case 'background':
       return 'Background';
     case 'notes':
@@ -3711,8 +3709,6 @@ function moreScreenTitle(tab: DndTab) {
 
 function moreScreenIcon(tab: DndTab) {
   switch (tab) {
-    case 'skills':
-      return <AutoAwesomeIcon />;
     case 'background':
       return <PersonIcon />;
     case 'notes':
@@ -6622,10 +6618,7 @@ function DungeonsAndDragons() {
         entry.metadata?.type === 'spell' || entry.type === 'spell' || entry.category === 'Spell',
     )
     .filter((entry): entry is SpellCatalogEntry => asNonEmptyString(entry.name) !== null);
-  const spellCatalogSource = mergeSpellCatalogs(
-    dndSpellCatalog,
-    dndSpellOptions,
-  );
+  const spellCatalogSource = mergeSpellCatalogs(dndSpellCatalog, dndSpellOptions);
   const characterClassNames = new Set(
     character.classes
       .map((entry) => asNonEmptyString(entry.name)?.toLowerCase() ?? null)
@@ -7363,13 +7356,10 @@ function DungeonsAndDragons() {
         );
       case 'skills':
         return (
-          <MoreScreen activeTab={tab} onSelectTab={setActiveTab}>
-            <SkillsScreen
-              character={character}
-              onEditSkills={() => setSkillForm(createSkillForm(character))}
-              embedded
-            />
-          </MoreScreen>
+          <SkillsScreen
+            character={character}
+            onEditSkills={() => setSkillForm(createSkillForm(character))}
+          />
         );
       case 'actions':
         return (

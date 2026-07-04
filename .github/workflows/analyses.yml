@@ -5,67 +5,33 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+
 jobs:
-  install:
+  analyze:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: lint
+            command: npm run lint:check
+          - name: prettier
+            command: npm run prettier:check
+          - name: typescript
+            command: npm run ts:check
+          - name: unit tests
+            command: npm run test:unit
     steps:
       - uses: actions/checkout@v4
-      - name: Install Dependencies
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
         run: npm ci
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ github.sha }}
 
-  lint:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cached node modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ github.sha }}
-      - name: Eslint
-        run: npm run lint:check
-
-  prettier:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cached node modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ github.sha }}
-      - name: Prettier
-        run: npm run prettier:check
-
-  typescript:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cached node modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ github.sha }}
-      - name: Typescript
-        run: npm run ts:check
-
-  unit_tests:
-    needs: install
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cached node modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ github.sha }}
-      - name: Unit tests
-        run: npm run test:unit
+      - name: Run ${{ matrix.name }}
+        run: ${{ matrix.command }}
