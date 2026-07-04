@@ -230,7 +230,58 @@ function hasNaturalD20Critical(result: RollResult) {
   return result.rolls.some((roll) => roll.sides === 20 && roll.value === 20);
 }
 
+function getCanvasDiceCenter() {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.querySelector<HTMLCanvasElement>('#tabletop-dice-box canvas');
+  const gl =
+    canvas?.getContext('webgl2', { preserveDrawingBuffer: true }) ??
+    canvas?.getContext('webgl', { preserveDrawingBuffer: true });
+  if (!canvas || !gl) return null;
+
+  const width = gl.drawingBufferWidth;
+  const height = gl.drawingBufferHeight;
+  if (width <= 0 || height <= 0) return null;
+
+  const pixels = new Uint8Array(width * height * 4);
+  try {
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  } catch {
+    return null;
+  }
+
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+  const stride = Math.max(1, Math.ceil(Math.max(width, height) / 320));
+  for (let y = 0; y < height; y += stride) {
+    for (let x = 0; x < width; x += stride) {
+      const index = (y * width + x) * 4;
+      const red = pixels[index];
+      const green = pixels[index + 1];
+      const blue = pixels[index + 2];
+      const alphaValue = pixels[index + 3];
+      if (alphaValue < 24 || red + green + blue < 30) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < minX || maxY < minY) return null;
+  const centerX = ((minX + maxX) / 2 / width) * 100;
+  const centerY = 100 - ((minY + maxY) / 2 / height) * 100;
+  return {
+    x: Math.min(92, Math.max(8, centerX)),
+    y: Math.min(86, Math.max(14, centerY)),
+  };
+}
+
 function getCriticalPulseCenter(result: RollResult) {
+  const canvasCenter = getCanvasDiceCenter();
+  if (canvasCenter) return canvasCenter;
+
   const criticalIndex = result.rolls.findIndex((roll) => roll.sides === 20 && roll.value === 20);
   if (criticalIndex < 0) return { x: 50, y: 42 };
 
@@ -882,7 +933,10 @@ function DiceRoller() {
 
         const result = toRollResult(results);
         if (isValidRollResult(result, dice)) {
-          if (isDndApp && hasNaturalD20Critical(result)) triggerCriticalPulse(result);
+          if (isDndApp && hasNaturalD20Critical(result)) {
+            await waitForNextPaint();
+            triggerCriticalPulse(result);
+          }
           setLastResult(applyMetadata(result));
           return;
         }
@@ -891,7 +945,10 @@ function DiceRoller() {
           result,
         });
         const fallbackResult = createRandomRollResult(dice);
-        if (isDndApp && hasNaturalD20Critical(fallbackResult)) triggerCriticalPulse(fallbackResult);
+        if (isDndApp && hasNaturalD20Critical(fallbackResult)) {
+          await waitForNextPaint();
+          triggerCriticalPulse(fallbackResult);
+        }
         setLastResult(applyMetadata(fallbackResult));
       } catch (error) {
         console.warn('[dice] DiceBox roll failed', error);
