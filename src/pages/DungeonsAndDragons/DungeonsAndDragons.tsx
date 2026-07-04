@@ -1406,6 +1406,13 @@ function navigationTabFor(activeTab: DndTab) {
   return swipeNavigationTabs.includes(activeTab) ? activeTab : 'features';
 }
 
+function blurDndBottomNavFocus() {
+  const activeElement = document.activeElement;
+  if (!(activeElement instanceof HTMLElement)) return;
+  if (activeElement.dataset.dndBottomNavButton !== 'true') return;
+  activeElement.blur();
+}
+
 function BottomNav({
   activeTab,
   onChange,
@@ -1437,7 +1444,12 @@ function BottomNav({
         return (
           <Button
             key={tab.value}
-            onClick={() => onChange(tab.value)}
+            data-dnd-bottom-nav-button="true"
+            disableRipple
+            onClick={(event) => {
+              onChange(tab.value);
+              event.currentTarget.blur();
+            }}
             sx={{
               minWidth: 0,
               minHeight: 58,
@@ -1452,6 +1464,10 @@ function BottomNav({
               fontWeight: 800,
               '& svg': { fontSize: 23 },
               '&:hover': { bgcolor: alpha('#ffffff', 0.1) },
+              '&:focus, &:focus-visible': {
+                outline: 'none',
+                bgcolor: selected ? alpha('#ffffff', 0.13) : 'transparent',
+              },
             }}
           >
             {tab.icon}
@@ -5623,6 +5639,25 @@ function DungeonsAndDragons() {
     const openTabMenu = () => setTabMenuOpen(true);
     window.addEventListener(DND_OPEN_TAB_MENU_EVENT, openTabMenu);
     return () => window.removeEventListener(DND_OPEN_TAB_MENU_EVENT, openTabMenu);
+  }, []);
+
+  useEffect(() => {
+    const clearRestoredNavFocus = () => {
+      blurDndBottomNavFocus();
+      window.requestAnimationFrame(blurDndBottomNavFocus);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') clearRestoredNavFocus();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', clearRestoredNavFocus);
+    window.addEventListener('pageshow', clearRestoredNavFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', clearRestoredNavFocus);
+      window.removeEventListener('pageshow', clearRestoredNavFocus);
+    };
   }, []);
 
   const confirmDelete = (mutation: () => void, options?: { title?: string; body?: string }) =>
