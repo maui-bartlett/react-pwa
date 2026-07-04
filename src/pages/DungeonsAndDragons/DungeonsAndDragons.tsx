@@ -2555,8 +2555,15 @@ function SpellRow({
     <Box
       sx={{ py: 1.25, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}
     >
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Stack>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr) 54px auto', sm: 'minmax(0, 1fr) 62px auto' },
+          columnGap: { xs: 0.65, sm: 0.9 },
+          alignItems: 'center',
+        }}
+      >
+        <Stack sx={{ minWidth: 0 }}>
           <Typography sx={{ color: dndColors.text, fontSize: 18, fontWeight: 900 }}>
             {spell.name}
           </Typography>
@@ -2564,31 +2571,32 @@ function SpellRow({
             {spell.level.toUpperCase()} • {spell.school.toUpperCase()}
           </Typography>
         </Stack>
-        <Stack direction="row" spacing={0.8} alignItems="center">
-          <Button
-            aria-pressed={prepared}
-            onClick={(event) => {
-              event.stopPropagation();
-              onTogglePrepared();
-            }}
-            sx={{
-              minWidth: 0,
-              minHeight: 34,
-              px: 1,
-              borderRadius: '999px',
-              border: `1px solid ${prepared ? dndColors.green : dndColors.border}`,
-              bgcolor: prepared ? alpha(dndColors.green, 0.22) : dndColors.panelStrong,
-              color: prepared ? '#ffffff' : dndColors.muted,
-              fontSize: 11,
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              '&:hover': {
-                bgcolor: prepared ? alpha(dndColors.green, 0.3) : alpha('#ffffff', 0.08),
-              },
-            }}
-          >
-            {prepared ? 'Prep' : 'Book'}
-          </Button>
+        <Button
+          aria-pressed={prepared}
+          onClick={(event) => {
+            event.stopPropagation();
+            onTogglePrepared();
+          }}
+          sx={{
+            minWidth: 0,
+            width: '100%',
+            minHeight: 34,
+            px: 0.75,
+            borderRadius: '999px',
+            border: `1px solid ${prepared ? dndColors.green : dndColors.border}`,
+            bgcolor: prepared ? alpha(dndColors.green, 0.22) : dndColors.panelStrong,
+            color: prepared ? '#ffffff' : dndColors.muted,
+            fontSize: 11,
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            '&:hover': {
+              bgcolor: prepared ? alpha(dndColors.green, 0.3) : alpha('#ffffff', 0.08),
+            },
+          }}
+        >
+          {prepared ? 'Prep' : 'Book'}
+        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           {spell.damage ? (
             <RollBox
               ariaLabel={`Cast ${spell.name}`}
@@ -2623,12 +2631,12 @@ function SpellRow({
               Cast
             </Button>
           )}
-        </Stack>
-      </Stack>
+        </Box>
+      </Box>
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0, 1fr) 86px 70px', sm: 'minmax(0, 1fr) 98px 82px' },
+          gridTemplateColumns: { xs: 'minmax(0, 1fr) 88px 70px', sm: 'minmax(0, 1fr) 102px 82px' },
           columnGap: 1.2,
           alignItems: 'start',
           mt: 1,
