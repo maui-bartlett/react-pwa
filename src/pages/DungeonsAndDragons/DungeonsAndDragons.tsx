@@ -2157,14 +2157,16 @@ function ConditionsScreen({
 function SkillsScreen({
   character,
   onEditSkills,
+  embedded = false,
 }: {
   character: DndCharacter;
   onEditSkills: () => void;
+  embedded?: boolean;
 }) {
   return (
     <>
-      <SectionHeader icon={<AutoAwesomeIcon />} title="Skills" mode="list" />
-      <Box sx={{ px: 1.6, pb: 12 }}>
+      {embedded ? null : <SectionHeader icon={<AutoAwesomeIcon />} title="Skills" mode="list" />}
+      <Box sx={{ px: embedded ? 0 : 1.6, pb: embedded ? 0 : 12 }}>
         <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
           <Button startIcon={<EditIcon />} onClick={onEditSkills} sx={inlineEditButtonSx}>
             Edit Skills
@@ -3459,7 +3461,7 @@ function FeaturesScreen({
   onEditProficiencies,
   onDeleteFeature,
   onUpdateFeatureUses,
-  onSelectTab,
+  embedded = false,
 }: {
   character: DndCharacter;
   classCatalogByName: Map<string, DndClassInfo>;
@@ -3471,23 +3473,12 @@ function FeaturesScreen({
   onEditProficiencies: () => void;
   onDeleteFeature: (id: string) => void;
   onUpdateFeatureUses: (id: string, used: number) => void;
-  onSelectTab: (tab: DndTab) => void;
+  embedded?: boolean;
 }) {
   return (
     <>
-      <SectionHeader icon={<PersonIcon />} title="Features & Traits" />
-      <Box sx={{ px: 1.6, pb: 12 }}>
-        <Stack direction="row" spacing={1} sx={{ mt: 1.4, flexWrap: 'wrap' }}>
-          <Button onClick={() => onSelectTab('skills')} sx={moreButtonSx}>
-            Skills
-          </Button>
-          <Button onClick={() => onSelectTab('background')} sx={moreButtonSx}>
-            Background
-          </Button>
-          <Button onClick={() => onSelectTab('notes')} sx={moreButtonSx}>
-            Notes
-          </Button>
-        </Stack>
+      {embedded ? null : <SectionHeader icon={<PersonIcon />} title="Features & Traits" />}
+      <Box sx={{ px: embedded ? 0 : 1.6, pb: embedded ? 0 : 12 }}>
         <Typography sx={subSectionSx}>Class Attributes</Typography>
         {character.classes.map((entry) => (
           <ClassAttributeBlock
@@ -3695,6 +3686,86 @@ const moreButtonSx = {
   fontWeight: 800,
 };
 
+type MoreDetailTab = Extract<DndTab, 'features' | 'skills' | 'background' | 'notes'>;
+
+const moreDetailTabs: Array<{ tab: MoreDetailTab; label: string }> = [
+  { tab: 'features', label: 'Features' },
+  { tab: 'skills', label: 'Skills' },
+  { tab: 'background', label: 'Background' },
+  { tab: 'notes', label: 'Notes' },
+];
+
+function moreScreenTitle(tab: DndTab) {
+  switch (tab) {
+    case 'skills':
+      return 'Skills';
+    case 'background':
+      return 'Background';
+    case 'notes':
+      return 'Notes';
+    case 'features':
+    default:
+      return 'Features & Traits';
+  }
+}
+
+function moreScreenIcon(tab: DndTab) {
+  switch (tab) {
+    case 'skills':
+      return <AutoAwesomeIcon />;
+    case 'background':
+      return <PersonIcon />;
+    case 'notes':
+      return <MenuBookIcon />;
+    case 'features':
+    default:
+      return <PersonIcon />;
+  }
+}
+
+function moreTabButtonSx(selected: boolean) {
+  return {
+    ...moreButtonSx,
+    minHeight: 42,
+    borderColor: selected ? dndColors.red : dndColors.border,
+    bgcolor: selected ? alpha(dndColors.red, 0.24) : dndColors.panelSoft,
+    color: selected ? '#ffffff' : dndColors.text,
+    boxShadow: selected ? `0 0 0 1px ${alpha(dndColors.red, 0.35)}` : 'none',
+    '&:hover': { bgcolor: selected ? alpha(dndColors.red, 0.32) : '#243640' },
+  };
+}
+
+function MoreScreen({
+  activeTab,
+  onSelectTab,
+  children,
+}: {
+  activeTab: DndTab;
+  onSelectTab: (tab: DndTab) => void;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <SectionHeader icon={moreScreenIcon(activeTab)} title={moreScreenTitle(activeTab)} />
+      <Box sx={{ px: 1.6, pb: 12 }}>
+        <Stack direction="row" spacing={1} sx={{ mt: 1.4, mb: 1.4, flexWrap: 'wrap' }}>
+          {moreDetailTabs.map((tab) => (
+            <Button
+              key={tab.tab}
+              onClick={() => onSelectTab(tab.tab)}
+              aria-pressed={activeTab === tab.tab}
+              sx={moreTabButtonSx(activeTab === tab.tab)}
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </Stack>
+        {children}
+      </Box>
+    </>
+  );
+}
+
 const inlineEditButtonSx = {
   color: dndColors.blue,
   border: `1px solid ${dndColors.border}`,
@@ -3795,14 +3866,16 @@ function TagCloud({ values }: { values: string[] }) {
 function BackgroundScreen({
   character,
   onEditBackground,
+  embedded = false,
 }: {
   character: DndCharacter;
   onEditBackground: () => void;
+  embedded?: boolean;
 }) {
   return (
     <>
-      <SectionHeader icon={<PersonIcon />} title="Background" mode="list" />
-      <Box sx={{ px: 1.6, pb: 12 }}>
+      {embedded ? null : <SectionHeader icon={<PersonIcon />} title="Background" mode="list" />}
+      <Box sx={{ px: embedded ? 0 : 1.6, pb: embedded ? 0 : 12 }}>
         <DndCard title={character.background} sx={{ p: 1.6 }}>
           <Button onClick={onEditBackground} sx={{ ...inlineEditButtonSx, mb: 1 }}>
             Edit Background
@@ -3824,16 +3897,18 @@ function NotesScreen({
   onAddNote,
   onEditNote,
   onDeleteNote,
+  embedded = false,
 }: {
   character: DndCharacter;
   onAddNote: () => void;
   onEditNote: (note: DndCharacter['notes'][number]) => void;
   onDeleteNote: (id: string) => void;
+  embedded?: boolean;
 }) {
   return (
     <>
-      <SectionHeader icon={<MenuBookIcon />} title="Notes" mode="list" />
-      <Box sx={{ px: 1.6, pb: 12 }}>
+      {embedded ? null : <SectionHeader icon={<MenuBookIcon />} title="Notes" mode="list" />}
+      <Box sx={{ px: embedded ? 0 : 1.6, pb: embedded ? 0 : 12 }}>
         <Button
           fullWidth
           startIcon={<AddIcon />}
@@ -7288,10 +7363,13 @@ function DungeonsAndDragons() {
         );
       case 'skills':
         return (
-          <SkillsScreen
-            character={character}
-            onEditSkills={() => setSkillForm(createSkillForm(character))}
-          />
+          <MoreScreen activeTab={tab} onSelectTab={setActiveTab}>
+            <SkillsScreen
+              character={character}
+              onEditSkills={() => setSkillForm(createSkillForm(character))}
+              embedded
+            />
+          </MoreScreen>
         );
       case 'actions':
         return (
@@ -7329,43 +7407,54 @@ function DungeonsAndDragons() {
         );
       case 'features':
         return (
-          <FeaturesScreen
-            character={character}
-            classCatalogByName={dndClassCatalogByName}
-            onAddFeature={addFeature}
-            onEditFeature={(feature) =>
-              setFeatureForm({ ...feature, uses: feature.uses ? { ...feature.uses } : undefined })
-            }
-            onAddFeat={addFeat}
-            onEditFeat={(feat) => setFeatForm({ ...feat })}
-            onDeleteFeat={deleteFeat}
-            onEditProficiencies={() => setProficiencyForm(createProficiencyForm(character))}
-            onDeleteFeature={(id) => deleteById('features', id)}
-            onUpdateFeatureUses={updateFeatureUses}
-            onSelectTab={setActiveTab}
-          />
+          <MoreScreen activeTab={tab} onSelectTab={setActiveTab}>
+            <FeaturesScreen
+              character={character}
+              classCatalogByName={dndClassCatalogByName}
+              onAddFeature={addFeature}
+              onEditFeature={(feature) =>
+                setFeatureForm({
+                  ...feature,
+                  uses: feature.uses ? { ...feature.uses } : undefined,
+                })
+              }
+              onAddFeat={addFeat}
+              onEditFeat={(feat) => setFeatForm({ ...feat })}
+              onDeleteFeat={deleteFeat}
+              onEditProficiencies={() => setProficiencyForm(createProficiencyForm(character))}
+              onDeleteFeature={(id) => deleteById('features', id)}
+              onUpdateFeatureUses={updateFeatureUses}
+              embedded
+            />
+          </MoreScreen>
         );
       case 'background':
         return (
-          <BackgroundScreen
-            character={character}
-            onEditBackground={() => setBackgroundForm(createBackgroundForm(character))}
-          />
+          <MoreScreen activeTab={tab} onSelectTab={setActiveTab}>
+            <BackgroundScreen
+              character={character}
+              onEditBackground={() => setBackgroundForm(createBackgroundForm(character))}
+              embedded
+            />
+          </MoreScreen>
         );
       case 'notes':
         return (
-          <NotesScreen
-            character={character}
-            onAddNote={() =>
-              setNoteForm({
-                id: createEntryId('note'),
-                title: 'New Note',
-                body: '',
-              })
-            }
-            onEditNote={(note) => setNoteForm({ ...note })}
-            onDeleteNote={deleteNote}
-          />
+          <MoreScreen activeTab={tab} onSelectTab={setActiveTab}>
+            <NotesScreen
+              character={character}
+              onAddNote={() =>
+                setNoteForm({
+                  id: createEntryId('note'),
+                  title: 'New Note',
+                  body: '',
+                })
+              }
+              onEditNote={(note) => setNoteForm({ ...note })}
+              onDeleteNote={deleteNote}
+              embedded
+            />
+          </MoreScreen>
         );
       default:
         return <AppMenu activeTab={tab} onChange={setActiveTab} />;
