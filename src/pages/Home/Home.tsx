@@ -525,10 +525,15 @@ function Home() {
                               system.color,
                               0.98,
                             )} 100%)`
-                          : `linear-gradient(180deg, rgba(8,12,19,0.1) 0%, rgba(8,12,19,0.42) 42%, ${alpha(
-                              system.color,
-                              0.96,
-                            )} 100%), url("${system.cover}")`,
+                          : system.visual === 'avatar'
+                            ? `linear-gradient(180deg, rgba(25,13,35,0.44) 0%, rgba(25,13,35,0.72) 30%, ${alpha(
+                                system.color,
+                                0.98,
+                              )} 100%), url("${system.cover}")`
+                            : `linear-gradient(180deg, rgba(8,12,19,0.1) 0%, rgba(8,12,19,0.42) 42%, ${alpha(
+                                system.color,
+                                0.96,
+                              )} 100%), url("${system.cover}")`,
                       md: `linear-gradient(145deg, ${alpha(
                         system.color,
                         0.82,
@@ -603,7 +608,7 @@ function Home() {
                         // the button, so trim the vertical padding to suit it.
                         py: system.visual === 'avatar' ? 0.4 : undefined,
                         borderRadius: 1.4,
-                        bgcolor: '#f8f4ec',
+                        bgcolor: system.visual === 'avatar' ? '#ffffff' : '#f8f4ec',
                         color: system.color,
                         fontWeight: 800,
                         px: { xs: 2.2, md: 2 },
@@ -642,7 +647,7 @@ function Home() {
                             },
                         },
                         '&:hover': {
-                          bgcolor: '#fffaf0',
+                          bgcolor: system.visual === 'avatar' ? '#ffffff' : '#fffaf0',
                         },
                       }}
                     >

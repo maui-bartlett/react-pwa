@@ -230,64 +230,114 @@ function hasNaturalD20Critical(result: RollResult) {
   return result.rolls.some((roll) => roll.sides === 20 && roll.value === 20);
 }
 
-function getCanvasDiceCenter() {
-  if (typeof document === 'undefined') return null;
+type CriticalPulseCenter = { x: number; y: number };
+
+function getCanvasDiceCenters(): CriticalPulseCenter[] {
+  if (typeof document === 'undefined') return [];
   const canvas = document.querySelector<HTMLCanvasElement>('#tabletop-dice-box canvas');
-  const gl =
-    canvas?.getContext('webgl2', { preserveDrawingBuffer: true }) ??
-    canvas?.getContext('webgl', { preserveDrawingBuffer: true });
-  if (!canvas || !gl) return null;
+  // DiceBox's onscreen Babylon engine creates the canvas with preserveDrawingBuffer enabled.
+  const gl = canvas?.getContext('webgl2') ?? canvas?.getContext('webgl');
+  if (!canvas || !gl) return [];
 
   const width = gl.drawingBufferWidth;
   const height = gl.drawingBufferHeight;
-  if (width <= 0 || height <= 0) return null;
+  if (width <= 0 || height <= 0) return [];
 
   const pixels = new Uint8Array(width * height * 4);
   try {
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   } catch {
-    return null;
+    return [];
   }
 
-  let minX = width;
-  let minY = height;
-  let maxX = -1;
-  let maxY = -1;
   const stride = Math.max(1, Math.ceil(Math.max(width, height) / 320));
-  for (let y = 0; y < height; y += stride) {
-    for (let x = 0; x < width; x += stride) {
+  const columns = Math.ceil(width / stride);
+  const rows = Math.ceil(height / stride);
+  const active = new Uint8Array(columns * rows);
+  const visited = new Uint8Array(columns * rows);
+
+  for (let row = 0; row < rows; row += 1) {
+    const y = Math.min(height - 1, row * stride);
+    for (let column = 0; column < columns; column += 1) {
+      const x = Math.min(width - 1, column * stride);
       const index = (y * width + x) * 4;
       const red = pixels[index];
       const green = pixels[index + 1];
       const blue = pixels[index + 2];
       const alphaValue = pixels[index + 3];
       if (alphaValue < 24 || red + green + blue < 30) continue;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
+      active[row * columns + column] = 1;
     }
   }
 
-  if (maxX < minX || maxY < minY) return null;
-  const centerX = ((minX + maxX) / 2 / width) * 100;
-  const centerY = 100 - ((minY + maxY) / 2 / height) * 100;
-  return {
-    x: Math.min(92, Math.max(8, centerX)),
-    y: Math.min(86, Math.max(14, centerY)),
-  };
+  const components: Array<{
+    center: CriticalPulseCenter;
+    count: number;
+    minX: number;
+    minY: number;
+  }> = [];
+  const stack: number[] = [];
+
+  for (let start = 0; start < active.length; start += 1) {
+    if (!active[start] || visited[start]) continue;
+    visited[start] = 1;
+    stack.push(start);
+
+    let count = 0;
+    let minColumn = columns;
+    let maxColumn = -1;
+    let minRow = rows;
+    let maxRow = -1;
+
+    while (stack.length) {
+      const current = stack.pop()!;
+      count += 1;
+      const row = Math.floor(current / columns);
+      const column = current % columns;
+      minColumn = Math.min(minColumn, column);
+      maxColumn = Math.max(maxColumn, column);
+      minRow = Math.min(minRow, row);
+      maxRow = Math.max(maxRow, row);
+
+      for (let yOffset = -1; yOffset <= 1; yOffset += 1) {
+        for (let xOffset = -1; xOffset <= 1; xOffset += 1) {
+          if (xOffset === 0 && yOffset === 0) continue;
+          const nextColumn = column + xOffset;
+          const nextRow = row + yOffset;
+          if (nextColumn < 0 || nextColumn >= columns || nextRow < 0 || nextRow >= rows) continue;
+          const next = nextRow * columns + nextColumn;
+          if (!active[next] || visited[next]) continue;
+          visited[next] = 1;
+          stack.push(next);
+        }
+      }
+    }
+
+    if (count < 6) continue;
+    const centerX = (((minColumn + maxColumn + 1) * stride) / 2 / width) * 100;
+    const centerY = 100 - (((minRow + maxRow + 1) * stride) / 2 / height) * 100;
+    components.push({
+      center: {
+        x: Math.min(92, Math.max(8, centerX)),
+        y: Math.min(86, Math.max(14, centerY)),
+      },
+      count,
+      minX: minColumn,
+      minY: minRow,
+    });
+  }
+
+  const minimumDicePixels = Math.max(8, Math.floor((columns * rows) / 2600));
+  return components
+    .filter((component) => component.count >= minimumDicePixels)
+    .sort((left, right) => left.minY - right.minY || left.minX - right.minX)
+    .map((component) => component.center);
 }
 
-function getCriticalPulseCenter(result: RollResult) {
-  const canvasCenter = getCanvasDiceCenter();
-  if (canvasCenter) return canvasCenter;
-
-  const criticalIndex = result.rolls.findIndex((roll) => roll.sides === 20 && roll.value === 20);
-  if (criticalIndex < 0) return { x: 50, y: 42 };
-
-  const rollCount = Math.max(1, result.rolls.length);
-  const columnCount = Math.min(4, Math.ceil(Math.sqrt(rollCount)));
-  const rowCount = Math.ceil(rollCount / columnCount);
+function getFallbackCriticalPulseCenter(criticalIndex: number, rollCount: number) {
+  const totalRolls = Math.max(1, rollCount);
+  const columnCount = Math.min(4, Math.ceil(Math.sqrt(totalRolls)));
+  const rowCount = Math.ceil(totalRolls / columnCount);
   const column = criticalIndex % columnCount;
   const row = Math.floor(criticalIndex / columnCount);
   const x = ((column + 0.5) / columnCount) * 100;
@@ -297,6 +347,20 @@ function getCriticalPulseCenter(result: RollResult) {
     x: Math.min(84, Math.max(16, x)),
     y: Math.min(70, Math.max(28, y)),
   };
+}
+
+function getCriticalPulseCenters(result: RollResult) {
+  const criticalIndexes = result.rolls
+    .map((roll, index) => (roll.sides === 20 && roll.value === 20 ? index : -1))
+    .filter((index) => index >= 0);
+  if (!criticalIndexes.length) return [];
+
+  const canvasCenters = getCanvasDiceCenters();
+  return criticalIndexes.map(
+    (criticalIndex) =>
+      canvasCenters[Math.min(criticalIndex, canvasCenters.length - 1)] ??
+      getFallbackCriticalPulseCenter(criticalIndex, result.rolls.length),
+  );
 }
 
 function formatRollEquation(result: RollResult) {
@@ -571,14 +635,14 @@ function ResultReadoutOverlay({
 
 function CriticalPulseOverlay({
   activeKey,
-  center,
+  centers,
   trayStyle,
 }: {
   activeKey: number;
-  center: { x: number; y: number };
+  centers: CriticalPulseCenter[];
   trayStyle: DiceTrayStyle;
 }) {
-  if (!activeKey) return null;
+  if (!activeKey || centers.length === 0) return null;
 
   return (
     <Box
@@ -595,34 +659,38 @@ function CriticalPulseOverlay({
         overflow: 'hidden',
       }}
     >
-      <Box
-        sx={{
-          position: 'absolute',
-          left: `${center.x}%`,
-          top: `${center.y}%`,
-          width: 118,
-          height: 118,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${alpha('#ffffff', 0.95)} 0%, ${alpha('#1ea7ff', 0.58)} 28%, ${alpha(DND_DICE_ACCENT, 0.22)} 52%, transparent 72%)`,
-          filter: 'blur(2px)',
-          animation: `${criticalPulseFlash} 620ms ease-out both`,
-        }}
-      />
-      {[0, 130, 260].map((delay, index) => (
-        <Box
-          key={delay}
-          sx={{
-            position: 'absolute',
-            left: `${center.x}%`,
-            top: `${center.y}%`,
-            width: 96 + index * 18,
-            height: 96 + index * 18,
-            borderRadius: '50%',
-            border: `2px solid ${alpha(index === 0 ? '#ffffff' : '#1ea7ff', 0.82)}`,
-            boxShadow: `0 0 18px ${alpha('#ffffff', 0.55)}, 0 0 34px ${alpha('#1ea7ff', 0.5)}, inset 0 0 18px ${alpha(DND_DICE_ACCENT, 0.28)}`,
-            animation: `${criticalPulseWave} 1180ms ${delay}ms cubic-bezier(.08,.72,.16,1) both`,
-          }}
-        />
+      {centers.map((center, pulseIndex) => (
+        <Box key={`${activeKey}-${pulseIndex}`} sx={{ display: 'contents' }}>
+          <Box
+            sx={{
+              position: 'absolute',
+              left: `${center.x}%`,
+              top: `${center.y}%`,
+              width: 118,
+              height: 118,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${alpha('#ffffff', 0.95)} 0%, ${alpha('#1ea7ff', 0.58)} 28%, ${alpha(DND_DICE_ACCENT, 0.22)} 52%, transparent 72%)`,
+              filter: 'blur(2px)',
+              animation: `${criticalPulseFlash} 620ms ease-out both`,
+            }}
+          />
+          {[0, 130, 260].map((delay, index) => (
+            <Box
+              key={`${pulseIndex}-${delay}`}
+              sx={{
+                position: 'absolute',
+                left: `${center.x}%`,
+                top: `${center.y}%`,
+                width: 96 + index * 18,
+                height: 96 + index * 18,
+                borderRadius: '50%',
+                border: `2px solid ${alpha(index === 0 ? '#ffffff' : '#1ea7ff', 0.82)}`,
+                boxShadow: `0 0 18px ${alpha('#ffffff', 0.55)}, 0 0 34px ${alpha('#1ea7ff', 0.5)}, inset 0 0 18px ${alpha(DND_DICE_ACCENT, 0.28)}`,
+                animation: `${criticalPulseWave} 1180ms ${delay}ms cubic-bezier(.08,.72,.16,1) both`,
+              }}
+            />
+          ))}
+        </Box>
       ))}
     </Box>
   );
@@ -642,7 +710,7 @@ function DiceRoller() {
   const [diceTrayStyle, setDiceTrayStyle] = useState<DiceTrayStyle>(defaultDiceTrayStyle);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
   const [criticalPulseKey, setCriticalPulseKey] = useState(0);
-  const [criticalPulseCenter, setCriticalPulseCenter] = useState({ x: 50, y: 42 });
+  const [criticalPulseCenters, setCriticalPulseCenters] = useState<CriticalPulseCenter[]>([]);
   const diceBoxRef = useRef<DiceBoxInstance | null>(null);
   const initialDiceBoxConfigRef = useRef({
     themeColor: appAccent,
@@ -680,7 +748,7 @@ function DiceRoller() {
 
   const triggerCriticalPulse = useCallback((result: RollResult) => {
     window.clearTimeout(criticalPulseTimeoutRef.current);
-    setCriticalPulseCenter(getCriticalPulseCenter(result));
+    setCriticalPulseCenters(getCriticalPulseCenters(result));
     setCriticalPulseKey((key) => key + 1);
     criticalPulseTimeoutRef.current = window.setTimeout(() => setCriticalPulseKey(0), 1500);
   }, []);
@@ -1023,7 +1091,7 @@ function DiceRoller() {
       />
       <CriticalPulseOverlay
         activeKey={criticalPulseKey}
-        center={criticalPulseCenter}
+        centers={criticalPulseCenters}
         trayStyle={diceTrayStyle}
       />
       <ResultReadoutOverlay
