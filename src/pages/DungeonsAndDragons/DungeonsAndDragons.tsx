@@ -2637,7 +2637,10 @@ function SpellRow({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0, 1fr) 88px 70px', sm: 'minmax(0, 1fr) 102px 82px' },
+          gridTemplateColumns: {
+            xs: 'auto auto minmax(0, 1fr) 70px',
+            sm: 'auto auto minmax(0, 1fr) 82px',
+          },
           columnGap: 1.2,
           alignItems: 'start',
           mt: 1,
@@ -2646,6 +2649,7 @@ function SpellRow({
       >
         <TinyStat label="Time" value={spell.castingTime} />
         <TinyStat label="Range" value={spell.range} />
+        <Box aria-hidden="true" />
         <TinyStat label="Hit/DC" value={spell.hitDc} />
       </Box>
     </Box>
