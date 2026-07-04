@@ -75,6 +75,17 @@ async function upsertCatalogRecords(
   records: CatalogRecord[],
   fallbackType: CatalogType,
 ) {
+  const dedupedRecords = new Map<string, CatalogRecord>();
+  for (const record of records) {
+    const key = catalogKey(record, gameSystem, fallbackType);
+    if (key) {
+      dedupedRecords.set(key, {
+        ...dedupedRecords.get(key),
+        ...record,
+      });
+    }
+  }
+
   const existing = await ctx.db
     .query('catalog')
     .withIndex('by_metadataGameSystem', (q) => q.eq('metadata.gameSystem', gameSystem))
@@ -89,21 +100,59 @@ async function upsertCatalogRecords(
   let inserted = 0;
   let updated = 0;
 
-  for (const record of records) {
-    const key = catalogKey(record, gameSystem, fallbackType);
-    if (!key) continue;
+  for (const [key, record] of dedupedRecords.entries()) {
     const normalized = normalizeCatalogRecord(record, gameSystem, fallbackType, now);
     const existingDoc = existingByKey.get(key);
     if (existingDoc) {
       await ctx.db.patch(existingDoc._id, normalized);
       updated += 1;
     } else {
-      await ctx.db.insert('catalog', normalized);
+      const id = await ctx.db.insert('catalog', normalized);
+      existingByKey.set(key, { ...normalized, _id: id, _creationTime: now });
       inserted += 1;
     }
   }
 
-  return { inserted, updated };
+  return { inserted, updated, skippedDuplicates: records.length - dedupedRecords.size };
+}
+
+async function dedupeCatalogRows(ctx: MutationCtx, gameSystem: string, fallbackType: CatalogType) {
+  const rows = await ctx.db
+    .query('catalog')
+    .withIndex('by_metadataGameSystem', (q) => q.eq('metadata.gameSystem', gameSystem))
+    .collect();
+  const grouped = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const key = catalogKey(row as CatalogRecord, gameSystem, fallbackType);
+    if (!key) continue;
+    const group = grouped.get(key) ?? [];
+    group.push(row);
+    grouped.set(key, group);
+  }
+
+  let deleted = 0;
+  let groupsDeduped = 0;
+  for (const group of grouped.values()) {
+    if (group.length <= 1) continue;
+    groupsDeduped += 1;
+    const sorted = [...group].sort((a, b) => {
+      const aUpdatedAt = typeof a.updatedAt === 'number' ? a.updatedAt : 0;
+      const bUpdatedAt = typeof b.updatedAt === 'number' ? b.updatedAt : 0;
+      if (bUpdatedAt !== aUpdatedAt) return bUpdatedAt - aUpdatedAt;
+      return b._creationTime - a._creationTime;
+    });
+    const [keeper, ...duplicates] = sorted;
+    const now = Date.now();
+    const merged = duplicates.reduce<CatalogRecord>(
+      (acc, duplicate) => ({ ...duplicate, ...acc }),
+      keeper as CatalogRecord,
+    );
+    await ctx.db.patch(keeper._id, normalizeCatalogRecord(merged, gameSystem, fallbackType, now));
+    await Promise.all(duplicates.map((duplicate) => ctx.db.delete(duplicate._id)));
+    deleted += duplicates.length;
+  }
+
+  return { deleted, groupsDeduped, remaining: rows.length - deleted };
 }
 
 /**
@@ -174,6 +223,20 @@ export const migrateItemsToCatalog = internalMutation({
       results[gameSystem] = await upsertCatalogRecords(ctx, gameSystem, rows, 'item');
     }
     return results;
+  },
+});
+
+/**
+ * Remove duplicate catalog docs already present in the physical collection.
+ * Rows are considered duplicates by game system + metadata.type + name.
+ */
+export const dedupeCatalog = internalMutation({
+  args: {
+    gameSystem: v.string(),
+    type: v.union(v.literal('item'), v.literal('spell')),
+  },
+  handler: async (ctx, args) => {
+    return await dedupeCatalogRows(ctx, args.gameSystem, args.type);
   },
 });
 
