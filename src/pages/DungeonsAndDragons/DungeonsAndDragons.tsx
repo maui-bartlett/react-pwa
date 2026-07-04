@@ -118,6 +118,12 @@ const campfireFlicker = keyframes`
   78% { transform: translateY(-0.5px) scaleX(0.98) scaleY(1.06); opacity: 1; }
 `;
 
+const initiativePulse = keyframes`
+  0% { transform: translateX(-50%) scale(1); opacity: 0.78; }
+  68% { opacity: 0.28; }
+  100% { transform: translateX(-50%) scale(1.58); opacity: 0; }
+`;
+
 const dndSwipeEditColor = '#687782';
 
 const diceRollBoxGlowSx = {
@@ -1057,7 +1063,7 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
       sx={{
         width: { xs: 81, sm: 113 },
         minWidth: 0,
-        minHeight: 58,
+        height: 48,
         px: { xs: 0.65, sm: 1.1 },
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
@@ -1117,7 +1123,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
         <Box
           sx={{
             position: 'absolute',
-            top: { xs: 0, sm: 3 },
+            top: { xs: -3, sm: 0 },
             left: '50%',
             width: 28,
             height: 34,
@@ -1345,7 +1351,7 @@ function HitPointsButton({
       sx={{
         width: { xs: 104, sm: 124 },
         minWidth: 0,
-        minHeight: 58,
+        height: 48,
         bgcolor: dndColors.panelStrong,
         border: 0,
         borderRadius: '6px',
@@ -1354,37 +1360,41 @@ function HitPointsButton({
         font: 'inherit',
         px: { xs: 0.6, sm: 1 },
         py: 0.55,
-        textAlign: 'center',
+        textAlign: 'left',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
         '&:hover': { bgcolor: '#05090b' },
       }}
     >
-      <Typography
-        sx={{
-          color: dndColors.text,
-          fontSize: { xs: 11, sm: 12 },
-          fontWeight: 900,
-          lineHeight: 1,
-          mb: 0.25,
-        }}
-      >
-        Hit Points
-      </Typography>
-      <Typography
-        sx={{
-          color: dndColors.text,
-          fontSize: { xs: 14, sm: 16 },
-          fontWeight: 900,
-          lineHeight: 1.15,
-          mt: 0.15,
-        }}
-      >
-        {current}/{max}
-      </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.35 }}>
+        <Typography
+          sx={{
+            color: dndColors.text,
+            fontSize: { xs: 11, sm: 12 },
+            fontWeight: 900,
+            lineHeight: 1,
+            textAlign: 'left',
+          }}
+        >
+          HP
+        </Typography>
+        <Typography
+          sx={{
+            color: dndColors.text,
+            fontSize: { xs: 13, sm: 15 },
+            fontWeight: 900,
+            lineHeight: 1,
+            textAlign: 'right',
+          }}
+        >
+          {current}/{max}
+        </Typography>
+      </Stack>
       <LinearProgress
         variant="determinate"
         value={percent}
         sx={{
-          mt: 0.35,
           height: 3,
           bgcolor: dndColors.border,
           '& .MuiLinearProgress-bar': { bgcolor: dndColors.blue },
@@ -1465,6 +1475,26 @@ function DefenseBadge({
         '&:focus-visible > .dnd-defense-badge-box': {
           boxShadow: `0 0 0 3px ${alpha(dndColors.red, 0.45)}`,
         },
+        ...(onRoll && rollFlashing
+          ? {
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                top: compact ? { xs: 2, sm: 3 } : 4,
+                left: '50%',
+                width: badgeSize,
+                height: badgeSize,
+                clipPath:
+                  shape === 'shield'
+                    ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
+                    : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
+                bgcolor: alpha(dndColors.red, 0.62),
+                animation: `${initiativePulse} 620ms ease-out forwards`,
+                pointerEvents: 'none',
+                zIndex: 0,
+              },
+            }
+          : {}),
       }}
     >
       {isArmorClass ? (
@@ -1501,6 +1531,7 @@ function DefenseBadge({
           placeItems: 'center',
           position: 'relative',
           transition: 'border-color 160ms ease, filter 160ms ease, box-shadow 160ms ease',
+          zIndex: 1,
           ...(onRoll
             ? {
                 borderColor: 'transparent',
@@ -1526,7 +1557,7 @@ function DefenseBadge({
                     shape === 'shield'
                       ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
                       : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
-                  bgcolor: dndColors.panelStrong,
+                  bgcolor: rollFlashing ? dndColors.redDark : dndColors.panelStrong,
                 },
                 '&:hover': {
                   filter: `brightness(1.1) drop-shadow(0 0 5px ${alpha('#ffffff', 0.74)}) drop-shadow(0 0 11px ${alpha('#ffffff', 0.38)})`,
