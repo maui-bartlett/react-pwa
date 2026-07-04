@@ -436,6 +436,29 @@ type SpellCatalogEntry = Omit<Spell, 'id' | 'prepared'> & {
   type?: string;
 };
 
+const dndSpellDescriptionsByName: Record<string, string> = {
+  'fire bolt':
+    'Make a ranged spell attack against one creature or object in range. On a hit, the target takes fire damage. Flammable unattended objects can ignite.',
+  'ray of frost':
+    'Make a ranged spell attack against one creature. On a hit, the target takes cold damage and its speed is reduced by 10 feet until the start of your next turn.',
+  'mage hand':
+    'Create a spectral hand at a point within range. You can use it to manipulate objects, open unlocked doors or containers, stow or retrieve items, or pour contents from a vial. It cannot attack, activate magic items, or carry more than 10 pounds.',
+  shield:
+    'When you are hit by an attack or targeted by magic missile, use your reaction to gain +5 AC until the start of your next turn, including against the triggering attack, and take no damage from magic missile.',
+  'absorb elements':
+    'When you take acid, cold, fire, lightning, or thunder damage, use your reaction to gain resistance to that damage type for the triggering damage. The first melee attack you hit with on your next turn deals extra damage of that type.',
+  'silvery barbs':
+    'When a creature you can see succeeds on an attack roll, ability check, or saving throw, force it to reroll and use the lower result, then grant advantage to another creature you can see on its next attack roll, ability check, or saving throw within the spell duration.',
+  'magic missile':
+    'Create three darts of magical force. Each dart hits a creature of your choice that you can see within range and deals force damage. The darts strike simultaneously and can target one creature or several.',
+  'detect magic':
+    'For the duration, sense the presence of magic nearby. You can use your action to see a faint aura around visible magical creatures or objects and learn the school of magic, if any.',
+  'misty step':
+    'Briefly vanish in silvery mist and teleport up to 30 feet to an unoccupied space you can see.',
+  invisibility:
+    'A creature you touch becomes invisible until the spell ends. The spell ends early for a target that attacks or casts a spell.',
+};
+
 const dndSpellCatalog: SpellCatalogEntry[] = [
   {
     name: 'Fire Bolt',
@@ -445,6 +468,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     range: '120 ft.',
     hitDc: '+8',
     damage: '1d10',
+    description: dndSpellDescriptionsByName['fire bolt'],
     classes: ['Wizard'],
   },
   {
@@ -455,6 +479,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     range: '60 ft.',
     hitDc: '+8',
     damage: '1d8',
+    description: dndSpellDescriptionsByName['ray of frost'],
     classes: ['Wizard'],
   },
   {
@@ -464,6 +489,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Action',
     range: '30 ft.',
     hitDc: 'Utility',
+    description: dndSpellDescriptionsByName['mage hand'],
     classes: ['Wizard'],
   },
   {
@@ -473,6 +499,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Reaction',
     range: 'Self',
     hitDc: '+5 AC',
+    description: dndSpellDescriptionsByName.shield,
     classes: ['Wizard'],
   },
   {
@@ -482,6 +509,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Reaction',
     range: 'Self',
     hitDc: 'Resistance',
+    description: dndSpellDescriptionsByName['absorb elements'],
     classes: ['Wizard'],
   },
   {
@@ -491,6 +519,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Reaction',
     range: '60 ft.',
     hitDc: 'Reroll',
+    description: dndSpellDescriptionsByName['silvery barbs'],
     classes: ['Wizard'],
   },
   {
@@ -501,6 +530,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     range: '120 ft.',
     hitDc: 'Auto',
     damage: '3d4+3',
+    description: dndSpellDescriptionsByName['magic missile'],
     classes: ['Wizard'],
   },
   {
@@ -510,6 +540,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Action',
     range: 'Self',
     hitDc: 'Utility',
+    description: dndSpellDescriptionsByName['detect magic'],
     classes: ['Wizard'],
   },
   {
@@ -519,6 +550,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Bonus Action',
     range: 'Self',
     hitDc: 'Utility',
+    description: dndSpellDescriptionsByName['misty step'],
     classes: ['Wizard'],
   },
   {
@@ -528,6 +560,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Action',
     range: 'Touch',
     hitDc: 'Utility',
+    description: dndSpellDescriptionsByName.invisibility,
     classes: ['Wizard'],
   },
 ];
@@ -2357,6 +2390,7 @@ function SpellsScreen({
   onCastSpell: (spell: Spell) => boolean;
 }) {
   const spellSections = createSpellSections(character.spells, character.spellcasting.slots);
+  const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
 
   return (
     <>
@@ -2407,6 +2441,7 @@ function SpellsScreen({
                   <SpellRow
                     spell={spell}
                     spellSlots={character.spellcasting.slots}
+                    onOpenDetails={() => setSelectedSpell(spell)}
                     onTogglePrepared={() => onTogglePrepared(spell.id)}
                     onCast={() => onCastSpell(spell)}
                   />
@@ -2416,6 +2451,7 @@ function SpellsScreen({
           );
         })}
       </Box>
+      <SpellDetailsDialog spell={selectedSpell} onClose={() => setSelectedSpell(null)} />
     </>
   );
 }
@@ -2533,11 +2569,13 @@ function createSpellSections(spells: Spell[], slots: DndCharacter['spellcasting'
 function SpellRow({
   spell,
   spellSlots,
+  onOpenDetails,
   onTogglePrepared,
   onCast,
 }: {
   spell: Spell;
   spellSlots: DndCharacter['spellcasting']['slots'];
+  onOpenDetails: () => void;
   onTogglePrepared: () => void;
   onCast: () => boolean;
 }) {
@@ -2554,7 +2592,26 @@ function SpellRow({
 
   return (
     <Box
-      sx={{ py: 1.25, borderBottom: `1px solid ${dndColors.borderSoft}`, bgcolor: dndColors.page }}
+      role="button"
+      tabIndex={0}
+      onClick={onOpenDetails}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpenDetails();
+        }
+      }}
+      sx={{
+        py: 1.25,
+        borderBottom: `1px solid ${dndColors.borderSoft}`,
+        bgcolor: dndColors.page,
+        cursor: 'pointer',
+        outline: 'none',
+        transition: 'background-color 140ms ease',
+        '&:hover, &:focus-visible': {
+          bgcolor: alpha(dndColors.panelStrong, 0.72),
+        },
+      }}
     >
       <Box
         sx={{
@@ -2591,6 +2648,7 @@ function SpellRow({
             event.stopPropagation();
             onTogglePrepared();
           }}
+          onKeyDown={(event) => event.stopPropagation()}
           sx={{
             minWidth: 0,
             width: '100%',
@@ -2611,6 +2669,8 @@ function SpellRow({
           {prepared ? 'Prep' : 'Book'}
         </Button>
         <Box
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
           sx={{
             display: 'flex',
             width: '100%',
@@ -2676,6 +2736,122 @@ function SpellRow({
       </Box>
     </Box>
   );
+}
+
+function SpellDetailsDialog({ spell, onClose }: { spell: Spell | null; onClose: () => void }) {
+  if (!spell) return null;
+  const details = [
+    { label: 'Level', value: spell.level },
+    { label: 'School', value: spell.school },
+    { label: 'Time', value: spell.castingTime },
+    { label: 'Range', value: spell.range },
+    { label: 'Hit/DC', value: spell.hitDc },
+    ...(spell.damage ? [{ label: 'Damage', value: spell.damage }] : []),
+  ];
+  const description = getSpellDescription(spell);
+
+  return (
+    <Dialog
+      open={Boolean(spell)}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{
+        sx: {
+          borderRadius: '16px',
+          border: `1px solid ${dndColors.border}`,
+          bgcolor: dndColors.panelSoft,
+          color: dndColors.text,
+          boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
+        },
+      }}
+    >
+      <DialogTitle sx={{ pr: 6, fontSize: 22, fontWeight: 950 }}>{spell.name}</DialogTitle>
+      <IconButton
+        aria-label="Close spell details"
+        onClick={onClose}
+        sx={{ position: 'absolute', right: 10, top: 10, color: dndColors.text }}
+      >
+        <X size={22} />
+      </IconButton>
+      <DialogContent sx={{ pt: 0 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 0.8,
+            mb: 1.5,
+          }}
+        >
+          {details.map((detail) => (
+            <Box
+              key={detail.label}
+              sx={{
+                borderRadius: '7px',
+                border: `1px solid ${dndColors.borderSoft}`,
+                bgcolor: alpha('#000000', 0.16),
+                px: 1,
+                py: 0.85,
+              }}
+            >
+              <Typography
+                sx={{
+                  color: dndColors.muted,
+                  fontSize: 10,
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {detail.label}
+              </Typography>
+              <Typography sx={{ color: dndColors.text, fontSize: 14, fontWeight: 900 }}>
+                {detail.value}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+        <Typography
+          sx={{
+            color: dndColors.muted,
+            fontSize: 11,
+            fontWeight: 900,
+            mb: 0.6,
+            textTransform: 'uppercase',
+          }}
+        >
+          Description
+        </Typography>
+        <Typography
+          sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.55, whiteSpace: 'pre-line' }}
+        >
+          {description}
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2.4 }}>
+        <Button
+          onClick={onClose}
+          sx={{
+            minHeight: 38,
+            px: 2,
+            borderRadius: '8px',
+            bgcolor: dndColors.red,
+            color: '#ffffff',
+            fontWeight: 900,
+            '&:hover': { bgcolor: alpha(dndColors.red, 0.82) },
+          }}
+        >
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function getSpellDescription(spell: Spell) {
+  const storedDescription = spell.description?.trim();
+  if (storedDescription) return storedDescription;
+  const catalogDescription = dndSpellDescriptionsByName[spell.name.trim().toLowerCase()];
+  return catalogDescription ?? 'No description has been recorded for this spell yet.';
 }
 
 function getSpellSlotLevel(level: string) {
@@ -5341,6 +5517,7 @@ function SpellEditDialog({
       range: spell.range,
       hitDc: spell.hitDc,
       damage: spell.damage,
+      description: spell.description,
     });
   };
   return (
@@ -5403,6 +5580,12 @@ function SpellEditDialog({
           onChange={(value) => onChange({ ...form, damage: value })}
         />
       </Stack>
+      <MultilineFormField
+        label="Description"
+        value={form.description ?? ''}
+        onChange={(value) => onChange({ ...form, description: value })}
+        minRows={4}
+      />
       <Button
         onClick={() => onChange({ ...form, prepared: !form.prepared })}
         sx={toggleButtonSx(Boolean(form.prepared))}

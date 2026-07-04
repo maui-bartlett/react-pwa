@@ -51,6 +51,7 @@ type Spell = {
   range: string;
   hitDc: string;
   damage?: string;
+  description?: string;
   prepared?: boolean;
 };
 
