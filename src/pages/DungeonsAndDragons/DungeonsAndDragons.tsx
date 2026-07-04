@@ -2560,15 +2560,25 @@ function SpellRow({
         sx={{
           display: 'grid',
           gridTemplateColumns: {
-            xs: 'minmax(96px, 1.2fr) 54px minmax(8px, 0.8fr) auto',
-            sm: 'minmax(140px, 1.2fr) 62px minmax(16px, 0.8fr) auto',
+            xs: 'minmax(0, 1fr) 54px auto',
+            sm: 'minmax(0, 1fr) 62px auto',
           },
           columnGap: { xs: 0.65, sm: 0.9 },
           alignItems: 'center',
         }}
       >
         <Stack sx={{ minWidth: 0 }}>
-          <Typography sx={{ color: dndColors.text, fontSize: 18, fontWeight: 900 }}>
+          <Typography
+            sx={{
+              minWidth: 0,
+              overflow: 'hidden',
+              color: dndColors.text,
+              fontSize: { xs: 17, sm: 18 },
+              fontWeight: 900,
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {spell.name}
           </Typography>
           <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
@@ -2600,7 +2610,6 @@ function SpellRow({
         >
           {prepared ? 'Prep' : 'Book'}
         </Button>
-        <Box aria-hidden="true" />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           {spell.damage ? (
             <RollBox
@@ -2645,7 +2654,7 @@ function SpellRow({
             xs: 'auto auto minmax(0, 1fr) 70px',
             sm: 'auto auto minmax(0, 1fr) 82px',
           },
-          columnGap: 1.2,
+          columnGap: { xs: 1.8, sm: 2 },
           alignItems: 'start',
           mt: 1,
           pr: { xs: 0.4, sm: 0.8 },

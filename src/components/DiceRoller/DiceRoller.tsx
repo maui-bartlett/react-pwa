@@ -224,6 +224,15 @@ function getThemeColor(fallback: string) {
   return document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? fallback;
 }
 
+function hasDuplicateDieSizes(dice: RollDie[]) {
+  const seen = new Set<DieSize>();
+  return dice.some((die) => {
+    if (seen.has(die.sides)) return true;
+    seen.add(die.sides);
+    return false;
+  });
+}
+
 function toDiceBoxNotation(dice: RollDie[], themeColor: string, identifyIndividualDice = false) {
   if (identifyIndividualDice) {
     return dice.map((die, index) => ({
@@ -1114,7 +1123,7 @@ function DiceRoller() {
       await fadeOutDisplayedRoll();
       if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
 
-      const notation = toDiceBoxNotation(dice, accent, isDndApp);
+      const notation = toDiceBoxNotation(dice, accent, isDndApp || hasDuplicateDieSizes(dice));
       setLastResult(null);
       setIsResultDismissing(false);
       setIsRolling(true);
@@ -1286,7 +1295,7 @@ function DiceRoller() {
                     cursor: isDiceBoxReady && !isRolling ? 'pointer' : 'default',
                     font: 'inherit',
                     opacity: isDiceBoxReady && !isRolling ? 1 : 0.72,
-                    overflow: 'hidden',
+                    overflow: 'visible',
                     p: 0,
                     pointerEvents: 'auto',
                     transformOrigin: 'right center',
@@ -1298,6 +1307,9 @@ function DiceRoller() {
                       display: 'grid',
                       height: '100%',
                       placeItems: 'center',
+                      overflow: 'hidden',
+                      borderTopLeftRadius: '999px',
+                      borderBottomLeftRadius: '999px',
                     }}
                   >
                     <DieGlyph sides={20} size={34} />
@@ -1316,6 +1328,9 @@ function DiceRoller() {
                       justifyItems: 'start',
                       alignItems: 'center',
                       pl: 1.2,
+                      overflow: 'hidden',
+                      borderTopRightRadius: '999px',
+                      borderBottomRightRadius: '999px',
                     }}
                   >
                     <Typography
@@ -1476,7 +1491,7 @@ function DiceRoller() {
                   background: accent,
                   boxShadow: `0 12px 28px ${alpha(theme.palette.common.black, 0.34)}`,
                   color: theme.palette.common.white,
-                  overflow: 'hidden',
+                  overflow: 'visible',
                   pointerEvents: 'auto',
                   '&:hover': {
                     background: accent,
