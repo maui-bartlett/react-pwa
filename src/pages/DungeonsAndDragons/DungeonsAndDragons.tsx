@@ -1385,14 +1385,35 @@ function DefenseBadge({
           bgcolor: dndColors.panelStrong,
           display: 'grid',
           placeItems: 'center',
+          position: 'relative',
           transition: 'border-color 160ms ease, filter 160ms ease, box-shadow 160ms ease',
           ...(onRoll
             ? {
-                borderColor: alpha('#ffffff', 0.72),
-                filter: `drop-shadow(0 0 4px ${alpha('#ffffff', 0.55)}) drop-shadow(0 0 9px ${alpha('#ffffff', 0.28)})`,
-                boxShadow: `inset 0 0 0 1px ${alpha(dndColors.red, 0.32)}`,
+                borderColor: 'transparent',
+                bgcolor: 'transparent',
+                filter: `drop-shadow(0 0 4px ${alpha('#ffffff', 0.68)}) drop-shadow(0 0 10px ${alpha('#ffffff', 0.34)})`,
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 0,
+                  clipPath:
+                    shape === 'shield'
+                      ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
+                      : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
+                  bgcolor: alpha('#ffffff', 0.95),
+                },
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  inset: 2,
+                  clipPath:
+                    shape === 'shield'
+                      ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
+                      : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
+                  bgcolor: dndColors.panelStrong,
+                },
                 '&:hover': {
-                  filter: `brightness(1.1) drop-shadow(0 0 5px ${alpha('#ffffff', 0.62)}) drop-shadow(0 0 10px ${alpha('#ffffff', 0.32)})`,
+                  filter: `brightness(1.1) drop-shadow(0 0 5px ${alpha('#ffffff', 0.74)}) drop-shadow(0 0 11px ${alpha('#ffffff', 0.38)})`,
                 },
               }
             : {}),
@@ -1403,6 +1424,8 @@ function DefenseBadge({
             color: dndColors.text,
             fontSize: compact ? { xs: 20, sm: 24 } : 27,
             fontWeight: 900,
+            position: 'relative',
+            zIndex: 1,
           }}
         >
           {value}
