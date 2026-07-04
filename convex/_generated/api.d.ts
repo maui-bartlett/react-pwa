@@ -11,9 +11,12 @@
 import type * as appVersion from "../appVersion.js";
 import type * as auth from "../auth.js";
 import type * as campaigns from "../campaigns.js";
+import type * as catalog from "../catalog.js";
 import type * as characters from "../characters.js";
 import type * as classes from "../classes.js";
+import type * as data_dungeonsAndDragonsSpells from "../data/dungeonsAndDragonsSpells.js";
 import type * as data_fabulaUltimaItems from "../data/fabulaUltimaItems.js";
+import type * as data_openDndSpellCatalog from "../data/openDndSpellCatalog.js";
 import type * as gameSystems from "../gameSystems.js";
 import type * as http from "../http.js";
 import type * as invites from "../invites.js";
@@ -34,9 +37,12 @@ declare const fullApi: ApiFromModules<{
   appVersion: typeof appVersion;
   auth: typeof auth;
   campaigns: typeof campaigns;
+  catalog: typeof catalog;
   characters: typeof characters;
   classes: typeof classes;
+  "data/dungeonsAndDragonsSpells": typeof data_dungeonsAndDragonsSpells;
   "data/fabulaUltimaItems": typeof data_fabulaUltimaItems;
+  "data/openDndSpellCatalog": typeof data_openDndSpellCatalog;
   gameSystems: typeof gameSystems;
   http: typeof http;
   invites: typeof invites;

@@ -69,7 +69,6 @@ import {
   normalizeDndCharacter,
 } from './atoms';
 import { deriveDndClassFields, formatSpellcasting } from './classDerivation';
-import { openDndSpellCatalog } from './openDndSpellCatalog';
 import { DND_SCHEMA_VERSION, deserializeDndCharacter, serializeDndCharacter } from './persistence';
 import { applyDndRest, hitDieAverageHeal, spendDndHitDie } from './rest';
 import type { DndRestType } from './rest';
@@ -434,6 +433,13 @@ const MAX_ROLL_DICE = 20;
 type SpellCatalogEntry = Omit<Spell, 'id' | 'prepared'> & {
   classes?: string[];
   category?: string;
+  metadata?: {
+    gameSystem?: string;
+    type?: string;
+  };
+  meta?: {
+    gameSystem?: string;
+  };
   type?: string;
 };
 
@@ -590,11 +596,6 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     classes: ['Wizard'],
   },
 ];
-
-const openDndSpellCatalogEntries: SpellCatalogEntry[] = openDndSpellCatalog.map((spell) => ({
-  ...spell,
-  classes: [...spell.classes],
-}));
 
 function mergeSpellCatalogs(...catalogs: SpellCatalogEntry[][]) {
   const byName = new Map<string, SpellCatalogEntry>();
@@ -3225,10 +3226,7 @@ function formatSpellSubtitle(spell: Spell) {
 
 function getKnownSpellData(name: string) {
   const normalized = name.trim().toLowerCase();
-  return (
-    dndSpellCatalog.find((spell) => spell.name.trim().toLowerCase() === normalized) ??
-    openDndSpellCatalogEntries.find((spell) => spell.name.trim().toLowerCase() === normalized)
-  );
+  return dndSpellCatalog.find((spell) => spell.name.trim().toLowerCase() === normalized);
 }
 
 function getSpellDescription(spell: Spell) {
@@ -6540,15 +6538,17 @@ function DungeonsAndDragons() {
       return [key, Array.from(new Set(options))] as [string, string[]];
     }),
   );
-  const dndCatalogItems = useQuery(api.items.listByGameSystem, {
+  const dndCatalogItems = useQuery(api.catalog.listByGameSystem, {
     gameSystem: DND_GAME_SYSTEM,
-  }) as Array<SpellCatalogEntry & { meta?: { gameSystem?: string } }> | undefined;
+  }) as SpellCatalogEntry[] | undefined;
   const dndSpellOptions = (dndCatalogItems ?? [])
-    .filter((entry) => entry.type === 'spell' || entry.category === 'Spell')
+    .filter(
+      (entry) =>
+        entry.metadata?.type === 'spell' || entry.type === 'spell' || entry.category === 'Spell',
+    )
     .filter((entry): entry is SpellCatalogEntry => asNonEmptyString(entry.name) !== null);
   const spellCatalogSource = mergeSpellCatalogs(
     dndSpellCatalog,
-    openDndSpellCatalogEntries,
     dndSpellOptions,
   );
   const characterClassNames = new Set(

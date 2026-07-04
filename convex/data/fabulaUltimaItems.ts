@@ -1,7 +1,7 @@
 // AUTO-GENERATED from fabula_ultima_comprehensive_equipment_items.json
 // (source: Fabula Ultima guide). Flattened across weapons/armors/shields/
 // accessories/consumables/services/transports; each carries a `type` field.
-// Seeded into the `items` Convex table by items.ts:seedItems.
+// Seeded into the `catalog` Convex table by catalog.ts:seedFabulaUltimaItems.
 
 export type FabulaUltimaItem = {
   name: string;

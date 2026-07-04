@@ -42,7 +42,7 @@ function ItemPickerDialog({
 }: ItemPickerDialogProps) {
   const fabUTokens = useFabUTokens();
   const [search, setSearch] = useState('');
-  const items = useQuery(api.items.listByGameSystem, {
+  const items = useQuery(api.catalog.listByGameSystem, {
     gameSystem: FABULA_ULTIMA_GAME_SYSTEM,
   }) as CatalogItem[] | undefined;
 

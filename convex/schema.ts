@@ -45,10 +45,16 @@ export default defineSchema({
 
   gameSystems: defineTable(v.any()).index('by_systemId', ['id']),
 
-  // Catalog of selectable equipment/items per game system (e.g. Fabula Ultima
-  // weapons/armor/etc.). Item shape varies by type, so stored as `v.any()`
-  // alongside a `meta.gameSystem` tag.
+  // Legacy catalog table retained as a safe migration source. New reads and
+  // writes use `catalog` below.
   items: defineTable(v.any()).index('by_metaGameSystem', ['meta.gameSystem']),
+
+  // Catalog of selectable equipment/items/spells per game system. Shape varies
+  // by type, so stored as `v.any()` alongside `metadata.gameSystem` and
+  // `metadata.type` tags. `meta.gameSystem` remains populated for older rows.
+  catalog: defineTable(v.any())
+    .index('by_metadataGameSystem', ['metadata.gameSystem'])
+    .index('by_metadataGameSystem_type', ['metadata.gameSystem', 'metadata.type']),
 
   // Small key/value singleton store. Currently holds the latest published
   // PWA build version so open clients can be prompted to update in real time.

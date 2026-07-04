@@ -1,8 +1,15 @@
 import type { EquipmentItem } from './types';
 
-/** A Fabula Ultima catalog item as returned by `items.listByGameSystem`. */
+/** A Fabula Ultima catalog item as returned by `catalog.listByGameSystem`. */
 export type CatalogItem = {
   _id?: string;
+  metadata?: {
+    gameSystem?: string;
+    type?: string;
+  };
+  meta?: {
+    gameSystem?: string;
+  };
   name: string;
   type: string;
   category?: string;
