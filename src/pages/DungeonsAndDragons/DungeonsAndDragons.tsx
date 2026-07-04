@@ -879,6 +879,7 @@ function SectionHeader({
 
 function HeroHeader({
   character,
+  onEditCharacter,
   onEditHitPoints,
   onOpenRest,
   onToggleInspiration,
@@ -886,6 +887,7 @@ function HeroHeader({
   accountAction,
 }: {
   character: DndCharacter;
+  onEditCharacter: () => void;
   onEditHitPoints: () => void;
   onOpenRest: () => void;
   onToggleInspiration: () => void;
@@ -920,20 +922,39 @@ function HeroHeader({
           spacing={0.2}
           sx={{ minWidth: 0, pl: { xs: 0.45, sm: 0.6 } }}
         >
-          <Typography
-            sx={{
-              color: dndColors.text,
-              fontSize: 21,
-              fontWeight: 800,
-              lineHeight: 1.1,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              width: '100%',
-            }}
-          >
-            {character.name}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={0.65} sx={{ maxWidth: '100%' }}>
+            <Typography
+              sx={{
+                color: dndColors.text,
+                fontSize: 21,
+                fontWeight: 800,
+                lineHeight: 1.1,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+              }}
+            >
+              {character.name}
+            </Typography>
+            <IconButton
+              aria-label="Edit character"
+              onClick={onEditCharacter}
+              sx={{
+                width: 26,
+                height: 26,
+                flex: '0 0 auto',
+                borderRadius: '7px',
+                color: dndColors.text,
+                bgcolor: alpha('#ffffff', 0.1),
+                '&:hover': {
+                  bgcolor: alpha('#ffffff', 0.16),
+                },
+              }}
+            >
+              <EditIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Stack>
           <Box
             sx={{
               color: dndColors.muted,
@@ -2110,13 +2131,15 @@ function AttackRow({ attack, onToggleEquipped }: { attack: Attack; onToggleEquip
           spacer
         </Typography>
       </Stack>
-      <Stack alignItems="center" spacing={0.35}>
-        <RollBox
-          ariaLabel={`Roll ${attack.name} damage`}
-          onRoll={() => rollDiceExpression(`${attack.name} Damage`, attack.damage)}
-        >
-          {attack.damage}
-        </RollBox>
+      <Stack alignItems="center" spacing={0}>
+        <Box sx={{ width: '100%', mb: '5px' }}>
+          <RollBox
+            ariaLabel={`Roll ${attack.name} damage`}
+            onRoll={() => rollDiceExpression(`${attack.name} Damage`, attack.damage)}
+          >
+            {attack.damage}
+          </RollBox>
+        </Box>
         <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, lineHeight: 1 }}>
           {formatDamageTypeLabel(attack.damageType)}
         </Typography>
@@ -2176,7 +2199,7 @@ function RollBox({
         fontSize: 18,
         fontWeight: 900,
         bgcolor: alpha('#000000', 0.08),
-        padding: `3px 8px 5px 8px`,
+        padding: '4px 8px',
         cursor: onRoll ? 'pointer' : 'default',
         ...diceRollBoxGlowSx,
         '&:hover': onRoll ? { borderColor: dndColors.blue, color: dndColors.blue } : undefined,
@@ -6373,6 +6396,7 @@ function DungeonsAndDragons() {
         <Box sx={{ height: '100%', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <HeroHeader
             character={character}
+            onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
             onOpenRest={() => setRestOpen(true)}
             onToggleInspiration={toggleInspiration}
