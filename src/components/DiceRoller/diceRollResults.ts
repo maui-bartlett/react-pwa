@@ -8,7 +8,7 @@ type RollDie = {
 
 type RollResult = {
   id: number;
-  rolls: Array<{ sides: DieSize; value: number }>;
+  rolls: Array<{ sides: DieSize; value: number; rollId?: number | string; themeColor?: string }>;
   label?: string;
   modifier?: number;
   total: number;
@@ -17,13 +17,17 @@ type RollResult = {
 type DiceBoxRoll = {
   rolls?: Array<{
     dieType?: string;
+    rollId?: number | string;
     sides?: number | string;
+    themeColor?: string;
     value?: number;
     result?: number;
   }>;
   dieType?: string;
   result?: number;
+  rollId?: number | string;
   sides?: number | string;
+  themeColor?: string;
   value?: number;
 };
 
@@ -44,33 +48,50 @@ function normalizeRollValue(sides: DieSize, value: number) {
   return value;
 }
 
+function withRollIdentity(
+  roll: { sides: DieSize; value: number },
+  options: { rollId?: number | string; themeColor?: string },
+) {
+  return {
+    ...roll,
+    ...(options.rollId !== undefined ? { rollId: options.rollId } : {}),
+    ...(options.themeColor ? { themeColor: options.themeColor } : {}),
+  };
+}
+
 function toRollResult(groups: DiceBoxRoll[]): RollResult {
   const rolls = groups.flatMap((group) => {
     if (!group.rolls?.length) {
       const sides = normalizeDieSize(group.sides ?? group.dieType);
       return [
-        {
-          sides,
-          value: normalizeRollValue(sides, getRollValue(group.value, group.result)),
-        },
+        withRollIdentity(
+          {
+            sides,
+            value: normalizeRollValue(sides, getRollValue(group.value, group.result)),
+          },
+          { rollId: group.rollId, themeColor: group.themeColor },
+        ),
       ];
     }
 
     return group.rolls.map((roll) => {
       const isSingleDieGroup = group.rolls?.length === 1;
       const sides = normalizeDieSize(roll.sides ?? roll.dieType ?? group.sides ?? group.dieType);
-      return {
-        sides,
-        value: normalizeRollValue(
+      return withRollIdentity(
+        {
           sides,
-          getRollValue(
-            roll.value,
-            roll.result,
-            isSingleDieGroup ? group.value : undefined,
-            isSingleDieGroup ? group.result : undefined,
+          value: normalizeRollValue(
+            sides,
+            getRollValue(
+              roll.value,
+              roll.result,
+              isSingleDieGroup ? group.value : undefined,
+              isSingleDieGroup ? group.result : undefined,
+            ),
           ),
-        ),
-      };
+        },
+        { rollId: roll.rollId ?? group.rollId, themeColor: roll.themeColor ?? group.themeColor },
+      );
     });
   });
 

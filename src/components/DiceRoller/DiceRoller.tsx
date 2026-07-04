@@ -111,6 +111,18 @@ const DND_DICE_PANEL = '#11191e';
 const DND_DICE_CHROME = '#22313a';
 const DND_DICE_PANEL_STRONG = '#0b1114';
 const DND_DICE_TEXT = '#f2f5f6';
+const DND_DICE_IDENTIFICATION_COLORS = [
+  '#e40712',
+  '#b8141d',
+  '#ff2d3a',
+  '#951017',
+  '#d9462c',
+  '#aa184c',
+  '#f25454',
+  '#7f131a',
+  '#c71f2d',
+  '#ef5a33',
+] as const;
 
 function getUpperLeftStartPosition(): [number, number, number] {
   let aspect = 1;
@@ -212,7 +224,15 @@ function getThemeColor(fallback: string) {
   return document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? fallback;
 }
 
-function toDiceBoxNotation(dice: RollDie[], themeColor: string) {
+function toDiceBoxNotation(dice: RollDie[], themeColor: string, identifyIndividualDice = false) {
+  if (identifyIndividualDice) {
+    return dice.map((die, index) => ({
+      sides: die.sides,
+      qty: 1,
+      themeColor: DND_DICE_IDENTIFICATION_COLORS[index % DND_DICE_IDENTIFICATION_COLORS.length],
+    }));
+  }
+
   return dieSizes
     .map((sides) => ({
       sides,
@@ -231,8 +251,31 @@ function hasNaturalD20Critical(result: RollResult) {
 }
 
 type CriticalPulseCenter = { x: number; y: number };
+type CanvasDiceCenter = CriticalPulseCenter & {
+  color?: { red: number; green: number; blue: number };
+};
 
-function getCanvasDiceCenters(): CriticalPulseCenter[] {
+function parseHexColor(value: string | undefined) {
+  if (!value) return null;
+  const normalized = value.trim().replace(/^#/, '');
+  if (!/^[\da-f]{6}$/i.test(normalized)) return null;
+  return {
+    red: Number.parseInt(normalized.slice(0, 2), 16),
+    green: Number.parseInt(normalized.slice(2, 4), 16),
+    blue: Number.parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function getColorDistance(
+  left: { red: number; green: number; blue: number },
+  right: { red: number; green: number; blue: number },
+) {
+  return (
+    (left.red - right.red) ** 2 + (left.green - right.green) ** 2 + (left.blue - right.blue) ** 2
+  );
+}
+
+function getCanvasDiceCenters(): CanvasDiceCenter[] {
   if (typeof document === 'undefined') return [];
   const canvas = document.querySelector<HTMLCanvasElement>('#tabletop-dice-box canvas');
   // DiceBox's onscreen Babylon engine creates the canvas with preserveDrawingBuffer enabled.
@@ -271,7 +314,7 @@ function getCanvasDiceCenters(): CriticalPulseCenter[] {
   }
 
   const components: Array<{
-    center: CriticalPulseCenter;
+    center: CanvasDiceCenter;
     count: number;
     minX: number;
     minY: number;
@@ -288,6 +331,10 @@ function getCanvasDiceCenters(): CriticalPulseCenter[] {
     let maxColumn = -1;
     let minRow = rows;
     let maxRow = -1;
+    let redTotal = 0;
+    let greenTotal = 0;
+    let blueTotal = 0;
+    let colorCount = 0;
 
     while (stack.length) {
       const current = stack.pop()!;
@@ -298,6 +345,19 @@ function getCanvasDiceCenters(): CriticalPulseCenter[] {
       maxColumn = Math.max(maxColumn, column);
       minRow = Math.min(minRow, row);
       maxRow = Math.max(maxRow, row);
+
+      const sampleX = Math.min(width - 1, column * stride);
+      const sampleY = Math.min(height - 1, row * stride);
+      const pixelIndex = (sampleY * width + sampleX) * 4;
+      const red = pixels[pixelIndex];
+      const green = pixels[pixelIndex + 1];
+      const blue = pixels[pixelIndex + 2];
+      if (red > green * 1.08 && red > blue * 1.08 && red > 40) {
+        redTotal += red;
+        greenTotal += green;
+        blueTotal += blue;
+        colorCount += 1;
+      }
 
       for (let yOffset = -1; yOffset <= 1; yOffset += 1) {
         for (let xOffset = -1; xOffset <= 1; xOffset += 1) {
@@ -320,6 +380,13 @@ function getCanvasDiceCenters(): CriticalPulseCenter[] {
       center: {
         x: Math.min(92, Math.max(8, centerX)),
         y: Math.min(86, Math.max(14, centerY)),
+        color: colorCount
+          ? {
+              red: redTotal / colorCount,
+              green: greenTotal / colorCount,
+              blue: blueTotal / colorCount,
+            }
+          : undefined,
       },
       count,
       minX: minColumn,
@@ -350,17 +417,45 @@ function getFallbackCriticalPulseCenter(criticalIndex: number, rollCount: number
 }
 
 function getCriticalPulseCenters(result: RollResult) {
-  const criticalIndexes = result.rolls
-    .map((roll, index) => (roll.sides === 20 && roll.value === 20 ? index : -1))
-    .filter((index) => index >= 0);
+  const criticalRolls = result.rolls
+    .map((roll, index) => ({ ...roll, index }))
+    .filter((roll) => roll.sides === 20 && roll.value === 20);
+  const criticalIndexes = criticalRolls.map((roll) => roll.index);
   if (!criticalIndexes.length) return [];
 
   const canvasCenters = getCanvasDiceCenters();
-  return criticalIndexes.map(
-    (criticalIndex) =>
-      canvasCenters[Math.min(criticalIndex, canvasCenters.length - 1)] ??
-      getFallbackCriticalPulseCenter(criticalIndex, result.rolls.length),
-  );
+  const usedCenters = new Set<number>();
+
+  return criticalRolls.map((criticalRoll) => {
+    const targetColor = parseHexColor(criticalRoll.themeColor);
+    if (targetColor) {
+      const match = canvasCenters
+        .map((center, centerIndex) => ({
+          center,
+          centerIndex,
+          distance: center.color
+            ? getColorDistance(center.color, targetColor)
+            : Number.POSITIVE_INFINITY,
+        }))
+        .filter(
+          ({ centerIndex, distance }) => !usedCenters.has(centerIndex) && Number.isFinite(distance),
+        )
+        .sort((left, right) => left.distance - right.distance)[0];
+
+      if (match) {
+        usedCenters.add(match.centerIndex);
+        return match.center;
+      }
+    }
+
+    const orderedCenterIndex = Math.min(criticalRoll.index, canvasCenters.length - 1);
+    if (orderedCenterIndex >= 0 && !usedCenters.has(orderedCenterIndex)) {
+      usedCenters.add(orderedCenterIndex);
+      return canvasCenters[orderedCenterIndex];
+    }
+
+    return getFallbackCriticalPulseCenter(criticalRoll.index, result.rolls.length);
+  });
 }
 
 function formatRollEquation(result: RollResult) {
@@ -974,7 +1069,7 @@ function DiceRoller() {
       await fadeOutDisplayedRoll();
       if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
 
-      const notation = toDiceBoxNotation(dice, accent);
+      const notation = toDiceBoxNotation(dice, accent, isDndApp);
       setLastResult(null);
       setIsResultDismissing(false);
       setIsRolling(true);

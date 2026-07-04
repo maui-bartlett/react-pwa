@@ -77,6 +77,14 @@ describe('DiceRoller results', () => {
     expect(second.id).not.toBe(first.id);
   });
 
+  it('preserves DiceBox roll identity metadata when present', () => {
+    const result = toRollResult([
+      { dieType: 'd20', rollId: 42, sides: 20, themeColor: '#e40712', value: 20 },
+    ]);
+
+    expect(result.rolls).toEqual([{ rollId: 42, sides: 20, themeColor: '#e40712', value: 20 }]);
+  });
+
   it('creates a complete valid fallback result without rerolling physics', () => {
     const dice = [
       { id: 1, sides: 6 as const },
