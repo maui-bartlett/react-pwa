@@ -36,7 +36,16 @@ import { alpha, keyframes } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
-import { Backpack, House, Lightbulb, Sword, X } from 'lucide-react';
+import {
+  Backpack,
+  Grid3X3,
+  House,
+  Lightbulb,
+  Search,
+  SlidersHorizontal,
+  Sword,
+  X,
+} from 'lucide-react';
 
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
@@ -6014,6 +6023,129 @@ type SpellcastingForm = {
 
 const MAX_SPELL_SLOTS_PER_LEVEL = 20;
 
+const spellSchoolStyles: Record<string, { bg: string; fg: string; stroke: string; glow: string }> =
+  {
+    abjuration: { bg: '#d7f2ff', fg: '#132835', stroke: '#264657', glow: '#8edaff' },
+    conjuration: { bg: '#ffd774', fg: '#2c1c08', stroke: '#463313', glow: '#ffbd3d' },
+    divination: { bg: '#dff4ff', fg: '#26313d', stroke: '#384757', glow: '#aae4ff' },
+    enchantment: { bg: '#f4a4e9', fg: '#241326', stroke: '#482446', glow: '#f9b7ff' },
+    evocation: { bg: '#f27d6f', fg: '#201211', stroke: '#3e1713', glow: '#ff9c8d' },
+    illusion: { bg: '#c29aff', fg: '#1f1233', stroke: '#3b2460', glow: '#d7b6ff' },
+    necromancy: { bg: '#bcf279', fg: '#13210c', stroke: '#274314', glow: '#d9ff9d' },
+    transmutation: { bg: '#f2b36f', fg: '#241408', stroke: '#4a2a12', glow: '#ffd092' },
+    arcane: { bg: '#c7d6e8', fg: '#1b2432', stroke: '#33465c', glow: '#9fbde0' },
+  };
+
+function getSpellSchoolStyle(school?: string) {
+  return spellSchoolStyles[(school ?? '').trim().toLowerCase()] ?? spellSchoolStyles.abjuration;
+}
+
+function SpellSchoolIcon({ school, size = 70 }: { school?: string; size?: number }) {
+  const style = getSpellSchoolStyle(school);
+  const normalized = (school ?? '').trim().toLowerCase();
+  return (
+    <Box
+      sx={{
+        width: size,
+        height: size,
+        flex: `0 0 ${size}px`,
+        borderRadius: '7px',
+        position: 'relative',
+        overflow: 'hidden',
+        bgcolor: style.bg,
+        border: `1px solid ${alpha('#ffffff', 0.38)}`,
+        boxShadow: `inset 0 0 0 1px ${alpha('#000000', 0.12)}, 0 0 16px ${alpha(style.glow, 0.34)}`,
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(circle at 26% 18%, rgba(255,255,255,0.9), transparent 18%), radial-gradient(circle at 76% 76%, rgba(255,255,255,0.34), transparent 25%), linear-gradient(135deg, rgba(255,255,255,0.24), rgba(0,0,0,0.12))',
+        },
+      }}
+    >
+      <Box
+        component="svg"
+        viewBox="0 0 64 64"
+        aria-hidden
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          p: 1,
+          color: style.fg,
+          stroke: style.stroke,
+          fill: 'none',
+          strokeWidth: 4.4,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+          filter: `drop-shadow(0 1px 0 ${alpha('#ffffff', 0.28)})`,
+        }}
+      >
+        {normalized === 'necromancy' ? (
+          <>
+            <path d="M12 36c8 12 16 12 24 0s16-12 20 0" />
+            <path d="M12 36c8-12 16-12 24 0s16 12 20 0" />
+          </>
+        ) : normalized === 'abjuration' ? (
+          <>
+            <path d="M20 12c7 11 7 29 0 40" />
+            <path d="M32 9c-2 11-2 35 0 46" />
+            <path d="M44 12c-7 11-7 29 0 40" />
+          </>
+        ) : normalized === 'transmutation' ? (
+          <>
+            <path d="M13 18h36" />
+            <path d="M21 18v30" />
+            <path d="M43 18v30" />
+            <path d="M30 48c6-7 11-13 18-15" />
+          </>
+        ) : normalized === 'evocation' ? (
+          <>
+            <circle cx="32" cy="32" r="16" />
+            <path d="M32 10v10M32 44v10M10 32h10M44 32h10M16 16l8 8M40 40l8 8M48 16l-8 8M24 40l-8 8" />
+          </>
+        ) : normalized === 'conjuration' ? (
+          <>
+            <path d="M32 10l16 43-16-12-16 12 16-43z" />
+            <path d="M22 38h20" />
+          </>
+        ) : normalized === 'illusion' ? (
+          <>
+            <path d="M10 32c9-12 35-12 44 0-9 12-35 12-44 0z" />
+            <circle cx="32" cy="32" r="7" fill="currentColor" stroke="none" />
+            <path d="M17 20c4-5 10-8 17-8" />
+          </>
+        ) : normalized === 'enchantment' ? (
+          <>
+            <path d="M21 12c8 13 8 27 0 40" />
+            <path d="M41 12c-8 13-8 27 0 40" />
+            <path d="M16 25c10-5 22-5 32 0" />
+            <path d="M16 39c10 5 22 5 32 0" />
+          </>
+        ) : (
+          <>
+            <path d="M32 10v44" />
+            <path d="M20 18c8 5 16 5 24 0" />
+            <path d="M18 46c9-8 19-8 28 0" />
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+function getSpellCatalogSubtitle(spell: SpellCatalogEntry) {
+  const level = getSpellSlotLevel(spell.level) ? spell.level : `${spell.school} Cantrip`;
+  return getSpellSlotLevel(spell.level) ? `${level} ${spell.school}` : level;
+}
+
+function isLegacySpell(spell: SpellCatalogEntry) {
+  return /2014|legacy/iu.test(`${spell.source ?? ''} ${spell.category ?? ''}`);
+}
+
 function createSpellcastingForm(character: DndCharacter): SpellcastingForm {
   return {
     ability: character.spellcasting.ability,
@@ -6102,6 +6234,357 @@ function AttackEditDialog({
   );
 }
 
+function SpellCatalogDialog({
+  open,
+  spells,
+  selectedName,
+  onSelect,
+  onClose,
+}: {
+  open: boolean;
+  spells: SpellCatalogEntry[];
+  selectedName?: string;
+  onSelect: (spell: SpellCatalogEntry) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const schoolOptions = Array.from(
+    new Set(spells.map((spell) => spell.school.trim()).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
+  const filteredSpells = spells.filter((spell) => {
+    if (schoolFilter && spell.school !== schoolFilter) return false;
+    if (!normalizedQuery) return true;
+    return [spell.name, spell.level, spell.school, spell.source]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  return (
+    <Dialog
+      fullScreen
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          bgcolor: dndColors.page,
+          color: dndColors.text,
+          backgroundImage: 'linear-gradient(180deg, rgba(16,24,29,0.98), rgba(11,17,20,0.99))',
+        },
+      }}
+      sx={{ zIndex: 1800 }}
+    >
+      <Box
+        sx={{
+          minHeight: '100dvh',
+          pb: 11,
+          pt: 'max(20px, env(safe-area-inset-top))',
+        }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ px: 3.2, pt: 1.1, pb: 2.2 }}
+        >
+          <Box
+            sx={{
+              width: 58,
+              height: 58,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              color: '#ffffff',
+              fontSize: 32,
+              fontWeight: 950,
+              border: `1px solid ${dndColors.redDark}`,
+              boxShadow: `0 0 0 1px ${alpha(dndColors.red, 0.24)}, inset 0 0 18px ${alpha(
+                '#000000',
+                0.45,
+              )}`,
+              position: 'relative',
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                right: 6,
+                top: 3,
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                bgcolor: '#ffbd5b',
+                boxShadow: '0 0 7px #ffbd5b',
+              },
+            }}
+          >
+            B
+          </Box>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography sx={{ fontSize: 21, fontWeight: 850, lineHeight: 1.05 }}>
+              Listings
+            </Typography>
+            <Typography sx={{ mt: 0.8, color: '#9a6cff', fontSize: 15, fontWeight: 850 }}>
+              Name: A - Z ^
+            </Typography>
+          </Box>
+          <IconButton
+            aria-label="Close spell catalog"
+            onClick={onClose}
+            sx={{
+              width: 58,
+              height: 58,
+              color: '#ffffff',
+              bgcolor: alpha('#ffffff', 0.04),
+              border: `1px solid ${alpha('#ffffff', 0.08)}`,
+              boxShadow: `inset 0 0 20px ${alpha('#000000', 0.34)}`,
+              '&:hover': { bgcolor: alpha('#ffffff', 0.08) },
+            }}
+          >
+            <X size={26} />
+          </IconButton>
+        </Stack>
+
+        <Box sx={{ px: 3.2 }}>
+          <Box
+            sx={{
+              height: 55,
+              borderRadius: '4px',
+              bgcolor: dndColors.chrome,
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr auto',
+              alignItems: 'center',
+              gap: 1.4,
+              px: 1.7,
+              color: dndColors.text,
+              boxShadow: `inset 0 0 0 1px ${alpha('#ffffff', 0.04)}`,
+            }}
+          >
+            <AutoAwesomeIcon sx={{ color: '#9a6cff', fontSize: 28 }} />
+            <Typography sx={{ fontSize: 20, fontWeight: 900 }}>Spells</Typography>
+            <Grid3X3 size={28} color={dndColors.red} strokeWidth={3} />
+          </Box>
+          <Stack direction="row" alignItems="center" gap={2} sx={{ mt: 2.1, mb: 1.9 }}>
+            <Box
+              sx={{
+                minWidth: 0,
+                flex: 1,
+                height: 55,
+                bgcolor: dndColors.panelSoft,
+                borderRadius: '3px',
+                display: 'flex',
+                alignItems: 'center',
+                px: 1.7,
+                gap: 1.2,
+                color: dndColors.muted,
+              }}
+            >
+              <Search size={27} />
+              <InputBase
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search spells"
+                inputProps={{ 'aria-label': 'Search spells' }}
+                sx={{
+                  flex: 1,
+                  color: dndColors.text,
+                  fontSize: 19,
+                  fontWeight: 650,
+                  '& input::placeholder': {
+                    color: dndColors.muted,
+                    opacity: 1,
+                  },
+                }}
+              />
+            </Box>
+            <IconButton
+              aria-label="Filter spells"
+              aria-pressed={filtersOpen}
+              onClick={() => setFiltersOpen((current) => !current)}
+              sx={{
+                width: 48,
+                height: 48,
+                color: filtersOpen ? '#ffffff' : '#9a6cff',
+                bgcolor: filtersOpen ? alpha('#9a6cff', 0.18) : 'transparent',
+                borderRadius: '12px',
+                '&:hover': { bgcolor: alpha('#9a6cff', 0.1) },
+              }}
+            >
+              <SlidersHorizontal size={28} strokeWidth={2.8} />
+            </IconButton>
+          </Stack>
+          {filtersOpen ? (
+            <Stack
+              direction="row"
+              gap={1}
+              sx={{
+                mb: 1.8,
+                overflowX: 'auto',
+                pb: 0.4,
+                scrollbarWidth: 'none',
+                '&::-webkit-scrollbar': { display: 'none' },
+              }}
+            >
+              <Button
+                type="button"
+                onClick={() => setSchoolFilter(null)}
+                sx={{
+                  minWidth: 0,
+                  px: 1.5,
+                  py: 0.55,
+                  borderRadius: '999px',
+                  bgcolor: schoolFilter === null ? '#9a6cff' : dndColors.panelSoft,
+                  color: dndColors.text,
+                  fontSize: 12,
+                  fontWeight: 900,
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                All
+              </Button>
+              {schoolOptions.map((school) => (
+                <Button
+                  key={school}
+                  type="button"
+                  onClick={() => setSchoolFilter(school)}
+                  sx={{
+                    minWidth: 0,
+                    px: 1.5,
+                    py: 0.55,
+                    borderRadius: '999px',
+                    bgcolor: schoolFilter === school ? '#9a6cff' : dndColors.panelSoft,
+                    color: dndColors.text,
+                    fontSize: 12,
+                    fontWeight: 900,
+                    textTransform: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {school}
+                </Button>
+              ))}
+            </Stack>
+          ) : null}
+        </Box>
+
+        <Box
+          sx={{
+            borderTop: `1px solid ${alpha('#ffffff', 0.1)}`,
+            borderBottom: `1px solid ${alpha('#000000', 0.5)}`,
+          }}
+        >
+          {filteredSpells.length === 0 ? (
+            <Typography
+              sx={{
+                color: dndColors.muted,
+                fontSize: 16,
+                fontWeight: 750,
+                py: 4,
+                textAlign: 'center',
+              }}
+            >
+              No spells match your search.
+            </Typography>
+          ) : null}
+          {filteredSpells.map((spell) => {
+            const selected = selectedName === spell.name;
+            return (
+              <Box
+                key={`${spell.level}-${spell.school}-${spell.name}-${spell.source ?? ''}`}
+                component="button"
+                type="button"
+                onClick={() => onSelect(spell)}
+                sx={{
+                  width: '100%',
+                  minHeight: 106,
+                  bgcolor: selected ? alpha(dndColors.red, 0.12) : dndColors.panel,
+                  color: dndColors.text,
+                  border: 0,
+                  borderBottom: `1px solid ${alpha('#ffffff', 0.12)}`,
+                  display: 'grid',
+                  gridTemplateColumns: '70px minmax(0, 1fr) auto',
+                  alignItems: 'center',
+                  gap: 1.7,
+                  px: 3.2,
+                  py: 1.4,
+                  textAlign: 'left',
+                  font: 'inherit',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: alpha('#ffffff', 0.05) },
+                }}
+              >
+                <SpellSchoolIcon school={spell.school} />
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      color: '#f6f8f9',
+                      fontSize: 22,
+                      fontWeight: 950,
+                      lineHeight: 1.05,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {spell.name}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      mt: 0.35,
+                      color: '#aeb9c3',
+                      fontSize: 16,
+                      fontWeight: 850,
+                      lineHeight: 1.15,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {getSpellCatalogSubtitle(spell)}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      mt: 0.35,
+                      color: '#8c99a5',
+                      fontSize: 15,
+                      fontWeight: 650,
+                      lineHeight: 1.15,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {spell.source ?? 'D&D Spell Catalog'}
+                  </Typography>
+                </Box>
+                {isLegacySpell(spell) ? (
+                  <Box
+                    sx={{
+                      alignSelf: 'center',
+                      px: 1.6,
+                      py: 0.55,
+                      borderRadius: '3px',
+                      bgcolor: '#aeb9c3',
+                      color: '#1a252d',
+                      fontSize: 15,
+                      fontWeight: 950,
+                    }}
+                  >
+                    Legacy
+                  </Box>
+                ) : null}
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+    </Dialog>
+  );
+}
+
 function SpellEditDialog({
   open,
   form,
@@ -6117,6 +6600,7 @@ function SpellEditDialog({
   onCancel: () => void;
   onSave: () => void;
 }) {
+  const [catalogOpen, setCatalogOpen] = useState(false);
   if (!form) return null;
   const setField = (key: keyof SpellForm, value: string) => onChange({ ...form, [key]: value });
   const applyCatalogSpell = (spell: SpellCatalogEntry) => {
@@ -6141,116 +6625,118 @@ function SpellEditDialog({
       sourceUrl: spell.sourceUrl,
       licenseUrl: spell.licenseUrl,
     });
+    setCatalogOpen(false);
   };
   return (
-    <DndEditDialog title="Edit Spell" open={open} onCancel={onCancel} onSave={onSave}>
-      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
-        Spell Catalog
-      </Typography>
-      <Box
-        component="select"
-        value={spellCatalog.find((spell) => spell.name === form.name)?.name ?? ''}
-        onChange={(event) => {
-          const selected = spellCatalog.find((spell) => spell.name === event.target.value);
-          if (selected) applyCatalogSpell(selected);
-        }}
-        sx={{
-          width: '100%',
-          minHeight: 42,
-          border: `1px solid ${dndColors.border}`,
-          borderRadius: '6px',
-          bgcolor: dndColors.panelStrong,
-          color: dndColors.text,
-          px: 1,
-          font: 'inherit',
-          fontWeight: 800,
-          outline: 'none',
-          '& option': {
-            color: '#11191e',
-            backgroundColor: '#ffffff',
-          },
-        }}
-      >
-        <option value="">Choose from {spellCatalog.length} catalog spells</option>
-        {spellCatalog.map((spell) => (
-          <option key={`${spell.level}-${spell.name}`} value={spell.name}>
-            {spell.name} ({spell.level})
-          </option>
-        ))}
-      </Box>
-      <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
-      <Stack direction="row" spacing={1}>
+    <>
+      <DndEditDialog title="Edit Spell" open={open} onCancel={onCancel} onSave={onSave}>
+        <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
+          Spell Catalog
+        </Typography>
+        <Button
+          type="button"
+          onClick={() => setCatalogOpen(true)}
+          sx={{
+            width: '100%',
+            minHeight: 42,
+            border: `1px solid ${dndColors.border}`,
+            borderRadius: '6px',
+            bgcolor: dndColors.panelStrong,
+            color: dndColors.text,
+            px: 1.4,
+            justifyContent: 'space-between',
+            fontWeight: 900,
+            textTransform: 'none',
+            '&:hover': { bgcolor: alpha(dndColors.panelStrong, 0.84) },
+          }}
+        >
+          <span>
+            {spellCatalog.find((spell) => spell.name === form.name)?.name ??
+              `Choose from ${spellCatalog.length} catalog spells`}
+          </span>
+          <Search size={18} />
+        </Button>
+        <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
+        <Stack direction="row" spacing={1}>
+          <FormField
+            label="Level"
+            value={form.level}
+            onChange={(value) => setField('level', value)}
+          />
+          <FormField
+            label="School"
+            value={form.school}
+            onChange={(value) => setField('school', value)}
+          />
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          <FormField
+            label="Time"
+            value={form.castingTime}
+            onChange={(value) => setField('castingTime', value)}
+          />
+          <FormField
+            label="Range"
+            value={form.range}
+            onChange={(value) => setField('range', value)}
+          />
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          <FormField
+            label="Hit/DC"
+            value={form.hitDc}
+            onChange={(value) => setField('hitDc', value)}
+          />
+          <FormField
+            label="Damage"
+            value={form.damage ?? ''}
+            onChange={(value) => onChange({ ...form, damage: value })}
+          />
+        </Stack>
         <FormField
-          label="Level"
-          value={form.level}
-          onChange={(value) => setField('level', value)}
+          label="Effect"
+          value={form.effect ?? ''}
+          onChange={(value) => onChange({ ...form, effect: value })}
         />
-        <FormField
-          label="School"
-          value={form.school}
-          onChange={(value) => setField('school', value)}
+        <Stack direction="row" spacing={1}>
+          <FormField
+            label="Components"
+            value={form.components ?? ''}
+            onChange={(value) => onChange({ ...form, components: value })}
+          />
+          <FormField
+            label="Duration"
+            value={form.duration ?? ''}
+            onChange={(value) => onChange({ ...form, duration: value })}
+          />
+        </Stack>
+        <MultilineFormField
+          label="Description"
+          value={form.description ?? ''}
+          onChange={(value) => onChange({ ...form, description: value })}
+          minRows={4}
         />
-      </Stack>
-      <Stack direction="row" spacing={1}>
-        <FormField
-          label="Time"
-          value={form.castingTime}
-          onChange={(value) => setField('castingTime', value)}
+        <MultilineFormField
+          label="At Higher Levels"
+          value={form.higherLevel ?? ''}
+          onChange={(value) => onChange({ ...form, higherLevel: value })}
+          minRows={2}
         />
-        <FormField
-          label="Range"
-          value={form.range}
-          onChange={(value) => setField('range', value)}
-        />
-      </Stack>
-      <Stack direction="row" spacing={1}>
-        <FormField
-          label="Hit/DC"
-          value={form.hitDc}
-          onChange={(value) => setField('hitDc', value)}
-        />
-        <FormField
-          label="Damage"
-          value={form.damage ?? ''}
-          onChange={(value) => onChange({ ...form, damage: value })}
-        />
-      </Stack>
-      <FormField
-        label="Effect"
-        value={form.effect ?? ''}
-        onChange={(value) => onChange({ ...form, effect: value })}
+        <Button
+          onClick={() => onChange({ ...form, prepared: !form.prepared })}
+          sx={toggleButtonSx(Boolean(form.prepared))}
+        >
+          {form.prepared ? 'Prepared' : 'Not Prepared'}
+        </Button>
+      </DndEditDialog>
+      <SpellCatalogDialog
+        open={catalogOpen}
+        spells={spellCatalog}
+        selectedName={form.name}
+        onSelect={applyCatalogSpell}
+        onClose={() => setCatalogOpen(false)}
       />
-      <Stack direction="row" spacing={1}>
-        <FormField
-          label="Components"
-          value={form.components ?? ''}
-          onChange={(value) => onChange({ ...form, components: value })}
-        />
-        <FormField
-          label="Duration"
-          value={form.duration ?? ''}
-          onChange={(value) => onChange({ ...form, duration: value })}
-        />
-      </Stack>
-      <MultilineFormField
-        label="Description"
-        value={form.description ?? ''}
-        onChange={(value) => onChange({ ...form, description: value })}
-        minRows={4}
-      />
-      <MultilineFormField
-        label="At Higher Levels"
-        value={form.higherLevel ?? ''}
-        onChange={(value) => onChange({ ...form, higherLevel: value })}
-        minRows={2}
-      />
-      <Button
-        onClick={() => onChange({ ...form, prepared: !form.prepared })}
-        sx={toggleButtonSx(Boolean(form.prepared))}
-      >
-        {form.prepared ? 'Prepared' : 'Not Prepared'}
-      </Button>
-    </DndEditDialog>
+    </>
   );
 }
 
