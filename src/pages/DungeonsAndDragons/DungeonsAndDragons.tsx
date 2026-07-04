@@ -2474,13 +2474,13 @@ function SlotTracker({
               width: { xs: 24, sm: 28 },
               height: { xs: 24, sm: 28 },
               borderRadius: '6px',
-              border: `2px solid ${dndColors.blue}`,
-              bgcolor: index < slot.used ? dndColors.blue : 'transparent',
+              border: `2px solid ${dndColors.red}`,
+              bgcolor: index < slot.used ? dndColors.red : 'transparent',
               cursor: 'pointer',
               p: 0,
               transition: 'background-color 140ms ease, border-color 140ms ease',
               '&:hover': {
-                borderColor: alpha(dndColors.blue, 0.72),
+                borderColor: alpha(dndColors.red, 0.72),
               },
             }}
           />
@@ -2559,7 +2559,10 @@ function SpellRow({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: 'minmax(0, 1fr) 54px auto', sm: 'minmax(0, 1fr) 62px auto' },
+          gridTemplateColumns: {
+            xs: 'minmax(96px, 1.2fr) 54px minmax(8px, 0.8fr) auto',
+            sm: 'minmax(140px, 1.2fr) 62px minmax(16px, 0.8fr) auto',
+          },
           columnGap: { xs: 0.65, sm: 0.9 },
           alignItems: 'center',
         }}
@@ -2597,6 +2600,7 @@ function SpellRow({
         >
           {prepared ? 'Prep' : 'Book'}
         </Button>
+        <Box aria-hidden="true" />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           {spell.damage ? (
             <RollBox
