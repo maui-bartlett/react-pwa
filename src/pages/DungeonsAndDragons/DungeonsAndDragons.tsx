@@ -2560,8 +2560,8 @@ function SpellRow({
         sx={{
           display: 'grid',
           gridTemplateColumns: {
-            xs: 'minmax(0, 1fr) 54px auto',
-            sm: 'minmax(0, 1fr) 62px auto',
+            xs: 'minmax(0, 1fr) 54px 82px',
+            sm: 'minmax(0, 1fr) 62px 96px',
           },
           columnGap: { xs: 0.65, sm: 0.9 },
           alignItems: 'center',
@@ -2610,7 +2610,15 @@ function SpellRow({
         >
           {prepared ? 'Prep' : 'Book'}
         </Button>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            width: '100%',
+            minWidth: 0,
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+          }}
+        >
           {spell.damage ? (
             <RollBox
               ariaLabel={`Cast ${spell.name}`}
@@ -2626,7 +2634,8 @@ function SpellRow({
                 onCast();
               }}
               sx={{
-                minWidth: 62,
+                minWidth: 0,
+                width: '100%',
                 minHeight: 37,
                 borderRadius: '5px',
                 border: `1px solid ${dndColors.border}`,
