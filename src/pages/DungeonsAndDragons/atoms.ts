@@ -51,6 +51,7 @@ type Spell = {
   range: string;
   hitDc: string;
   damage?: string;
+  effect?: string;
   description?: string;
   prepared?: boolean;
 };
@@ -288,6 +289,7 @@ const initialDndCharacter: DndCharacter = {
       range: 'Self (5 ft.)',
       hitDc: 'Weapon',
       damage: 'Weapon + thunder',
+      effect: 'Thunder',
       prepared: true,
     },
     {
@@ -299,6 +301,7 @@ const initialDndCharacter: DndCharacter = {
       range: 'Self (5 ft.)',
       hitDc: 'Weapon',
       damage: 'Weapon + fire',
+      effect: 'Fire',
       prepared: true,
     },
     {
@@ -309,6 +312,7 @@ const initialDndCharacter: DndCharacter = {
       castingTime: '1 Reaction',
       range: 'Self',
       hitDc: '+5 AC',
+      effect: '+5 AC',
       prepared: true,
     },
     {
@@ -319,6 +323,7 @@ const initialDndCharacter: DndCharacter = {
       castingTime: '1 Reaction',
       range: 'Self',
       hitDc: 'Resistance',
+      effect: 'Resistance',
       prepared: true,
     },
     {
@@ -329,6 +334,7 @@ const initialDndCharacter: DndCharacter = {
       castingTime: '1 Reaction',
       range: '60 ft.',
       hitDc: 'Reroll',
+      effect: 'Reroll',
       prepared: true,
     },
   ],

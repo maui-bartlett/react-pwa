@@ -459,6 +459,21 @@ const dndSpellDescriptionsByName: Record<string, string> = {
     'A creature you touch becomes invisible until the spell ends. The spell ends early for a target that attacks or casts a spell.',
 };
 
+const dndSpellEffectsByName: Record<string, string> = {
+  'absorb elements': '1d6',
+  'booming blade': 'Thunder',
+  'detect magic': 'Utility',
+  'fire bolt': '1d10',
+  'green-flame blade': 'Fire',
+  invisibility: 'Buff',
+  'mage hand': 'Utility',
+  'magic missile': '3d4+3',
+  'misty step': 'Utility',
+  'ray of frost': '1d8',
+  shield: '+5 AC',
+  'silvery barbs': 'Reroll',
+};
+
 const dndSpellCatalog: SpellCatalogEntry[] = [
   {
     name: 'Fire Bolt',
@@ -468,6 +483,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     range: '120 ft.',
     hitDc: '+8',
     damage: '1d10',
+    effect: dndSpellEffectsByName['fire bolt'],
     description: dndSpellDescriptionsByName['fire bolt'],
     classes: ['Wizard'],
   },
@@ -479,6 +495,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     range: '60 ft.',
     hitDc: '+8',
     damage: '1d8',
+    effect: dndSpellEffectsByName['ray of frost'],
     description: dndSpellDescriptionsByName['ray of frost'],
     classes: ['Wizard'],
   },
@@ -489,6 +506,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Action',
     range: '30 ft.',
     hitDc: 'Utility',
+    effect: dndSpellEffectsByName['mage hand'],
     description: dndSpellDescriptionsByName['mage hand'],
     classes: ['Wizard'],
   },
@@ -499,6 +517,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Reaction',
     range: 'Self',
     hitDc: '+5 AC',
+    effect: dndSpellEffectsByName.shield,
     description: dndSpellDescriptionsByName.shield,
     classes: ['Wizard'],
   },
@@ -509,6 +528,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Reaction',
     range: 'Self',
     hitDc: 'Resistance',
+    effect: dndSpellEffectsByName['absorb elements'],
     description: dndSpellDescriptionsByName['absorb elements'],
     classes: ['Wizard'],
   },
@@ -519,6 +539,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Reaction',
     range: '60 ft.',
     hitDc: 'Reroll',
+    effect: dndSpellEffectsByName['silvery barbs'],
     description: dndSpellDescriptionsByName['silvery barbs'],
     classes: ['Wizard'],
   },
@@ -530,6 +551,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     range: '120 ft.',
     hitDc: 'Auto',
     damage: '3d4+3',
+    effect: dndSpellEffectsByName['magic missile'],
     description: dndSpellDescriptionsByName['magic missile'],
     classes: ['Wizard'],
   },
@@ -540,6 +562,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Action',
     range: 'Self',
     hitDc: 'Utility',
+    effect: dndSpellEffectsByName['detect magic'],
     description: dndSpellDescriptionsByName['detect magic'],
     classes: ['Wizard'],
   },
@@ -550,6 +573,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Bonus Action',
     range: 'Self',
     hitDc: 'Utility',
+    effect: dndSpellEffectsByName['misty step'],
     description: dndSpellDescriptionsByName['misty step'],
     classes: ['Wizard'],
   },
@@ -560,6 +584,7 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     castingTime: '1 Action',
     range: 'Touch',
     hitDc: 'Utility',
+    effect: dndSpellEffectsByName.invisibility,
     description: dndSpellDescriptionsByName.invisibility,
     classes: ['Wizard'],
   },
@@ -2468,10 +2493,6 @@ function SpellSectionHeader({
   return (
     <Box
       sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 1.2,
         borderTop: `1px solid ${dndColors.borderSoft}`,
         borderBottom: `1px solid ${dndColors.borderSoft}`,
         bgcolor: alpha(dndColors.panelStrong, 0.78),
@@ -2479,13 +2500,62 @@ function SpellSectionHeader({
         py: 0.85,
       }}
     >
-      <Typography
-        sx={{ color: dndColors.text, fontSize: 15, fontWeight: 900, textTransform: 'uppercase' }}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1.2,
+        }}
       >
-        {label}
-      </Typography>
-      {slot && onUpdateSlot ? <SlotTracker slot={slot} onUpdate={onUpdateSlot} /> : null}
+        <Typography
+          sx={{ color: dndColors.text, fontSize: 15, fontWeight: 900, textTransform: 'uppercase' }}
+        >
+          {label}
+        </Typography>
+        {slot && onUpdateSlot ? <SlotTracker slot={slot} onUpdate={onUpdateSlot} /> : null}
+      </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '76px 48px minmax(58px, 0.82fr) minmax(62px, 0.9fr) minmax(78px, 1fr)',
+            sm: '96px 56px minmax(70px, 0.8fr) minmax(76px, 0.9fr) minmax(96px, 1fr)',
+          },
+          columnGap: { xs: 0.75, sm: 1.15 },
+          alignItems: 'end',
+          mt: 1.2,
+        }}
+      >
+        <Box aria-hidden="true" />
+        <SpellColumnHeaderCell>Time</SpellColumnHeaderCell>
+        <SpellColumnHeaderCell>Range</SpellColumnHeaderCell>
+        <SpellColumnHeaderCell align="center">Hit/DC</SpellColumnHeaderCell>
+        <SpellColumnHeaderCell align="right">Effect</SpellColumnHeaderCell>
+      </Box>
     </Box>
+  );
+}
+
+function SpellColumnHeaderCell({
+  children,
+  align = 'left',
+}: {
+  children: ReactNode;
+  align?: 'left' | 'center' | 'right';
+}) {
+  return (
+    <Typography
+      sx={{
+        color: dndColors.muted,
+        fontSize: { xs: 11, sm: 12 },
+        fontWeight: 950,
+        textAlign: align,
+        textTransform: 'uppercase',
+      }}
+    >
+      {children}
+    </Typography>
   );
 }
 
@@ -2583,10 +2653,13 @@ function SpellRow({
   const slotLevel = getSpellSlotLevel(spell.level);
   const slot = slotLevel ? findUsableSpellSlot(spellSlots, slotLevel) : undefined;
   const canCast = !slotLevel || Boolean(slot);
+  const hitDcValue = getSpellHitDcDisplay(spell);
+  const effectValue = getSpellEffectDisplay(spell);
+  const rollableEffect = spell.damage && parseDiceExpression(effectValue) !== null;
   const castAndMaybeRoll = () => {
     if (!onCast()) return;
-    if (spell.damage) {
-      rollDiceExpression(`${spell.name} Damage`, spell.damage);
+    if (rollableEffect) {
+      rollDiceExpression(`${spell.name} Damage`, effectValue);
     }
   };
 
@@ -2615,13 +2688,10 @@ function SpellRow({
     >
       <Box
         sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: 'minmax(0, 1fr) 54px 82px',
-            sm: 'minmax(0, 1fr) 62px 96px',
-          },
-          columnGap: { xs: 0.65, sm: 0.9 },
-          alignItems: 'center',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 1,
         }}
       >
         <Stack sx={{ minWidth: 0 }}>
@@ -2642,100 +2712,246 @@ function SpellRow({
             {spell.level.toUpperCase()} • {spell.school.toUpperCase()}
           </Typography>
         </Stack>
-        <Button
-          aria-pressed={prepared}
-          onClick={(event) => {
-            event.stopPropagation();
-            onTogglePrepared();
-          }}
-          onKeyDown={(event) => event.stopPropagation()}
-          sx={{
-            minWidth: 0,
-            width: '100%',
-            minHeight: 34,
-            px: 0.75,
-            borderRadius: '999px',
-            border: `1px solid ${prepared ? dndColors.green : dndColors.border}`,
-            bgcolor: prepared ? alpha(dndColors.green, 0.22) : dndColors.panelStrong,
-            color: prepared ? '#ffffff' : dndColors.muted,
-            fontSize: 11,
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            '&:hover': {
-              bgcolor: prepared ? alpha(dndColors.green, 0.3) : alpha('#ffffff', 0.08),
-            },
-          }}
-        >
-          {prepared ? 'Prep' : 'Book'}
-        </Button>
-        <Box
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
-          sx={{
-            display: 'flex',
-            width: '100%',
-            minWidth: 0,
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-          }}
-        >
-          {spell.damage ? (
-            <RollBox
-              ariaLabel={`Cast ${spell.name}`}
-              onRoll={canCast ? castAndMaybeRoll : undefined}
-            >
-              {spell.damage}
-            </RollBox>
-          ) : (
-            <Button
-              disabled={!canCast}
-              onClick={(event) => {
-                event.stopPropagation();
-                onCast();
-              }}
-              sx={{
-                minWidth: 0,
-                width: '100%',
-                minHeight: 37,
-                borderRadius: '5px',
-                border: `1px solid ${dndColors.border}`,
-                bgcolor: alpha('#000000', 0.08),
-                color: dndColors.text,
-                fontSize: 12,
-                fontWeight: 900,
-                textTransform: 'uppercase',
-                '&:hover': { borderColor: dndColors.blue, color: dndColors.blue },
-                '&.Mui-disabled': {
-                  borderColor: alpha(dndColors.border, 0.52),
-                  color: alpha(dndColors.muted, 0.62),
-                },
-              }}
-            >
-              Cast
-            </Button>
-          )}
-        </Box>
       </Box>
       <Box
         sx={{
           display: 'grid',
           gridTemplateColumns: {
-            xs: 'auto auto minmax(0, 1fr) 70px',
-            sm: 'auto auto minmax(0, 1fr) 82px',
+            xs: '76px 48px minmax(58px, 0.82fr) minmax(62px, 0.9fr) minmax(78px, 1fr)',
+            sm: '96px 56px minmax(70px, 0.8fr) minmax(76px, 0.9fr) minmax(96px, 1fr)',
           },
-          columnGap: { xs: 1.8, sm: 2 },
-          alignItems: 'start',
+          columnGap: { xs: 0.75, sm: 1.15 },
+          alignItems: 'end',
           mt: 1,
-          pr: { xs: 0.4, sm: 0.8 },
+          pr: { xs: 0.2, sm: 0.8 },
         }}
       >
-        <TinyStat label="Time" value={spell.castingTime} />
-        <TinyStat label="Range" value={spell.range} />
-        <Box aria-hidden="true" />
-        <TinyStat label="Hit/DC" value={spell.hitDc} />
+        <SpellPreparedCell
+          isCantrip={!slotLevel}
+          prepared={prepared}
+          onTogglePrepared={onTogglePrepared}
+        />
+        <SpellValueCell>{formatSpellTime(spell.castingTime)}</SpellValueCell>
+        <SpellValueCell>{spell.range}</SpellValueCell>
+        <SpellHitDcCell spell={spell} value={hitDcValue} />
+        <SpellEffectCell
+          spell={spell}
+          value={effectValue}
+          canCast={canCast}
+          onCast={castAndMaybeRoll}
+        />
       </Box>
     </Box>
   );
+}
+
+function SpellValueCell({
+  children,
+  align = 'left',
+}: {
+  children: ReactNode;
+  align?: 'left' | 'center' | 'right';
+}) {
+  return (
+    <Typography
+      sx={{
+        color: dndColors.text,
+        fontSize: { xs: 14, sm: 16 },
+        fontWeight: 900,
+        lineHeight: 1.25,
+        textAlign: align,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </Typography>
+  );
+}
+
+function SpellPreparedCell({
+  isCantrip,
+  prepared,
+  onTogglePrepared,
+}: {
+  isCantrip: boolean;
+  prepared: boolean;
+  onTogglePrepared: () => void;
+}) {
+  if (isCantrip) {
+    return (
+      <Typography
+        sx={{
+          color: dndColors.muted,
+          fontSize: { xs: 14, sm: 16 },
+          fontWeight: 900,
+          lineHeight: 1.25,
+        }}
+      >
+        At Will
+      </Typography>
+    );
+  }
+
+  return (
+    <Button
+      aria-pressed={prepared}
+      onClick={(event) => {
+        event.stopPropagation();
+        onTogglePrepared();
+      }}
+      onKeyDown={(event) => event.stopPropagation()}
+      sx={{
+        minWidth: 0,
+        width: '100%',
+        minHeight: 36,
+        px: 0.75,
+        borderRadius: '5px',
+        border: `1px solid ${prepared ? dndColors.blue : dndColors.border}`,
+        bgcolor: alpha(dndColors.panelStrong, 0.86),
+        color: prepared ? dndColors.blue : dndColors.muted,
+        fontSize: { xs: 12, sm: 14 },
+        fontWeight: 950,
+        textTransform: 'uppercase',
+        '&:hover': {
+          borderColor: prepared ? dndColors.blue : alpha(dndColors.blue, 0.72),
+          bgcolor: alpha(dndColors.blue, 0.1),
+        },
+      }}
+    >
+      {prepared ? 'Prep' : 'Book'}
+    </Button>
+  );
+}
+
+function SpellHitDcCell({ spell, value }: { spell: Spell; value: string }) {
+  const canRollSpellAttack = /^\+\d+$/u.test(value);
+  if (canRollSpellAttack) {
+    return (
+      <Box
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        sx={{ width: '100%' }}
+      >
+        <RollBox
+          ariaLabel={`Roll ${spell.name} spell attack`}
+          onRoll={() => rollD20(`${spell.name} Spell Attack`, value)}
+        >
+          {value}
+        </RollBox>
+      </Box>
+    );
+  }
+
+  return (
+    <Typography
+      sx={{
+        color: value === '--' ? dndColors.muted : dndColors.text,
+        fontSize: { xs: 14, sm: 16 },
+        fontWeight: 900,
+        textAlign: 'center',
+        lineHeight: 1.25,
+      }}
+    >
+      {value}
+    </Typography>
+  );
+}
+
+function SpellEffectCell({
+  spell,
+  value,
+  canCast,
+  onCast,
+}: {
+  spell: Spell;
+  value: string;
+  canCast: boolean;
+  onCast: () => void;
+}) {
+  const isRollable = spell.damage && parseDiceExpression(value) !== null;
+
+  if (isRollable) {
+    return (
+      <Box
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        sx={{ width: '100%' }}
+      >
+        <RollBox ariaLabel={`Cast ${spell.name}`} onRoll={canCast ? onCast : undefined}>
+          {value}
+        </RollBox>
+      </Box>
+    );
+  }
+
+  return (
+    <Button
+      disabled={!canCast}
+      onClick={(event) => {
+        event.stopPropagation();
+        onCast();
+      }}
+      onKeyDown={(event) => event.stopPropagation()}
+      sx={{
+        minWidth: 0,
+        width: '100%',
+        minHeight: 37,
+        px: 0.75,
+        borderRadius: '5px',
+        border: `1px solid ${dndColors.border}`,
+        bgcolor: alpha('#000000', 0.08),
+        color: dndColors.text,
+        fontSize: { xs: 14, sm: 16 },
+        fontWeight: 900,
+        textAlign: 'right',
+        lineHeight: 1.25,
+        textTransform: 'none',
+        overflowWrap: 'anywhere',
+        '&:hover': { borderColor: dndColors.blue, color: dndColors.blue },
+        '&.Mui-disabled': {
+          borderColor: alpha(dndColors.border, 0.52),
+          color: alpha(dndColors.muted, 0.62),
+        },
+      }}
+    >
+      {value}
+    </Button>
+  );
+}
+
+function getSpellHitDcDisplay(spell: Spell) {
+  const rawValue = spell.hitDc.trim();
+  const normalized = rawValue.toLowerCase();
+  if (!rawValue || ['auto', 'utility', 'resistance', 'reroll', '+5 ac'].includes(normalized)) {
+    return '--';
+  }
+  return rawValue;
+}
+
+function getSpellEffectDisplay(spell: Spell) {
+  const storedEffect = spell.effect?.trim();
+  if (storedEffect) return storedEffect;
+  const catalogEffect = dndSpellEffectsByName[spell.name.trim().toLowerCase()];
+  if (catalogEffect) return catalogEffect;
+  if (spell.damage?.trim()) return spell.damage.trim();
+  const hitDc = spell.hitDc.trim();
+  if (hitDc && getSpellHitDcDisplay(spell) === '--' && hitDc !== '--') return hitDc;
+  return 'Utility';
+}
+
+function formatSpellTime(value: string) {
+  const normalized = value.trim().toLowerCase();
+  const match = normalized.match(
+    /^(\d+)\s*(action|bonus action|reaction|minute|minutes|hour|hours)$/u,
+  );
+  if (!match) return value;
+  const amount = match[1];
+  const unit = match[2];
+  if (unit === 'action') return `${amount}A`;
+  if (unit === 'bonus action') return `${amount}BA`;
+  if (unit === 'reaction') return `${amount}R`;
+  if (unit === 'minute' || unit === 'minutes') return `${amount}m`;
+  return `${amount}h`;
 }
 
 function SpellDetailsDialog({ spell, onClose }: { spell: Spell | null; onClose: () => void }) {
@@ -2745,8 +2961,8 @@ function SpellDetailsDialog({ spell, onClose }: { spell: Spell | null; onClose: 
     { label: 'School', value: spell.school },
     { label: 'Time', value: spell.castingTime },
     { label: 'Range', value: spell.range },
-    { label: 'Hit/DC', value: spell.hitDc },
-    ...(spell.damage ? [{ label: 'Damage', value: spell.damage }] : []),
+    { label: 'Hit/DC', value: getSpellHitDcDisplay(spell) },
+    { label: 'Effect', value: getSpellEffectDisplay(spell) },
   ];
   const description = getSpellDescription(spell);
 
@@ -3498,41 +3714,6 @@ function Metric({ label, value }: { label: string; value: ReactNode }) {
       </Typography>
       <Typography sx={{ color: dndColors.text, fontSize: 22, fontWeight: 900 }}>{value}</Typography>
     </Stack>
-  );
-}
-
-function TinyStat({
-  label,
-  value,
-  onClick,
-}: {
-  label: string;
-  value: string;
-  onClick?: () => void;
-}) {
-  return (
-    <Box
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      aria-label={onClick ? `Roll ${label}` : undefined}
-      onClick={onClick}
-      onKeyDown={
-        onClick
-          ? (event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                onClick();
-              }
-            }
-          : undefined
-      }
-      sx={{ flex: 1, cursor: onClick ? 'pointer' : 'default' }}
-    >
-      <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900 }}>
-        {label}
-      </Typography>
-      <Typography sx={{ color: dndColors.text, fontSize: 13, fontWeight: 800 }}>{value}</Typography>
-    </Box>
   );
 }
 
@@ -5517,6 +5698,7 @@ function SpellEditDialog({
       range: spell.range,
       hitDc: spell.hitDc,
       damage: spell.damage,
+      effect: spell.effect,
       description: spell.description,
     });
   };
@@ -5580,6 +5762,11 @@ function SpellEditDialog({
           onChange={(value) => onChange({ ...form, damage: value })}
         />
       </Stack>
+      <FormField
+        label="Effect"
+        value={form.effect ?? ''}
+        onChange={(value) => onChange({ ...form, effect: value })}
+      />
       <MultilineFormField
         label="Description"
         value={form.description ?? ''}
@@ -6184,6 +6371,7 @@ function DungeonsAndDragons() {
       castingTime: '1 Action',
       range: '60 ft.',
       hitDc: formatModifier(character.spellcasting.attackBonus),
+      effect: 'Utility',
       prepared: false,
     });
   };
