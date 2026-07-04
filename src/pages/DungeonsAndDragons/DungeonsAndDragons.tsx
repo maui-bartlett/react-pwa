@@ -1682,6 +1682,14 @@ function navigationTabFor(activeTab: DndTab) {
   return swipeNavigationTabs.includes(activeTab) ? activeTab : 'features';
 }
 
+function adjacentSwipeTab(activeTab: DndTab, direction: 1 | -1) {
+  const currentTab = navigationTabFor(activeTab);
+  const currentIndex = swipeNavigationTabs.indexOf(currentTab);
+  const nextIndex =
+    (currentIndex + direction + swipeNavigationTabs.length) % swipeNavigationTabs.length;
+  return swipeNavigationTabs[nextIndex];
+}
+
 function blurDndBottomNavFocus() {
   const activeElement = document.activeElement;
   if (!(activeElement instanceof HTMLElement)) return;
@@ -6097,7 +6105,13 @@ function ConvexCharacterSyncMount() {
 function DungeonsAndDragons() {
   const [character, setCharacter, history] = useDndCharacterHistory();
   const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
-  const bodySwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const bodySwipeStartRef = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    tab: DndTab;
+    direction: 1 | -1 | null;
+  } | null>(null);
   const dndClassDocs = useQuery(api.classes.listDungeonsAndDragonsClasses) as
     | DndClassDoc[]
     | undefined;
@@ -6177,6 +6191,14 @@ function DungeonsAndDragons() {
   const [charactersOpen, setCharactersOpen] = useState(false);
   const [restOpen, setRestOpen] = useState(false);
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
+  const [tabSlide, setTabSlide] = useState<null | {
+    from: DndTab;
+    to: DndTab;
+    direction: 1 | -1;
+    offset: number;
+    width: number;
+    phase: 'dragging' | 'settling' | 'canceling';
+  }>(null);
 
   const localCharacters = useLocalCharacterSlots({
     atom: dndCharacterState,
@@ -6207,33 +6229,96 @@ function DungeonsAndDragons() {
   };
 
   const setActiveTab = (tab: DndTab) => {
+    setTabSlide(null);
     setActiveTabRaw(tab);
     persistAppView('dungeons-and-dragons', 'tab', tab);
   };
 
+  useEffect(() => {
+    if (!tabSlide || tabSlide.phase === 'dragging') return undefined;
+    const timeout = window.setTimeout(() => {
+      if (tabSlide.phase === 'settling') {
+        setActiveTabRaw(tabSlide.to);
+        persistAppView('dungeons-and-dragons', 'tab', tabSlide.to);
+      }
+      setTabSlide(null);
+    }, 220);
+    return () => window.clearTimeout(timeout);
+  }, [setActiveTabRaw, tabSlide]);
+
   const navigateSwipeTab = (direction: 1 | -1) => {
-    const currentTab = navigationTabFor(activeTab);
-    const currentIndex = swipeNavigationTabs.indexOf(currentTab);
-    const nextIndex =
-      (currentIndex + direction + swipeNavigationTabs.length) % swipeNavigationTabs.length;
-    setActiveTab(swipeNavigationTabs[nextIndex]);
+    setActiveTab(adjacentSwipeTab(activeTab, direction));
   };
 
   const startBodySwipe = (event: ReactPointerEvent<HTMLElement>) => {
     if (!event.isPrimary) return;
-    if (event.pointerType === 'mouse') return;
-    bodySwipeStartRef.current = { x: event.clientX, y: event.clientY };
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const width = event.currentTarget.getBoundingClientRect().width;
+    bodySwipeStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      width,
+      tab: activeTab,
+      direction: null,
+    };
+  };
+
+  const moveBodySwipe = (event: ReactPointerEvent<HTMLElement>) => {
+    const start = bodySwipeStartRef.current;
+    if (!start || !event.isPrimary) return;
+    if (event.pointerType === 'mouse' && event.buttons !== 1) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (!start.direction) {
+      if (absX < 12) return;
+      if (absX < absY * 1.25) {
+        bodySwipeStartRef.current = null;
+        return;
+      }
+      start.direction = deltaX < 0 ? 1 : -1;
+    }
+
+    const direction = start.direction;
+    const clampedDistance = Math.min(absX, start.width);
+    const offset = -direction * clampedDistance;
+    setTabSlide({
+      from: start.tab,
+      to: adjacentSwipeTab(start.tab, direction),
+      direction,
+      offset,
+      width: start.width,
+      phase: 'dragging',
+    });
   };
 
   const endBodySwipe = (event: ReactPointerEvent<HTMLElement>) => {
     const start = bodySwipeStartRef.current;
     bodySwipeStartRef.current = null;
     if (!start || !event.isPrimary) return;
-    if (event.pointerType === 'mouse') return;
     const deltaX = event.clientX - start.x;
     const deltaY = event.clientY - start.y;
-    if (Math.abs(deltaX) < 72 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
-    navigateSwipeTab(deltaX < 0 ? 1 : -1);
+    const direction = start.direction ?? (deltaX < 0 ? 1 : -1);
+    const shouldNavigate =
+      Math.abs(deltaX) >= Math.max(72, start.width * 0.22) &&
+      Math.abs(deltaX) >= Math.abs(deltaY) * 1.25;
+
+    if (!tabSlide) {
+      if (shouldNavigate) navigateSwipeTab(direction);
+      return;
+    }
+
+    setTabSlide((current) => {
+      if (!current || current.from !== start.tab) return current;
+      return {
+        ...current,
+        offset: shouldNavigate ? -current.direction * current.width : 0,
+        phase: shouldNavigate ? 'settling' : 'canceling',
+      };
+    });
   };
 
   const createGuidedCharacter = () => {
@@ -6794,8 +6879,8 @@ function DungeonsAndDragons() {
     return true;
   };
 
-  const content = (() => {
-    switch (activeTab) {
+  const renderTabContent = (tab: DndTab) => {
+    switch (tab) {
       case 'abilities':
         return (
           <AbilitiesScreen
@@ -6893,9 +6978,11 @@ function DungeonsAndDragons() {
           />
         );
       default:
-        return <AppMenu activeTab={activeTab} onChange={setActiveTab} />;
+        return <AppMenu activeTab={tab} onChange={setActiveTab} />;
     }
-  })();
+  };
+
+  const content = renderTabContent(activeTab);
 
   return (
     <Box
@@ -6975,13 +7062,53 @@ function DungeonsAndDragons() {
           />
           <Box
             onPointerDown={startBodySwipe}
+            onPointerMove={moveBodySwipe}
             onPointerUp={endBodySwipe}
             onPointerCancel={() => {
               bodySwipeStartRef.current = null;
+              setTabSlide((current) =>
+                current && current.phase === 'dragging'
+                  ? { ...current, offset: 0, phase: 'canceling' }
+                  : current,
+              );
             }}
-            sx={{ touchAction: 'pan-y' }}
+            sx={{ overflow: 'hidden', touchAction: 'pan-y' }}
           >
-            {content}
+            {tabSlide ? (
+              <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+                <Box sx={{ pointerEvents: 'none', visibility: 'hidden' }}>
+                  {renderTabContent(tabSlide.phase === 'settling' ? tabSlide.to : tabSlide.from)}
+                </Box>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    transform: `translate3d(${tabSlide.offset}px, 0, 0)`,
+                    transition: tabSlide.phase === 'dragging' ? 'none' : 'transform 220ms ease-out',
+                    pointerEvents: 'none',
+                    willChange: 'transform',
+                  }}
+                >
+                  {renderTabContent(tabSlide.from)}
+                </Box>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    transform: `translate3d(${tabSlide.offset + tabSlide.direction * tabSlide.width}px, 0, 0)`,
+                    transition: tabSlide.phase === 'dragging' ? 'none' : 'transform 220ms ease-out',
+                    pointerEvents: 'none',
+                    willChange: 'transform',
+                  }}
+                >
+                  {renderTabContent(tabSlide.to)}
+                </Box>
+              </Box>
+            ) : (
+              content
+            )}
           </Box>
         </Box>
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
