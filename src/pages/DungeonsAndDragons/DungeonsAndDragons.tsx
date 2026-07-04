@@ -1123,7 +1123,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
         <Box
           sx={{
             position: 'absolute',
-            top: { xs: -3, sm: 0 },
+            top: active ? { xs: -3, sm: 0 } : { xs: -1, sm: 2 },
             left: '50%',
             width: 28,
             height: 34,
@@ -4546,7 +4546,7 @@ function HitPointEditDialog({
 
         <Box
           sx={{
-            mt: 1.4,
+            mt: 0,
             maxHeight: 176,
             overflowY: 'auto',
             border: `1px solid ${dndColors.border}`,
