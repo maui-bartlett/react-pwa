@@ -32,7 +32,7 @@ import InputBase from '@mui/material/InputBase';
 import LinearProgress from '@mui/material/LinearProgress';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
+import { alpha, keyframes } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
@@ -97,6 +97,19 @@ const dndColors = {
   green: '#57bc45',
   gold: '#f0b948',
 };
+
+const inspirationPullOn = keyframes`
+  0% { transform: translate(-50%, 0); }
+  46% { transform: translate(-50%, 11px); }
+  72% { transform: translate(-50%, 5px); }
+  100% { transform: translate(-50%, 7px); }
+`;
+
+const inspirationPullOff = keyframes`
+  0% { transform: translate(-50%, 7px); }
+  34% { transform: translate(-50%, 11px); }
+  100% { transform: translate(-50%, 0); }
+`;
 
 const dndSwipeEditColor = '#687782';
 
@@ -1027,11 +1040,16 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
 }
 
 function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  const [hasToggled, setHasToggled] = useState(false);
+
   return (
     <Button
       aria-label={active ? 'Clear inspiration' : 'Mark inspiration'}
       aria-pressed={active}
-      onClick={onToggle}
+      onClick={() => {
+        setHasToggled(true);
+        onToggle();
+      }}
       sx={{
         minWidth: 0,
         width: { xs: 52, sm: 58 },
@@ -1062,49 +1080,78 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
           },
         }}
       >
-        {active ? (
-          <>
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: { xs: 11, sm: 13 },
-                width: 5,
-                height: 2,
-                borderRadius: '999px',
-                bgcolor: dndColors.gold,
-                transform: 'rotate(42deg)',
-                transformOrigin: 'right center',
-              }}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 3,
-                left: '50%',
-                width: 2,
-                height: 5,
-                borderRadius: '999px',
-                bgcolor: dndColors.gold,
-                transform: 'translateX(-50%)',
-              }}
-            />
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: { xs: 11, sm: 13 },
-                width: 5,
-                height: 2,
-                borderRadius: '999px',
-                bgcolor: dndColors.gold,
-                transform: 'rotate(-42deg)',
-                transformOrigin: 'left center',
-              }}
-            />
-          </>
-        ) : null}
-        <Lightbulb size={24} strokeWidth={2.3} />
+        <Box
+          sx={{
+            position: 'absolute',
+            top: { xs: 5, sm: 8 },
+            left: '50%',
+            width: 28,
+            height: 34,
+            color: active ? dndColors.gold : '#ffffff',
+            transform: active ? 'translate(-50%, 7px)' : 'translate(-50%, 0)',
+            animation: hasToggled
+              ? `${active ? inspirationPullOn : inspirationPullOff} 520ms cubic-bezier(0.22, 1, 0.36, 1) both`
+              : 'none',
+            transformOrigin: '50% 100%',
+          }}
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 5,
+              left: 4,
+              width: 5,
+              height: 2,
+              borderRadius: '999px',
+              bgcolor: dndColors.gold,
+              opacity: active ? 1 : 0,
+              transform: 'rotate(42deg)',
+              transformOrigin: 'right center',
+              transition: active ? 'opacity 120ms ease 150ms' : 'opacity 120ms ease',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              width: 2,
+              height: 5,
+              borderRadius: '999px',
+              bgcolor: dndColors.gold,
+              opacity: active ? 1 : 0,
+              transform: 'translateX(-50%)',
+              transition: active ? 'opacity 120ms ease 150ms' : 'opacity 120ms ease',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 5,
+              right: 4,
+              width: 5,
+              height: 2,
+              borderRadius: '999px',
+              bgcolor: dndColors.gold,
+              opacity: active ? 1 : 0,
+              transform: 'rotate(-42deg)',
+              transformOrigin: 'left center',
+              transition: active ? 'opacity 120ms ease 150ms' : 'opacity 120ms ease',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              bottom: 0,
+              display: 'grid',
+              placeItems: 'center',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <Lightbulb size={24} strokeWidth={2.3} />
+          </Box>
+        </Box>
       </Box>
       <Typography
         sx={{
