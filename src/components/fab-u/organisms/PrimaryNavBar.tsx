@@ -31,16 +31,18 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
   return (
     <Stack
       direction="row"
-      justifyContent="space-between"
       sx={{
-        borderRadius: '9px',
-        bgcolor: fabUTokens.color.surface,
-        // 15px horizontal pull-in on each side (~30px total) trims the
-        // nav width while letting `flex: 1` tighten the gaps between
-        // tabs to keep all six on one row.
-        mx: '15px',
-        px: 0.18,
-        py: 0.22,
+        mx: '14px',
+        px: 0.5,
+        py: 0.5,
+        display: 'grid',
+        gridTemplateColumns: `repeat(${options.length}, 1fr)`,
+        borderRadius: '42px',
+        bgcolor: alpha(fabUTokens.color.surface, fabUTokens.isDark ? 0.94 : 0.96),
+        border: `1px solid ${fabUTokens.color.border}`,
+        boxShadow: fabUTokens.isDark
+          ? '0 -8px 30px rgba(0,0,0,0.34)'
+          : '0 -8px 30px rgba(31,42,38,0.16)',
       }}
     >
       {options.map((option) => {
@@ -52,18 +54,29 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
             key={option.value}
             onClick={() => onChange(option.value)}
             sx={{
-              flex: 1,
-              borderRadius: '7px',
-              px: 0.22,
-              py: 0.68,
+              minWidth: 0,
+              minHeight: 54,
+              borderRadius: '34px',
+              px: 0.18,
+              py: 0.52,
               backgroundColor: active ? alpha(fabUTokens.color.highlight, 0.15) : 'transparent',
+              transition: 'background-color 160ms ease, color 160ms ease',
+              '&:hover': {
+                backgroundColor: active
+                  ? alpha(fabUTokens.color.highlight, 0.18)
+                  : alpha(fabUTokens.color.textSecondary, 0.08),
+              },
+              '&:focus, &:focus-visible': {
+                outline: 'none',
+                backgroundColor: active ? alpha(fabUTokens.color.highlight, 0.15) : 'transparent',
+              },
             }}
           >
-            <Stack alignItems="center" spacing={0.32}>
+            <Stack alignItems="center" justifyContent="center" spacing={0.22} sx={{ minWidth: 0 }}>
               <Icon
                 sx={{
                   color: active ? fabUTokens.color.highlight : fabUTokens.color.textSecondary,
-                  fontSize: 16,
+                  fontSize: 21,
                 }}
                 fontSize="small"
               />
@@ -71,8 +84,13 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
                 variant="caption"
                 sx={{
                   color: active ? fabUTokens.color.highlight : fabUTokens.color.textSecondary,
-                  fontWeight: active ? 700 : 500,
+                  fontWeight: active ? 800 : 700,
                   fontSize: '0.62rem',
+                  lineHeight: 1,
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {option.label}
