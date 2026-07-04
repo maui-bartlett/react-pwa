@@ -113,15 +113,15 @@ const DND_DICE_PANEL_STRONG = '#0b1114';
 const DND_DICE_TEXT = '#f2f5f6';
 const DND_DICE_IDENTIFICATION_COLORS = [
   '#e40712',
-  '#b8141d',
-  '#ff2d3a',
-  '#951017',
-  '#d9462c',
-  '#aa184c',
-  '#f25454',
-  '#7f131a',
-  '#c71f2d',
-  '#ef5a33',
+  '#ff6a00',
+  '#b100ff',
+  '#8b0000',
+  '#ff2d55',
+  '#7a3cff',
+  '#ffb000',
+  '#a00032',
+  '#ff3b1f',
+  '#6b0016',
 ] as const;
 
 function getUpperLeftStartPosition(): [number, number, number] {
@@ -252,7 +252,13 @@ function hasNaturalD20Critical(result: RollResult) {
 
 type CriticalPulseCenter = { x: number; y: number };
 type CanvasDiceCenter = CriticalPulseCenter & {
-  color?: { red: number; green: number; blue: number };
+  color?: ColorSignature;
+};
+type RgbColor = { red: number; green: number; blue: number };
+type ColorSignature = RgbColor & {
+  redRatio: number;
+  greenRatio: number;
+  blueRatio: number;
 };
 
 function parseHexColor(value: string | undefined) {
@@ -266,13 +272,41 @@ function parseHexColor(value: string | undefined) {
   };
 }
 
-function getColorDistance(
-  left: { red: number; green: number; blue: number },
-  right: { red: number; green: number; blue: number },
-) {
+function getColorSignature(color: RgbColor): ColorSignature {
+  const total = Math.max(1, color.red + color.green + color.blue);
+  return {
+    ...color,
+    redRatio: color.red / total,
+    greenRatio: color.green / total,
+    blueRatio: color.blue / total,
+  };
+}
+
+function getColorDistance(left: ColorSignature, right: ColorSignature) {
   return (
-    (left.red - right.red) ** 2 + (left.green - right.green) ** 2 + (left.blue - right.blue) ** 2
+    (left.redRatio - right.redRatio) ** 2 * 120000 +
+    (left.greenRatio - right.greenRatio) ** 2 * 120000 +
+    (left.blueRatio - right.blueRatio) ** 2 * 120000 +
+    (left.red - right.red) ** 2 * 0.08 +
+    (left.green - right.green) ** 2 * 0.08 +
+    (left.blue - right.blue) ** 2 * 0.08
   );
+}
+
+const diceIdentificationColorSignatures = DND_DICE_IDENTIFICATION_COLORS.map((color) =>
+  getColorSignature(parseHexColor(color)!),
+);
+
+function isDiceIdentificationPixel(color: RgbColor) {
+  const max = Math.max(color.red, color.green, color.blue);
+  const min = Math.min(color.red, color.green, color.blue);
+  if (max < 46 || max - min < 28) return false;
+
+  const signature = getColorSignature(color);
+  const distance = Math.min(
+    ...diceIdentificationColorSignatures.map((target) => getColorDistance(signature, target)),
+  );
+  return distance < 4200;
 }
 
 function getCanvasDiceCenters(): CanvasDiceCenter[] {
@@ -308,7 +342,7 @@ function getCanvasDiceCenters(): CanvasDiceCenter[] {
       const green = pixels[index + 1];
       const blue = pixels[index + 2];
       const alphaValue = pixels[index + 3];
-      if (alphaValue < 24 || red + green + blue < 30) continue;
+      if (alphaValue < 24 || !isDiceIdentificationPixel({ red, green, blue })) continue;
       active[row * columns + column] = 1;
     }
   }
@@ -331,9 +365,12 @@ function getCanvasDiceCenters(): CanvasDiceCenter[] {
     let maxColumn = -1;
     let minRow = rows;
     let maxRow = -1;
-    let redTotal = 0;
-    let greenTotal = 0;
-    let blueTotal = 0;
+    let redRatioTotal = 0;
+    let greenRatioTotal = 0;
+    let blueRatioTotal = 0;
+    let redRawTotal = 0;
+    let greenRawTotal = 0;
+    let blueRawTotal = 0;
     let colorCount = 0;
 
     while (stack.length) {
@@ -352,10 +389,14 @@ function getCanvasDiceCenters(): CanvasDiceCenter[] {
       const red = pixels[pixelIndex];
       const green = pixels[pixelIndex + 1];
       const blue = pixels[pixelIndex + 2];
-      if (red > green * 1.08 && red > blue * 1.08 && red > 40) {
-        redTotal += red;
-        greenTotal += green;
-        blueTotal += blue;
+      const signature = getColorSignature({ red, green, blue });
+      if (isDiceIdentificationPixel(signature)) {
+        redRatioTotal += signature.redRatio;
+        greenRatioTotal += signature.greenRatio;
+        blueRatioTotal += signature.blueRatio;
+        redRawTotal += red;
+        greenRawTotal += green;
+        blueRawTotal += blue;
         colorCount += 1;
       }
 
@@ -382,9 +423,12 @@ function getCanvasDiceCenters(): CanvasDiceCenter[] {
         y: Math.min(86, Math.max(14, centerY)),
         color: colorCount
           ? {
-              red: redTotal / colorCount,
-              green: greenTotal / colorCount,
-              blue: blueTotal / colorCount,
+              red: redRawTotal / colorCount,
+              green: greenRawTotal / colorCount,
+              blue: blueRawTotal / colorCount,
+              redRatio: redRatioTotal / colorCount,
+              greenRatio: greenRatioTotal / colorCount,
+              blueRatio: blueRatioTotal / colorCount,
             }
           : undefined,
       },
@@ -394,7 +438,7 @@ function getCanvasDiceCenters(): CanvasDiceCenter[] {
     });
   }
 
-  const minimumDicePixels = Math.max(8, Math.floor((columns * rows) / 2600));
+  const minimumDicePixels = Math.max(4, Math.floor((columns * rows) / 5200));
   return components
     .filter((component) => component.count >= minimumDicePixels)
     .sort((left, right) => left.minY - right.minY || left.minX - right.minX)
@@ -427,7 +471,8 @@ function getCriticalPulseCenters(result: RollResult) {
   const usedCenters = new Set<number>();
 
   return criticalRolls.map((criticalRoll) => {
-    const targetColor = parseHexColor(criticalRoll.themeColor);
+    const parsedTargetColor = parseHexColor(criticalRoll.themeColor);
+    const targetColor = parsedTargetColor ? getColorSignature(parsedTargetColor) : null;
     if (targetColor) {
       const match = canvasCenters
         .map((center, centerIndex) => ({
