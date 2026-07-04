@@ -119,9 +119,9 @@ const campfireFlicker = keyframes`
 `;
 
 const initiativePulse = keyframes`
-  0% { transform: translateX(-50%) scale(1); opacity: 0.78; }
-  68% { opacity: 0.28; }
-  100% { transform: translateX(-50%) scale(1.58); opacity: 0; }
+  0% { transform: translateX(-50%) scale(1); opacity: 0.88; }
+  58% { opacity: 0.34; }
+  100% { transform: translateX(-50%) scale(2.16); opacity: 0; }
 `;
 
 const dndSwipeEditColor = '#687782';
@@ -1433,7 +1433,7 @@ function DefenseBadge({
     rollFlashTimeout.current = window.setTimeout(() => {
       setRollFlashing(false);
       rollFlashTimeout.current = null;
-    }, 520);
+    }, 900);
   };
 
   useEffect(
@@ -1488,8 +1488,9 @@ function DefenseBadge({
                   shape === 'shield'
                     ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
                     : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
-                bgcolor: alpha(dndColors.red, 0.62),
-                animation: `${initiativePulse} 620ms ease-out forwards`,
+                bgcolor: alpha(dndColors.red, 0.72),
+                boxShadow: `0 0 18px ${alpha(dndColors.red, 0.78)}, 0 0 34px ${alpha(dndColors.red, 0.5)}`,
+                animation: `${initiativePulse} 980ms ease-out forwards`,
                 pointerEvents: 'none',
                 zIndex: 0,
               },

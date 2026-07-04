@@ -230,6 +230,24 @@ function hasNaturalD20Critical(result: RollResult) {
   return result.rolls.some((roll) => roll.sides === 20 && roll.value === 20);
 }
 
+function getCriticalPulseCenter(result: RollResult) {
+  const criticalIndex = result.rolls.findIndex((roll) => roll.sides === 20 && roll.value === 20);
+  if (criticalIndex < 0) return { x: 50, y: 42 };
+
+  const rollCount = Math.max(1, result.rolls.length);
+  const columnCount = Math.min(4, Math.ceil(Math.sqrt(rollCount)));
+  const rowCount = Math.ceil(rollCount / columnCount);
+  const column = criticalIndex % columnCount;
+  const row = Math.floor(criticalIndex / columnCount);
+  const x = ((column + 0.5) / columnCount) * 100;
+  const y = rowCount === 1 ? 42 : 34 + (row / Math.max(1, rowCount - 1)) * 28;
+
+  return {
+    x: Math.min(84, Math.max(16, x)),
+    y: Math.min(70, Math.max(28, y)),
+  };
+}
+
 function formatRollEquation(result: RollResult) {
   const values = result.rolls.map((roll) => roll.value);
   const base = values.length <= 6 ? values.join('+') : `${values.slice(0, 6).join('+')}+...`;
@@ -502,9 +520,11 @@ function ResultReadoutOverlay({
 
 function CriticalPulseOverlay({
   activeKey,
+  center,
   trayStyle,
 }: {
   activeKey: number;
+  center: { x: number; y: number };
   trayStyle: DiceTrayStyle;
 }) {
   if (!activeKey) return null;
@@ -527,8 +547,8 @@ function CriticalPulseOverlay({
       <Box
         sx={{
           position: 'absolute',
-          left: '50%',
-          top: '42%',
+          left: `${center.x}%`,
+          top: `${center.y}%`,
           width: 118,
           height: 118,
           borderRadius: '50%',
@@ -542,8 +562,8 @@ function CriticalPulseOverlay({
           key={delay}
           sx={{
             position: 'absolute',
-            left: '50%',
-            top: '42%',
+            left: `${center.x}%`,
+            top: `${center.y}%`,
             width: 96 + index * 18,
             height: 96 + index * 18,
             borderRadius: '50%',
@@ -571,6 +591,7 @@ function DiceRoller() {
   const [diceTrayStyle, setDiceTrayStyle] = useState<DiceTrayStyle>(defaultDiceTrayStyle);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
   const [criticalPulseKey, setCriticalPulseKey] = useState(0);
+  const [criticalPulseCenter, setCriticalPulseCenter] = useState({ x: 50, y: 42 });
   const diceBoxRef = useRef<DiceBoxInstance | null>(null);
   const initialDiceBoxConfigRef = useRef({
     themeColor: appAccent,
@@ -606,8 +627,9 @@ function DiceRoller() {
   );
   const accent = dicePalette.accent;
 
-  const triggerCriticalPulse = useCallback(() => {
+  const triggerCriticalPulse = useCallback((result: RollResult) => {
     window.clearTimeout(criticalPulseTimeoutRef.current);
+    setCriticalPulseCenter(getCriticalPulseCenter(result));
     setCriticalPulseKey((key) => key + 1);
     criticalPulseTimeoutRef.current = window.setTimeout(() => setCriticalPulseKey(0), 1500);
   }, []);
@@ -860,7 +882,7 @@ function DiceRoller() {
 
         const result = toRollResult(results);
         if (isValidRollResult(result, dice)) {
-          if (isDndApp && hasNaturalD20Critical(result)) triggerCriticalPulse();
+          if (isDndApp && hasNaturalD20Critical(result)) triggerCriticalPulse(result);
           setLastResult(applyMetadata(result));
           return;
         }
@@ -869,7 +891,7 @@ function DiceRoller() {
           result,
         });
         const fallbackResult = createRandomRollResult(dice);
-        if (isDndApp && hasNaturalD20Critical(fallbackResult)) triggerCriticalPulse();
+        if (isDndApp && hasNaturalD20Critical(fallbackResult)) triggerCriticalPulse(fallbackResult);
         setLastResult(applyMetadata(fallbackResult));
       } catch (error) {
         console.warn('[dice] DiceBox roll failed', error);
@@ -942,7 +964,11 @@ function DiceRoller() {
           },
         }}
       />
-      <CriticalPulseOverlay activeKey={criticalPulseKey} trayStyle={diceTrayStyle} />
+      <CriticalPulseOverlay
+        activeKey={criticalPulseKey}
+        center={criticalPulseCenter}
+        trayStyle={diceTrayStyle}
+      />
       <ResultReadoutOverlay
         result={isRolling ? null : lastResult}
         accent={accent}
