@@ -902,7 +902,11 @@ function HeroHeader({
           alignItems: 'center',
         }}
       >
-        <Stack alignItems="flex-start" spacing={0.2} sx={{ minWidth: 0 }}>
+        <Stack
+          alignItems="flex-start"
+          spacing={0.2}
+          sx={{ minWidth: 0, pl: { xs: 0.45, sm: 0.6 } }}
+        >
           <Typography
             sx={{
               color: dndColors.text,
@@ -956,13 +960,7 @@ function HeroHeader({
           alignItems: 'center',
         }}
       >
-        <Stack
-          spacing={0.35}
-          sx={{
-            width: { xs: 189, sm: 243 },
-            height: 58,
-          }}
-        >
+        <Stack direction="row" spacing={{ xs: 0.45, sm: 0.7 }} alignItems="center">
           <ConditionsButton onChange={setActiveTab} />
           <HitPointsButton
             current={character.hitPoints.current}
@@ -1010,17 +1008,15 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: '100%',
+        width: { xs: 81, sm: 113 },
         minWidth: 0,
-        minHeight: 20,
+        minHeight: 58,
         px: { xs: 0.65, sm: 1.1 },
-        py: 0.15,
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
         borderRadius: '6px',
-        fontSize: { xs: 9.5, sm: 11 },
+        fontSize: { xs: 10, sm: 13 },
         fontWeight: 900,
-        lineHeight: 1,
         textTransform: 'uppercase',
         '&:hover': { bgcolor: '#05090b' },
       }}
@@ -1212,9 +1208,9 @@ function HitPointsButton({
       aria-label="Edit hit points"
       onClick={onClick}
       sx={{
-        width: '100%',
+        width: { xs: 104, sm: 124 },
         minWidth: 0,
-        minHeight: 35,
+        minHeight: 58,
         bgcolor: dndColors.panelStrong,
         border: 0,
         borderRadius: '6px',
@@ -1222,7 +1218,7 @@ function HitPointsButton({
         cursor: 'pointer',
         font: 'inherit',
         px: { xs: 0.6, sm: 1 },
-        py: 0.3,
+        py: 0.55,
         textAlign: 'center',
         '&:hover': { bgcolor: '#05090b' },
       }}
@@ -1230,10 +1226,10 @@ function HitPointsButton({
       <Typography
         sx={{
           color: dndColors.text,
-          fontSize: { xs: 10, sm: 11 },
+          fontSize: { xs: 11, sm: 12 },
           fontWeight: 900,
           lineHeight: 1,
-          mb: 0.1,
+          mb: 0.25,
         }}
       >
         Hit Points
@@ -1241,10 +1237,10 @@ function HitPointsButton({
       <Typography
         sx={{
           color: dndColors.text,
-          fontSize: { xs: 13, sm: 15 },
+          fontSize: { xs: 14, sm: 16 },
           fontWeight: 900,
           lineHeight: 1.15,
-          mt: 0,
+          mt: 0.15,
         }}
       >
         {current}/{max}
@@ -1253,8 +1249,8 @@ function HitPointsButton({
         variant="determinate"
         value={percent}
         sx={{
-          mt: 0.25,
-          height: 2,
+          mt: 0.35,
+          height: 3,
           bgcolor: dndColors.border,
           '& .MuiLinearProgress-bar': { bgcolor: dndColors.blue },
         }}
@@ -2014,12 +2010,20 @@ function AttackRow({ attack, onToggleEquipped }: { attack: Attack; onToggleEquip
           {attack.range}
         </Typography>
       </Stack>
-      <RollBox
-        ariaLabel={`Roll ${attack.name} attack`}
-        onRoll={() => rollD20(`${attack.name} Attack`, attack.hitDc)}
-      >
-        {attack.hitDc}
-      </RollBox>
+      <Stack alignItems="center" spacing={0.35}>
+        <RollBox
+          ariaLabel={`Roll ${attack.name} attack`}
+          onRoll={() => rollD20(`${attack.name} Attack`, attack.hitDc)}
+        >
+          {attack.hitDc}
+        </RollBox>
+        <Typography
+          aria-hidden="true"
+          sx={{ color: 'transparent', fontSize: 11, fontWeight: 900, lineHeight: 1 }}
+        >
+          spacer
+        </Typography>
+      </Stack>
       <Stack alignItems="center" spacing={0.35}>
         <RollBox
           ariaLabel={`Roll ${attack.name} damage`}
@@ -2077,6 +2081,7 @@ function RollBox({
       }
       sx={{
         minHeight: 37,
+        width: '100%',
         border: `1px solid ${dndColors.border}`,
         borderRadius: '5px',
         display: 'grid',
@@ -2221,7 +2226,7 @@ function SlotTracker({
 }) {
   return (
     <Box>
-      <Stack direction="row" spacing={0.45}>
+      <Stack direction="row" spacing={0.55}>
         {Array.from({ length: slot.max }).map((_, index) => (
           <Box
             component="button"
@@ -2230,8 +2235,8 @@ function SlotTracker({
             aria-label={`${slot.level} spell slot ${index + 1}`}
             onClick={() => onUpdate(index + 1 === slot.used ? index : index + 1)}
             sx={{
-              width: { xs: 19, sm: 22 },
-              height: { xs: 19, sm: 22 },
+              width: { xs: 24, sm: 28 },
+              height: { xs: 24, sm: 28 },
               borderRadius: '6px',
               border: `2px solid ${dndColors.blue}`,
               bgcolor: index < slot.used ? dndColors.blue : 'transparent',
