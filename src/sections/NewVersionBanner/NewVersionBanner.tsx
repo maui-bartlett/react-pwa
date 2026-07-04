@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { Box, IconButton, Typography } from '@mui/material';
 
+import { useAppBannerPalette } from '../useAppBannerPalette';
+
 const STORAGE_KEY = 'table-top-last-seen-version';
 
 function shouldShowVersionBanner() {
@@ -15,6 +17,7 @@ function shouldShowVersionBanner() {
 
 function NewVersionBanner() {
   const [open, setOpen] = useState(() => shouldShowVersionBanner());
+  const palette = useAppBannerPalette();
 
   useEffect(() => {
     if (!open) return;
@@ -43,10 +46,10 @@ function NewVersionBanner() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: '#f5c85b',
-        color: '#17283a',
-        borderBottom: '1px solid rgba(23, 40, 58, 0.3)',
-        boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)',
+        bgcolor: palette.background,
+        color: palette.text,
+        borderBottom: `1px solid ${palette.border}`,
+        boxShadow: palette.shadow,
       }}
     >
       <Typography
@@ -72,7 +75,7 @@ function NewVersionBanner() {
           top: 'calc(env(safe-area-inset-top) + 5px)',
           width: 32,
           height: 32,
-          color: 'inherit',
+          color: palette.text,
         }}
       >
         <CloseRoundedIcon fontSize="small" />

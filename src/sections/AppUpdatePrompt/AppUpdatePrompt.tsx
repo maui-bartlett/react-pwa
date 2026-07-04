@@ -8,6 +8,7 @@ import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import { api } from '../../../convex/_generated/api';
+import { useAppBannerPalette } from '../useAppBannerPalette';
 
 // How often a long-open client re-checks the service worker for a new build,
 // as a fallback for when the real-time Convex signal is missed (e.g. the
@@ -66,6 +67,7 @@ function AppUpdatePrompt() {
     undefined,
   );
   const [dismissed, setDismissed] = useState(false);
+  const palette = useAppBannerPalette();
 
   const {
     needRefresh: [needRefresh],
@@ -143,10 +145,10 @@ function AppUpdatePrompt() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 1,
-        bgcolor: '#17283a',
-        color: '#f5c85b',
-        borderBottom: '1px solid rgba(245, 200, 91, 0.4)',
-        boxShadow: '0 3px 10px rgba(0, 0, 0, 0.25)',
+        bgcolor: palette.background,
+        color: palette.text,
+        borderBottom: `1px solid ${palette.border}`,
+        boxShadow: palette.shadow,
       }}
     >
       <Typography
@@ -166,13 +168,13 @@ function AppUpdatePrompt() {
         startIcon={<RefreshRoundedIcon fontSize="small" />}
         size="small"
         sx={{
-          bgcolor: '#f5c85b',
-          color: '#17283a',
+          bgcolor: palette.buttonBackground,
+          color: palette.buttonText,
           textTransform: 'none',
           fontWeight: 800,
           px: 1.4,
           py: 0.3,
-          '&:hover': { bgcolor: '#f0bd3f' },
+          '&:hover': { bgcolor: palette.buttonHoverBackground },
         }}
       >
         Update
@@ -189,7 +191,7 @@ function AppUpdatePrompt() {
           top: 'calc(env(safe-area-inset-top) + 5px)',
           width: 32,
           height: 32,
-          color: 'inherit',
+          color: palette.text,
         }}
       >
         <CloseRoundedIcon fontSize="small" />
