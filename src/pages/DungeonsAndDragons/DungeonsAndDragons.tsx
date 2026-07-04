@@ -36,7 +36,7 @@ import { alpha, keyframes } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
-import { Backpack, FlameKindling, House, Lightbulb, Sword, X } from 'lucide-react';
+import { Backpack, House, Lightbulb, Sword, X } from 'lucide-react';
 
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
@@ -109,6 +109,13 @@ const inspirationPullOff = keyframes`
   0% { transform: translate(-50%, 7px); }
   34% { transform: translate(-50%, 11px); }
   100% { transform: translate(-50%, 0); }
+`;
+
+const campfireFlicker = keyframes`
+  0%, 100% { transform: translateY(0) scaleX(1) scaleY(1); opacity: 0.95; }
+  24% { transform: translateY(-1px) scaleX(0.92) scaleY(1.12); opacity: 1; }
+  55% { transform: translateY(0.5px) scaleX(1.08) scaleY(0.96); opacity: 0.9; }
+  78% { transform: translateY(-0.5px) scaleX(0.98) scaleY(1.06); opacity: 1; }
 `;
 
 const dndSwipeEditColor = '#687782';
@@ -882,6 +889,7 @@ function HeroHeader({
   onEditCharacter,
   onEditHitPoints,
   onOpenRest,
+  restOpen,
   onToggleInspiration,
   homeAction,
   accountAction,
@@ -890,6 +898,7 @@ function HeroHeader({
   onEditCharacter: () => void;
   onEditHitPoints: () => void;
   onOpenRest: () => void;
+  restOpen: boolean;
   onToggleInspiration: () => void;
   homeAction: ReactNode;
   accountAction: ReactNode;
@@ -1014,7 +1023,11 @@ function HeroHeader({
             width: { xs: 220, sm: 294 },
           }}
         >
-          <HeaderIconControl icon={<FlameKindling size={24} />} label="Rest" onClick={onOpenRest} />
+          <HeaderIconControl
+            icon={<CampfireIcon active={restOpen} />}
+            label="Rest"
+            onClick={onOpenRest}
+          />
           <InspirationToggle active={character.inspiration} onToggle={onToggleInspiration} />
           <DefenseBadge
             compact
@@ -1104,7 +1117,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
         <Box
           sx={{
             position: 'absolute',
-            top: { xs: 5, sm: 8 },
+            top: { xs: 0, sm: 3 },
             left: '50%',
             width: 28,
             height: 34,
@@ -1258,6 +1271,60 @@ function HeaderIconControl({
   );
 }
 
+function CampfireIcon({ active }: { active: boolean }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        width: 26,
+        height: 26,
+        display: 'inline-grid',
+        placeItems: 'center',
+        color: '#ffffff',
+      }}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="26"
+        height="26"
+        aria-hidden="true"
+        focusable="false"
+        fill="none"
+      >
+        <Box
+          component="g"
+          sx={{
+            transformBox: 'fill-box',
+            transformOrigin: '50% 82%',
+            animation: active ? `${campfireFlicker} 760ms ease-in-out infinite` : 'none',
+          }}
+        >
+          <path
+            d="M12.2 3.2c2.8 2.3 4.3 4.8 4.3 7.3 0 3-1.9 5.2-4.5 5.2s-4.5-2.2-4.5-5.1c0-1.7.8-3.2 2.1-4.7.3 1 .9 1.7 1.7 2.1.1-1.9.4-3.5.9-4.8Z"
+            fill={active ? '#f66d19' : 'none'}
+            stroke={active ? '#ff8a1c' : 'currentColor'}
+            strokeWidth="1.65"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 8.2c1.3 1.3 2 2.6 2 4 0 1.5-.8 2.6-2 2.6s-2-1.1-2-2.6c0-1.1.6-2 1.4-2.8.1.6.3 1.1.6 1.5.1-1.1.1-1.9 0-2.7Z"
+            fill={active ? dndColors.gold : 'none'}
+            stroke={active ? '#ffd36b' : 'currentColor'}
+            strokeWidth="1.35"
+            strokeLinejoin="round"
+          />
+        </Box>
+        <path
+          d="m5.2 17.1 13.6 3.6M18.8 17.1 5.2 20.7"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+        />
+      </svg>
+    </Box>
+  );
+}
+
 function HitPointsButton({
   current,
   max,
@@ -1342,16 +1409,42 @@ function DefenseBadge({
 }) {
   const isArmorClass = label === 'Armor Class';
   const badgeSize = compact ? { xs: 48, sm: 62 } : 68;
+  const [rollFlashing, setRollFlashing] = useState(false);
+  const rollFlashTimeout = useRef<number | null>(null);
+  const triggerRoll = () => {
+    onRoll?.();
+    if (!onRoll) {
+      return;
+    }
+    setRollFlashing(true);
+    if (rollFlashTimeout.current) {
+      window.clearTimeout(rollFlashTimeout.current);
+    }
+    rollFlashTimeout.current = window.setTimeout(() => {
+      setRollFlashing(false);
+      rollFlashTimeout.current = null;
+    }, 520);
+  };
+
+  useEffect(
+    () => () => {
+      if (rollFlashTimeout.current) {
+        window.clearTimeout(rollFlashTimeout.current);
+      }
+    },
+    [],
+  );
+
   const interactiveProps = onRoll
     ? {
         role: 'button',
         tabIndex: 0,
         'aria-label': `Roll ${label}`,
-        onClick: onRoll,
+        onClick: triggerRoll,
         onKeyDown: (event: ReactKeyboardEvent) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            onRoll();
+            triggerRoll();
           }
         },
       }
@@ -1412,7 +1505,9 @@ function DefenseBadge({
             ? {
                 borderColor: 'transparent',
                 bgcolor: 'transparent',
-                filter: `drop-shadow(0 0 4px ${alpha('#ffffff', 0.68)}) drop-shadow(0 0 10px ${alpha('#ffffff', 0.34)})`,
+                filter: rollFlashing
+                  ? `drop-shadow(0 0 6px ${alpha(dndColors.red, 0.95)}) drop-shadow(0 0 18px ${alpha(dndColors.red, 0.58)})`
+                  : `drop-shadow(0 0 5px ${alpha('#ffffff', 0.82)}) drop-shadow(0 0 14px ${alpha('#ffffff', 0.42)})`,
                 '&::before': {
                   content: '""',
                   position: 'absolute',
@@ -1421,7 +1516,7 @@ function DefenseBadge({
                     shape === 'shield'
                       ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
                       : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
-                  bgcolor: alpha('#ffffff', 0.95),
+                  bgcolor: rollFlashing ? alpha(dndColors.red, 0.96) : alpha('#ffffff', 0.98),
                 },
                 '&::after': {
                   content: '""',
@@ -3744,9 +3839,12 @@ function RestDialog({
                     onClick={() => onSpendHitDie(pool.die)}
                     sx={{
                       border: `1px solid ${available > 0 ? dndColors.blue : dndColors.border}`,
-                      color: available > 0 ? dndColors.blue : dndColors.muted,
+                      color: dndColors.text,
                       fontWeight: 900,
                       textTransform: 'none',
+                      '&.Mui-disabled': {
+                        color: alpha('#ffffff', 0.46),
+                      },
                     }}
                   >
                     Spend {pool.die} (+{healAmount})
@@ -6399,6 +6497,7 @@ function DungeonsAndDragons() {
             onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
             onEditHitPoints={() => setHitPointForm(createHitPointForm(character))}
             onOpenRest={() => setRestOpen(true)}
+            restOpen={restOpen}
             onToggleInspiration={toggleInspiration}
             homeAction={
               <IconButton
