@@ -69,6 +69,7 @@ import {
   normalizeDndCharacter,
 } from './atoms';
 import { deriveDndClassFields, formatSpellcasting } from './classDerivation';
+import { openDndSpellCatalog } from './openDndSpellCatalog';
 import { DND_SCHEMA_VERSION, deserializeDndCharacter, serializeDndCharacter } from './persistence';
 import { applyDndRest, hitDieAverageHeal, spendDndHitDie } from './rest';
 import type { DndRestType } from './rest';
@@ -589,6 +590,27 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     classes: ['Wizard'],
   },
 ];
+
+const openDndSpellCatalogEntries: SpellCatalogEntry[] = openDndSpellCatalog.map((spell) => ({
+  ...spell,
+  classes: [...spell.classes],
+}));
+
+function mergeSpellCatalogs(...catalogs: SpellCatalogEntry[][]) {
+  const byName = new Map<string, SpellCatalogEntry>();
+  catalogs.flat().forEach((spell) => {
+    const name = asNonEmptyString(spell.name);
+    if (!name) return;
+    byName.set(name.toLowerCase(), {
+      ...byName.get(name.toLowerCase()),
+      ...spell,
+      classes: Array.isArray(spell.classes)
+        ? [...spell.classes]
+        : byName.get(name.toLowerCase())?.classes,
+    });
+  });
+  return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
 
 type DndClassDoc = {
   class?: {
@@ -2964,15 +2986,30 @@ function formatSpellTime(value: string) {
 
 function SpellDetailsDialog({ spell, onClose }: { spell: Spell | null; onClose: () => void }) {
   if (!spell) return null;
-  const details = [
-    { label: 'Level', value: spell.level },
-    { label: 'School', value: spell.school },
-    { label: 'Time', value: spell.castingTime },
-    { label: 'Range', value: spell.range },
-    { label: 'Hit/DC', value: getSpellHitDcDisplay(spell) },
-    { label: 'Effect', value: getSpellEffectDisplay(spell) },
+  const catalogSpell = getKnownSpellData(spell.name);
+  const displaySpell = {
+    ...catalogSpell,
+    ...spell,
+    classes: spell.classes ?? catalogSpell?.classes,
+  };
+  const description = getSpellDescription(displaySpell);
+  const higherLevel = displaySpell.higherLevel?.trim();
+  const effect = getSpellEffectDisplay(displaySpell);
+  const isCantrip = getSpellSlotLevel(displaySpell.level) === null;
+  const detailRows = [
+    { label: 'Casting Time', value: displaySpell.castingTime },
+    { label: 'Range/Area', value: displaySpell.range },
+    { label: 'Components', value: displaySpell.components ?? '--' },
+    ...(displaySpell.material ? [{ label: 'Material', value: displaySpell.material }] : []),
+    {
+      label: 'Duration',
+      value: displaySpell.duration ?? (displaySpell.concentration ? 'Concentration' : '--'),
+    },
+    ...(getSpellHitDcDisplay(displaySpell) !== '--'
+      ? [{ label: 'Attack/Save', value: getSpellHitDcDisplay(displaySpell) }]
+      : []),
+    ...(displaySpell.source ? [{ label: 'Source', value: displaySpell.source }] : []),
   ];
-  const description = getSpellDescription(spell);
 
   return (
     <Dialog
@@ -2980,94 +3017,217 @@ function SpellDetailsDialog({ spell, onClose }: { spell: Spell | null; onClose: 
       onClose={onClose}
       fullWidth
       maxWidth="xs"
+      sx={{
+        '& .MuiDialog-container': {
+          alignItems: { xs: 'flex-start', sm: 'center' },
+        },
+      }}
       PaperProps={{
         sx: {
-          borderRadius: '16px',
+          width: { xs: '100%', sm: 430 },
+          height: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
+          mt: { xs: 'calc(env(safe-area-inset-top, 0px) + 78px)', sm: 0 },
+          mx: { xs: 0, sm: 2 },
+          borderRadius: { xs: '26px 26px 0 0', sm: '18px' },
           border: `1px solid ${dndColors.border}`,
           bgcolor: dndColors.panelSoft,
           color: dndColors.text,
           boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
+          overflow: 'hidden',
         },
       }}
     >
-      <DialogTitle sx={{ pr: 6, fontSize: 22, fontWeight: 950 }}>{spell.name}</DialogTitle>
       <IconButton
         aria-label="Close spell details"
         onClick={onClose}
-        sx={{ position: 'absolute', right: 10, top: 10, color: dndColors.text }}
+        sx={{
+          position: 'absolute',
+          left: 16,
+          top: 16,
+          zIndex: 2,
+          width: 48,
+          height: 48,
+          borderRadius: '999px',
+          bgcolor: alpha('#000000', 0.28),
+          color: dndColors.text,
+          '&:hover': { bgcolor: alpha('#000000', 0.38) },
+        }}
       >
-        <X size={22} />
+        <X size={30} />
       </IconButton>
-      <DialogContent sx={{ pt: 0 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 0.8,
-            mb: 1.5,
-          }}
-        >
-          {details.map((detail) => (
-            <Box
-              key={detail.label}
+      <DialogContent
+        sx={{
+          px: 2.2,
+          pt: 4.2,
+          pb: 3,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <Box sx={{ minHeight: 78, textAlign: 'center', px: 7 }}>
+          <Typography
+            sx={{ color: dndColors.text, fontSize: 19, fontWeight: 950, lineHeight: 1.1 }}
+          >
+            {displaySpell.name}
+          </Typography>
+          <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 850 }}>
+            {(displaySpell.classes ?? []).slice(0, 3).join(' • ') || 'Spell'}
+          </Typography>
+        </Box>
+        <Typography sx={{ color: dndColors.text, fontSize: 16, mt: 2.3 }}>
+          {formatSpellSubtitle(displaySpell)}
+        </Typography>
+        <DividerLine />
+        <Typography sx={{ color: dndColors.text, fontSize: 15, fontWeight: 950, mb: 1.2 }}>
+          CAST{' '}
+          {isCantrip ? (
+            <Box component="span" sx={{ fontWeight: 700 }}>
+              At Will
+            </Box>
+          ) : null}
+        </Typography>
+        {!isCantrip ? (
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ mb: 1.35 }}
+          >
+            <Stack direction="row" alignItems="center" spacing={0.8}>
+              <Typography sx={{ color: dndColors.text, fontSize: 14, fontWeight: 900 }}>
+                Lvl
+              </Typography>
+              <Box sx={spellLevelStepperSx}>-</Box>
+              <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 950 }}>
+                {getSpellSlotLevel(displaySpell.level) ?? displaySpell.level}
+              </Typography>
+              <Box sx={{ ...spellLevelStepperSx, bgcolor: dndColors.red }}>+</Box>
+            </Stack>
+            <Button
               sx={{
-                borderRadius: '7px',
-                border: `1px solid ${dndColors.borderSoft}`,
-                bgcolor: alpha('#000000', 0.16),
-                px: 1,
-                py: 0.85,
+                minHeight: 32,
+                border: `1px solid ${dndColors.blue}`,
+                color: dndColors.blue,
+                fontSize: 13,
+                fontWeight: 900,
+                textTransform: 'none',
               }}
             >
-              <Typography
-                sx={{
-                  color: dndColors.muted,
-                  fontSize: 10,
-                  fontWeight: 900,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {detail.label}
-              </Typography>
-              <Typography sx={{ color: dndColors.text, fontSize: 14, fontWeight: 900 }}>
-                {detail.value}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-        <Typography
+              Spell Slot
+            </Button>
+          </Stack>
+        ) : null}
+        <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 850, mb: 1.4 }}>
+          <Box component="span" sx={{ fontWeight: 950 }}>
+            {effect}
+          </Box>{' '}
+          {effect !== 'Utility' ? 'Effect' : ''}
+        </Typography>
+        <Box
           sx={{
-            color: dndColors.muted,
-            fontSize: 11,
-            fontWeight: 900,
-            mb: 0.6,
-            textTransform: 'uppercase',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            minHeight: 46,
+            px: 1.2,
+            mb: 1.3,
+            bgcolor: alpha('#000000', 0.16),
+            color: dndColors.text,
+            fontWeight: 950,
           }}
         >
-          Description
-        </Typography>
+          Slots
+          <Typography sx={{ color: dndColors.red, fontSize: 24, lineHeight: 1 }}>⌄</Typography>
+        </Box>
+        <DividerLine />
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            minHeight: 44,
+            color: dndColors.text,
+            fontWeight: 950,
+          }}
+        >
+          Customize
+          <Typography sx={{ fontSize: 30, lineHeight: 1 }}>›</Typography>
+        </Box>
+        <DividerLine />
+        <Stack spacing={0.75}>
+          {detailRows.map((detail) => (
+            <Typography
+              key={detail.label}
+              sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
+            >
+              <Box component="span" sx={{ fontWeight: 950 }}>
+                {detail.label}:
+              </Box>{' '}
+              {detail.value}
+            </Typography>
+          ))}
+          {displaySpell.ritual ? (
+            <Typography sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}>
+              <Box component="span" sx={{ fontWeight: 950 }}>
+                Ritual:
+              </Box>{' '}
+              Yes
+            </Typography>
+          ) : null}
+        </Stack>
+        <DividerLine />
         <Typography
-          sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.55, whiteSpace: 'pre-line' }}
+          sx={{ color: dndColors.text, fontSize: 16, lineHeight: 1.65, whiteSpace: 'pre-line' }}
         >
           {description}
         </Typography>
+        {higherLevel ? (
+          <Typography
+            sx={{
+              color: dndColors.text,
+              fontSize: 16,
+              lineHeight: 1.65,
+              whiteSpace: 'pre-line',
+              mt: 1.8,
+            }}
+          >
+            <Box component="span" sx={{ fontStyle: 'italic', fontWeight: 950 }}>
+              At Higher Levels.
+            </Box>{' '}
+            {higherLevel.replace(/^At Higher Levels\.\s*/i, '')}
+          </Typography>
+        ) : null}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2.4 }}>
-        <Button
-          onClick={onClose}
-          sx={{
-            minHeight: 38,
-            px: 2,
-            borderRadius: '8px',
-            bgcolor: dndColors.red,
-            color: '#ffffff',
-            fontWeight: 900,
-            '&:hover': { bgcolor: alpha(dndColors.red, 0.82) },
-          }}
-        >
-          Close
-        </Button>
-      </DialogActions>
     </Dialog>
+  );
+}
+
+const spellLevelStepperSx = {
+  display: 'grid',
+  placeItems: 'center',
+  width: 29,
+  height: 29,
+  bgcolor: alpha(dndColors.red, 0.58),
+  color: '#ffffff',
+  fontSize: 18,
+  fontWeight: 950,
+  lineHeight: 1,
+};
+
+function DividerLine() {
+  return <Box sx={{ height: '1px', bgcolor: alpha(dndColors.border, 0.45), my: 1.35 }} />;
+}
+
+function formatSpellSubtitle(spell: Spell) {
+  const level = getSpellSlotLevel(spell.level) ? spell.level : `${spell.school} Cantrip`;
+  return getSpellSlotLevel(spell.level) ? `${spell.level} ${spell.school}` : level;
+}
+
+function getKnownSpellData(name: string) {
+  const normalized = name.trim().toLowerCase();
+  return (
+    dndSpellCatalog.find((spell) => spell.name.trim().toLowerCase() === normalized) ??
+    openDndSpellCatalogEntries.find((spell) => spell.name.trim().toLowerCase() === normalized)
   );
 }
 
@@ -3075,7 +3235,11 @@ function getSpellDescription(spell: Spell) {
   const storedDescription = spell.description?.trim();
   if (storedDescription) return storedDescription;
   const catalogDescription = dndSpellDescriptionsByName[spell.name.trim().toLowerCase()];
-  return catalogDescription ?? 'No description has been recorded for this spell yet.';
+  if (catalogDescription) return catalogDescription;
+  return (
+    getKnownSpellData(spell.name)?.description ??
+    'No description has been recorded for this spell yet.'
+  );
 }
 
 function getSpellSlotLevel(level: string) {
@@ -4179,6 +4343,7 @@ function DndEditDialog({
   onCancel,
   onSave,
   hideTitle = false,
+  saveDisabled = false,
 }: {
   title: string;
   open: boolean;
@@ -4186,6 +4351,7 @@ function DndEditDialog({
   onCancel: () => void;
   onSave: () => void;
   hideTitle?: boolean;
+  saveDisabled?: boolean;
 }) {
   return (
     <Dialog
@@ -4207,8 +4373,16 @@ function DndEditDialog({
         </Button>
         <Button
           onClick={onSave}
+          disabled={saveDisabled}
           variant="contained"
-          sx={{ bgcolor: dndColors.red, '&:hover': { bgcolor: dndColors.redDark } }}
+          sx={{
+            bgcolor: dndColors.red,
+            '&:hover': { bgcolor: dndColors.redDark },
+            '&.Mui-disabled': {
+              bgcolor: alpha(dndColors.red, 0.28),
+              color: alpha('#ffffff', 0.42),
+            },
+          }}
         >
           Save
         </Button>
@@ -4336,17 +4510,19 @@ function RestDialog({
   );
 }
 
+type CharacterClassForm = {
+  name: string;
+  subclass: string;
+  level: string;
+};
+
 type CharacterForm = {
   name: string;
   species: string;
   background: string;
   alignment: string;
-  classOneName: string;
-  classOneSubclass: string;
-  classOneLevel: string;
-  classTwoName: string;
-  classTwoSubclass: string;
-  classTwoLevel: string;
+  classes: CharacterClassForm[];
+  abilityScores: Record<AbilityKey, number>;
   armorClass: string;
   initiative: string;
   speed: string;
@@ -4400,9 +4576,7 @@ function buildCharacterFromGuide(form: CharacterBuilderForm): DndCharacter {
     };
   });
   const spells = spellNames.map((name) => {
-    const catalogSpell = dndSpellCatalog.find(
-      (spell) => spell.name.toLowerCase() === name.toLowerCase(),
-    );
+    const catalogSpell = getKnownSpellData(name);
     return {
       id: createEntryId('spell'),
       ...(catalogSpell ?? {
@@ -4450,17 +4624,100 @@ function createCharacterForm(character: DndCharacter): CharacterForm {
     species: character.species,
     background: character.background,
     alignment: character.alignment,
-    classOneName: character.classes[0]?.name ?? '',
-    classOneSubclass: character.classes[0]?.subclass ?? '',
-    classOneLevel: String(character.classes[0]?.level ?? 1),
-    classTwoName: character.classes[1]?.name ?? '',
-    classTwoSubclass: character.classes[1]?.subclass ?? '',
-    classTwoLevel: String(character.classes[1]?.level ?? 1),
+    classes:
+      character.classes.length > 0
+        ? character.classes.map((entry) => ({
+            name: entry.name,
+            subclass: entry.subclass ?? '',
+            level: String(entry.level),
+          }))
+        : [{ name: 'Fighter', subclass: '', level: '1' }],
+    abilityScores: Object.fromEntries(
+      character.abilities.map((ability) => [ability.key, ability.score]),
+    ) as Record<AbilityKey, number>,
     armorClass: String(character.armorClass),
     initiative: String(character.initiative),
     speed: String(character.speed),
     proficiencyBonus: String(character.proficiencyBonus),
   };
+}
+
+const dndMulticlassRequirements: Record<
+  string,
+  Array<{ abilities: AbilityKey[]; score: number; mode?: 'any' | 'all' }>
+> = {
+  artificer: [{ abilities: ['int'], score: 13 }],
+  barbarian: [{ abilities: ['str'], score: 13 }],
+  bard: [{ abilities: ['cha'], score: 13 }],
+  cleric: [{ abilities: ['wis'], score: 13 }],
+  druid: [{ abilities: ['wis'], score: 13 }],
+  fighter: [{ abilities: ['str', 'dex'], score: 13, mode: 'any' }],
+  monk: [{ abilities: ['dex', 'wis'], score: 13, mode: 'all' }],
+  paladin: [{ abilities: ['str', 'cha'], score: 13, mode: 'all' }],
+  pugilist: [{ abilities: ['str', 'con'], score: 13, mode: 'all' }],
+  ranger: [{ abilities: ['dex', 'wis'], score: 13, mode: 'all' }],
+  rogue: [{ abilities: ['dex'], score: 13 }],
+  sorcerer: [{ abilities: ['cha'], score: 13 }],
+  warlock: [{ abilities: ['cha'], score: 13 }],
+  wizard: [{ abilities: ['int'], score: 13 }],
+};
+
+const abilityLabels: Record<AbilityKey, string> = {
+  str: 'STR',
+  dex: 'DEX',
+  con: 'CON',
+  int: 'INT',
+  wis: 'WIS',
+  cha: 'CHA',
+};
+
+function formatClassRequirement(className: string) {
+  const requirements = dndMulticlassRequirements[normalizeClassCatalogKey(className)];
+  if (!requirements) return null;
+  return requirements
+    .map((requirement) => {
+      const joiner = requirement.mode === 'any' ? ' or ' : ' and ';
+      return `${requirement.abilities.map((ability) => abilityLabels[ability]).join(joiner)} ${requirement.score}`;
+    })
+    .join(', ');
+}
+
+function meetsClassRequirement(className: string, abilityScores: Record<AbilityKey, number>) {
+  const requirements = dndMulticlassRequirements[normalizeClassCatalogKey(className)];
+  if (!requirements) return true;
+  return requirements.every((requirement) => {
+    const scores = requirement.abilities.map((ability) => abilityScores[ability] ?? 0);
+    return requirement.mode === 'any'
+      ? scores.some((score) => score >= requirement.score)
+      : scores.every((score) => score >= requirement.score);
+  });
+}
+
+function getCharacterClassFormErrors(form: CharacterForm) {
+  const classes = form.classes.map((entry) => ({
+    ...entry,
+    name: entry.name.trim(),
+    level: entry.level.trim(),
+  }));
+  const errors: string[] = [];
+  const namedClasses = classes.filter((entry) => entry.name.length > 0);
+  if (namedClasses.length === 0) errors.push('At least one class is required.');
+
+  const levels = namedClasses.map((entry) => parseIntOrFallback(entry.level, 0));
+  if (levels.some((level) => level < 1)) errors.push('Every class needs at least 1 level.');
+  const totalLevel = levels.reduce((sum, level) => sum + level, 0);
+  if (totalLevel > 20) errors.push('Total character level cannot exceed 20.');
+
+  if (namedClasses.length > 1) {
+    namedClasses.forEach((entry) => {
+      if (!meetsClassRequirement(entry.name, form.abilityScores)) {
+        const requirement = formatClassRequirement(entry.name);
+        if (requirement) errors.push(`${entry.name} requires ${requirement} to multiclass.`);
+      }
+    });
+  }
+
+  return errors;
 }
 
 function CharacterEditDialog({
@@ -4482,35 +4739,61 @@ function CharacterEditDialog({
 }) {
   if (!form) return null;
   const setField = (key: keyof CharacterForm, value: string) => {
-    if (key === 'classOneName') {
-      onChange({ ...form, classOneName: value, classOneSubclass: '' });
-      return;
-    }
-    if (key === 'classTwoName') {
-      onChange({ ...form, classTwoName: value, classTwoSubclass: '' });
-      return;
-    }
     onChange({ ...form, [key]: value });
+  };
+  const updateClass = (index: number, patch: Partial<CharacterClassForm>) => {
+    onChange({
+      ...form,
+      classes: form.classes.map((entry, entryIndex) =>
+        entryIndex === index
+          ? {
+              ...entry,
+              ...patch,
+              ...(patch.name !== undefined ? { subclass: '' } : null),
+            }
+          : entry,
+      ),
+    });
+  };
+  const removeClass = (index: number) => {
+    if (form.classes.length <= 1) return;
+    onChange({ ...form, classes: form.classes.filter((_, entryIndex) => entryIndex !== index) });
+  };
+  const addClass = () => {
+    const selectedClassNames = new Set(
+      form.classes.map((entry) => normalizeClassCatalogKey(entry.name)).filter(Boolean),
+    );
+    const nextName =
+      classOptions.find(
+        (className) => !selectedClassNames.has(normalizeClassCatalogKey(className)),
+      ) ??
+      classOptions[0] ??
+      'Fighter';
+    onChange({
+      ...form,
+      classes: [...form.classes, { name: nextName, subclass: '', level: '1' }],
+    });
   };
   const resolvedClassOptions = [
     ...new Set(
-      [form.classOneName, form.classTwoName, ...classOptions].filter(
+      [...form.classes.map((entry) => entry.name), ...classOptions].filter(
         (value) => value.trim().length > 0,
       ),
     ),
   ].sort((a, b) => a.localeCompare(b));
-  const classOneSubclassOptions = getSubclassOptionsForClass(
-    form.classOneName,
-    form.classOneSubclass,
-    subclassOptionsByClassName,
-  );
-  const classTwoSubclassOptions = getSubclassOptionsForClass(
-    form.classTwoName,
-    form.classTwoSubclass,
-    subclassOptionsByClassName,
+  const classErrors = getCharacterClassFormErrors(form);
+  const totalLevel = form.classes.reduce(
+    (sum, entry) => sum + Math.max(0, parseIntOrFallback(entry.level, 0)),
+    0,
   );
   return (
-    <DndEditDialog title="Edit Character" open={open} onCancel={onCancel} onSave={onSave}>
+    <DndEditDialog
+      title="Edit Character"
+      open={open}
+      onCancel={onCancel}
+      onSave={onSave}
+      saveDisabled={classErrors.length > 0}
+    >
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <FormField
         label="Species"
@@ -4527,46 +4810,118 @@ function CharacterEditDialog({
         value={form.alignment}
         onChange={(value) => setField('alignment', value)}
       />
-      <Stack direction="row" spacing={1}>
-        <ClassSelectField
-          label="Class 1"
-          value={form.classOneName}
-          options={resolvedClassOptions}
-          onChange={(value) => setField('classOneName', value)}
-        />
-        <FormField
-          label="Level"
-          value={form.classOneLevel}
-          inputMode="numeric"
-          onChange={(value) => setField('classOneLevel', value)}
-        />
-      </Stack>
-      <ClassSelectField
-        label="Class 1 Subclass"
-        value={form.classOneSubclass}
-        options={classOneSubclassOptions}
-        onChange={(value) => setField('classOneSubclass', value)}
-      />
-      <Stack direction="row" spacing={1}>
-        <ClassSelectField
-          label="Class 2"
-          value={form.classTwoName}
-          options={['', ...resolvedClassOptions]}
-          onChange={(value) => setField('classTwoName', value)}
-        />
-        <FormField
-          label="Level"
-          value={form.classTwoLevel}
-          inputMode="numeric"
-          onChange={(value) => setField('classTwoLevel', value)}
-        />
-      </Stack>
-      <ClassSelectField
-        label="Class 2 Subclass"
-        value={form.classTwoSubclass}
-        options={classTwoSubclassOptions}
-        onChange={(value) => setField('classTwoSubclass', value)}
-      />
+      <Box
+        sx={{
+          border: `1px solid ${dndColors.border}`,
+          borderRadius: '10px',
+          bgcolor: alpha(dndColors.panelStrong, 0.52),
+          p: 1,
+        }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+          <Box>
+            <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 950 }}>
+              Classes
+            </Typography>
+            <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 800 }}>
+              Total level {totalLevel}/20
+            </Typography>
+          </Box>
+          <Button
+            startIcon={<AddIcon />}
+            disabled={totalLevel >= 20}
+            onClick={addClass}
+            sx={{
+              minHeight: 34,
+              border: `1px solid ${dndColors.border}`,
+              color: dndColors.blue,
+              fontWeight: 900,
+              textTransform: 'none',
+            }}
+          >
+            Class
+          </Button>
+        </Stack>
+        <Stack spacing={1.1}>
+          {form.classes.map((entry, index) => {
+            const subclassOptions = getSubclassOptionsForClass(
+              entry.name,
+              entry.subclass,
+              subclassOptionsByClassName,
+            );
+            const requirement = formatClassRequirement(entry.name);
+            const requirementMet =
+              form.classes.length <= 1 || meetsClassRequirement(entry.name, form.abilityScores);
+            return (
+              <Box
+                key={`${index}-${entry.name}`}
+                sx={{
+                  border: `1px solid ${requirementMet ? dndColors.borderSoft : dndColors.red}`,
+                  borderRadius: '8px',
+                  p: 1,
+                  bgcolor: alpha('#000000', 0.12),
+                }}
+              >
+                <Stack direction="row" spacing={1} alignItems="flex-end">
+                  <ClassSelectField
+                    label={`Class ${index + 1}`}
+                    value={entry.name}
+                    options={resolvedClassOptions}
+                    onChange={(value) => updateClass(index, { name: value })}
+                  />
+                  <FormField
+                    label="Level"
+                    value={entry.level}
+                    inputMode="numeric"
+                    onChange={(value) => updateClass(index, { level: value })}
+                  />
+                  <IconButton
+                    aria-label={`Remove class ${index + 1}`}
+                    disabled={form.classes.length <= 1}
+                    onClick={() => removeClass(index)}
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: '8px',
+                      border: `1px solid ${dndColors.border}`,
+                      color: form.classes.length <= 1 ? dndColors.muted : dndColors.red,
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
+                <ClassSelectField
+                  label="Subclass"
+                  value={entry.subclass}
+                  options={['', ...subclassOptions]}
+                  onChange={(value) => updateClass(index, { subclass: value })}
+                />
+                {requirement ? (
+                  <Typography
+                    sx={{
+                      color: requirementMet ? dndColors.muted : dndColors.red,
+                      fontSize: 11,
+                      fontWeight: 850,
+                      mt: 0.7,
+                    }}
+                  >
+                    Multiclass requirement: {requirement}
+                  </Typography>
+                ) : null}
+              </Box>
+            );
+          })}
+        </Stack>
+        {classErrors.length > 0 ? (
+          <Stack spacing={0.35} sx={{ mt: 1 }}>
+            {classErrors.map((error) => (
+              <Typography key={error} sx={{ color: dndColors.red, fontSize: 12, fontWeight: 850 }}>
+                {error}
+              </Typography>
+            ))}
+          </Stack>
+        ) : null}
+      </Box>
       <Stack direction="row" spacing={1}>
         <FormField
           label="AC"
@@ -5708,6 +6063,15 @@ function SpellEditDialog({
       damage: spell.damage,
       effect: spell.effect,
       description: spell.description,
+      higherLevel: spell.higherLevel,
+      components: spell.components,
+      material: spell.material,
+      duration: spell.duration,
+      ritual: spell.ritual,
+      concentration: spell.concentration,
+      source: spell.source,
+      sourceUrl: spell.sourceUrl,
+      licenseUrl: spell.licenseUrl,
     });
   };
   return (
@@ -5715,24 +6079,37 @@ function SpellEditDialog({
       <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
         Spell Catalog
       </Typography>
-      <Stack direction="row" spacing={0.8} sx={{ flexWrap: 'wrap', gap: 0.8 }}>
+      <Box
+        component="select"
+        value={spellCatalog.find((spell) => spell.name === form.name)?.name ?? ''}
+        onChange={(event) => {
+          const selected = spellCatalog.find((spell) => spell.name === event.target.value);
+          if (selected) applyCatalogSpell(selected);
+        }}
+        sx={{
+          width: '100%',
+          minHeight: 42,
+          border: `1px solid ${dndColors.border}`,
+          borderRadius: '6px',
+          bgcolor: dndColors.panelStrong,
+          color: dndColors.text,
+          px: 1,
+          font: 'inherit',
+          fontWeight: 800,
+          outline: 'none',
+          '& option': {
+            color: '#11191e',
+            backgroundColor: '#ffffff',
+          },
+        }}
+      >
+        <option value="">Choose from {spellCatalog.length} catalog spells</option>
         {spellCatalog.map((spell) => (
-          <Button
-            key={`${spell.level}-${spell.name}`}
-            onClick={() => applyCatalogSpell(spell)}
-            sx={{
-              minHeight: 30,
-              border: `1px solid ${form.name === spell.name ? dndColors.blue : dndColors.border}`,
-              color: form.name === spell.name ? dndColors.blue : dndColors.text,
-              fontSize: 11,
-              fontWeight: 900,
-              textTransform: 'none',
-            }}
-          >
-            {spell.name}
-          </Button>
+          <option key={`${spell.level}-${spell.name}`} value={spell.name}>
+            {spell.name} ({spell.level})
+          </option>
         ))}
-      </Stack>
+      </Box>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <Stack direction="row" spacing={1}>
         <FormField
@@ -5775,11 +6152,29 @@ function SpellEditDialog({
         value={form.effect ?? ''}
         onChange={(value) => onChange({ ...form, effect: value })}
       />
+      <Stack direction="row" spacing={1}>
+        <FormField
+          label="Components"
+          value={form.components ?? ''}
+          onChange={(value) => onChange({ ...form, components: value })}
+        />
+        <FormField
+          label="Duration"
+          value={form.duration ?? ''}
+          onChange={(value) => onChange({ ...form, duration: value })}
+        />
+      </Stack>
       <MultilineFormField
         label="Description"
         value={form.description ?? ''}
         onChange={(value) => onChange({ ...form, description: value })}
         minRows={4}
+      />
+      <MultilineFormField
+        label="At Higher Levels"
+        value={form.higherLevel ?? ''}
+        onChange={(value) => onChange({ ...form, higherLevel: value })}
+        minRows={2}
       />
       <Button
         onClick={() => onChange({ ...form, prepared: !form.prepared })}
@@ -6151,7 +6546,11 @@ function DungeonsAndDragons() {
   const dndSpellOptions = (dndCatalogItems ?? [])
     .filter((entry) => entry.type === 'spell' || entry.category === 'Spell')
     .filter((entry): entry is SpellCatalogEntry => asNonEmptyString(entry.name) !== null);
-  const spellCatalogSource = dndSpellOptions.length > 0 ? dndSpellOptions : dndSpellCatalog;
+  const spellCatalogSource = mergeSpellCatalogs(
+    dndSpellCatalog,
+    openDndSpellCatalogEntries,
+    dndSpellOptions,
+  );
   const characterClassNames = new Set(
     character.classes
       .map((entry) => asNonEmptyString(entry.name)?.toLowerCase() ?? null)
@@ -6457,6 +6856,9 @@ function DungeonsAndDragons() {
       range: '60 ft.',
       hitDc: formatModifier(character.spellcasting.attackBonus),
       effect: 'Utility',
+      components: 'V, S',
+      duration: 'Instantaneous',
+      source: 'Custom',
       prepared: false,
     });
   };
@@ -6602,30 +7004,18 @@ function DungeonsAndDragons() {
 
   const saveCharacter = () => {
     if (!characterForm) return;
-    const firstClassName = characterForm.classOneName.trim() || 'Adventurer';
-    const secondClassName = characterForm.classTwoName.trim();
-    const firstSubclass = characterForm.classOneSubclass.trim();
-    const secondSubclass = characterForm.classTwoSubclass.trim();
-    const firstClass = {
-      name: firstClassName,
-      level: parseIntOrFallback(characterForm.classOneLevel, character.classes[0]?.level ?? 1),
-      subclass: firstSubclass || undefined,
-    };
-    const nextClasses = [
-      firstClass,
-      ...(secondClassName
-        ? [
-            {
-              name: secondClassName,
-              level: parseIntOrFallback(
-                characterForm.classTwoLevel,
-                character.classes[1]?.level ?? 1,
-              ),
-              subclass: secondSubclass || undefined,
-            },
-          ]
-        : []),
-    ];
+    if (getCharacterClassFormErrors(characterForm).length > 0) return;
+    const nextClasses = characterForm.classes
+      .map((entry, index) => {
+        const name = entry.name.trim() || (index === 0 ? 'Adventurer' : '');
+        const subclass = entry.subclass.trim();
+        return {
+          name,
+          level: Math.max(1, parseIntOrFallback(entry.level, character.classes[index]?.level ?? 1)),
+          subclass: subclass || undefined,
+        };
+      })
+      .filter((entry) => entry.name.length > 0);
     setCharacter((current) => {
       const derivedClassFields = deriveDndClassFields({
         classes: nextClasses,

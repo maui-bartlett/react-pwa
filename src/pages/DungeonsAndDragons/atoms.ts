@@ -53,6 +53,16 @@ type Spell = {
   damage?: string;
   effect?: string;
   description?: string;
+  higherLevel?: string;
+  components?: string;
+  material?: string;
+  duration?: string;
+  ritual?: boolean;
+  concentration?: boolean;
+  source?: string;
+  sourceUrl?: string;
+  licenseUrl?: string;
+  classes?: string[];
   prepared?: boolean;
 };
 
