@@ -956,7 +956,13 @@ function HeroHeader({
           alignItems: 'center',
         }}
       >
-        <Stack direction="row" spacing={{ xs: 0.45, sm: 0.7 }} alignItems="center">
+        <Stack
+          spacing={0.35}
+          sx={{
+            width: { xs: 189, sm: 243 },
+            height: 58,
+          }}
+        >
           <ConditionsButton onChange={setActiveTab} />
           <HitPointsButton
             current={character.hitPoints.current}
@@ -984,13 +990,15 @@ function HeroHeader({
             value={effectiveArmorClass(character)}
             shape="shield"
           />
-          <DefenseBadge
-            compact
-            label="Initiative"
-            value={formatModifier(character.initiative)}
-            shape="hex"
-            onRoll={() => rollD20('Initiative', character.initiative)}
-          />
+          <Box sx={{ transform: { xs: 'translateX(-6px)', sm: 'translateX(-8px)' } }}>
+            <DefenseBadge
+              compact
+              label="Initiative"
+              value={formatModifier(character.initiative)}
+              shape="hex"
+              onRoll={() => rollD20('Initiative', character.initiative)}
+            />
+          </Box>
         </Stack>
       </Box>
     </Box>
@@ -1002,15 +1010,17 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
     <Button
       onClick={() => onChange('conditions')}
       sx={{
-        width: { xs: 81, sm: 113 },
+        width: '100%',
         minWidth: 0,
-        minHeight: 58,
+        minHeight: 20,
         px: { xs: 0.65, sm: 1.1 },
+        py: 0.15,
         bgcolor: dndColors.panelStrong,
         color: dndColors.text,
         borderRadius: '6px',
-        fontSize: { xs: 10, sm: 13 },
+        fontSize: { xs: 9.5, sm: 11 },
         fontWeight: 900,
+        lineHeight: 1,
         textTransform: 'uppercase',
         '&:hover': { bgcolor: '#05090b' },
       }}
@@ -1061,7 +1071,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 4,
+                top: 8,
                 left: { xs: 11, sm: 13 },
                 width: 5,
                 height: 2,
@@ -1074,7 +1084,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 1,
+                top: 3,
                 left: '50%',
                 width: 2,
                 height: 5,
@@ -1086,7 +1096,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             <Box
               sx={{
                 position: 'absolute',
-                top: 4,
+                top: 8,
                 right: { xs: 11, sm: 13 },
                 width: 5,
                 height: 2,
@@ -1202,9 +1212,9 @@ function HitPointsButton({
       aria-label="Edit hit points"
       onClick={onClick}
       sx={{
-        width: { xs: 104, sm: 124 },
+        width: '100%',
         minWidth: 0,
-        minHeight: 58,
+        minHeight: 35,
         bgcolor: dndColors.panelStrong,
         border: 0,
         borderRadius: '6px',
@@ -1212,7 +1222,7 @@ function HitPointsButton({
         cursor: 'pointer',
         font: 'inherit',
         px: { xs: 0.6, sm: 1 },
-        py: 0.75,
+        py: 0.3,
         textAlign: 'center',
         '&:hover': { bgcolor: '#05090b' },
       }}
@@ -1220,10 +1230,10 @@ function HitPointsButton({
       <Typography
         sx={{
           color: dndColors.text,
-          fontSize: { xs: 11, sm: 12 },
+          fontSize: { xs: 10, sm: 11 },
           fontWeight: 900,
           lineHeight: 1,
-          mb: 0.35,
+          mb: 0.1,
         }}
       >
         Hit Points
@@ -1231,10 +1241,10 @@ function HitPointsButton({
       <Typography
         sx={{
           color: dndColors.text,
-          fontSize: { xs: 14, sm: 16 },
+          fontSize: { xs: 13, sm: 15 },
           fontWeight: 900,
           lineHeight: 1.15,
-          mt: 0.25,
+          mt: 0,
         }}
       >
         {current}/{max}
@@ -1243,8 +1253,8 @@ function HitPointsButton({
         variant="determinate"
         value={percent}
         sx={{
-          mt: 0.45,
-          height: 3,
+          mt: 0.25,
+          height: 2,
           bgcolor: dndColors.border,
           '& .MuiLinearProgress-bar': { bgcolor: dndColors.blue },
         }}
