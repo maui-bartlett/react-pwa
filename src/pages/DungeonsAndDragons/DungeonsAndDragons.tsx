@@ -157,6 +157,34 @@ const diceRollBoxGlowSx = {
 
 const abilityKeys: readonly AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
+const dndSkillDescriptions: Record<string, string> = {
+  acrobatics: 'Keep your balance, tumble, slip free, or perform agile maneuvers.',
+  'animal handling': 'Calm, control, intuit, or guide domesticated or wild animals.',
+  arcana: 'Recall lore about spells, magic items, planes, symbols, and magical traditions.',
+  athletics: 'Climb, jump, swim, grapple, shove, or apply physical force.',
+  deception: 'Hide the truth, mislead others, disguise intentions, or pass off a lie.',
+  history: 'Recall lore about historical events, peoples, kingdoms, wars, and legends.',
+  insight: 'Read motives, moods, lies, or intent through behavior and speech.',
+  intimidation: 'Influence through threats, pressure, forceful presence, or hostile action.',
+  investigation: 'Search for clues, infer meaning, and deduce how something works.',
+  medicine: 'Stabilize the dying, diagnose illness, identify wounds, or provide care.',
+  nature: 'Recall lore about terrain, plants, animals, weather, and natural cycles.',
+  perception: 'Notice hidden creatures, sounds, details, danger, or anything sensed directly.',
+  performance: 'Entertain or impress through music, acting, storytelling, dance, or showmanship.',
+  persuasion: 'Influence with tact, diplomacy, etiquette, honest argument, or good faith.',
+  religion: 'Recall lore about deities, rites, prayers, holy symbols, cults, and planes.',
+  'sleight of hand': 'Pick pockets, palm objects, plant items, or perform fine manual tricks.',
+  stealth: 'Hide, move quietly, avoid notice, or slip past observers.',
+  survival: 'Track, navigate, forage, predict hazards, follow signs, and endure wilderness travel.',
+};
+
+function getDndSkillDescription(skill: Skill) {
+  return (
+    dndSkillDescriptions[skill.name.toLowerCase()] ??
+    `Use ${skill.name} when the table calls for a ${skill.ability.toUpperCase()} based check.`
+  );
+}
+
 const dndSubclassOptionsByClass: Record<string, string[]> = {
   artificer: ['Alchemist', 'Armorer', 'Artillerist', 'Battle Smith'],
   barbarian: [
@@ -2237,6 +2265,8 @@ function SkillsScreen({
   onEditSkills: () => void;
   embedded?: boolean;
 }) {
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+
   return (
     <>
       {embedded ? null : <SectionHeader icon={<AutoAwesomeIcon />} title="Skills" mode="list" />}
@@ -2250,25 +2280,35 @@ function SkillsScreen({
           <SkillRowView
             key={skill.name}
             skill={skill}
+            onOpenDetails={() => setSelectedSkill(skill)}
             onRoll={() => rollD20(`${skill.name} Check`, skill.bonus)}
           />
         ))}
       </Box>
+      <SkillDetailsDialog skill={selectedSkill} onClose={() => setSelectedSkill(null)} />
     </>
   );
 }
 
-function SkillRowView({ skill, onRoll }: { skill: Skill; onRoll: () => void }) {
+function SkillRowView({
+  skill,
+  onOpenDetails,
+  onRoll,
+}: {
+  skill: Skill;
+  onOpenDetails: () => void;
+  onRoll: () => void;
+}) {
   return (
     <Stack
       role="button"
       tabIndex={0}
-      aria-label={`Roll ${skill.name} check`}
-      onClick={onRoll}
+      aria-label={`View ${skill.name} skill details`}
+      onClick={onOpenDetails}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          onRoll();
+          onOpenDetails();
         }
       }}
       direction="row"
@@ -2295,6 +2335,16 @@ function SkillRowView({ skill, onRoll }: { skill: Skill; onRoll: () => void }) {
         {skill.ability.toUpperCase()}
       </Typography>
       <Box
+        component="button"
+        type="button"
+        aria-label={`Roll ${skill.name} check`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onRoll();
+        }}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+        }}
         sx={{
           width: 58,
           minHeight: 38,
@@ -2303,14 +2353,92 @@ function SkillRowView({ skill, onRoll }: { skill: Skill; onRoll: () => void }) {
           border: `2px solid ${dndColors.border}`,
           borderRadius: '8px',
           bgcolor: alpha('#000000', 0.12),
+          color: dndColors.text,
+          font: 'inherit',
+          p: 0,
+          cursor: 'pointer',
           ...diceRollBoxGlowSx,
+          '&:hover': {
+            borderColor: dndColors.blue,
+            color: dndColors.blue,
+          },
         }}
       >
-        <Typography sx={{ color: dndColors.text, fontSize: 22, fontWeight: 900, lineHeight: 1 }}>
+        <Typography sx={{ color: 'inherit', fontSize: 22, fontWeight: 900, lineHeight: 1 }}>
           {formatModifier(skill.bonus)}
         </Typography>
       </Box>
     </Stack>
+  );
+}
+
+function SkillDetailsDialog({ skill, onClose }: { skill: Skill | null; onClose: () => void }) {
+  if (!skill) {
+    return null;
+  }
+
+  const tags = [
+    skill.proficient ? 'Proficient' : null,
+    skill.expertise ? 'Expertise' : null,
+  ].filter(Boolean);
+
+  return (
+    <Dialog
+      open={Boolean(skill)}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      PaperProps={{
+        sx: {
+          bgcolor: dndColors.panelSoft,
+          color: dndColors.text,
+          border: `1px solid ${dndColors.border}`,
+          borderRadius: '16px',
+        },
+      }}
+    >
+      <DialogTitle sx={{ position: 'relative', pr: 6 }}>
+        <Typography sx={{ fontSize: 22, fontWeight: 950, lineHeight: 1.05 }}>
+          {skill.name}
+        </Typography>
+        <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 900, mt: 0.6 }}>
+          {skill.ability.toUpperCase()} • {formatModifier(skill.bonus)}
+        </Typography>
+        <IconButton
+          aria-label="Close skill details"
+          onClick={onClose}
+          sx={{ position: 'absolute', right: 10, top: 10, color: dndColors.text }}
+        >
+          <X size={22} />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ pt: 0 }}>
+        <Typography sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.55 }}>
+          {getDndSkillDescription(skill)}
+        </Typography>
+        {tags.length ? (
+          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+            {tags.map((tag) => (
+              <Box
+                key={tag}
+                sx={{
+                  border: `1px solid ${dndColors.border}`,
+                  borderRadius: '999px',
+                  bgcolor: alpha(dndColors.red, 0.12),
+                  color: dndColors.text,
+                  fontSize: 12,
+                  fontWeight: 900,
+                  px: 1.2,
+                  py: 0.45,
+                }}
+              >
+                {tag}
+              </Box>
+            ))}
+          </Stack>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 
