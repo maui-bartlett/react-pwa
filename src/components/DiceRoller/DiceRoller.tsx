@@ -288,18 +288,16 @@ function createDiceIdentificationColors(themeColor: string, mode: 'light' | 'dar
   if (!rgb) return [DND_DICE_ACCENT];
 
   const [hue, saturation, lightness] = rgbToHsl(rgb.red, rgb.green, rgb.blue);
-  const baseSaturation = Math.max(0.5, Math.min(0.92, saturation + 0.18));
   const baseLightness =
     mode === 'dark'
       ? Math.max(0.42, Math.min(0.68, lightness + 0.16))
       : Math.max(0.3, Math.min(0.56, lightness - 0.08));
 
   return DICE_IDENTIFICATION_HUE_OFFSETS.map((offset, index) => {
-    const saturationStep = index % 3 === 1 ? 0.08 : index % 3 === 2 ? -0.06 : 0;
     const lightnessStep = index % 2 === 0 ? 0 : mode === 'dark' ? -0.08 : 0.08;
     const nextRgb = hslToRgb(
       hue + offset,
-      Math.max(0.42, Math.min(0.95, baseSaturation + saturationStep)),
+      saturation,
       Math.max(0.24, Math.min(0.72, baseLightness + lightnessStep)),
     );
     return `#${rgbToHex(...nextRgb)}`;
