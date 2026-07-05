@@ -7038,14 +7038,13 @@ function SpellCatalogDialog({
               borderRadius: '50%',
               display: 'grid',
               placeItems: 'center',
-              color: '#ffffff',
-              fontSize: 32,
-              fontWeight: 950,
+              bgcolor: dndColors.red,
               border: `1px solid ${dndColors.redDark}`,
               boxShadow: `0 0 0 1px ${alpha(dndColors.red, 0.24)}, inset 0 0 18px ${alpha(
                 '#000000',
-                0.45,
+                0.16,
               )}`,
+              overflow: 'hidden',
               position: 'relative',
               '&::after': {
                 content: '""',
@@ -7060,7 +7059,16 @@ function SpellCatalogDialog({
               },
             }}
           >
-            B
+            <Box
+              component="img"
+              src="/dnd-dragon-ampersand-white.png"
+              alt=""
+              sx={{
+                width: 45,
+                height: 45,
+                objectFit: 'contain',
+              }}
+            />
           </Box>
           <Box sx={{ textAlign: 'center' }}>
             <Typography sx={{ fontSize: 21, fontWeight: 850, lineHeight: 1.05 }}>
