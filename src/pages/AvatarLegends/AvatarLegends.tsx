@@ -8444,7 +8444,7 @@ function AvatarLegends() {
               above any in-page content that scrolls past. */}
             <Box
               sx={{
-                px: 0.5,
+                px: 1.75,
                 // ~12px of bottom padding to clear the iOS home
                 // indicator without making the footer feel oversized.
                 // (Was 28px — shrunk by 8px per spec.)
@@ -8468,7 +8468,20 @@ function AvatarLegends() {
               {/* 15px pull-in on each side (~30px total) trims the visible
                 nav row while the dark backdrop stays full-width. `flex: 1`
                 on each tab keeps everything on one row. */}
-              <Stack direction="row" sx={{ mx: '15px' }}>
+              <Stack
+                direction="row"
+                sx={{
+                  mx: 0,
+                  p: 0.45,
+                  borderRadius: '42px',
+                  border: `1px solid ${alpha(chromeText, isDarkMode ? 0.18 : 0.22)}`,
+                  background: alpha(trainingTheme.chromeColor, isDarkMode ? 0.86 : 0.74),
+                  boxShadow: isDarkMode
+                    ? `0 -8px 28px ${alpha('#000000', 0.3)}`
+                    : `0 -8px 26px ${alpha(deepInk, 0.16)}`,
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
                 {tabs.map((tab) => {
                   const selected = tab.value === activeTab;
                   return (
@@ -8487,12 +8500,16 @@ function AvatarLegends() {
                       sx={{
                         flex: 1,
                         minWidth: 0,
-                        borderRadius: '10px',
+                        minHeight: 54,
+                        borderRadius: '34px',
                         pt: 0,
-                        pb: 0.5,
+                        pb: 0,
                         color: selected ? chromeText : alpha(chromeText, 0.55),
                         position: 'relative',
                         overflow: 'visible',
+                        background: selected
+                          ? alpha(chromeText, isDarkMode ? 0.12 : 0.16)
+                          : 'transparent',
                         // Suppress any active/focused/hover transform or
                         // background change so the icon doesn't appear
                         // to shift on tap. The opacity transition
@@ -8501,16 +8518,25 @@ function AvatarLegends() {
                         transition: 'none !important',
                         transform: 'none !important',
                         '&:hover': {
-                          background: 'transparent',
+                          background: selected
+                            ? alpha(chromeText, isDarkMode ? 0.12 : 0.16)
+                            : 'transparent',
                           transform: 'none',
                         },
                         '&:active': {
-                          background: 'transparent',
+                          background: selected
+                            ? alpha(chromeText, isDarkMode ? 0.12 : 0.16)
+                            : 'transparent',
                           transform: 'none',
                         },
                         '&:focus, &:focus-visible': {
                           outline: 'none',
-                          background: 'transparent',
+                          background: selected
+                            ? alpha(chromeText, isDarkMode ? 0.12 : 0.16)
+                            : 'transparent',
+                          boxShadow: selected
+                            ? 'none'
+                            : `inset 0 0 0 2px ${alpha(chromeText, 0.35)}`,
                           transform: 'none',
                         },
                         WebkitTapHighlightColor: 'transparent',
@@ -8543,7 +8569,7 @@ function AvatarLegends() {
                       />
                       {/* spacing=1.05 (~8.4px) — was 0.3 (~2.4px); +6px
                         gap between the icon and the label per spec. */}
-                      <Stack alignItems="center" spacing={1.05} sx={{ pt: '10px' }}>
+                      <Stack alignItems="center" spacing={0.48} sx={{ pt: 0.6 }}>
                         {tab.renderIcon ? (
                           // Inline SVG icon (e.g. Moves diamond) — color comes from
                           // current selection so we don't need the brightness/invert

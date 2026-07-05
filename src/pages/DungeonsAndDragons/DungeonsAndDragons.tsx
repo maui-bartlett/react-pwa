@@ -2501,25 +2501,33 @@ function SpellsScreen({
                 onUpdateSlot={slot ? (used) => onUpdateSpellSlot(slot.level, used) : undefined}
               />
               {section.spells.map((spell) => (
-                <SwipeRow
+                <SpellRow
                   key={spell.id}
-                  onDelete={() => onDeleteSpell(spell.id)}
-                  onEdit={() => onEditSpell(spell)}
-                >
-                  <SpellRow
-                    spell={spell}
-                    spellSlots={character.spellcasting.slots}
-                    onOpenDetails={() => setSelectedSpell(spell)}
-                    onTogglePrepared={() => onTogglePrepared(spell.id)}
-                    onCast={() => onCastSpell(spell)}
-                  />
-                </SwipeRow>
+                  spell={spell}
+                  spellSlots={character.spellcasting.slots}
+                  onOpenDetails={() => setSelectedSpell(spell)}
+                  onTogglePrepared={() => onTogglePrepared(spell.id)}
+                  onCast={() => onCastSpell(spell)}
+                />
               ))}
             </Box>
           );
         })}
       </Box>
-      <SpellDetailsDialog spell={selectedSpell} onClose={() => setSelectedSpell(null)} />
+      <SpellDetailsDialog
+        spell={selectedSpell}
+        onClose={() => setSelectedSpell(null)}
+        onEdit={() => {
+          if (!selectedSpell) return;
+          onEditSpell(selectedSpell);
+          setSelectedSpell(null);
+        }}
+        onDelete={() => {
+          if (!selectedSpell) return;
+          onDeleteSpell(selectedSpell.id);
+          setSelectedSpell(null);
+        }}
+      />
     </>
   );
 }
@@ -2997,7 +3005,17 @@ function formatSpellTime(value: string) {
   return `${amount}h`;
 }
 
-function SpellDetailsDialog({ spell, onClose }: { spell: Spell | null; onClose: () => void }) {
+function SpellDetailsDialog({
+  spell,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  spell: Spell | null;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   if (!spell) return null;
   const catalogSpell = getKnownSpellData(spell.name);
   const displaySpell = {
@@ -3068,6 +3086,45 @@ function SpellDetailsDialog({ spell, onClose }: { spell: Spell | null; onClose: 
       >
         <X size={30} />
       </IconButton>
+      <Stack
+        direction="row"
+        spacing={0.75}
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          zIndex: 2,
+        }}
+      >
+        <IconButton
+          aria-label="Edit spell"
+          onClick={onEdit}
+          sx={{
+            width: 42,
+            height: 42,
+            borderRadius: '999px',
+            bgcolor: alpha('#000000', 0.28),
+            color: dndSwipeEditColor,
+            '&:hover': { bgcolor: alpha('#000000', 0.38) },
+          }}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+        <IconButton
+          aria-label="Delete spell"
+          onClick={onDelete}
+          sx={{
+            width: 42,
+            height: 42,
+            borderRadius: '999px',
+            bgcolor: alpha('#000000', 0.28),
+            color: dndColors.red,
+            '&:hover': { bgcolor: alpha('#000000', 0.38) },
+          }}
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      </Stack>
       <DialogContent
         sx={{
           px: 2.2,

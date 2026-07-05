@@ -37,7 +37,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
         py: 0.5,
         display: 'grid',
         gridTemplateColumns: `repeat(${options.length}, 1fr)`,
-        borderRadius: '42px',
+        borderRadius: `${fabUTokens.radius.md}px`,
         bgcolor: alpha(fabUTokens.color.surface, fabUTokens.isDark ? 0.94 : 0.96),
         border: `1px solid ${fabUTokens.color.border}`,
         boxShadow: fabUTokens.isDark
@@ -56,7 +56,7 @@ function PrimaryNavBar({ value, onChange }: PrimaryNavBarProps) {
             sx={{
               minWidth: 0,
               minHeight: 54,
-              borderRadius: '34px',
+              borderRadius: `${fabUTokens.radius.sm}px`,
               px: 0.18,
               py: 0.52,
               backgroundColor: active ? alpha(fabUTokens.color.highlight, 0.15) : 'transparent',

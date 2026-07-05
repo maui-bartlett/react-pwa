@@ -165,16 +165,16 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
         sx={{
           position: 'absolute',
           right: { xs: 0, md: '-1px' },
-          bottom: { xs: 0, md: '-1px' },
+          bottom: { xs: -6, md: '-1px' },
           left: { xs: 0, md: '-1px' },
           px: 1,
           pt: 0.85,
-          pb: { xs: 'max(20px, env(safe-area-inset-bottom))', md: 0.85 },
+          pb: { xs: 'max(14px, env(safe-area-inset-bottom))', md: 0.85 },
           '@supports (-moz-appearance: none)': {
             // Firefox installed PWAs can report no useful bottom safe-area inset,
             // so give the floating nav extra breathing room without changing Safari.
             pb: {
-              xs: `calc(max(20px, env(safe-area-inset-bottom, 0px)) + ${FIREFOX_PWA_BOTTOM_NAV_INSET})`,
+              xs: `calc(max(14px, env(safe-area-inset-bottom, 0px)) + ${FIREFOX_PWA_BOTTOM_NAV_INSET})`,
               md: 0.85,
             },
           },

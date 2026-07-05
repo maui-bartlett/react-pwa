@@ -717,10 +717,10 @@ function ResultReadoutOverlay({
       onPointerCancel={endDrag}
       sx={{
         position: 'fixed',
-        left: { xs: 32, sm: 38 },
-        right: { xs: 140, sm: 140 },
-        top: { xs: 'calc(env(safe-area-inset-top, 0px) + 25vh)', sm: '25vh' },
-        zIndex: (theme) => theme.zIndex.tooltip + 16,
+        left: { xs: 18, sm: 38 },
+        right: { xs: 118, sm: 140 },
+        top: { xs: 'calc(env(safe-area-inset-top, 0px) + 92px)', sm: 92 },
+        zIndex: (theme) => theme.zIndex.tooltip + 26,
         display: 'flex',
         width: 'auto',
         maxWidth: { xs: 'none', md: 300 },
