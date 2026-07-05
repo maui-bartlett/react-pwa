@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 
 import { type MutationCtx, internalMutation, query } from './_generated/server';
+import { DUNGEONS_AND_DRAGONS_ITEMS } from './data/dungeonsAndDragonsItems';
 import { DUNGEONS_AND_DRAGONS_SPELLS } from './data/dungeonsAndDragonsSpells';
 import { FABULA_ULTIMA_ITEMS } from './data/fabulaUltimaItems';
 import { openDndSpellCatalog } from './data/openDndSpellCatalog';
@@ -166,9 +167,7 @@ export const listByGameSystem = query({
     const [catalogRows, legacyRows] = await Promise.all([
       ctx.db
         .query('catalog')
-        .withIndex('by_metadataGameSystem', (q) =>
-          q.eq('metadata.gameSystem', args.gameSystem),
-        )
+        .withIndex('by_metadataGameSystem', (q) => q.eq('metadata.gameSystem', args.gameSystem))
         .collect(),
       ctx.db
         .query('items')
@@ -247,12 +246,7 @@ export const dedupeCatalog = internalMutation({
 export const seedFabulaUltimaItems = internalMutation({
   args: {},
   handler: async (ctx) => {
-    return await upsertCatalogRecords(
-      ctx,
-      FABULA_ULTIMA_GAME_SYSTEM,
-      FABULA_ULTIMA_ITEMS,
-      'item',
-    );
+    return await upsertCatalogRecords(ctx, FABULA_ULTIMA_GAME_SYSTEM, FABULA_ULTIMA_ITEMS, 'item');
   },
 });
 
@@ -267,11 +261,23 @@ export const seedDungeonsAndDragonsSpells = internalMutation({
       ...DUNGEONS_AND_DRAGONS_SPELLS.map((spell) => spell as CatalogRecord),
       ...openDndSpellCatalog.map((spell) => spell as CatalogRecord),
     ];
+    return await upsertCatalogRecords(ctx, DUNGEONS_AND_DRAGONS_GAME_SYSTEM, spells, 'spell');
+  },
+});
+
+/**
+ * Seed all DnD equipment and magic item catalog entries into the renamed
+ * `catalog` table. Idempotent; existing item rows are updated and keep their
+ * document IDs.
+ */
+export const seedDungeonsAndDragonsItems = internalMutation({
+  args: {},
+  handler: async (ctx) => {
     return await upsertCatalogRecords(
       ctx,
       DUNGEONS_AND_DRAGONS_GAME_SYSTEM,
-      spells,
-      'spell',
+      DUNGEONS_AND_DRAGONS_ITEMS.map((item) => item as CatalogRecord),
+      'item',
     );
   },
 });

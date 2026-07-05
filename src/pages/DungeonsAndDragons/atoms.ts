@@ -75,6 +75,14 @@ type InventoryItem = {
   cost: string;
   equipped?: boolean;
   armorClassModifier?: number;
+  description?: string;
+  rarity?: string;
+  source?: string;
+  sourceUrl?: string;
+  licenseUrl?: string;
+  properties?: string[];
+  damage?: string;
+  damageType?: string;
 };
 
 type Feature = {
