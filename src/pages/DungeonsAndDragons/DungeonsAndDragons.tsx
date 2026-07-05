@@ -3283,86 +3283,51 @@ function SpellDetailsDialog({
       >
         <X size={30} />
       </IconButton>
-      <Stack
-        direction="row"
-        spacing={0.75}
-        sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          zIndex: 2,
-        }}
-      >
-        {onSelect ? (
-          <Button
-            onClick={onSelect}
-            sx={{
-              minHeight: 40,
-              borderRadius: '999px',
-              px: 2,
-              bgcolor: dndColors.red,
-              color: '#ffffff',
-              fontSize: 14,
-              fontWeight: 950,
-              textTransform: 'none',
-              '&:hover': { bgcolor: dndColors.redDark },
-            }}
-          >
-            Select
-          </Button>
-        ) : null}
-        {!onSelect && selectDisabledLabel ? (
-          <Box
-            sx={{
-              minHeight: 40,
-              borderRadius: '999px',
-              px: 1.5,
-              display: 'grid',
-              placeItems: 'center',
-              bgcolor: alpha(dndColors.muted, 0.18),
-              color: dndColors.muted,
-              border: `1px solid ${alpha(dndColors.muted, 0.42)}`,
-              fontSize: 13,
-              fontWeight: 950,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {selectDisabledLabel}
-          </Box>
-        ) : null}
-        {!onSelect && onEdit ? (
-          <IconButton
-            aria-label="Edit spell"
-            onClick={onEdit}
-            sx={{
-              width: 42,
-              height: 42,
-              borderRadius: '999px',
-              bgcolor: alpha('#000000', 0.28),
-              color: dndSwipeEditColor,
-              '&:hover': { bgcolor: alpha('#000000', 0.38) },
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-        ) : null}
-        {!onSelect && onDelete ? (
-          <IconButton
-            aria-label="Delete spell"
-            onClick={onDelete}
-            sx={{
-              width: 42,
-              height: 42,
-              borderRadius: '999px',
-              bgcolor: alpha('#000000', 0.28),
-              color: dndColors.red,
-              '&:hover': { bgcolor: alpha('#000000', 0.38) },
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        ) : null}
-      </Stack>
+      {!onSelect && !selectDisabledLabel && (onEdit || onDelete) ? (
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            zIndex: 2,
+          }}
+        >
+          {onEdit ? (
+            <IconButton
+              aria-label="Edit spell"
+              onClick={onEdit}
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '999px',
+                bgcolor: alpha('#000000', 0.28),
+                color: dndSwipeEditColor,
+                '&:hover': { bgcolor: alpha('#000000', 0.38) },
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          ) : null}
+          {onDelete ? (
+            <IconButton
+              aria-label="Delete spell"
+              onClick={onDelete}
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '999px',
+                bgcolor: alpha('#000000', 0.28),
+                color: dndColors.red,
+                '&:hover': { bgcolor: alpha('#000000', 0.38) },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          ) : null}
+        </Stack>
+      ) : null}
       <DialogContent
         sx={{
           px: 2.2,
@@ -3382,9 +3347,56 @@ function SpellDetailsDialog({
             {(displaySpell.classes ?? []).slice(0, 3).join(' • ') || 'Spell'}
           </Typography>
         </Box>
-        <Typography sx={{ color: dndColors.text, fontSize: 16, mt: 2.3 }}>
-          {formatSpellSubtitle(displaySpell)}
-        </Typography>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={1.5}
+          sx={{ mt: 2.3 }}
+        >
+          <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
+            {formatSpellSubtitle(displaySpell)}
+          </Typography>
+          {onSelect ? (
+            <Button
+              onClick={onSelect}
+              sx={{
+                minHeight: 32,
+                borderRadius: '999px',
+                px: 1.6,
+                flex: '0 0 auto',
+                bgcolor: dndColors.red,
+                color: '#ffffff',
+                fontSize: 13,
+                fontWeight: 950,
+                textTransform: 'none',
+                '&:hover': { bgcolor: dndColors.redDark },
+              }}
+            >
+              Select
+            </Button>
+          ) : null}
+          {!onSelect && selectDisabledLabel ? (
+            <Box
+              sx={{
+                minHeight: 32,
+                borderRadius: '999px',
+                px: 1.3,
+                flex: '0 0 auto',
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor: alpha(dndColors.muted, 0.18),
+                color: dndColors.muted,
+                border: `1px solid ${alpha(dndColors.muted, 0.42)}`,
+                fontSize: 12,
+                fontWeight: 950,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {selectDisabledLabel}
+            </Box>
+          ) : null}
+        </Stack>
         <DividerLine />
         <Typography sx={{ color: dndColors.text, fontSize: 15, fontWeight: 950, mb: 1.2 }}>
           CAST{' '}
@@ -7292,17 +7304,6 @@ function SpellCatalogDialog({
               )}`,
               overflow: 'hidden',
               position: 'relative',
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                right: 6,
-                top: 3,
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                bgcolor: '#ffbd5b',
-                boxShadow: '0 0 7px #ffbd5b',
-              },
             }}
           >
             <Box
