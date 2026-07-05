@@ -81,6 +81,7 @@ import { deriveDndClassFields, formatSpellcasting } from './classDerivation';
 import { DND_SCHEMA_VERSION, deserializeDndCharacter, serializeDndCharacter } from './persistence';
 import { applyDndRest, hitDieAverageHeal, spendDndHitDie } from './rest';
 import type { DndRestType } from './rest';
+import { standardDndSpellCatalog } from './standardDndSpellCatalog';
 import { useDndCharacterHistory } from './useCharacterHistory';
 
 const activeDndTabState = atom<DndTab>(initialDndTab);
@@ -647,6 +648,13 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     classes: ['Wizard'],
   },
 ];
+
+const standardDndSpellCatalogEntries: SpellCatalogEntry[] = standardDndSpellCatalog.map(
+  (spell) => ({
+    ...spell,
+    classes: [...spell.classes],
+  }),
+);
 
 function mergeSpellCatalogs(...catalogs: SpellCatalogEntry[][]) {
   const byName = new Map<string, SpellCatalogEntry>();
@@ -7835,7 +7843,11 @@ function DungeonsAndDragons() {
         entry.metadata?.type === 'spell' || entry.type === 'spell' || entry.category === 'Spell',
     )
     .filter((entry): entry is SpellCatalogEntry => asNonEmptyString(entry.name) !== null);
-  const spellCatalogSource = mergeSpellCatalogs(dndSpellCatalog, dndSpellOptions);
+  const spellCatalogSource = mergeSpellCatalogs(
+    standardDndSpellCatalogEntries,
+    dndSpellCatalog,
+    dndSpellOptions,
+  );
   const characterClassNames = new Set(
     character.classes
       .map((entry) => asNonEmptyString(entry.name)?.toLowerCase() ?? null)
