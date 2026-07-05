@@ -3056,11 +3056,13 @@ function SpellDetailsDialog({
   onClose,
   onEdit,
   onDelete,
+  onSelect,
 }: {
   spell: Spell | null;
   onClose: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onSelect?: () => void;
 }) {
   if (!spell) return null;
   const catalogSpell = getKnownSpellData(spell.name);
@@ -3095,6 +3097,7 @@ function SpellDetailsDialog({
       fullWidth
       maxWidth="xs"
       sx={{
+        zIndex: 1900,
         '& .MuiDialog-container': {
           alignItems: { xs: 'flex-start', sm: 'center' },
         },
@@ -3142,34 +3145,56 @@ function SpellDetailsDialog({
           zIndex: 2,
         }}
       >
-        <IconButton
-          aria-label="Edit spell"
-          onClick={onEdit}
-          sx={{
-            width: 42,
-            height: 42,
-            borderRadius: '999px',
-            bgcolor: alpha('#000000', 0.28),
-            color: dndSwipeEditColor,
-            '&:hover': { bgcolor: alpha('#000000', 0.38) },
-          }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          aria-label="Delete spell"
-          onClick={onDelete}
-          sx={{
-            width: 42,
-            height: 42,
-            borderRadius: '999px',
-            bgcolor: alpha('#000000', 0.28),
-            color: dndColors.red,
-            '&:hover': { bgcolor: alpha('#000000', 0.38) },
-          }}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
+        {onSelect ? (
+          <Button
+            onClick={onSelect}
+            sx={{
+              minHeight: 40,
+              borderRadius: '999px',
+              px: 2,
+              bgcolor: dndColors.red,
+              color: '#ffffff',
+              fontSize: 14,
+              fontWeight: 950,
+              textTransform: 'none',
+              '&:hover': { bgcolor: dndColors.redDark },
+            }}
+          >
+            Select
+          </Button>
+        ) : null}
+        {!onSelect && onEdit ? (
+          <IconButton
+            aria-label="Edit spell"
+            onClick={onEdit}
+            sx={{
+              width: 42,
+              height: 42,
+              borderRadius: '999px',
+              bgcolor: alpha('#000000', 0.28),
+              color: dndSwipeEditColor,
+              '&:hover': { bgcolor: alpha('#000000', 0.38) },
+            }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        ) : null}
+        {!onSelect && onDelete ? (
+          <IconButton
+            aria-label="Delete spell"
+            onClick={onDelete}
+            sx={{
+              width: 42,
+              height: 42,
+              borderRadius: '999px',
+              bgcolor: alpha('#000000', 0.28),
+              color: dndColors.red,
+              '&:hover': { bgcolor: alpha('#000000', 0.38) },
+            }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        ) : null}
       </Stack>
       <DialogContent
         sx={{
@@ -6974,18 +6999,24 @@ function SpellCatalogDialog({
   open,
   spells,
   selectedName,
+  onCreateCustom,
   onSelect,
   onClose,
 }: {
   open: boolean;
   spells: SpellCatalogEntry[];
   selectedName?: string;
+  onCreateCustom?: () => void;
   onSelect: (spell: SpellCatalogEntry) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [schoolFilters, setSchoolFilters] = useState<string[]>([]);
+  const [previewSpell, setPreviewSpell] = useState<SpellCatalogEntry | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
+  useEffect(() => {
+    if (!open) setPreviewSpell(null);
+  }, [open]);
   const schoolOptions = Array.from(
     new Set(spells.map((spell) => spell.school.trim()).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b));
@@ -7003,6 +7034,13 @@ function SpellCatalogDialog({
       .toLowerCase()
       .includes(normalizedQuery);
   });
+  const previewSpellDetails: Spell | null = previewSpell
+    ? {
+        id: 'catalog-preview',
+        ...previewSpell,
+        prepared: false,
+      }
+    : null;
 
   return (
     <Dialog
@@ -7060,13 +7098,19 @@ function SpellCatalogDialog({
             }}
           >
             <Box
-              component="img"
-              src="/dnd-dragon-ampersand-white.png"
-              alt=""
+              aria-hidden="true"
               sx={{
                 width: 45,
                 height: 45,
-                objectFit: 'contain',
+                bgcolor: '#ffffff',
+                WebkitMaskImage: 'url(/dnd-dragon-ampersand-white.png)',
+                maskImage: 'url(/dnd-dragon-ampersand-white.png)',
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
               }}
             />
           </Box>
@@ -7236,6 +7280,27 @@ function SpellCatalogDialog({
             borderBottom: `1px solid ${alpha('#000000', 0.5)}`,
           }}
         >
+          {onCreateCustom ? (
+            <Box sx={{ bgcolor: dndColors.panel, px: 3.2, py: 1.4 }}>
+              <Button
+                fullWidth
+                startIcon={<AddIcon />}
+                onClick={onCreateCustom}
+                sx={{
+                  minHeight: 54,
+                  borderRadius: '4px',
+                  bgcolor: dndColors.red,
+                  color: '#ffffff',
+                  fontSize: 18,
+                  fontWeight: 950,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: dndColors.redDark },
+                }}
+              >
+                Custom Spell
+              </Button>
+            </Box>
+          ) : null}
           {filteredSpells.length === 0 ? (
             <Typography
               sx={{
@@ -7256,7 +7321,7 @@ function SpellCatalogDialog({
                 key={`${spell.level}-${spell.school}-${spell.name}-${spell.source ?? ''}`}
                 component="button"
                 type="button"
-                onClick={() => onSelect(spell)}
+                onClick={() => setPreviewSpell(spell)}
                 sx={{
                   width: '100%',
                   minHeight: 106,
@@ -7341,6 +7406,18 @@ function SpellCatalogDialog({
           })}
         </Box>
       </Box>
+      <SpellDetailsDialog
+        spell={previewSpellDetails}
+        onClose={() => setPreviewSpell(null)}
+        onSelect={
+          previewSpell
+            ? () => {
+                onSelect(previewSpell);
+                setPreviewSpell(null);
+              }
+            : undefined
+        }
+      />
     </Dialog>
   );
 }
@@ -7894,6 +7971,7 @@ function DungeonsAndDragons() {
   const [hitPointForm, setHitPointForm] = useState<HitPointForm | null>(null);
   const [attackForm, setAttackForm] = useState<AttackForm | null>(null);
   const [spellForm, setSpellForm] = useState<SpellForm | null>(null);
+  const [spellCatalogOpen, setSpellCatalogOpen] = useState(false);
   const [spellcastingForm, setSpellcastingForm] = useState<SpellcastingForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
   const [featureForm, setFeatureForm] = useState<FeatureForm | null>(null);
@@ -8163,7 +8241,7 @@ function DungeonsAndDragons() {
     setUndoOpen(true);
   };
 
-  const addSpell = () => {
+  const openCustomSpellForm = () => {
     setSpellForm({
       id: createEntryId('spell'),
       name: 'New Spell',
@@ -8178,6 +8256,27 @@ function DungeonsAndDragons() {
       source: 'Custom',
       prepared: false,
     });
+  };
+
+  const addCatalogSpellToCharacter = (spell: SpellCatalogEntry) => {
+    setCharacter((current) => ({
+      ...current,
+      spells: [
+        ...current.spells,
+        {
+          id: createEntryId('spell'),
+          ...spell,
+          prepared: false,
+        },
+      ],
+    }));
+    setSpellCatalogOpen(false);
+    setUndoOpen(true);
+  };
+
+  const openCustomSpellFromCatalog = () => {
+    setSpellCatalogOpen(false);
+    openCustomSpellForm();
   };
 
   const saveSpell = () => {
@@ -8637,7 +8736,7 @@ function DungeonsAndDragons() {
         return (
           <SpellsScreen
             character={character}
-            onAddSpell={addSpell}
+            onAddSpell={() => setSpellCatalogOpen(true)}
             onEditSpell={(spell) => setSpellForm({ ...spell })}
             onEditSpellcasting={() => setSpellcastingForm(createSpellcastingForm(character))}
             onDeleteSpell={(id) => deleteById('spells', id)}
@@ -8940,6 +9039,13 @@ function DungeonsAndDragons() {
           onChange={setSpellForm}
           onCancel={() => setSpellForm(null)}
           onSave={saveSpell}
+        />
+        <SpellCatalogDialog
+          open={spellCatalogOpen}
+          spells={spellCatalogOptions}
+          onCreateCustom={openCustomSpellFromCatalog}
+          onSelect={addCatalogSpellToCharacter}
+          onClose={() => setSpellCatalogOpen(false)}
         />
         <SpellcastingEditDialog
           open={spellcastingForm !== null}
