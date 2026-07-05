@@ -32,8 +32,6 @@ import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import LinearProgress from '@mui/material/LinearProgress';
 import ListItemText from '@mui/material/ListItemText';
-import MenuItem from '@mui/material/MenuItem';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, keyframes } from '@mui/material/styles';
@@ -86,7 +84,6 @@ const DND_GAME_SYSTEM = 'dungeons-and-dragons';
 const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
 const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
 const DND_OPEN_TAB_MENU_EVENT = 'dnd-open-tab-menu';
-const DND_ALL_SCHOOLS_FILTER = '__all_schools__';
 type RestType = DndRestType;
 
 const darkDndColors = {
@@ -1023,7 +1020,7 @@ function SectionHeader({
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1.2} sx={{ flex: 1, px: 1.5 }}>
-        <Box sx={{ color: '#ffffff', display: 'grid', placeItems: 'center' }}>{icon}</Box>
+        <Box sx={{ color: dndColors.text, display: 'grid', placeItems: 'center' }}>{icon}</Box>
         <Typography sx={{ color: dndColors.text, fontSize: 20, fontWeight: 900 }}>
           {title}
         </Typography>
@@ -1268,12 +1265,12 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
           borderRadius: '8px',
           bgcolor: dndColors.panelStrong,
           border: `1px solid ${active ? alpha(dndColors.gold, 0.72) : dndColors.border}`,
-          color: active ? dndColors.gold : '#ffffff',
+          color: active ? dndColors.gold : dndColors.text,
           position: 'relative',
           display: 'grid',
           placeItems: 'center',
           '&:hover': {
-            bgcolor: '#05090b',
+            bgcolor: dndColors.panelSoft,
           },
         }}
       >
@@ -1284,7 +1281,7 @@ function InspirationToggle({ active, onToggle }: { active: boolean; onToggle: ()
             left: '50%',
             width: 28,
             height: 34,
-            color: active ? dndColors.gold : '#ffffff',
+            color: active ? dndColors.gold : dndColors.text,
             transform: active ? 'translate(-50%, 7px)' : 'translate(-50%, 0)',
             animation: hasToggled
               ? `${active ? inspirationPullOn : inspirationPullOff} 520ms cubic-bezier(0.22, 1, 0.36, 1) both`
@@ -1404,11 +1401,11 @@ function HeaderIconControl({
           borderRadius: '8px',
           bgcolor: dndColors.panelStrong,
           border: `1px solid ${dndColors.border}`,
-          color: '#ffffff',
+          color: dndColors.text,
           display: 'grid',
           placeItems: 'center',
           '&:hover': {
-            bgcolor: '#05090b',
+            bgcolor: dndColors.panelSoft,
           },
         }}
       >
@@ -1443,7 +1440,7 @@ function CampfireIcon({ active }: { active: boolean }) {
         height: 26,
         display: 'inline-grid',
         placeItems: 'center',
-        color: '#ffffff',
+        color: dndColors.text,
       }}
     >
       <svg
@@ -1771,8 +1768,8 @@ const swipeNavigationTabs: DndTab[] = [
   'conditions',
   'skills',
   'actions',
-  'inventory',
   'spells',
+  'inventory',
   'features',
   'background',
   'notes',
@@ -7058,19 +7055,29 @@ function SpellCatalogDialog({
 }) {
   const [query, setQuery] = useState('');
   const [schoolFilters, setSchoolFilters] = useState<string[]>([]);
+  const [schoolFilterOpen, setSchoolFilterOpen] = useState(false);
   const [previewSpell, setPreviewSpell] = useState<SpellCatalogEntry | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
   useEffect(() => {
-    if (!open) setPreviewSpell(null);
+    if (!open) {
+      setPreviewSpell(null);
+      setSchoolFilterOpen(false);
+    }
   }, [open]);
   const schoolOptions = Array.from(
     new Set(spells.map((spell) => spell.school.trim()).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b));
-  const handleSchoolFilterChange = (event: SelectChangeEvent<string[]>) => {
-    const value = event.target.value;
-    const nextValue = typeof value === 'string' ? value.split(',') : value;
-    setSchoolFilters(nextValue.includes(DND_ALL_SCHOOLS_FILTER) ? [] : nextValue);
+  const toggleSchoolFilter = (school: string) => {
+    setSchoolFilters((current) =>
+      current.includes(school) ? current.filter((entry) => entry !== school) : [...current, school],
+    );
   };
+  const schoolFilterLabel =
+    schoolFilters.length === 0
+      ? 'All Schools'
+      : schoolFilters.length === 1
+        ? schoolFilters[0]
+        : `${schoolFilters.length} Schools`;
   const filteredSpells = spells.filter((spell) => {
     if (schoolFilters.length > 0 && !schoolFilters.includes(spell.school)) return false;
     if (!normalizedQuery) return true;
@@ -7147,19 +7154,16 @@ function SpellCatalogDialog({
             }}
           >
             <Box
-              aria-hidden="true"
+              component="img"
+              src="/dnd-dragon-ampersand-white.png"
+              alt=""
               sx={{
                 width: 45,
                 height: 45,
-                bgcolor: '#ffffff',
-                WebkitMaskImage: 'url(/dnd-dragon-ampersand-white.png)',
-                maskImage: 'url(/dnd-dragon-ampersand-white.png)',
-                WebkitMaskRepeat: 'no-repeat',
-                maskRepeat: 'no-repeat',
-                WebkitMaskPosition: 'center',
-                maskPosition: 'center',
-                WebkitMaskSize: 'contain',
-                maskSize: 'contain',
+                display: 'block',
+                objectFit: 'contain',
+                bgcolor: 'transparent',
+                border: 0,
               }}
             />
           </Box>
@@ -7240,86 +7244,116 @@ function SpellCatalogDialog({
                 }}
               />
             </Box>
-            <Select
-              multiple
-              displayEmpty
-              value={schoolFilters}
-              onChange={handleSchoolFilterChange}
-              renderValue={(selected) => {
-                if (selected.length === 0) return 'All Schools';
-                if (selected.length === 1) return selected[0];
-                return `${selected.length} Schools`;
+            <Box
+              sx={{
+                flex: '0 0 128px',
+                position: 'relative',
               }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    mt: 1,
+            >
+              <Button
+                aria-expanded={schoolFilterOpen}
+                aria-haspopup="listbox"
+                onClick={() => setSchoolFilterOpen((current) => !current)}
+                endIcon={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'block',
+                      width: 0,
+                      height: 0,
+                      borderLeft: '4px solid transparent',
+                      borderRight: '4px solid transparent',
+                      borderTop: `5px solid #9a6cff`,
+                    }}
+                  />
+                }
+                sx={{
+                  width: '100%',
+                  minWidth: 0,
+                  justifyContent: 'space-between',
+                  textTransform: 'none',
+                  px: 1.2,
+                  pr: 0.7,
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  '& .MuiButton-endIcon': { ml: 0.6 },
+                }}
+              >
+                {schoolFilterLabel}
+              </Button>
+              {schoolFilterOpen ? (
+                <Box
+                  role="listbox"
+                  aria-label="Filter spell schools"
+                  sx={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    right: 0,
+                    zIndex: 5,
+                    width: 226,
                     maxHeight: 360,
+                    overflowY: 'auto',
                     bgcolor: dndColors.panelSoft,
                     color: dndColors.text,
                     border: `1px solid ${dndColors.borderSoft}`,
+                    borderRadius: '8px',
                     boxShadow: `0 18px 34px ${alpha('#000000', 0.45)}`,
-                    '& .MuiMenuItem-root': {
-                      minHeight: 44,
-                      fontWeight: 800,
-                    },
-                  },
-                },
-              }}
-              sx={{
-                flex: '0 0 128px',
-                height: 55,
-                borderRadius: '3px',
-                bgcolor: alpha('#9a6cff', 0.16),
-                color: dndColors.text,
-                fontSize: 13,
-                fontWeight: 900,
-                '& .MuiSelect-select': {
-                  display: 'flex',
-                  alignItems: 'center',
-                  minHeight: '0 !important',
-                  py: 0,
-                  pl: 1.2,
-                  pr: '30px !important',
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: alpha('#9a6cff', 0.38),
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: alpha('#9a6cff', 0.62),
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#9a6cff',
-                },
-                '& .MuiSelect-icon': {
-                  color: '#9a6cff',
-                  right: 5,
-                },
-              }}
-            >
-              <MenuItem value={DND_ALL_SCHOOLS_FILTER}>
-                <Checkbox
-                  checked={schoolFilters.length === 0}
-                  sx={{
-                    color: alpha(dndColors.text, 0.42),
-                    '&.Mui-checked': { color: '#9a6cff' },
+                    py: 0.5,
                   }}
-                />
-                <ListItemText primary="All Schools" />
-              </MenuItem>
-              {schoolOptions.map((school) => (
-                <MenuItem key={school} value={school}>
-                  <Checkbox
-                    checked={schoolFilters.includes(school)}
+                >
+                  <Button
+                    fullWidth
+                    role="option"
+                    aria-selected={schoolFilters.length === 0}
+                    onClick={() => setSchoolFilters([])}
                     sx={{
-                      color: alpha(dndColors.text, 0.42),
-                      '&.Mui-checked': { color: '#9a6cff' },
+                      minHeight: 44,
+                      justifyContent: 'flex-start',
+                      gap: 0.8,
+                      color: dndColors.text,
+                      fontWeight: 850,
+                      textTransform: 'none',
                     }}
-                  />
-                  <ListItemText primary={school} />
-                </MenuItem>
-              ))}
-            </Select>
+                  >
+                    <Checkbox
+                      checked={schoolFilters.length === 0}
+                      sx={{
+                        color: alpha(dndColors.text, 0.42),
+                        '&.Mui-checked': { color: '#9a6cff' },
+                      }}
+                    />
+                    <ListItemText primary="All Schools" />
+                  </Button>
+                  {schoolOptions.map((school) => (
+                    <Button
+                      key={school}
+                      fullWidth
+                      role="option"
+                      aria-selected={schoolFilters.includes(school)}
+                      onClick={() => toggleSchoolFilter(school)}
+                      sx={{
+                        minHeight: 44,
+                        justifyContent: 'flex-start',
+                        gap: 0.8,
+                        color: dndColors.text,
+                        fontWeight: 850,
+                        textTransform: 'none',
+                      }}
+                    >
+                      <Checkbox
+                        checked={schoolFilters.includes(school)}
+                        sx={{
+                          color: alpha(dndColors.text, 0.42),
+                          '&.Mui-checked': { color: '#9a6cff' },
+                        }}
+                      />
+                      <ListItemText primary={school} />
+                    </Button>
+                  ))}
+                </Box>
+              ) : null}
+            </Box>
           </Stack>
         </Box>
 
@@ -8919,10 +8953,10 @@ function DungeonsAndDragons() {
                   width: 42,
                   height: 42,
                   borderRadius: '8px',
-                  bgcolor: alpha('#ffffff', 0.16),
-                  color: '#ffffff',
+                  bgcolor: alpha(dndColors.panelSoft, 0.86),
+                  color: dndColors.text,
                   '&:hover': {
-                    bgcolor: alpha('#ffffff', 0.22),
+                    bgcolor: dndColors.panelSoft,
                   },
                 }}
               >
