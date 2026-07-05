@@ -8480,6 +8480,7 @@ function AvatarLegends() {
                     ? `0 -8px 28px ${alpha('#000000', 0.3)}`
                     : `0 -8px 26px ${alpha(deepInk, 0.16)}`,
                   backdropFilter: 'blur(10px)',
+                  transform: 'translateY(8px)',
                 }}
               >
                 {tabs.map((tab) => {

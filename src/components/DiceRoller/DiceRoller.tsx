@@ -118,18 +118,7 @@ const DND_DICE_PANEL = '#11191e';
 const DND_DICE_CHROME = '#22313a';
 const DND_DICE_PANEL_STRONG = '#0b1114';
 const DND_DICE_TEXT = '#f2f5f6';
-const DND_DICE_IDENTIFICATION_COLORS = [
-  '#e40712',
-  '#ff6a00',
-  '#b100ff',
-  '#8b0000',
-  '#ff2d55',
-  '#7a3cff',
-  '#ffb000',
-  '#a00032',
-  '#ff3b1f',
-  '#6b0016',
-] as const;
+const DICE_IDENTIFICATION_HUE_OFFSETS = [0, 28, -34, 58, -62, 92, -96, 132, -128, 168] as const;
 
 function getUpperLeftStartPosition(): [number, number, number] {
   let aspect = 1;
@@ -231,6 +220,92 @@ function getThemeColor(fallback: string) {
   return document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? fallback;
 }
 
+function clampColorChannel(value: number) {
+  return Math.min(255, Math.max(0, Math.round(value)));
+}
+
+function rgbToHex(red: number, green: number, blue: number) {
+  return [red, green, blue]
+    .map((channel) => clampColorChannel(channel).toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function rgbToHsl(red: number, green: number, blue: number): [number, number, number] {
+  const r = red / 255;
+  const g = green / 255;
+  const b = blue / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+
+  if (max === min) return [0, 0, lightness];
+
+  const delta = max - min;
+  const saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+  const hue =
+    max === r
+      ? (g - b) / delta + (g < b ? 6 : 0)
+      : max === g
+        ? (b - r) / delta + 2
+        : (r - g) / delta + 4;
+
+  return [hue * 60, saturation, lightness];
+}
+
+function hslToRgb(hue: number, saturation: number, lightness: number): [number, number, number] {
+  const normalizedHue = (((hue % 360) + 360) % 360) / 360;
+
+  if (saturation === 0) {
+    const channel = lightness * 255;
+    return [channel, channel, channel];
+  }
+
+  const hueToRgb = (p: number, q: number, t: number) => {
+    let nextT = t;
+    if (nextT < 0) nextT += 1;
+    if (nextT > 1) nextT -= 1;
+    if (nextT < 1 / 6) return p + (q - p) * 6 * nextT;
+    if (nextT < 1 / 2) return q;
+    if (nextT < 2 / 3) return p + (q - p) * (2 / 3 - nextT) * 6;
+    return p;
+  };
+
+  const q =
+    lightness < 0.5
+      ? lightness * (1 + saturation)
+      : lightness + saturation - lightness * saturation;
+  const p = 2 * lightness - q;
+
+  return [
+    hueToRgb(p, q, normalizedHue + 1 / 3) * 255,
+    hueToRgb(p, q, normalizedHue) * 255,
+    hueToRgb(p, q, normalizedHue - 1 / 3) * 255,
+  ];
+}
+
+function createDiceIdentificationColors(themeColor: string, mode: 'light' | 'dark') {
+  const rgb = parseHexColor(themeColor) ?? parseHexColor(DND_DICE_ACCENT);
+  if (!rgb) return [DND_DICE_ACCENT];
+
+  const [hue, saturation, lightness] = rgbToHsl(rgb.red, rgb.green, rgb.blue);
+  const baseSaturation = Math.max(0.5, Math.min(0.92, saturation + 0.18));
+  const baseLightness =
+    mode === 'dark'
+      ? Math.max(0.42, Math.min(0.68, lightness + 0.16))
+      : Math.max(0.3, Math.min(0.56, lightness - 0.08));
+
+  return DICE_IDENTIFICATION_HUE_OFFSETS.map((offset, index) => {
+    const saturationStep = index % 3 === 1 ? 0.08 : index % 3 === 2 ? -0.06 : 0;
+    const lightnessStep = index % 2 === 0 ? 0 : mode === 'dark' ? -0.08 : 0.08;
+    const nextRgb = hslToRgb(
+      hue + offset,
+      Math.max(0.42, Math.min(0.95, baseSaturation + saturationStep)),
+      Math.max(0.24, Math.min(0.72, baseLightness + lightnessStep)),
+    );
+    return `#${rgbToHex(...nextRgb)}`;
+  });
+}
+
 function hasDuplicateDieSizes(dice: RollDie[]) {
   const seen = new Set<DieSize>();
   return dice.some((die) => {
@@ -240,12 +315,18 @@ function hasDuplicateDieSizes(dice: RollDie[]) {
   });
 }
 
-function toDiceBoxNotation(dice: RollDie[], themeColor: string, identifyIndividualDice = false) {
+function toDiceBoxNotation(
+  dice: RollDie[],
+  themeColor: string,
+  identifyIndividualDice = false,
+  mode: 'light' | 'dark' = 'dark',
+) {
   if (identifyIndividualDice) {
+    const identificationColors = createDiceIdentificationColors(themeColor, mode);
     return dice.map((die, index) => ({
       sides: die.sides,
       qty: 1,
-      themeColor: DND_DICE_IDENTIFICATION_COLORS[index % DND_DICE_IDENTIFICATION_COLORS.length],
+      themeColor: identificationColors[index % identificationColors.length],
     }));
   }
 
@@ -309,20 +390,15 @@ function getColorDistance(left: ColorSignature, right: ColorSignature) {
   );
 }
 
-const diceIdentificationColorSignatures = DND_DICE_IDENTIFICATION_COLORS.map((color) =>
-  getColorSignature(parseHexColor(color)!),
-);
-
 function isDiceIdentificationPixel(color: RgbColor) {
   const max = Math.max(color.red, color.green, color.blue);
   const min = Math.min(color.red, color.green, color.blue);
   if (max < 46 || max - min < 28) return false;
 
-  const signature = getColorSignature(color);
-  const distance = Math.min(
-    ...diceIdentificationColorSignatures.map((target) => getColorDistance(signature, target)),
-  );
-  return distance < 4200;
+  const total = Math.max(1, color.red + color.green + color.blue);
+  const saturationSpread = (max - min) / max;
+  const dominantRatio = max / total;
+  return saturationSpread > 0.22 && dominantRatio > 0.39;
 }
 
 function getCanvasDiceCenters(): CanvasDiceCenter[] {
@@ -1196,7 +1272,12 @@ function DiceRoller() {
       await fadeOutDisplayedRoll();
       if (rollSequenceRef.current !== rollSequence || !diceBoxRef.current) return;
 
-      const notation = toDiceBoxNotation(dice, accent, isDndApp || hasDuplicateDieSizes(dice));
+      const notation = toDiceBoxNotation(
+        dice,
+        accent,
+        isDndApp || hasDuplicateDieSizes(dice),
+        theme.palette.mode,
+      );
       setLastResult(null);
       setIsResultDismissing(false);
       setIsRolling(true);
@@ -1256,6 +1337,7 @@ function DiceRoller() {
       isDndApp,
       isResultDismissing,
       isRolling,
+      theme.palette.mode,
       triggerCriticalPulse,
     ],
   );
