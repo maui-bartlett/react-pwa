@@ -459,6 +459,10 @@ const dndSpellDescriptionsByName: Record<string, string> = {
     'Make a ranged spell attack against one creature. On a hit, the target takes cold damage and its speed is reduced by 10 feet until the start of your next turn.',
   'mage hand':
     'Create a spectral hand at a point within range. You can use it to manipulate objects, open unlocked doors or containers, stow or retrieve items, or pour contents from a vial. It cannot attack, activate magic items, or carry more than 10 pounds.',
+  'booming blade':
+    'Make a melee weapon attack against one creature within 5 feet. On a hit, the attack lands normally and the target is wrapped in unstable thunder magic. If it willingly moves before your next turn, it takes thunder damage.',
+  'green-flame blade':
+    'Make a melee weapon attack against one creature within 5 feet. On a hit, the attack lands normally and green fire can jump to a second creature near the target, dealing fire damage based on your spellcasting ability.',
   shield:
     'When you are hit by an attack or targeted by magic missile, use your reaction to gain +5 AC until the start of your next turn, including against the triggering attack, and take no damage from magic missile.',
   'absorb elements':
@@ -525,6 +529,44 @@ const dndSpellCatalog: SpellCatalogEntry[] = [
     effect: dndSpellEffectsByName['mage hand'],
     description: dndSpellDescriptionsByName['mage hand'],
     classes: ['Wizard'],
+  },
+  {
+    name: 'Booming Blade',
+    level: 'Cantrip',
+    school: 'Evocation',
+    castingTime: '1 Action',
+    range: 'Self (5-foot radius)',
+    hitDc: 'Weapon',
+    damage: '1d8',
+    effect: dndSpellEffectsByName['booming blade'],
+    description: dndSpellDescriptionsByName['booming blade'],
+    higherLevel:
+      'At 5th level, the melee attack deals extra thunder damage and the movement rider increases. Both damage amounts increase again at 11th and 17th level.',
+    components: 'S, M',
+    material: 'A melee weapon worth at least 1 sp',
+    duration: '1 round',
+    source: "Tasha's Cauldron of Everything",
+    sourceUrl: 'https://dnd5e.wikidot.com/spell:booming-blade',
+    classes: ['Artificer', 'Sorcerer', 'Warlock', 'Wizard'],
+  },
+  {
+    name: 'Green-Flame Blade',
+    level: 'Cantrip',
+    school: 'Evocation',
+    castingTime: '1 Action',
+    range: 'Self (5-foot radius)',
+    hitDc: 'Weapon',
+    damage: '1d8',
+    effect: dndSpellEffectsByName['green-flame blade'],
+    description: dndSpellDescriptionsByName['green-flame blade'],
+    higherLevel:
+      'At 5th level, the melee attack deals extra fire damage and the leaping flame damage increases. Both damage amounts increase again at 11th and 17th level.',
+    components: 'S, M',
+    material: 'A melee weapon worth at least 1 sp',
+    duration: 'Instantaneous',
+    source: "Tasha's Cauldron of Everything",
+    sourceUrl: 'https://dnd5e.wikidot.com/spell:green-flame-blade',
+    classes: ['Artificer', 'Sorcerer', 'Warlock', 'Wizard'],
   },
   {
     name: 'Shield',
