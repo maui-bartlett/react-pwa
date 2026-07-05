@@ -50,6 +50,8 @@ import { persistAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
 import type { LocalCharacterSummary } from '@/state/useLocalCharacterSlots';
 import { useConvexCharacterSync } from '@/sync/useConvexCharacterSync';
+import { useThemeMode } from '@/theme/hooks';
+import { ThemeMode } from '@/theme/types';
 
 import { api } from '../../../convex/_generated/api';
 import type {
@@ -87,7 +89,7 @@ const DND_OPEN_TAB_MENU_EVENT = 'dnd-open-tab-menu';
 const DND_ALL_SCHOOLS_FILTER = '__all_schools__';
 type RestType = DndRestType;
 
-const dndColors = {
+const darkDndColors = {
   page: '#10181d',
   chrome: '#22313a',
   panel: '#11191e',
@@ -103,6 +105,25 @@ const dndColors = {
   green: '#57bc45',
   gold: '#f0b948',
 };
+
+const lightDndColors: typeof darkDndColors = {
+  page: '#f5f7f9',
+  chrome: '#ffffff',
+  panel: '#ffffff',
+  panelSoft: '#f0f3f6',
+  panelStrong: '#fbfcfd',
+  border: '#c8d1d9',
+  borderSoft: '#dde4ea',
+  text: '#10181d',
+  muted: '#5e6f7c',
+  red: '#e40712',
+  redDark: '#b7070f',
+  blue: '#0876bd',
+  green: '#348a2c',
+  gold: '#b97904',
+};
+
+const dndColors = { ...darkDndColors };
 
 const inspirationPullOn = keyframes`
   0% { transform: translate(-50%, 0); }
@@ -3415,6 +3436,24 @@ function findUsableSpellSlot(slots: DndCharacter['spellcasting']['slots'], spell
   );
 }
 
+function getHighestAvailableSpellSlotRank(slots: DndCharacter['spellcasting']['slots']) {
+  return slots
+    .map((slot) => ({ rank: getSpellSlotRank(slot.level), max: slot.max }))
+    .filter((entry): entry is { rank: number; max: number } => entry.rank !== null && entry.max > 0)
+    .reduce((highest, entry) => Math.max(highest, entry.rank), 0);
+}
+
+function characterCanAddSpellForSlots(
+  spell: Pick<Spell, 'level'>,
+  slots: DndCharacter['spellcasting']['slots'],
+) {
+  const spellLevel = getSpellSlotLevel(spell.level);
+  if (!spellLevel) return true;
+  const spellRank = getSpellSlotRank(spellLevel);
+  if (!spellRank) return true;
+  return spellRank <= getHighestAvailableSpellSlotRank(slots);
+}
+
 function InventoryScreen({
   character,
   onDeleteItem,
@@ -4933,6 +4972,7 @@ function CharacterEditDialog({
   classOptions,
   subclassOptionsByClassName,
   spellCatalog,
+  availableSpellSlots,
   onChange,
   onCancel,
   onSave,
@@ -4942,6 +4982,7 @@ function CharacterEditDialog({
   classOptions: string[];
   subclassOptionsByClassName: Map<string, string[]>;
   spellCatalog: SpellCatalogEntry[];
+  availableSpellSlots: DndCharacter['spellcasting']['slots'];
   onChange: (form: CharacterForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -4997,6 +5038,10 @@ function CharacterEditDialog({
     });
   };
   const addCatalogSpell = (spell: SpellCatalogEntry) => {
+    if (!characterCanAddSpellForSlots(spell, availableSpellSlots)) {
+      setCatalogOpen(false);
+      return;
+    }
     const existingNames = new Set(form.spells.map((entry) => entry.name.toLowerCase()));
     if (existingNames.has(spell.name.toLowerCase())) {
       setCatalogOpen(false);
@@ -5049,8 +5094,9 @@ function CharacterEditDialog({
       .filter((className): className is string => className !== null)
       .some((className) => wizardClassNames.has(className)),
   );
-  const wizardSpellCatalog =
-    wizardClassSpellCatalog.length > 0 ? wizardClassSpellCatalog : spellCatalog;
+  const wizardSpellCatalog = (
+    wizardClassSpellCatalog.length > 0 ? wizardClassSpellCatalog : spellCatalog
+  ).filter((spell) => characterCanAddSpellForSlots(spell, availableSpellSlots));
   const wizardSteps = ['Class', 'Background', 'Species', 'Abilities', 'Details', 'Spells'];
   const goPrevious = () => setActiveStep((step) => Math.max(0, step - 1));
   const goNext = () => setActiveStep((step) => Math.min(wizardSteps.length - 1, step + 1));
@@ -7051,7 +7097,10 @@ function SpellCatalogDialog({
         sx: {
           bgcolor: dndColors.page,
           color: dndColors.text,
-          backgroundImage: 'linear-gradient(180deg, rgba(16,24,29,0.98), rgba(11,17,20,0.99))',
+          backgroundImage: `linear-gradient(180deg, ${alpha(dndColors.page, 0.98)}, ${alpha(
+            dndColors.panelStrong,
+            0.99,
+          )})`,
         },
       }}
       sx={{ zIndex: 1800 }}
@@ -7128,11 +7177,11 @@ function SpellCatalogDialog({
             sx={{
               width: 58,
               height: 58,
-              color: '#ffffff',
-              bgcolor: alpha('#ffffff', 0.04),
-              border: `1px solid ${alpha('#ffffff', 0.08)}`,
+              color: dndColors.text,
+              bgcolor: alpha(dndColors.panelSoft, 0.86),
+              border: `1px solid ${dndColors.borderSoft}`,
               boxShadow: `inset 0 0 20px ${alpha('#000000', 0.34)}`,
-              '&:hover': { bgcolor: alpha('#ffffff', 0.08) },
+              '&:hover': { bgcolor: dndColors.panelSoft },
             }}
           >
             <X size={26} />
@@ -7151,7 +7200,7 @@ function SpellCatalogDialog({
               gap: 1.4,
               px: 1.7,
               color: dndColors.text,
-              boxShadow: `inset 0 0 0 1px ${alpha('#ffffff', 0.04)}`,
+              boxShadow: `inset 0 0 0 1px ${dndColors.borderSoft}`,
             }}
           >
             <AutoAwesomeIcon sx={{ color: '#9a6cff', fontSize: 28 }} />
@@ -7208,7 +7257,7 @@ function SpellCatalogDialog({
                     maxHeight: 360,
                     bgcolor: dndColors.panelSoft,
                     color: dndColors.text,
-                    border: `1px solid ${alpha('#ffffff', 0.1)}`,
+                    border: `1px solid ${dndColors.borderSoft}`,
                     boxShadow: `0 18px 34px ${alpha('#000000', 0.45)}`,
                     '& .MuiMenuItem-root': {
                       minHeight: 44,
@@ -7276,8 +7325,8 @@ function SpellCatalogDialog({
 
         <Box
           sx={{
-            borderTop: `1px solid ${alpha('#ffffff', 0.1)}`,
-            borderBottom: `1px solid ${alpha('#000000', 0.5)}`,
+            borderTop: `1px solid ${dndColors.borderSoft}`,
+            borderBottom: `1px solid ${dndColors.borderSoft}`,
           }}
         >
           {onCreateCustom ? (
@@ -7328,7 +7377,7 @@ function SpellCatalogDialog({
                   bgcolor: selected ? alpha(dndColors.red, 0.12) : dndColors.panel,
                   color: dndColors.text,
                   border: 0,
-                  borderBottom: `1px solid ${alpha('#ffffff', 0.12)}`,
+                  borderBottom: `1px solid ${dndColors.borderSoft}`,
                   display: 'grid',
                   gridTemplateColumns: '70px minmax(0, 1fr) auto',
                   alignItems: 'center',
@@ -7338,14 +7387,14 @@ function SpellCatalogDialog({
                   textAlign: 'left',
                   font: 'inherit',
                   cursor: 'pointer',
-                  '&:hover': { bgcolor: alpha('#ffffff', 0.05) },
+                  '&:hover': { bgcolor: dndColors.panelSoft },
                 }}
               >
                 <SpellSchoolIcon school={spell.school} />
                 <Box sx={{ minWidth: 0 }}>
                   <Typography
                     sx={{
-                      color: '#f6f8f9',
+                      color: dndColors.text,
                       fontSize: 22,
                       fontWeight: 950,
                       lineHeight: 1.05,
@@ -7359,7 +7408,7 @@ function SpellCatalogDialog({
                   <Typography
                     sx={{
                       mt: 0.35,
-                      color: '#aeb9c3',
+                      color: dndColors.muted,
                       fontSize: 16,
                       fontWeight: 850,
                       lineHeight: 1.15,
@@ -7373,7 +7422,7 @@ function SpellCatalogDialog({
                   <Typography
                     sx={{
                       mt: 0.35,
-                      color: '#8c99a5',
+                      color: alpha(dndColors.muted, 0.88),
                       fontSize: 15,
                       fontWeight: 650,
                       lineHeight: 1.15,
@@ -7392,8 +7441,8 @@ function SpellCatalogDialog({
                       px: 1.6,
                       py: 0.55,
                       borderRadius: '3px',
-                      bgcolor: '#aeb9c3',
-                      color: '#1a252d',
+                      bgcolor: dndColors.border,
+                      color: dndColors.text,
                       fontSize: 15,
                       fontWeight: 950,
                     }}
@@ -7889,6 +7938,8 @@ function ConvexCharacterSyncMount() {
 }
 
 function DungeonsAndDragons() {
+  const { themeMode } = useThemeMode();
+  Object.assign(dndColors, themeMode === ThemeMode.DARK ? darkDndColors : lightDndColors);
   const [character, setCharacter, history] = useDndCharacterHistory();
   const [activeTab, setActiveTabRaw] = useAtom(activeDndTabState);
   const bodySwipeStartRef = useRef<{
@@ -7956,7 +8007,9 @@ function DungeonsAndDragons() {
       .filter((className): className is string => className !== null)
       .some((className) => characterClassNames.has(className)),
   );
-  const spellCatalogOptions = classSpellCatalog.length > 0 ? classSpellCatalog : spellCatalogSource;
+  const spellCatalogOptions = (
+    classSpellCatalog.length > 0 ? classSpellCatalog : spellCatalogSource
+  ).filter((spell) => characterCanAddSpellForSlots(spell, character.spellcasting.slots));
   const [pendingDelete, setPendingDelete] = useState<null | {
     confirm: () => void;
     title?: string;
@@ -8259,6 +8312,7 @@ function DungeonsAndDragons() {
   };
 
   const addCatalogSpellToCharacter = (spell: SpellCatalogEntry) => {
+    if (!characterCanAddSpellForSlots(spell, character.spellcasting.slots)) return;
     setCharacter((current) => ({
       ...current,
       spells: [
@@ -8281,6 +8335,9 @@ function DungeonsAndDragons() {
 
   const saveSpell = () => {
     if (!spellForm) return;
+    const isExistingSpell = character.spells.some((spell) => spell.id === spellForm.id);
+    if (!isExistingSpell && !characterCanAddSpellForSlots(spellForm, character.spellcasting.slots))
+      return;
     setCharacter((current) => ({
       ...current,
       spells: current.spells.some((spell) => spell.id === spellForm.id)
@@ -9006,6 +9063,7 @@ function DungeonsAndDragons() {
           classOptions={dndClassOptions}
           subclassOptionsByClassName={dndSubclassOptionsByClassName}
           spellCatalog={spellCatalogSource}
+          availableSpellSlots={character.spellcasting.slots}
           onChange={setCharacterForm}
           onCancel={() => setCharacterForm(null)}
           onSave={saveCharacter}
