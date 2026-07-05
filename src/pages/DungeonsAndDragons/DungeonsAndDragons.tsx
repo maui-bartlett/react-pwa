@@ -3203,12 +3203,14 @@ function SpellDetailsDialog({
   onEdit,
   onDelete,
   onSelect,
+  selectDisabledLabel,
 }: {
   spell: Spell | null;
   onClose: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   onSelect?: () => void;
+  selectDisabledLabel?: string;
 }) {
   if (!spell) return null;
   const catalogSpell = getKnownSpellData(spell.name);
@@ -3308,6 +3310,25 @@ function SpellDetailsDialog({
           >
             Select
           </Button>
+        ) : null}
+        {!onSelect && selectDisabledLabel ? (
+          <Box
+            sx={{
+              minHeight: 40,
+              borderRadius: '999px',
+              px: 1.5,
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(dndColors.muted, 0.18),
+              color: dndColors.muted,
+              border: `1px solid ${alpha(dndColors.muted, 0.42)}`,
+              fontSize: 13,
+              fontWeight: 950,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {selectDisabledLabel}
+          </Box>
         ) : null}
         {!onSelect && onEdit ? (
           <IconButton
@@ -5219,9 +5240,8 @@ function CharacterEditDialog({
       .filter((className): className is string => className !== null)
       .some((className) => wizardClassNames.has(className)),
   );
-  const wizardSpellCatalog = (
-    wizardClassSpellCatalog.length > 0 ? wizardClassSpellCatalog : spellCatalog
-  ).filter((spell) => characterCanAddSpellForSlots(spell, availableSpellSlots));
+  const wizardSpellCatalog =
+    wizardClassSpellCatalog.length > 0 ? wizardClassSpellCatalog : spellCatalog;
   const wizardSteps = ['Class', 'Background', 'Species', 'Abilities', 'Details', 'Spells'];
   const goPrevious = () => setActiveStep((step) => Math.max(0, step - 1));
   const goNext = () => setActiveStep((step) => Math.min(wizardSteps.length - 1, step + 1));
@@ -5774,6 +5794,7 @@ function CharacterEditDialog({
         spells={wizardSpellCatalog}
         selectedName=""
         onSelect={addCatalogSpell}
+        canSelectSpell={(spell) => characterCanAddSpellForSlots(spell, availableSpellSlots)}
         onClose={() => setCatalogOpen(false)}
       />
     </>
@@ -7172,6 +7193,7 @@ function SpellCatalogDialog({
   selectedName,
   onCreateCustom,
   onSelect,
+  canSelectSpell,
   onClose,
 }: {
   open: boolean;
@@ -7179,6 +7201,7 @@ function SpellCatalogDialog({
   selectedName?: string;
   onCreateCustom?: () => void;
   onSelect: (spell: SpellCatalogEntry) => void;
+  canSelectSpell?: (spell: SpellCatalogEntry) => boolean;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -7222,6 +7245,7 @@ function SpellCatalogDialog({
         prepared: false,
       }
     : null;
+  const previewCanSelect = previewSpell ? (canSelectSpell?.(previewSpell) ?? true) : false;
 
   return (
     <Dialog
@@ -7420,7 +7444,7 @@ function SpellCatalogDialog({
                     right: 0,
                     zIndex: 5,
                     width: 226,
-                    maxHeight: 360,
+                    maxHeight: 'calc(100dvh - 250px)',
                     overflowY: 'auto',
                     bgcolor: dndColors.panelSoft,
                     color: dndColors.text,
@@ -7437,21 +7461,23 @@ function SpellCatalogDialog({
                     onClick={() => setSchoolFilters([])}
                     sx={{
                       minHeight: 44,
-                      justifyContent: 'flex-start',
-                      gap: 0.8,
+                      justifyContent: 'space-between',
+                      gap: 1,
                       color: dndColors.text,
                       fontWeight: 850,
                       textTransform: 'none',
+                      textAlign: 'left',
                     }}
                   >
+                    <ListItemText primary="All Schools" sx={{ m: 0 }} />
                     <Checkbox
                       checked={schoolFilters.length === 0}
                       sx={{
+                        p: 0.6,
                         color: alpha(dndColors.text, 0.42),
                         '&.Mui-checked': { color: '#9a6cff' },
                       }}
                     />
-                    <ListItemText primary="All Schools" />
                   </Button>
                   {schoolOptions.map((school) => (
                     <Button
@@ -7462,21 +7488,23 @@ function SpellCatalogDialog({
                       onClick={() => toggleSchoolFilter(school)}
                       sx={{
                         minHeight: 44,
-                        justifyContent: 'flex-start',
-                        gap: 0.8,
+                        justifyContent: 'space-between',
+                        gap: 1,
                         color: dndColors.text,
                         fontWeight: 850,
                         textTransform: 'none',
+                        textAlign: 'left',
                       }}
                     >
+                      <ListItemText primary={school} sx={{ m: 0 }} />
                       <Checkbox
                         checked={schoolFilters.includes(school)}
                         sx={{
+                          p: 0.6,
                           color: alpha(dndColors.text, 0.42),
                           '&.Mui-checked': { color: '#9a6cff' },
                         }}
                       />
-                      <ListItemText primary={school} />
                     </Button>
                   ))}
                 </Box>
@@ -7527,6 +7555,7 @@ function SpellCatalogDialog({
           ) : null}
           {filteredSpells.map((spell) => {
             const selected = selectedName === spell.name;
+            const canSelect = canSelectSpell?.(spell) ?? true;
             return (
               <Box
                 key={`${spell.level}-${spell.school}-${spell.name}-${spell.source ?? ''}`}
@@ -7549,6 +7578,8 @@ function SpellCatalogDialog({
                   textAlign: 'left',
                   font: 'inherit',
                   cursor: 'pointer',
+                  opacity: canSelect ? 1 : 0.46,
+                  filter: canSelect ? 'none' : 'grayscale(0.75)',
                   '&:hover': { bgcolor: dndColors.panelSoft },
                 }}
               >
@@ -7621,13 +7652,14 @@ function SpellCatalogDialog({
         spell={previewSpellDetails}
         onClose={() => setPreviewSpell(null)}
         onSelect={
-          previewSpell
+          previewSpell && previewCanSelect
             ? () => {
                 onSelect(previewSpell);
                 setPreviewSpell(null);
               }
             : undefined
         }
+        selectDisabledLabel={previewSpell && !previewCanSelect ? 'Need Higher LVL' : undefined}
       />
     </Dialog>
   );
@@ -7637,6 +7669,7 @@ function SpellEditDialog({
   open,
   form,
   spellCatalog,
+  canSelectCatalogSpell,
   onChange,
   onCancel,
   onSave,
@@ -7644,6 +7677,7 @@ function SpellEditDialog({
   open: boolean;
   form: SpellForm | null;
   spellCatalog: SpellCatalogEntry[];
+  canSelectCatalogSpell?: (spell: SpellCatalogEntry) => boolean;
   onChange: (form: SpellForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -7652,6 +7686,10 @@ function SpellEditDialog({
   if (!form) return null;
   const setField = (key: keyof SpellForm, value: string) => onChange({ ...form, [key]: value });
   const applyCatalogSpell = (spell: SpellCatalogEntry) => {
+    if (canSelectCatalogSpell && !canSelectCatalogSpell(spell)) {
+      setCatalogOpen(false);
+      return;
+    }
     onChange({
       ...form,
       name: spell.name,
@@ -7782,6 +7820,7 @@ function SpellEditDialog({
         spells={spellCatalog}
         selectedName={form.name}
         onSelect={applyCatalogSpell}
+        canSelectSpell={canSelectCatalogSpell}
         onClose={() => setCatalogOpen(false)}
       />
     </>
@@ -8169,9 +8208,7 @@ function DungeonsAndDragons() {
       .filter((className): className is string => className !== null)
       .some((className) => characterClassNames.has(className)),
   );
-  const spellCatalogOptions = (
-    classSpellCatalog.length > 0 ? classSpellCatalog : spellCatalogSource
-  ).filter((spell) => characterCanAddSpellForSlots(spell, character.spellcasting.slots));
+  const spellCatalogOptions = classSpellCatalog.length > 0 ? classSpellCatalog : spellCatalogSource;
   const [pendingDelete, setPendingDelete] = useState<null | {
     confirm: () => void;
     title?: string;
@@ -9256,6 +9293,9 @@ function DungeonsAndDragons() {
           open={spellForm !== null}
           form={spellForm}
           spellCatalog={spellCatalogOptions}
+          canSelectCatalogSpell={(spell) =>
+            characterCanAddSpellForSlots(spell, character.spellcasting.slots)
+          }
           onChange={setSpellForm}
           onCancel={() => setSpellForm(null)}
           onSave={saveSpell}
@@ -9265,6 +9305,9 @@ function DungeonsAndDragons() {
           spells={spellCatalogOptions}
           onCreateCustom={openCustomSpellFromCatalog}
           onSelect={addCatalogSpellToCharacter}
+          canSelectSpell={(spell) =>
+            characterCanAddSpellForSlots(spell, character.spellcasting.slots)
+          }
           onClose={() => setSpellCatalogOpen(false)}
         />
         <SpellcastingEditDialog
