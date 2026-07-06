@@ -5495,7 +5495,7 @@ function DndFormDialog({
       PaperProps={{
         sx: {
           width: { xs: '100%', sm: 430 },
-          maxHeight: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
+          height: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
           mt: { xs: 'calc(env(safe-area-inset-top, 0px) + 78px)', sm: 0 },
           mx: { xs: 0, sm: 2 },
           borderRadius: { xs: '26px 26px 0 0', sm: '18px' },
