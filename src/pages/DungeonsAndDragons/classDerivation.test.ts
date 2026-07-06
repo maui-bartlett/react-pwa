@@ -14,6 +14,35 @@ describe('Dungeons & Dragons class catalog derivation', () => {
         armorProficiencies: ['Light Armor'],
         weaponProficiencies: ['Simple Weapons', 'Hand Crossbows'],
         toolProficiencies: ["Thieves' Tools"],
+        classFeatures: [
+          {
+            name: 'Sneak Attack',
+            level: 1,
+            summary: 'Deal extra damage once per turn when you have advantage.',
+          },
+          {
+            name: 'Elusive',
+            level: 18,
+            summary: 'Attack rolls cannot have advantage against you.',
+          },
+        ],
+        subclasses: [
+          {
+            name: 'Swashbuckler',
+            features: [
+              {
+                name: 'Fancy Footwork',
+                level: 3,
+                summary: 'A creature you attack cannot make opportunity attacks against you.',
+              },
+              {
+                name: 'Master Duelist',
+                level: 17,
+                summary: 'Reroll a missed attack once per rest.',
+              },
+            ],
+          },
+        ],
       },
     ],
     [
@@ -30,6 +59,23 @@ describe('Dungeons & Dragons class catalog derivation', () => {
           ritualCasting: true,
           preparation: 'prepare after a long rest',
         },
+        subclasses: [
+          {
+            name: 'Bladesinging',
+            subclassFeatures: [
+              {
+                title: 'Training in War and Song',
+                level: 2,
+                description: 'Gain proficiency with light armor and one one-handed weapon.',
+              },
+              {
+                title: 'Extra Attack',
+                level: 6,
+                description: 'Attack twice when taking the Attack action.',
+              },
+            ],
+          },
+        ],
       },
     ],
   ]);
@@ -90,7 +136,7 @@ describe('Dungeons & Dragons class catalog derivation', () => {
       ],
       catalogByName: catalog,
       currentHitDicePools: [],
-      existingFeatureIds: new Set(['class-summary-Rogue']),
+      existingFeatureIds: new Set(['class-summary-Rogue', 'class-feature-rogue-sneak-attack']),
     });
 
     expect(derived.savingThrowKeys).toEqual(['dex', 'int']);
@@ -112,5 +158,40 @@ describe('Dungeons & Dragons class catalog derivation', () => {
         summary: expect.stringContaining('Spellcasting: Prepared'),
       }),
     ]);
+  });
+
+  it('derives class and selected subclass features up to the character class level', () => {
+    const derived = deriveDndClassFields({
+      classes: [
+        { name: 'Rogue', level: 10, subclass: 'Swashbuckler' },
+        { name: 'Wizard', level: 2, subclass: 'Bladesinging' },
+      ],
+      catalogByName: catalog,
+      currentHitDicePools: [],
+      existingFeatureIds: new Set(['class-feature-rogue-sneak-attack']),
+    });
+
+    expect(derived.features).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'subclass-feature-rogue-swashbuckler-fancy-footwork',
+          name: 'Fancy Footwork',
+          source: 'Swashbuckler',
+        }),
+        expect.objectContaining({
+          id: 'subclass-feature-wizard-bladesinging-training-in-war-and-song',
+          name: 'Training in War and Song',
+          source: 'Bladesinging',
+        }),
+      ]),
+    );
+    expect(derived.features).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'Sneak Attack' }),
+        expect.objectContaining({ name: 'Elusive' }),
+        expect.objectContaining({ name: 'Master Duelist' }),
+        expect.objectContaining({ name: 'Extra Attack' }),
+      ]),
+    );
   });
 });
