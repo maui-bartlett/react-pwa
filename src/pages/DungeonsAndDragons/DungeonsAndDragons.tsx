@@ -6757,6 +6757,7 @@ function HitPointEditDialog({
   };
   const wheelMax = Math.max(max, 30);
   const pickerTopOffset = 18;
+  const pickerHeight = 174;
   return (
     <DndEditDialog
       title="Edit Hit Points"
@@ -6863,8 +6864,8 @@ function HitPointEditDialog({
         <Box
           sx={{
             mt: `${pickerTopOffset}px`,
-            height: `calc(100% - ${pickerTopOffset}px)`,
-            minHeight: 0,
+            height: pickerHeight,
+            maxHeight: pickerHeight,
             overflowY: 'auto',
             border: `1px solid ${dndColors.border}`,
             borderRadius: '12px',
