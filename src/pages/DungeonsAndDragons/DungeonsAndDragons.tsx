@@ -51,6 +51,8 @@ import { useThemeMode } from '@/theme/hooks';
 import { ThemeMode } from '@/theme/types';
 
 import { api } from '../../../convex/_generated/api';
+import { DUNGEONS_AND_DRAGONS_FEATS } from '../../../convex/data/dungeonsAndDragonsFeats';
+import { DUNGEONS_AND_DRAGONS_FEATURES } from '../../../convex/data/dungeonsAndDragonsFeatures';
 import type {
   AbilityKey,
   AbilityScore,
@@ -7902,856 +7904,57 @@ function CatalogHeaderTitle({
   );
 }
 
-function SpellCatalogDialog({
-  open,
-  spells,
-  selectedName,
-  onCreateCustom,
-  onSelect,
-  canSelectSpell,
-  onClose,
-}: {
-  open: boolean;
-  spells: SpellCatalogEntry[];
-  selectedName?: string;
-  onCreateCustom?: () => void;
-  onSelect: (spell: SpellCatalogEntry) => void;
-  canSelectSpell?: (spell: SpellCatalogEntry) => boolean;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState('');
-  const [schoolFilters, setSchoolFilters] = useState<string[]>([]);
-  const [levelFilters, setLevelFilters] = useState<string[]>([]);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [sortAscending, setSortAscending] = useState(true);
-  const [previewSpell, setPreviewSpell] = useState<SpellCatalogEntry | null>(null);
-  const normalizedQuery = query.trim().toLowerCase();
-  useEffect(() => {
-    if (!open) {
-      setPreviewSpell(null);
-      setFilterOpen(false);
-    }
-  }, [open]);
-  const schoolOptions = Array.from(
-    new Set(spells.map((spell) => spell.school.trim()).filter(Boolean)),
-  ).sort((a, b) => a.localeCompare(b));
-  const levelOptions = Array.from(
-    new Set(spells.map((spell) => spell.level.trim()).filter(Boolean)),
-  ).sort((a, b) => {
-    const rankA = getSpellSlotRank(a) ?? (/\bcantrip\b/iu.test(a) ? 0 : 99);
-    const rankB = getSpellSlotRank(b) ?? (/\bcantrip\b/iu.test(b) ? 0 : 99);
-    if (rankA !== rankB) return rankA - rankB;
-    return a.localeCompare(b);
-  });
-  const toggleSchoolFilter = (school: string) => {
-    setSchoolFilters((current) =>
-      current.includes(school) ? current.filter((entry) => entry !== school) : [...current, school],
-    );
-  };
-  const toggleLevelFilter = (level: string) => {
-    setLevelFilters((current) =>
-      current.includes(level) ? current.filter((entry) => entry !== level) : [...current, level],
-    );
-  };
-  const activeFilterCount = schoolFilters.length + levelFilters.length;
-  const filteredSpells = spells
-    .filter((spell) => {
-      if (schoolFilters.length > 0 && !schoolFilters.includes(spell.school)) return false;
-      if (levelFilters.length > 0 && !levelFilters.includes(spell.level)) return false;
-      if (!normalizedQuery) return true;
-      return [spell.name, spell.level, spell.school, spell.source]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery);
-    })
-    .sort((a, b) => (sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)));
-  const previewSpellDetails: Spell | null = previewSpell
-    ? {
-        id: 'catalog-preview',
-        ...previewSpell,
-        prepared: false,
-      }
-    : null;
-  const previewCanSelect = previewSpell ? (canSelectSpell?.(previewSpell) ?? true) : false;
-
-  return (
-    <Dialog
-      fullScreen
-      open={open}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          bgcolor: dndColors.page,
-          color: dndColors.text,
-          backgroundImage: `linear-gradient(180deg, ${alpha(dndColors.page, 0.98)}, ${alpha(
-            dndColors.panelStrong,
-            0.99,
-          )})`,
-        },
-      }}
-      sx={{ zIndex: 1800 }}
-    >
-      <Box
-        sx={{
-          minHeight: '100dvh',
-          pb: 11,
-          pt: 'max(20px, env(safe-area-inset-top))',
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ px: 3.2, pt: 1.1, pb: 2.2 }}
-        >
-          <CatalogHeaderLogo />
-          <CatalogHeaderTitle
-            sortAscending={sortAscending}
-            onToggleSort={() => setSortAscending((current) => !current)}
-          />
-          <IconButton
-            aria-label="Close spell catalog"
-            onClick={onClose}
-            sx={{
-              width: 58,
-              height: 58,
-              color: dndColors.text,
-              bgcolor: alpha(dndColors.panelSoft, 0.86),
-              border: `1px solid ${dndColors.borderSoft}`,
-              boxShadow: `inset 0 0 20px ${alpha('#000000', 0.34)}`,
-              '&:hover': { bgcolor: dndColors.panelSoft },
-            }}
-          >
-            <X size={26} />
-          </IconButton>
-        </Stack>
-
-        <Box sx={{ px: 3.2 }}>
-          <Box
-            sx={{
-              height: 55,
-              borderRadius: '4px',
-              bgcolor: dndColors.chrome,
-              display: 'grid',
-              gridTemplateColumns: 'auto 1fr auto',
-              alignItems: 'center',
-              gap: 1.4,
-              px: 1.7,
-              color: dndColors.text,
-              boxShadow: `inset 0 0 0 1px ${dndColors.borderSoft}`,
-            }}
-          >
-            <AutoAwesomeIcon sx={{ color: '#9a6cff', fontSize: 28 }} />
-            <Typography sx={{ fontSize: 20, fontWeight: 900 }}>Spells</Typography>
-            <Grid3X3 size={28} color={dndColors.red} strokeWidth={3} />
-          </Box>
-          <Stack direction="row" alignItems="center" gap={1.2} sx={{ mt: 2.1, mb: 1.9 }}>
-            <Box
-              sx={{
-                minWidth: 0,
-                flex: 1,
-                height: 55,
-                bgcolor: dndColors.panelSoft,
-                borderRadius: '3px',
-                display: 'flex',
-                alignItems: 'center',
-                px: 1.7,
-                gap: 1.2,
-                color: dndColors.muted,
-              }}
-            >
-              <Search size={27} />
-              <InputBase
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search spells"
-                inputProps={{ 'aria-label': 'Search spells' }}
-                sx={{
-                  flex: 1,
-                  color: dndColors.text,
-                  fontSize: 19,
-                  fontWeight: 650,
-                  '& input::placeholder': {
-                    color: dndColors.muted,
-                    opacity: 1,
-                  },
-                }}
-              />
-              {query ? (
-                <IconButton
-                  aria-label="Clear spell search"
-                  onClick={() => setQuery('')}
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    color: dndColors.muted,
-                    '&:hover': {
-                      color: dndColors.text,
-                      bgcolor: alpha(dndColors.text, 0.08),
-                    },
-                  }}
-                >
-                  <X size={18} />
-                </IconButton>
-              ) : null}
-            </Box>
-            <Box
-              sx={{
-                flex: '0 0 auto',
-                position: 'relative',
-                overflow: 'visible',
-              }}
-            >
-              <Button
-                aria-expanded={filterOpen}
-                aria-haspopup="dialog"
-                onClick={() => setFilterOpen((current) => !current)}
-                sx={{
-                  minWidth: 88,
-                  height: 55,
-                  borderRadius: '14px',
-                  bgcolor: '#3a2564',
-                  color: '#ffffff',
-                  fontSize: 15,
-                  fontWeight: 950,
-                  px: 1.35,
-                  gap: 0.65,
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: '#4b3180' },
-                }}
-              >
-                <Box
-                  component="span"
-                  sx={{
-                    display: 'inline-grid',
-                    placeItems: 'center',
-                    width: 23,
-                    height: 23,
-                    position: 'relative',
-                    '&::before, &::after': {
-                      content: '""',
-                      position: 'absolute',
-                      left: 3,
-                      right: 3,
-                      height: 2,
-                      borderRadius: '999px',
-                      bgcolor: '#ffffff',
-                    },
-                    '&::before': { top: 6 },
-                    '&::after': { bottom: 6 },
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      position: 'absolute',
-                      left: 3,
-                      right: 3,
-                      top: '50%',
-                      height: 2,
-                      borderRadius: '999px',
-                      bgcolor: '#ffffff',
-                      transform: 'translateY(-50%)',
-                    }}
-                  />
-                  <Box
-                    component="span"
-                    sx={{
-                      position: 'absolute',
-                      top: 3,
-                      left: 13,
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      bgcolor: '#ffffff',
-                    }}
-                  />
-                  <Box
-                    component="span"
-                    sx={{
-                      position: 'absolute',
-                      top: 9,
-                      left: 5,
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      bgcolor: '#ffffff',
-                    }}
-                  />
-                  <Box
-                    component="span"
-                    sx={{
-                      position: 'absolute',
-                      bottom: 3,
-                      left: 15,
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      bgcolor: '#ffffff',
-                    }}
-                  />
-                </Box>
-                Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-              </Button>
-              {filterOpen ? (
-                <Box
-                  role="dialog"
-                  aria-label="Filter spells"
-                  sx={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    right: 0,
-                    zIndex: 5,
-                    width: { xs: 'min(326px, calc(100vw - 38px))', sm: 360 },
-                    maxHeight: 'calc(100dvh - 238px)',
-                    overflowY: 'auto',
-                    bgcolor: dndColors.panelSoft,
-                    color: dndColors.text,
-                    border: `1px solid ${dndColors.borderSoft}`,
-                    borderRadius: '12px',
-                    boxShadow: `0 18px 34px ${alpha('#000000', 0.45)}`,
-                    p: 1.4,
-                  }}
-                >
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography sx={{ fontSize: 18, fontWeight: 950 }}>Filters</Typography>
-                    <Button
-                      disabled={activeFilterCount === 0}
-                      onClick={() => {
-                        setSchoolFilters([]);
-                        setLevelFilters([]);
-                      }}
-                      sx={{
-                        minWidth: 0,
-                        color: activeFilterCount === 0 ? dndColors.muted : '#9a6cff',
-                        fontWeight: 900,
-                        textTransform: 'none',
-                        '&.Mui-disabled': { color: alpha(dndColors.muted, 0.58) },
-                      }}
-                    >
-                      Clear
-                    </Button>
-                  </Stack>
-                  <SpellCatalogFilterGroup
-                    title="School of Magic"
-                    options={schoolOptions}
-                    selected={schoolFilters}
-                    allLabel="All Schools"
-                    onClear={() => setSchoolFilters([])}
-                    onToggle={toggleSchoolFilter}
-                  />
-                  <SpellCatalogFilterGroup
-                    title="Spell Level"
-                    options={levelOptions}
-                    selected={levelFilters}
-                    allLabel="All Levels"
-                    onClear={() => setLevelFilters([])}
-                    onToggle={toggleLevelFilter}
-                  />
-                </Box>
-              ) : null}
-            </Box>
-          </Stack>
-        </Box>
-
-        <Box
-          sx={{
-            borderTop: `1px solid ${dndColors.borderSoft}`,
-            borderBottom: `1px solid ${dndColors.borderSoft}`,
-          }}
-        >
-          {onCreateCustom ? (
-            <Box sx={{ bgcolor: dndColors.panel, px: 3.2, py: 1.4 }}>
-              <Button
-                fullWidth
-                startIcon={<AddIcon />}
-                onClick={onCreateCustom}
-                sx={{
-                  minHeight: 54,
-                  borderRadius: '4px',
-                  bgcolor: dndColors.red,
-                  color: '#ffffff',
-                  fontSize: 18,
-                  fontWeight: 950,
-                  textTransform: 'none',
-                  '&:hover': { bgcolor: dndColors.redDark },
-                }}
-              >
-                Custom Spell
-              </Button>
-            </Box>
-          ) : null}
-          {filteredSpells.length === 0 ? (
-            <Typography
-              sx={{
-                color: dndColors.muted,
-                fontSize: 16,
-                fontWeight: 750,
-                py: 4,
-                textAlign: 'center',
-              }}
-            >
-              No spells match your search.
-            </Typography>
-          ) : null}
-          {filteredSpells.map((spell) => {
-            const selected = selectedName === spell.name;
-            const canSelect = canSelectSpell?.(spell) ?? true;
-            return (
-              <Box
-                key={`${spell.level}-${spell.school}-${spell.name}-${spell.source ?? ''}`}
-                component="button"
-                type="button"
-                onClick={() => setPreviewSpell(spell)}
-                sx={{
-                  width: '100%',
-                  minHeight: 106,
-                  bgcolor: selected ? alpha(dndColors.red, 0.12) : dndColors.panel,
-                  color: dndColors.text,
-                  border: 0,
-                  borderBottom: `1px solid ${dndColors.borderSoft}`,
-                  display: 'grid',
-                  gridTemplateColumns: '70px minmax(0, 1fr) auto',
-                  alignItems: 'center',
-                  gap: 1.7,
-                  px: 3.2,
-                  py: 1.4,
-                  textAlign: 'left',
-                  font: 'inherit',
-                  cursor: 'pointer',
-                  opacity: canSelect ? 1 : 0.46,
-                  filter: canSelect ? 'none' : 'grayscale(0.75)',
-                  '&:hover': { bgcolor: dndColors.panelSoft },
-                }}
-              >
-                <SpellSchoolIcon school={spell.school} />
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    sx={{
-                      color: dndColors.text,
-                      fontSize: 22,
-                      fontWeight: 950,
-                      lineHeight: 1.05,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {spell.name}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      mt: 0.35,
-                      color: dndColors.muted,
-                      fontSize: 16,
-                      fontWeight: 850,
-                      lineHeight: 1.15,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {getSpellCatalogSubtitle(spell)}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      mt: 0.35,
-                      color: alpha(dndColors.muted, 0.88),
-                      fontSize: 15,
-                      fontWeight: 650,
-                      lineHeight: 1.15,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {spell.source ?? 'D&D Spell Catalog'}
-                  </Typography>
-                </Box>
-                {isLegacySpell(spell) ? (
-                  <Box
-                    sx={{
-                      alignSelf: 'center',
-                      px: 1.6,
-                      py: 0.55,
-                      borderRadius: '3px',
-                      bgcolor: dndColors.border,
-                      color: dndColors.text,
-                      fontSize: 15,
-                      fontWeight: 950,
-                    }}
-                  >
-                    Legacy
-                  </Box>
-                ) : null}
-              </Box>
-            );
-          })}
-        </Box>
-      </Box>
-      <SpellDetailsDialog
-        spell={previewSpellDetails}
-        onClose={() => setPreviewSpell(null)}
-        onSelect={
-          previewSpell && previewCanSelect
-            ? () => {
-                onSelect(previewSpell);
-                setPreviewSpell(null);
-              }
-            : undefined
-        }
-        selectDisabledLabel={previewSpell && !previewCanSelect ? 'Need Higher LVL' : undefined}
-      />
-    </Dialog>
-  );
-}
-
-function ItemCatalogDialog({
-  open,
-  items,
-  onCreateCustom,
-  onSelect,
-  onQuickAdd,
-  onClose,
-}: {
-  open: boolean;
-  items: ItemCatalogEntry[];
-  onCreateCustom: () => void;
-  onSelect: (item: ItemCatalogEntry) => void;
-  onQuickAdd: (item: ItemCatalogEntry) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState('');
-  const [sortAscending, setSortAscending] = useState(true);
-  const [previewItem, setPreviewItem] = useState<ItemCatalogEntry | null>(null);
-  const normalizedQuery = query.trim().toLowerCase();
-  useEffect(() => {
-    if (!open) {
-      setQuery('');
-      setPreviewItem(null);
-    }
-  }, [open]);
-
-  const filteredItems = items
-    .filter((item) => {
-      if (!normalizedQuery) return true;
-      return [item.name, item.category, item.rarity, item.source, item.description]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery);
-    })
-    .sort((a, b) => (sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)));
-
-  return (
-    <Dialog
-      fullScreen
-      open={open}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          bgcolor: dndColors.page,
-          color: dndColors.text,
-          backgroundImage: `linear-gradient(180deg, ${alpha(dndColors.page, 0.98)}, ${alpha(
-            dndColors.panelStrong,
-            0.99,
-          )})`,
-        },
-      }}
-      sx={{ zIndex: 1800 }}
-    >
-      <Box
-        sx={{
-          minHeight: '100dvh',
-          pb: 11,
-          pt: 'max(20px, env(safe-area-inset-top))',
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ px: 3.2, pt: 1.1, pb: 2.2 }}
-        >
-          <CatalogHeaderLogo />
-          <CatalogHeaderTitle
-            sortAscending={sortAscending}
-            onToggleSort={() => setSortAscending((current) => !current)}
-          />
-          <IconButton
-            aria-label="Close item catalog"
-            onClick={onClose}
-            sx={{
-              width: 58,
-              height: 58,
-              color: dndColors.text,
-              bgcolor: alpha(dndColors.panelSoft, 0.86),
-              border: `1px solid ${dndColors.borderSoft}`,
-              boxShadow: `inset 0 0 20px ${alpha('#000000', 0.34)}`,
-              '&:hover': { bgcolor: dndColors.panelSoft },
-            }}
-          >
-            <X size={26} />
-          </IconButton>
-        </Stack>
-
-        <Box sx={{ px: 3.2 }}>
-          <Box
-            sx={{
-              height: 55,
-              borderRadius: '4px',
-              bgcolor: dndColors.chrome,
-              display: 'grid',
-              gridTemplateColumns: 'auto 1fr auto',
-              alignItems: 'center',
-              gap: 1.4,
-              px: 1.7,
-              color: dndColors.text,
-              boxShadow: `inset 0 0 0 1px ${dndColors.borderSoft}`,
-            }}
-          >
-            <Backpack size={28} color="#9a6cff" strokeWidth={2.5} />
-            <Typography sx={{ fontSize: 20, fontWeight: 900 }}>Items & Equipment</Typography>
-            <Grid3X3 size={28} color={dndColors.red} strokeWidth={3} />
-          </Box>
-          <Box
-            sx={{
-              mt: 2.1,
-              mb: 1.9,
-              height: 55,
-              bgcolor: dndColors.panelSoft,
-              borderRadius: '3px',
-              display: 'flex',
-              alignItems: 'center',
-              px: 1.7,
-              gap: 1.2,
-              color: dndColors.muted,
-            }}
-          >
-            <Search size={27} />
-            <InputBase
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search items"
-              inputProps={{ 'aria-label': 'Search items' }}
-              sx={{
-                flex: 1,
-                color: dndColors.text,
-                fontSize: 19,
-                fontWeight: 650,
-                '& input::placeholder': {
-                  color: dndColors.muted,
-                  opacity: 1,
-                },
-              }}
-            />
-            {query ? (
-              <IconButton
-                aria-label="Clear item search"
-                onClick={() => setQuery('')}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  color: dndColors.muted,
-                  '&:hover': {
-                    color: dndColors.text,
-                    bgcolor: alpha(dndColors.text, 0.08),
-                  },
-                }}
-              >
-                <X size={18} />
-              </IconButton>
-            ) : null}
-          </Box>
-        </Box>
-
-        <Box
-          sx={{
-            borderTop: `1px solid ${dndColors.borderSoft}`,
-            borderBottom: `1px solid ${dndColors.borderSoft}`,
-          }}
-        >
-          <Box sx={{ bgcolor: dndColors.panel, px: 3.2, py: 1.4 }}>
-            <Button
-              fullWidth
-              startIcon={<AddIcon />}
-              onClick={onCreateCustom}
-              sx={{
-                minHeight: 54,
-                borderRadius: '4px',
-                bgcolor: dndColors.red,
-                color: '#ffffff',
-                fontSize: 18,
-                fontWeight: 950,
-                textTransform: 'none',
-                '&:hover': { bgcolor: dndColors.redDark },
-              }}
-            >
-              Custom Item
-            </Button>
-          </Box>
-          {filteredItems.length === 0 ? (
-            <Typography
-              sx={{
-                color: dndColors.muted,
-                fontSize: 16,
-                fontWeight: 750,
-                py: 4,
-                textAlign: 'center',
-              }}
-            >
-              No items match your search.
-            </Typography>
-          ) : null}
-          {filteredItems.map((item) => (
-            <Box
-              key={`${item.category}-${item.name}-${item.source ?? ''}`}
-              component="button"
-              type="button"
-              onClick={() => setPreviewItem(item)}
-              sx={{
-                width: '100%',
-                minHeight: 94,
-                bgcolor: dndColors.panel,
-                color: dndColors.text,
-                border: 0,
-                borderBottom: `1px solid ${dndColors.borderSoft}`,
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) auto',
-                alignItems: 'center',
-                gap: 1.4,
-                px: 3.2,
-                py: 1.3,
-                textAlign: 'left',
-                font: 'inherit',
-                cursor: 'pointer',
-                '&:hover': { bgcolor: dndColors.panelSoft },
-              }}
-            >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  sx={{
-                    color: dndColors.text,
-                    fontSize: 22,
-                    fontWeight: 950,
-                    lineHeight: 1.05,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {item.name}
-                </Typography>
-                <Typography
-                  sx={{
-                    mt: 0.35,
-                    color: dndColors.muted,
-                    fontSize: 16,
-                    fontWeight: 850,
-                    lineHeight: 1.15,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {item.category}
-                  {item.rarity ? ` • ${item.rarity}` : ''}
-                </Typography>
-                <Typography
-                  sx={{
-                    mt: 0.35,
-                    color: alpha(dndColors.muted, 0.88),
-                    fontSize: 15,
-                    fontWeight: 650,
-                    lineHeight: 1.15,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {item.weight} • {item.cost}
-                </Typography>
-              </Box>
-              <IconButton
-                aria-label={`Add ${item.name}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onQuickAdd(item);
-                }}
-                sx={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: '50%',
-                  bgcolor: dndColors.red,
-                  color: '#ffffff',
-                  '&:hover': { bgcolor: dndColors.redDark },
-                }}
-              >
-                <AddIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-      <ItemDetailsDialog
-        item={previewItem ? catalogItemToInventoryItem(previewItem) : null}
-        onClose={() => setPreviewItem(null)}
-        onAdd={
-          previewItem
-            ? () => {
-                onSelect(previewItem);
-                setPreviewItem(null);
-              }
-            : undefined
-        }
-      />
-    </Dialog>
-  );
-}
-
-function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
+function CatalogDialog<TEntry>({
   open,
   title,
   searchPlaceholder,
-  customLabel,
-  emptyLabel,
   entries,
-  getMeta,
-  icon,
+  emptyLabel,
+  customLabel,
+  toolbarAction,
+  titleIcon,
+  getEntryKey,
+  getSearchText,
+  getSortLabel,
+  renderEntry,
+  details,
   onCreateCustom,
-  onSelect,
   onClose,
 }: {
   open: boolean;
   title: string;
   searchPlaceholder: string;
-  customLabel: string;
-  emptyLabel: string;
   entries: TEntry[];
-  getMeta: (entry: TEntry) => string[];
-  icon: ReactNode;
-  onCreateCustom: () => void;
-  onSelect: (entry: TEntry) => void;
+  emptyLabel: string;
+  customLabel?: string;
+  toolbarAction?: ReactNode;
+  titleIcon: ReactNode;
+  getEntryKey: (entry: TEntry) => string;
+  getSearchText: (entry: TEntry) => string[];
+  getSortLabel: (entry: TEntry) => string;
+  renderEntry: (entry: TEntry) => ReactNode;
+  details?: ReactNode;
+  onCreateCustom?: () => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [sortAscending, setSortAscending] = useState(true);
   const normalizedQuery = query.trim().toLowerCase();
+
   useEffect(() => {
     if (!open) setQuery('');
   }, [open]);
 
-  const filteredEntries = entries
+  const visibleEntries = entries
     .filter((entry) => {
       if (!normalizedQuery) return true;
-      return [entry.name, entry.summary, ...getMeta(entry)]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery);
+      return getSearchText(entry).filter(Boolean).join(' ').toLowerCase().includes(normalizedQuery);
     })
-    .sort((a, b) => (sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)));
+    .sort((a, b) => {
+      const left = getSortLabel(a);
+      const right = getSortLabel(b);
+      return sortAscending ? left.localeCompare(right) : right.localeCompare(left);
+    });
 
   return (
     <Dialog
@@ -8814,59 +8017,62 @@ function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
               boxShadow: `inset 0 0 0 1px ${dndColors.borderSoft}`,
             }}
           >
-            <Box sx={{ color: '#9a6cff', display: 'grid', placeItems: 'center' }}>{icon}</Box>
+            <Box sx={{ color: '#9a6cff', display: 'grid', placeItems: 'center' }}>{titleIcon}</Box>
             <Typography sx={{ fontSize: 20, fontWeight: 900 }}>{title}</Typography>
             <Grid3X3 size={28} color={dndColors.red} strokeWidth={3} />
           </Box>
-          <Box
-            sx={{
-              mt: 2.1,
-              mb: 1.9,
-              height: 55,
-              bgcolor: dndColors.panelSoft,
-              borderRadius: '3px',
-              display: 'flex',
-              alignItems: 'center',
-              px: 1.7,
-              gap: 1.2,
-              color: dndColors.muted,
-            }}
-          >
-            <Search size={27} />
-            <InputBase
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={searchPlaceholder}
-              inputProps={{ 'aria-label': searchPlaceholder }}
+          <Stack direction="row" alignItems="center" gap={1.2} sx={{ mt: 2.1, mb: 1.9 }}>
+            <Box
               sx={{
+                minWidth: 0,
                 flex: 1,
-                color: dndColors.text,
-                fontSize: 19,
-                fontWeight: 650,
-                '& input::placeholder': {
-                  color: dndColors.muted,
-                  opacity: 1,
-                },
+                height: 55,
+                bgcolor: dndColors.panelSoft,
+                borderRadius: '3px',
+                display: 'flex',
+                alignItems: 'center',
+                px: 1.7,
+                gap: 1.2,
+                color: dndColors.muted,
               }}
-            />
-            {query ? (
-              <IconButton
-                aria-label={`Clear ${title} search`}
-                onClick={() => setQuery('')}
+            >
+              <Search size={27} />
+              <InputBase
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={searchPlaceholder}
+                inputProps={{ 'aria-label': searchPlaceholder }}
                 sx={{
-                  width: 32,
-                  height: 32,
-                  color: dndColors.muted,
-                  '&:hover': {
-                    color: dndColors.text,
-                    bgcolor: alpha(dndColors.text, 0.08),
+                  flex: 1,
+                  color: dndColors.text,
+                  fontSize: 19,
+                  fontWeight: 650,
+                  '& input::placeholder': {
+                    color: dndColors.muted,
+                    opacity: 1,
                   },
                 }}
-              >
-                <X size={18} />
-              </IconButton>
-            ) : null}
-          </Box>
+              />
+              {query ? (
+                <IconButton
+                  aria-label={`Clear ${title} search`}
+                  onClick={() => setQuery('')}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    color: dndColors.muted,
+                    '&:hover': {
+                      color: dndColors.text,
+                      bgcolor: alpha(dndColors.text, 0.08),
+                    },
+                  }}
+                >
+                  <X size={18} />
+                </IconButton>
+              ) : null}
+            </Box>
+            {toolbarAction}
+          </Stack>
         </Box>
 
         <Box
@@ -8875,26 +8081,28 @@ function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
             borderBottom: `1px solid ${dndColors.borderSoft}`,
           }}
         >
-          <Box sx={{ bgcolor: dndColors.panel, px: 3.2, py: 1.4 }}>
-            <Button
-              fullWidth
-              startIcon={<AddIcon />}
-              onClick={onCreateCustom}
-              sx={{
-                minHeight: 54,
-                borderRadius: '4px',
-                bgcolor: dndColors.red,
-                color: '#ffffff',
-                fontSize: 18,
-                fontWeight: 950,
-                textTransform: 'none',
-                '&:hover': { bgcolor: dndColors.redDark },
-              }}
-            >
-              {customLabel}
-            </Button>
-          </Box>
-          {filteredEntries.length === 0 ? (
+          {onCreateCustom && customLabel ? (
+            <Box sx={{ bgcolor: dndColors.panel, px: 3.2, py: 1.4 }}>
+              <Button
+                fullWidth
+                startIcon={<AddIcon />}
+                onClick={onCreateCustom}
+                sx={{
+                  minHeight: 54,
+                  borderRadius: '4px',
+                  bgcolor: dndColors.red,
+                  color: '#ffffff',
+                  fontSize: 18,
+                  fontWeight: 950,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: dndColors.redDark },
+                }}
+              >
+                {customLabel}
+              </Button>
+            </Box>
+          ) : null}
+          {visibleEntries.length === 0 ? (
             <Typography
               sx={{
                 color: dndColors.muted,
@@ -8907,91 +8115,630 @@ function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
               {emptyLabel}
             </Typography>
           ) : null}
-          {filteredEntries.map((entry) => {
-            const meta = getMeta(entry).filter(Boolean);
-            return (
-              <Box
-                key={`${entry.name}-${meta.join('-')}`}
-                component="button"
-                type="button"
-                onClick={() => onSelect(entry)}
-                sx={{
-                  width: '100%',
-                  minHeight: 98,
-                  bgcolor: dndColors.panel,
-                  color: dndColors.text,
-                  border: 0,
-                  borderBottom: `1px solid ${dndColors.borderSoft}`,
-                  display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) auto',
-                  alignItems: 'center',
-                  gap: 1.4,
-                  px: 3.2,
-                  py: 1.3,
-                  textAlign: 'left',
-                  font: 'inherit',
-                  cursor: 'pointer',
-                  '&:hover': { bgcolor: dndColors.panelSoft },
-                }}
-              >
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    sx={{
-                      color: dndColors.text,
-                      fontSize: 22,
-                      fontWeight: 950,
-                      lineHeight: 1.05,
-                    }}
-                  >
-                    {entry.name}
-                  </Typography>
-                  {meta.length > 0 ? (
-                    <Typography
-                      sx={{
-                        mt: 0.4,
-                        color: dndColors.muted,
-                        fontSize: 15,
-                        fontWeight: 850,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {meta.join(' • ')}
-                    </Typography>
-                  ) : null}
-                  <Typography
-                    sx={{
-                      mt: 0.55,
-                      color: alpha(dndColors.muted, 0.9),
-                      fontSize: 14,
-                      lineHeight: 1.25,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {entry.summary}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    display: 'grid',
-                    placeItems: 'center',
-                    bgcolor: dndColors.red,
-                    color: '#ffffff',
-                  }}
-                >
-                  <AddIcon fontSize="small" />
-                </Box>
-              </Box>
-            );
-          })}
+          {visibleEntries.map((entry) => (
+            <Box key={getEntryKey(entry)}>{renderEntry(entry)}</Box>
+          ))}
         </Box>
       </Box>
+      {details}
     </Dialog>
+  );
+}
+
+function SpellCatalogDialog({
+  open,
+  spells,
+  selectedName,
+  onCreateCustom,
+  onSelect,
+  canSelectSpell,
+  onClose,
+}: {
+  open: boolean;
+  spells: SpellCatalogEntry[];
+  selectedName?: string;
+  onCreateCustom?: () => void;
+  onSelect: (spell: SpellCatalogEntry) => void;
+  canSelectSpell?: (spell: SpellCatalogEntry) => boolean;
+  onClose: () => void;
+}) {
+  const [schoolFilters, setSchoolFilters] = useState<string[]>([]);
+  const [levelFilters, setLevelFilters] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [previewSpell, setPreviewSpell] = useState<SpellCatalogEntry | null>(null);
+  useEffect(() => {
+    if (!open) {
+      setPreviewSpell(null);
+      setFilterOpen(false);
+    }
+  }, [open]);
+  const schoolOptions = Array.from(
+    new Set(spells.map((spell) => spell.school.trim()).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
+  const levelOptions = Array.from(
+    new Set(spells.map((spell) => spell.level.trim()).filter(Boolean)),
+  ).sort((a, b) => {
+    const rankA = getSpellSlotRank(a) ?? (/\bcantrip\b/iu.test(a) ? 0 : 99);
+    const rankB = getSpellSlotRank(b) ?? (/\bcantrip\b/iu.test(b) ? 0 : 99);
+    if (rankA !== rankB) return rankA - rankB;
+    return a.localeCompare(b);
+  });
+  const toggleSchoolFilter = (school: string) => {
+    setSchoolFilters((current) =>
+      current.includes(school) ? current.filter((entry) => entry !== school) : [...current, school],
+    );
+  };
+  const toggleLevelFilter = (level: string) => {
+    setLevelFilters((current) =>
+      current.includes(level) ? current.filter((entry) => entry !== level) : [...current, level],
+    );
+  };
+  const activeFilterCount = schoolFilters.length + levelFilters.length;
+  const filterMatchedSpells = spells.filter((spell) => {
+    if (schoolFilters.length > 0 && !schoolFilters.includes(spell.school)) return false;
+    if (levelFilters.length > 0 && !levelFilters.includes(spell.level)) return false;
+    return true;
+  });
+  const previewSpellDetails: Spell | null = previewSpell
+    ? {
+        id: 'catalog-preview',
+        ...previewSpell,
+        prepared: false,
+      }
+    : null;
+  const previewCanSelect = previewSpell ? (canSelectSpell?.(previewSpell) ?? true) : false;
+
+  return (
+    <CatalogDialog
+      open={open}
+      title="Spells"
+      searchPlaceholder="Search spells"
+      entries={filterMatchedSpells}
+      emptyLabel="No spells match your search."
+      customLabel={onCreateCustom ? 'Custom Spell' : undefined}
+      titleIcon={<AutoAwesomeIcon sx={{ color: '#9a6cff', fontSize: 28 }} />}
+      getEntryKey={(spell) => `${spell.level}-${spell.school}-${spell.name}-${spell.source ?? ''}`}
+      getSearchText={(spell) => [spell.name, spell.level, spell.school, spell.source ?? '']}
+      getSortLabel={(spell) => spell.name}
+      onCreateCustom={onCreateCustom}
+      onClose={onClose}
+      toolbarAction={
+        <Box
+          sx={{
+            flex: '0 0 auto',
+            position: 'relative',
+            overflow: 'visible',
+          }}
+        >
+          <Button
+            aria-expanded={filterOpen}
+            aria-haspopup="dialog"
+            onClick={() => setFilterOpen((current) => !current)}
+            sx={{
+              minWidth: 88,
+              height: 55,
+              borderRadius: '14px',
+              bgcolor: '#3a2564',
+              color: '#ffffff',
+              fontSize: 15,
+              fontWeight: 950,
+              px: 1.35,
+              gap: 0.65,
+              textTransform: 'none',
+              '&:hover': { bgcolor: '#4b3180' },
+            }}
+          >
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-grid',
+                placeItems: 'center',
+                width: 23,
+                height: 23,
+                position: 'relative',
+                '&::before, &::after': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 3,
+                  right: 3,
+                  height: 2,
+                  borderRadius: '999px',
+                  bgcolor: '#ffffff',
+                },
+                '&::before': { top: 6 },
+                '&::after': { bottom: 6 },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  position: 'absolute',
+                  left: 3,
+                  right: 3,
+                  top: '50%',
+                  height: 2,
+                  borderRadius: '999px',
+                  bgcolor: '#ffffff',
+                  transform: 'translateY(-50%)',
+                }}
+              />
+              <Box
+                component="span"
+                sx={{
+                  position: 'absolute',
+                  top: 3,
+                  left: 13,
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  bgcolor: '#ffffff',
+                }}
+              />
+              <Box
+                component="span"
+                sx={{
+                  position: 'absolute',
+                  top: 9,
+                  left: 5,
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  bgcolor: '#ffffff',
+                }}
+              />
+              <Box
+                component="span"
+                sx={{
+                  position: 'absolute',
+                  bottom: 3,
+                  left: 15,
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  bgcolor: '#ffffff',
+                }}
+              />
+            </Box>
+            Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+          </Button>
+          {filterOpen ? (
+            <Box
+              role="dialog"
+              aria-label="Filter spells"
+              sx={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                zIndex: 5,
+                width: { xs: 'min(326px, calc(100vw - 38px))', sm: 360 },
+                maxHeight: 'calc(100dvh - 238px)',
+                overflowY: 'auto',
+                bgcolor: dndColors.panelSoft,
+                color: dndColors.text,
+                border: `1px solid ${dndColors.borderSoft}`,
+                borderRadius: '12px',
+                boxShadow: `0 18px 34px ${alpha('#000000', 0.45)}`,
+                p: 1.4,
+              }}
+            >
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography sx={{ fontSize: 18, fontWeight: 950 }}>Filters</Typography>
+                <Button
+                  disabled={activeFilterCount === 0}
+                  onClick={() => {
+                    setSchoolFilters([]);
+                    setLevelFilters([]);
+                  }}
+                  sx={{
+                    minWidth: 0,
+                    color: activeFilterCount === 0 ? dndColors.muted : '#9a6cff',
+                    fontWeight: 900,
+                    textTransform: 'none',
+                    '&.Mui-disabled': { color: alpha(dndColors.muted, 0.58) },
+                  }}
+                >
+                  Clear
+                </Button>
+              </Stack>
+              <SpellCatalogFilterGroup
+                title="School of Magic"
+                options={schoolOptions}
+                selected={schoolFilters}
+                allLabel="All Schools"
+                onClear={() => setSchoolFilters([])}
+                onToggle={toggleSchoolFilter}
+              />
+              <SpellCatalogFilterGroup
+                title="Spell Level"
+                options={levelOptions}
+                selected={levelFilters}
+                allLabel="All Levels"
+                onClear={() => setLevelFilters([])}
+                onToggle={toggleLevelFilter}
+              />
+            </Box>
+          ) : null}
+        </Box>
+      }
+      renderEntry={(spell) => {
+        const selected = selectedName === spell.name;
+        const canSelect = canSelectSpell?.(spell) ?? true;
+        return (
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setPreviewSpell(spell)}
+            sx={{
+              width: '100%',
+              minHeight: 106,
+              bgcolor: selected ? alpha(dndColors.red, 0.12) : dndColors.panel,
+              color: dndColors.text,
+              border: 0,
+              borderBottom: `1px solid ${dndColors.borderSoft}`,
+              display: 'grid',
+              gridTemplateColumns: '70px minmax(0, 1fr) auto',
+              alignItems: 'center',
+              gap: 1.7,
+              px: 3.2,
+              py: 1.4,
+              textAlign: 'left',
+              font: 'inherit',
+              cursor: 'pointer',
+              opacity: canSelect ? 1 : 0.46,
+              filter: canSelect ? 'none' : 'grayscale(0.75)',
+              '&:hover': { bgcolor: dndColors.panelSoft },
+            }}
+          >
+            <SpellSchoolIcon school={spell.school} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{
+                  color: dndColors.text,
+                  fontSize: 22,
+                  fontWeight: 950,
+                  lineHeight: 1.05,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {spell.name}
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 0.35,
+                  color: dndColors.muted,
+                  fontSize: 16,
+                  fontWeight: 850,
+                  lineHeight: 1.15,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {getSpellCatalogSubtitle(spell)}
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 0.35,
+                  color: alpha(dndColors.muted, 0.88),
+                  fontSize: 15,
+                  fontWeight: 650,
+                  lineHeight: 1.15,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {spell.source ?? 'D&D Spell Catalog'}
+              </Typography>
+            </Box>
+            {isLegacySpell(spell) ? (
+              <Box
+                sx={{
+                  alignSelf: 'center',
+                  px: 1.6,
+                  py: 0.55,
+                  borderRadius: '3px',
+                  bgcolor: dndColors.border,
+                  color: dndColors.text,
+                  fontSize: 15,
+                  fontWeight: 950,
+                }}
+              >
+                Legacy
+              </Box>
+            ) : null}
+          </Box>
+        );
+      }}
+      details={
+        <SpellDetailsDialog
+          spell={previewSpellDetails}
+          onClose={() => setPreviewSpell(null)}
+          onSelect={
+            previewSpell && previewCanSelect
+              ? () => {
+                  onSelect(previewSpell);
+                  setPreviewSpell(null);
+                }
+              : undefined
+          }
+          selectDisabledLabel={previewSpell && !previewCanSelect ? 'Need Higher LVL' : undefined}
+        />
+      }
+    />
+  );
+}
+
+function ItemCatalogDialog({
+  open,
+  items,
+  onCreateCustom,
+  onSelect,
+  onQuickAdd,
+  onClose,
+}: {
+  open: boolean;
+  items: ItemCatalogEntry[];
+  onCreateCustom: () => void;
+  onSelect: (item: ItemCatalogEntry) => void;
+  onQuickAdd: (item: ItemCatalogEntry) => void;
+  onClose: () => void;
+}) {
+  const [previewItem, setPreviewItem] = useState<ItemCatalogEntry | null>(null);
+  useEffect(() => {
+    if (!open) {
+      setPreviewItem(null);
+    }
+  }, [open]);
+
+  return (
+    <CatalogDialog
+      open={open}
+      title="Items & Equipment"
+      searchPlaceholder="Search items"
+      entries={items}
+      emptyLabel="No items match your search."
+      customLabel="Custom Item"
+      titleIcon={<Backpack size={28} color="#9a6cff" strokeWidth={2.5} />}
+      getEntryKey={(item) => `${item.category}-${item.name}-${item.source ?? ''}`}
+      getSearchText={(item) => [
+        item.name,
+        item.category,
+        item.rarity ?? '',
+        item.source ?? '',
+        item.description ?? '',
+      ]}
+      getSortLabel={(item) => item.name}
+      onCreateCustom={onCreateCustom}
+      onClose={onClose}
+      renderEntry={(item) => (
+        <Box
+          component="button"
+          type="button"
+          onClick={() => setPreviewItem(item)}
+          sx={{
+            width: '100%',
+            minHeight: 94,
+            bgcolor: dndColors.panel,
+            color: dndColors.text,
+            border: 0,
+            borderBottom: `1px solid ${dndColors.borderSoft}`,
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) auto',
+            alignItems: 'center',
+            gap: 1.4,
+            px: 3.2,
+            py: 1.3,
+            textAlign: 'left',
+            font: 'inherit',
+            cursor: 'pointer',
+            '&:hover': { bgcolor: dndColors.panelSoft },
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              sx={{
+                color: dndColors.text,
+                fontSize: 22,
+                fontWeight: 950,
+                lineHeight: 1.05,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {item.name}
+            </Typography>
+            <Typography
+              sx={{
+                mt: 0.35,
+                color: dndColors.muted,
+                fontSize: 16,
+                fontWeight: 850,
+                lineHeight: 1.15,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {item.category}
+              {item.rarity ? ` • ${item.rarity}` : ''}
+            </Typography>
+            <Typography
+              sx={{
+                mt: 0.35,
+                color: alpha(dndColors.muted, 0.88),
+                fontSize: 15,
+                fontWeight: 650,
+                lineHeight: 1.15,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {item.weight} • {item.cost}
+            </Typography>
+          </Box>
+          <IconButton
+            aria-label={`Add ${item.name}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onQuickAdd(item);
+            }}
+            sx={{
+              width: 42,
+              height: 42,
+              borderRadius: '50%',
+              bgcolor: dndColors.red,
+              color: '#ffffff',
+              '&:hover': { bgcolor: dndColors.redDark },
+            }}
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )}
+      details={
+        <ItemDetailsDialog
+          item={previewItem ? catalogItemToInventoryItem(previewItem) : null}
+          onClose={() => setPreviewItem(null)}
+          onAdd={
+            previewItem
+              ? () => {
+                  onSelect(previewItem);
+                  setPreviewItem(null);
+                }
+              : undefined
+          }
+        />
+      }
+    />
+  );
+}
+
+function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
+  open,
+  title,
+  searchPlaceholder,
+  customLabel,
+  emptyLabel,
+  entries,
+  getMeta,
+  icon,
+  onCreateCustom,
+  onSelect,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  searchPlaceholder: string;
+  customLabel: string;
+  emptyLabel: string;
+  entries: TEntry[];
+  getMeta: (entry: TEntry) => string[];
+  icon: ReactNode;
+  onCreateCustom: () => void;
+  onSelect: (entry: TEntry) => void;
+  onClose: () => void;
+}) {
+  return (
+    <CatalogDialog
+      open={open}
+      title={title}
+      searchPlaceholder={searchPlaceholder}
+      entries={entries}
+      emptyLabel={emptyLabel}
+      customLabel={customLabel}
+      titleIcon={icon}
+      getEntryKey={(entry) => `${entry.name}-${getMeta(entry).filter(Boolean).join('-')}`}
+      getSearchText={(entry) => [entry.name, entry.summary, ...getMeta(entry)]}
+      getSortLabel={(entry) => entry.name}
+      onCreateCustom={onCreateCustom}
+      onClose={onClose}
+      renderEntry={(entry) => {
+        const meta = getMeta(entry).filter(Boolean);
+        return (
+          <Box
+            component="button"
+            type="button"
+            onClick={() => onSelect(entry)}
+            sx={{
+              width: '100%',
+              minHeight: 98,
+              bgcolor: dndColors.panel,
+              color: dndColors.text,
+              border: 0,
+              borderBottom: `1px solid ${dndColors.borderSoft}`,
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) auto',
+              alignItems: 'center',
+              gap: 1.4,
+              px: 3.2,
+              py: 1.3,
+              textAlign: 'left',
+              font: 'inherit',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: dndColors.panelSoft },
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{
+                  color: dndColors.text,
+                  fontSize: 22,
+                  fontWeight: 950,
+                  lineHeight: 1.05,
+                }}
+              >
+                {entry.name}
+              </Typography>
+              {meta.length > 0 ? (
+                <Typography
+                  sx={{
+                    mt: 0.4,
+                    color: dndColors.muted,
+                    fontSize: 15,
+                    fontWeight: 850,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {meta.join(' • ')}
+                </Typography>
+              ) : null}
+              <Typography
+                sx={{
+                  mt: 0.55,
+                  color: alpha(dndColors.muted, 0.9),
+                  fontSize: 14,
+                  lineHeight: 1.25,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {entry.summary}
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor: dndColors.red,
+                color: '#ffffff',
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </Box>
+          </Box>
+        );
+      }}
+    />
   );
 }
 
@@ -9685,14 +9432,22 @@ function DungeonsAndDragons() {
           entry.type !== 'feature'),
     )
     .filter((entry): entry is ItemCatalogEntry => asNonEmptyString(entry.name) !== null);
-  const dndFeatOptions = (dndCatalogItems ?? [])
+  const dndFeatRows = (dndCatalogItems ?? [])
     .filter((entry) => entry.metadata?.type === 'feat' || entry.type === 'feat')
-    .filter((entry): entry is FeatCatalogEntry => asNonEmptyString(entry.name) !== null)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const dndFeatureOptions = (dndCatalogItems ?? [])
+    .filter((entry): entry is FeatCatalogEntry => asNonEmptyString(entry.name) !== null);
+  const dndFeatOptions = [
+    ...(dndFeatRows.length > 0
+      ? dndFeatRows
+      : (DUNGEONS_AND_DRAGONS_FEATS as unknown as FeatCatalogEntry[])),
+  ].sort((a, b) => a.name.localeCompare(b.name));
+  const dndFeatureRows = (dndCatalogItems ?? [])
     .filter((entry) => entry.metadata?.type === 'feature' || entry.type === 'feature')
-    .filter((entry): entry is FeatureCatalogEntry => asNonEmptyString(entry.name) !== null)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .filter((entry): entry is FeatureCatalogEntry => asNonEmptyString(entry.name) !== null);
+  const dndFeatureOptions = [
+    ...(dndFeatureRows.length > 0
+      ? dndFeatureRows
+      : (DUNGEONS_AND_DRAGONS_FEATURES as unknown as FeatureCatalogEntry[])),
+  ].sort((a, b) => a.name.localeCompare(b.name));
   const spellCatalogSource = mergeSpellCatalogs(
     standardDndSpellCatalogEntries,
     dndSpellCatalog,
