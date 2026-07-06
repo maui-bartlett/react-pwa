@@ -7836,6 +7836,72 @@ function SpellCatalogFilterGroup({
   );
 }
 
+function CatalogHeaderLogo() {
+  return (
+    <Box
+      sx={{
+        width: 58,
+        height: 58,
+        borderRadius: '50%',
+        display: 'grid',
+        placeItems: 'center',
+        bgcolor: dndColors.red,
+        border: `1px solid ${dndColors.redDark}`,
+        boxShadow: `0 0 0 1px ${alpha(dndColors.red, 0.24)}, inset 0 0 18px ${alpha(
+          '#000000',
+          0.16,
+        )}`,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <Box
+        component="img"
+        src="/dnd-dragon-ampersand-white.png"
+        alt=""
+        sx={{
+          width: 45,
+          height: 45,
+          display: 'block',
+          objectFit: 'contain',
+          bgcolor: 'transparent',
+          border: 0,
+        }}
+      />
+    </Box>
+  );
+}
+
+function CatalogHeaderTitle({
+  sortAscending,
+  onToggleSort,
+}: {
+  sortAscending: boolean;
+  onToggleSort: () => void;
+}) {
+  return (
+    <Box sx={{ textAlign: 'center' }}>
+      <Typography sx={{ fontSize: 21, fontWeight: 850, lineHeight: 1.05 }}>Catalog</Typography>
+      <Button
+        onClick={onToggleSort}
+        sx={{
+          mt: 0.35,
+          minWidth: 0,
+          p: 0,
+          color: '#9a6cff',
+          fontSize: 15,
+          fontWeight: 850,
+          lineHeight: 1.2,
+          textTransform: 'none',
+          '&:hover': { bgcolor: 'transparent', color: '#b48cff' },
+        }}
+      >
+        Sort: {sortAscending ? 'A - Z' : 'Z - A'} ^
+      </Button>
+    </Box>
+  );
+}
+
 function SpellCatalogDialog({
   open,
   spells,
@@ -7857,6 +7923,7 @@ function SpellCatalogDialog({
   const [schoolFilters, setSchoolFilters] = useState<string[]>([]);
   const [levelFilters, setLevelFilters] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sortAscending, setSortAscending] = useState(true);
   const [previewSpell, setPreviewSpell] = useState<SpellCatalogEntry | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
   useEffect(() => {
@@ -7887,16 +7954,18 @@ function SpellCatalogDialog({
     );
   };
   const activeFilterCount = schoolFilters.length + levelFilters.length;
-  const filteredSpells = spells.filter((spell) => {
-    if (schoolFilters.length > 0 && !schoolFilters.includes(spell.school)) return false;
-    if (levelFilters.length > 0 && !levelFilters.includes(spell.level)) return false;
-    if (!normalizedQuery) return true;
-    return [spell.name, spell.level, spell.school, spell.source]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-      .includes(normalizedQuery);
-  });
+  const filteredSpells = spells
+    .filter((spell) => {
+      if (schoolFilters.length > 0 && !schoolFilters.includes(spell.school)) return false;
+      if (levelFilters.length > 0 && !levelFilters.includes(spell.level)) return false;
+      if (!normalizedQuery) return true;
+      return [spell.name, spell.level, spell.school, spell.source]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery);
+    })
+    .sort((a, b) => (sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)));
   const previewSpellDetails: Spell | null = previewSpell
     ? {
         id: 'catalog-preview',
@@ -7936,45 +8005,11 @@ function SpellCatalogDialog({
           justifyContent="space-between"
           sx={{ px: 3.2, pt: 1.1, pb: 2.2 }}
         >
-          <Box
-            sx={{
-              width: 58,
-              height: 58,
-              borderRadius: '50%',
-              display: 'grid',
-              placeItems: 'center',
-              bgcolor: dndColors.red,
-              border: `1px solid ${dndColors.redDark}`,
-              boxShadow: `0 0 0 1px ${alpha(dndColors.red, 0.24)}, inset 0 0 18px ${alpha(
-                '#000000',
-                0.16,
-              )}`,
-              overflow: 'hidden',
-              position: 'relative',
-            }}
-          >
-            <Box
-              component="img"
-              src="/dnd-dragon-ampersand-white.png"
-              alt=""
-              sx={{
-                width: 45,
-                height: 45,
-                display: 'block',
-                objectFit: 'contain',
-                bgcolor: 'transparent',
-                border: 0,
-              }}
-            />
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 21, fontWeight: 850, lineHeight: 1.05 }}>
-              Listings
-            </Typography>
-            <Typography sx={{ mt: 0.8, color: '#9a6cff', fontSize: 15, fontWeight: 850 }}>
-              Name: A - Z ^
-            </Typography>
-          </Box>
+          <CatalogHeaderLogo />
+          <CatalogHeaderTitle
+            sortAscending={sortAscending}
+            onToggleSort={() => setSortAscending((current) => !current)}
+          />
           <IconButton
             aria-label="Close spell catalog"
             onClick={onClose}
@@ -8388,6 +8423,7 @@ function ItemCatalogDialog({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [sortAscending, setSortAscending] = useState(true);
   const [previewItem, setPreviewItem] = useState<ItemCatalogEntry | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
   useEffect(() => {
@@ -8397,14 +8433,16 @@ function ItemCatalogDialog({
     }
   }, [open]);
 
-  const filteredItems = items.filter((item) => {
-    if (!normalizedQuery) return true;
-    return [item.name, item.category, item.rarity, item.source, item.description]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-      .includes(normalizedQuery);
-  });
+  const filteredItems = items
+    .filter((item) => {
+      if (!normalizedQuery) return true;
+      return [item.name, item.category, item.rarity, item.source, item.description]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery);
+    })
+    .sort((a, b) => (sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)));
 
   return (
     <Dialog
@@ -8436,32 +8474,11 @@ function ItemCatalogDialog({
           justifyContent="space-between"
           sx={{ px: 3.2, pt: 1.1, pb: 2.2 }}
         >
-          <Box
-            sx={{
-              width: 58,
-              height: 58,
-              borderRadius: '50%',
-              display: 'grid',
-              placeItems: 'center',
-              bgcolor: dndColors.red,
-              border: `1px solid ${dndColors.redDark}`,
-              boxShadow: `0 0 0 1px ${alpha(dndColors.red, 0.24)}, inset 0 0 18px ${alpha(
-                '#000000',
-                0.16,
-              )}`,
-              overflow: 'hidden',
-            }}
-          >
-            <Backpack size={30} color="#ffffff" strokeWidth={2.5} />
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 21, fontWeight: 850, lineHeight: 1.05 }}>
-              Listings
-            </Typography>
-            <Typography sx={{ mt: 0.8, color: '#9a6cff', fontSize: 15, fontWeight: 850 }}>
-              Items: A - Z ^
-            </Typography>
-          </Box>
+          <CatalogHeaderLogo />
+          <CatalogHeaderTitle
+            sortAscending={sortAscending}
+            onToggleSort={() => setSortAscending((current) => !current)}
+          />
           <IconButton
             aria-label="Close item catalog"
             onClick={onClose}
@@ -8696,7 +8713,6 @@ function ItemCatalogDialog({
 function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
   open,
   title,
-  subtitle,
   searchPlaceholder,
   customLabel,
   emptyLabel,
@@ -8709,7 +8725,6 @@ function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
 }: {
   open: boolean;
   title: string;
-  subtitle: string;
   searchPlaceholder: string;
   customLabel: string;
   emptyLabel: string;
@@ -8721,19 +8736,22 @@ function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [sortAscending, setSortAscending] = useState(true);
   const normalizedQuery = query.trim().toLowerCase();
   useEffect(() => {
     if (!open) setQuery('');
   }, [open]);
 
-  const filteredEntries = entries.filter((entry) => {
-    if (!normalizedQuery) return true;
-    return [entry.name, entry.summary, ...getMeta(entry)]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-      .includes(normalizedQuery);
-  });
+  const filteredEntries = entries
+    .filter((entry) => {
+      if (!normalizedQuery) return true;
+      return [entry.name, entry.summary, ...getMeta(entry)]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery);
+    })
+    .sort((a, b) => (sortAscending ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)));
 
   return (
     <Dialog
@@ -8759,32 +8777,11 @@ function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
           justifyContent="space-between"
           sx={{ px: 3.2, pt: 1.1, pb: 2.2 }}
         >
-          <Box
-            sx={{
-              width: 58,
-              height: 58,
-              borderRadius: '50%',
-              display: 'grid',
-              placeItems: 'center',
-              bgcolor: dndColors.red,
-              border: `1px solid ${dndColors.redDark}`,
-              color: '#ffffff',
-              boxShadow: `0 0 0 1px ${alpha(dndColors.red, 0.24)}, inset 0 0 18px ${alpha(
-                '#000000',
-                0.16,
-              )}`,
-            }}
-          >
-            {icon}
-          </Box>
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 21, fontWeight: 850, lineHeight: 1.05 }}>
-              Listings
-            </Typography>
-            <Typography sx={{ mt: 0.8, color: '#9a6cff', fontSize: 15, fontWeight: 850 }}>
-              {subtitle}
-            </Typography>
-          </Box>
+          <CatalogHeaderLogo />
+          <CatalogHeaderTitle
+            sortAscending={sortAscending}
+            onToggleSort={() => setSortAscending((current) => !current)}
+          />
           <IconButton
             aria-label={`Close ${title} catalog`}
             onClick={onClose}
@@ -10978,7 +10975,6 @@ function DungeonsAndDragons() {
         <TextCatalogDialog
           open={featureCatalogOpen}
           title="Features"
-          subtitle="Features: A - Z ^"
           searchPlaceholder="Search features"
           customLabel="Custom Feature"
           emptyLabel="No features match your search."
@@ -10999,7 +10995,6 @@ function DungeonsAndDragons() {
         <TextCatalogDialog
           open={featCatalogOpen}
           title="Feats"
-          subtitle="Feats: A - Z ^"
           searchPlaceholder="Search feats"
           customLabel="Custom Feat"
           emptyLabel="No feats match your search."
