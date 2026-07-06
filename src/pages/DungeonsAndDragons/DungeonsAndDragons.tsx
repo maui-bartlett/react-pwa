@@ -8008,24 +8008,17 @@ function RemovableTagCloud({
 
 function ProficiencyPickerSection({
   label,
-  placeholder,
   values,
-  options,
-  onAdd,
+  addLabel,
+  onOpenCatalog,
   onRemove,
 }: {
   label: string;
-  placeholder: string;
   values: string[];
-  options: string[];
-  onAdd: (value: string) => void;
+  addLabel: string;
+  onOpenCatalog: () => void;
   onRemove: (value: string) => void;
 }) {
-  const selected = new Set(values.map((value) => value.toLowerCase()));
-  const availableOptions = mergeSelectableOptions(options, values).filter(
-    (option) => !selected.has(option.toLowerCase()),
-  );
-
   return (
     <Box>
       <Typography
@@ -8040,43 +8033,29 @@ function ProficiencyPickerSection({
       >
         {label}
       </Typography>
-      <Box
-        component="select"
-        aria-label={`Add ${label}`}
-        value=""
-        onChange={(event) => onAdd(event.target.value)}
+      <Button
+        onClick={onOpenCatalog}
         sx={{
-          width: '100%',
-          minHeight: 42,
+          minWidth: 184,
+          minHeight: 52,
           mb: 1,
-          border: `1px solid ${dndColors.border}`,
           borderRadius: '8px',
-          bgcolor: dndColors.panelStrong,
-          color: dndColors.text,
-          px: 1,
-          font: 'inherit',
+          bgcolor: dndColors.blue,
+          color: '#ffffff',
+          px: 1.8,
           fontSize: 16,
-          fontWeight: 800,
-          outline: 'none',
+          fontWeight: 950,
+          textTransform: 'none',
+          justifyContent: 'center',
+          boxShadow: `0 10px 20px ${alpha(dndColors.blue, 0.2)}`,
+          '&:hover': { bgcolor: alpha(dndColors.blue, 0.82) },
           '&:focus-visible': {
-            borderColor: dndColors.blue,
             boxShadow: `0 0 0 2px ${alpha(dndColors.blue, 0.22)}`,
-          },
-          '& option': {
-            color: '#11191e',
-            backgroundColor: '#ffffff',
           },
         }}
       >
-        <option value="" disabled>
-          {availableOptions.length > 0 ? placeholder : `All ${label.toLowerCase()} selected`}
-        </option>
-        {availableOptions.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </Box>
+        {addLabel}
+      </Button>
       <RemovableTagCloud values={values} removeLabel={`Remove ${label}`} onRemove={onRemove} />
     </Box>
   );
@@ -8109,31 +8088,57 @@ function ProficiencyEditDialog({
   onSave: () => void;
   onRequestRemove: (kind: keyof ProficiencyForm, value: string) => void;
 }) {
+  const [proficiencyCatalogOpen, setProficiencyCatalogOpen] = useState(false);
+  const [languageCatalogOpen, setLanguageCatalogOpen] = useState(false);
   if (!form) return null;
   return (
-    <DndEditDialog title="Edit Proficiencies" open={open} onCancel={onCancel} onSave={onSave}>
-      <ProficiencyPickerSection
-        label="Proficiencies"
-        placeholder="Add a proficiency"
-        values={form.proficiencies}
-        options={dndProficiencyOptions}
-        onAdd={(value) =>
-          onChange({ ...form, proficiencies: addUniqueSorted(form.proficiencies, value) })
-        }
-        onRemove={(value) => onRequestRemove('proficiencies', value)}
+    <>
+      <DndEditDialog title="Edit Proficiencies" open={open} onCancel={onCancel} onSave={onSave}>
+        <ProficiencyPickerSection
+          label="Proficiencies"
+          addLabel="Add a proficiency"
+          values={form.proficiencies}
+          onOpenCatalog={() => setProficiencyCatalogOpen(true)}
+          onRemove={(value) => onRequestRemove('proficiencies', value)}
+        />
+        <ProficiencyPickerSection
+          label="Languages"
+          addLabel="Add a language"
+          values={form.languages}
+          onOpenCatalog={() => setLanguageCatalogOpen(true)}
+          onRemove={(value) => onRequestRemove('languages', value)}
+        />
+        <Typography sx={{ color: dndColors.muted, fontSize: 12, lineHeight: 1.4 }}>
+          Choose a new entry from a catalog, or remove an existing pill before saving.
+        </Typography>
+      </DndEditDialog>
+      <ProficiencyCatalogDialog
+        open={proficiencyCatalogOpen}
+        title="Proficiencies"
+        searchPlaceholder="Search proficiencies"
+        emptyLabel="No proficiencies match your search."
+        entries={mergeSelectableOptions(dndProficiencyOptions, form.proficiencies)}
+        selectedValues={form.proficiencies}
+        onSelect={(value) => {
+          onChange({ ...form, proficiencies: addUniqueSorted(form.proficiencies, value) });
+          setProficiencyCatalogOpen(false);
+        }}
+        onClose={() => setProficiencyCatalogOpen(false)}
       />
-      <ProficiencyPickerSection
-        label="Languages"
-        placeholder="Add a language"
-        values={form.languages}
-        options={dndLanguageOptions}
-        onAdd={(value) => onChange({ ...form, languages: addUniqueSorted(form.languages, value) })}
-        onRemove={(value) => onRequestRemove('languages', value)}
+      <ProficiencyCatalogDialog
+        open={languageCatalogOpen}
+        title="Languages"
+        searchPlaceholder="Search languages"
+        emptyLabel="No languages match your search."
+        entries={mergeSelectableOptions(dndLanguageOptions, form.languages)}
+        selectedValues={form.languages}
+        onSelect={(value) => {
+          onChange({ ...form, languages: addUniqueSorted(form.languages, value) });
+          setLanguageCatalogOpen(false);
+        }}
+        onClose={() => setLanguageCatalogOpen(false)}
       />
-      <Typography sx={{ color: dndColors.muted, fontSize: 12, lineHeight: 1.4 }}>
-        Select a new entry from the dropdown, or remove an existing pill before saving.
-      </Typography>
-    </DndEditDialog>
+    </>
   );
 }
 
@@ -8824,7 +8829,7 @@ function CatalogDialog<TEntry>({
           )})`,
         },
       }}
-      sx={{ zIndex: 1800 }}
+      sx={{ zIndex: 2000 }}
     >
       <Box sx={{ minHeight: '100dvh', pb: 11, pt: 'max(20px, env(safe-area-inset-top))' }}>
         <Stack
@@ -8975,6 +8980,102 @@ function CatalogDialog<TEntry>({
       </Box>
       {details}
     </Dialog>
+  );
+}
+
+function ProficiencyCatalogDialog({
+  open,
+  title,
+  searchPlaceholder,
+  emptyLabel,
+  entries,
+  selectedValues,
+  onSelect,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  searchPlaceholder: string;
+  emptyLabel: string;
+  entries: string[];
+  selectedValues: string[];
+  onSelect: (value: string) => void;
+  onClose: () => void;
+}) {
+  const selected = new Set(selectedValues.map((value) => value.toLowerCase()));
+
+  return (
+    <CatalogDialog
+      open={open}
+      title={title}
+      searchPlaceholder={searchPlaceholder}
+      entries={entries}
+      emptyLabel={emptyLabel}
+      titleIcon={<PersonIcon sx={{ color: '#9a6cff', fontSize: 30 }} />}
+      getEntryKey={(entry) => entry}
+      getSearchText={(entry) => [entry]}
+      getSortLabel={(entry) => entry}
+      onClose={onClose}
+      renderEntry={(entry) => {
+        const isSelected = selected.has(entry.toLowerCase());
+        return (
+          <Box
+            component="button"
+            type="button"
+            disabled={isSelected}
+            onClick={() => onSelect(entry)}
+            sx={{
+              width: '100%',
+              minHeight: 78,
+              bgcolor: isSelected ? alpha(dndColors.blue, 0.08) : dndColors.panel,
+              color: dndColors.text,
+              border: 0,
+              borderBottom: `1px solid ${dndColors.borderSoft}`,
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) auto',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 3.2,
+              py: 1.35,
+              textAlign: 'left',
+              font: 'inherit',
+              cursor: isSelected ? 'default' : 'pointer',
+              opacity: isSelected ? 0.72 : 1,
+              '&:hover': {
+                bgcolor: isSelected ? alpha(dndColors.blue, 0.08) : dndColors.panelSoft,
+              },
+            }}
+          >
+            <Typography
+              sx={{
+                minWidth: 0,
+                color: dndColors.text,
+                fontSize: 20,
+                fontWeight: 950,
+                lineHeight: 1.1,
+              }}
+            >
+              {entry}
+            </Typography>
+            <Box
+              component="span"
+              sx={{
+                px: 1.25,
+                py: 0.55,
+                borderRadius: '999px',
+                bgcolor: isSelected ? alpha(dndColors.blue, 0.2) : dndColors.blue,
+                color: '#ffffff',
+                fontSize: 13,
+                fontWeight: 950,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {isSelected ? 'Selected' : 'Add'}
+            </Box>
+          </Box>
+        );
+      }}
+    />
   );
 }
 
