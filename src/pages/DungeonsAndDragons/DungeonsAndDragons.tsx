@@ -546,6 +546,16 @@ type FeatureCatalogEntry = Omit<Feature, 'id' | 'uses'> & {
   type?: string;
 };
 
+type WizardClassFeature = {
+  id: string;
+  name: string;
+  source: string;
+  summary: string;
+  level: number | null;
+  available: boolean;
+  category?: string;
+};
+
 function catalogItemToInventoryItem(item: ItemCatalogEntry): InventoryItem {
   return {
     id: createEntryId('item'),
@@ -1353,7 +1363,8 @@ function ConditionsButton({ onChange }: { onChange: (tab: DndTab) => void }) {
         fontSize: { xs: 10, sm: 13 },
         fontWeight: 900,
         textTransform: 'uppercase',
-        '&:hover': { bgcolor: '#05090b' },
+        WebkitTapHighlightColor: 'transparent',
+        '&:hover, &:active, &.Mui-focusVisible': { bgcolor: dndColors.panelSoft },
       }}
     >
       Conditions
@@ -1646,7 +1657,8 @@ function HitPointsButton({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        '&:hover': { bgcolor: '#05090b' },
+        WebkitTapHighlightColor: 'transparent',
+        '&:hover, &:active, &:focus-visible': { bgcolor: dndColors.panelSoft },
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 0.15 }}>
@@ -5403,6 +5415,130 @@ function meetsClassRequirement(className: string, abilityScores: Record<AbilityK
   });
 }
 
+function formatWizardList(values: string[] | undefined) {
+  return values && values.length > 0 ? values.join(', ') : 'None listed';
+}
+
+function formatWizardSkillChoices(skillChoices: DndClassInfo['skillChoices']) {
+  if (!skillChoices) return 'No skill choice data is listed for this class.';
+  const choices =
+    Array.isArray(skillChoices.from) ? skillChoices.from.join(', ') : skillChoices.from;
+  return `Choose ${skillChoices.choose ?? '?'} from ${choices ?? 'the listed class skills'}.`;
+}
+
+function getFeatureCatalogKey(value: string | undefined) {
+  return (value ?? '').trim().toLowerCase();
+}
+
+function getWizardClassFeatureSchedule({
+  classEntry,
+  classIndex,
+  classInfo,
+  featureCatalog,
+}: {
+  classEntry: CharacterClassForm;
+  classIndex: number;
+  classInfo?: DndClassInfo;
+  featureCatalog: FeatureCatalogEntry[];
+}): WizardClassFeature[] {
+  const className = asNonEmptyString(classEntry.name) ?? 'Class';
+  const selectedSubclass = asNonEmptyString(classEntry.subclass);
+  const currentLevel = Math.max(1, parseIntOrFallback(classEntry.level, 1));
+  const normalizedClassName = getFeatureCatalogKey(className);
+  const normalizedSubclass = getFeatureCatalogKey(selectedSubclass ?? '');
+  const baseFeatures: WizardClassFeature[] = [];
+
+  if (classInfo?.hitDie) {
+    baseFeatures.push({
+      id: `wizard-${classIndex}-hit-points`,
+      name: 'Hit Points',
+      source: classInfo.className ?? className,
+      level: 1,
+      available: currentLevel >= 1,
+      category: 'Class Setup',
+      summary: `Hit Die: ${classInfo.hitDie}. At 1st level, your maximum hit points are based on this class hit die and your Constitution modifier. Later levels add this hit die to your hit dice pool.`,
+    });
+  }
+
+  if (classInfo) {
+    baseFeatures.push({
+      id: `wizard-${classIndex}-proficiencies`,
+      name: 'Proficiencies',
+      source: classInfo.className ?? className,
+      level: 1,
+      available: currentLevel >= 1,
+      category: 'Class Setup',
+      summary: [
+        `Saving throws: ${formatWizardList(classInfo.savingThrows)}.`,
+        `Armor: ${formatWizardList(classInfo.armorProficiencies)}.`,
+        `Weapons: ${formatWizardList(classInfo.weaponProficiencies)}.`,
+        `Tools: ${formatWizardList(classInfo.toolProficiencies)}.`,
+        `Skills: ${formatWizardSkillChoices(classInfo.skillChoices)}`,
+      ].join('\n'),
+    });
+  }
+
+  if (classInfo?.spellcasting) {
+    baseFeatures.push({
+      id: `wizard-${classIndex}-spellcasting`,
+      name: 'Spellcasting',
+      source: classInfo.className ?? className,
+      level: 1,
+      available: currentLevel >= 1,
+      category: 'Class Setup',
+      summary: formatSpellcasting(classInfo.spellcasting),
+    });
+  }
+
+  if (classInfo?.classResource) {
+    baseFeatures.push({
+      id: `wizard-${classIndex}-resource`,
+      name: classInfo.classResource.name ?? 'Class Resource',
+      source: classInfo.className ?? className,
+      level: 1,
+      available: currentLevel >= 1,
+      category: 'Class Setup',
+      summary: [
+        classInfo.classResource.ability ? `Ability: ${classInfo.classResource.ability}.` : null,
+        classInfo.classResource.resource ? `Resource: ${classInfo.classResource.resource}.` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    });
+  }
+
+  const catalogFeatures = featureCatalog
+    .filter((feature) => {
+      const featureClassName = getFeatureCatalogKey(feature.className ?? feature.source);
+      if (featureClassName !== normalizedClassName) return false;
+      const featureSubclass = getFeatureCatalogKey(feature.subclassName);
+      if (!featureSubclass) return true;
+      return Boolean(normalizedSubclass) && featureSubclass === normalizedSubclass;
+    })
+    .map((feature) => {
+      const level = typeof feature.level === 'number' && Number.isFinite(feature.level)
+        ? feature.level
+        : null;
+      return {
+        id: `wizard-${classIndex}-${feature.metadata?.index ?? normalizeClassCatalogKey(feature.name)}`,
+        name: feature.name,
+        source: feature.subclassName ?? feature.className ?? feature.source ?? className,
+        summary: feature.summary,
+        level,
+        available: level === null || level <= currentLevel,
+        category: feature.category,
+      };
+    });
+
+  return [...baseFeatures, ...catalogFeatures].sort((a, b) => {
+    const levelA = a.level ?? 0;
+    const levelB = b.level ?? 0;
+    if (levelA !== levelB) return levelA - levelB;
+    if (a.available !== b.available) return a.available ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function getCharacterClassFormErrors(form: CharacterForm) {
   const classes = form.classes.map((entry) => ({
     ...entry,
@@ -5434,6 +5570,8 @@ function CharacterEditDialog({
   open,
   form,
   classOptions,
+  classCatalogByName,
+  featureCatalog,
   subclassOptionsByClassName,
   spellCatalog,
   availableSpellSlots,
@@ -5444,6 +5582,8 @@ function CharacterEditDialog({
   open: boolean;
   form: CharacterForm | null;
   classOptions: string[];
+  classCatalogByName: Map<string, DndClassInfo>;
+  featureCatalog: FeatureCatalogEntry[];
   subclassOptionsByClassName: Map<string, string[]>;
   spellCatalog: SpellCatalogEntry[];
   availableSpellSlots: DndCharacter['spellcasting']['slots'];
@@ -5753,6 +5893,13 @@ function CharacterEditDialog({
                     </Button>
                   </Stack>
                   {form.classes.map((entry, index) => {
+                    const classInfo = classCatalogByName.get(entry.name);
+                    const wizardClassFeatures = getWizardClassFeatureSchedule({
+                      classEntry: entry,
+                      classIndex: index,
+                      classInfo,
+                      featureCatalog,
+                    });
                     const subclassOptions = getSubclassOptionsForClass(
                       entry.name,
                       entry.subclass,
@@ -5861,17 +6008,36 @@ function CharacterEditDialog({
                           <Stack spacing={1.2} sx={{ mt: 1.4 }}>
                             {classPanel === 'features' ? (
                               <>
-                                <WizardFeatureCard title="Hit Points" subtitle="1st level" />
-                                <WizardFeatureCard
-                                  title="Proficiencies"
-                                  subtitle={index === 0 ? '4 Choices • 1st level' : '1st level'}
-                                  body="Armor, weapons, tools, and saving throw proficiencies are derived from the selected class catalog when saved."
-                                />
-                                <WizardFeatureCard
-                                  title={entry.subclass ? `${entry.subclass} Features` : 'Subclass'}
-                                  subtitle={entry.subclass ? 'Selected' : '1 Choice'}
-                                  body="Choose a subclass from the dropdown above. Additional feature text is added from the class catalog when available."
-                                />
+                                {wizardClassFeatures.length > 0 ? (
+                                  wizardClassFeatures.map((feature) => (
+                                    <WizardFeatureCard
+                                      key={feature.id}
+                                      title={feature.name}
+                                      subtitle={[
+                                        feature.level ? `Level ${feature.level}` : 'Level varies',
+                                        feature.category,
+                                        feature.source,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(' • ')}
+                                      body={feature.summary}
+                                      available={feature.available}
+                                    />
+                                  ))
+                                ) : (
+                                  <WizardFeatureCard
+                                    title="No class features found"
+                                    subtitle={entry.name || 'Class'}
+                                    body="No class feature catalog entries are available for this class yet. You can still save the character and add custom features from the Features tab."
+                                  />
+                                )}
+                                {!entry.subclass ? (
+                                  <WizardFeatureCard
+                                    title="Subclass Features"
+                                    subtitle="Choose a subclass to preview subclass features"
+                                    body="Once a subclass is selected, matching subclass features from the catalog will appear here alongside the class feature schedule."
+                                  />
+                                ) : null}
                               </>
                             ) : (
                               <>
@@ -6195,11 +6361,14 @@ function WizardFeatureCard({
   title,
   subtitle,
   body,
+  available = true,
 }: {
   title: string;
   subtitle?: string;
   body?: string;
+  available?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
   return (
     <Box
       sx={{
@@ -6207,9 +6376,32 @@ function WizardFeatureCard({
         color: '#050607',
         border: `1px solid ${alpha('#000000', 0.13)}`,
         boxShadow: `0 2px 10px ${alpha('#000000', 0.1)}`,
+        opacity: available ? 1 : 0.54,
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 1.8 }}>
+      <Stack
+        component="button"
+        type="button"
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        onClick={() => setExpanded((current) => !current)}
+        aria-expanded={expanded}
+        sx={{
+          width: '100%',
+          p: 1.8,
+          border: 0,
+          bgcolor: 'transparent',
+          color: 'inherit',
+          font: 'inherit',
+          textAlign: 'left',
+          cursor: 'pointer',
+          '&:focus-visible': {
+            outline: `2px solid ${dndColors.red}`,
+            outlineOffset: -2,
+          },
+        }}
+      >
         <Box>
           <Typography sx={{ color: '#050607', fontSize: 22, fontWeight: 850 }}>{title}</Typography>
           {subtitle ? (
@@ -6218,11 +6410,30 @@ function WizardFeatureCard({
             </Typography>
           ) : null}
         </Box>
-        <Typography sx={{ color: '#9aa3aa', fontSize: 34, lineHeight: 1 }}>⌄</Typography>
+        <Typography
+          sx={{
+            color: '#9aa3aa',
+            fontSize: 34,
+            lineHeight: 1,
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 160ms ease',
+          }}
+        >
+          ⌄
+        </Typography>
       </Stack>
-      {body ? (
-        <Typography sx={{ px: 1.8, pb: 1.8, color: '#111', fontSize: 17, lineHeight: 1.45 }}>
-          {body}
+      {expanded ? (
+        <Typography
+          sx={{
+            px: 1.8,
+            pb: 1.8,
+            color: '#111',
+            fontSize: 17,
+            lineHeight: 1.45,
+            whiteSpace: 'pre-line',
+          }}
+        >
+          {body || 'No additional details have been recorded for this feature yet.'}
         </Typography>
       ) : null}
     </Box>
@@ -10525,6 +10736,8 @@ function DungeonsAndDragons() {
           open={characterForm !== null}
           form={characterForm}
           classOptions={dndClassOptions}
+          classCatalogByName={dndClassCatalogByName}
+          featureCatalog={dndFeatureOptions}
           subclassOptionsByClassName={dndSubclassOptionsByClassName}
           spellCatalog={spellCatalogSource}
           availableSpellSlots={character.spellcasting.slots}
