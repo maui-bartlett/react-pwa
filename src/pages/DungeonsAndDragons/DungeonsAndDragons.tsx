@@ -4665,6 +4665,45 @@ function UndoToast({
   );
 }
 
+function ItemAddedToast({ message, onClose }: { message: string | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!message) return;
+    const timeout = window.setTimeout(onClose, 2400);
+    return () => window.clearTimeout(timeout);
+  }, [message, onClose]);
+
+  return (
+    <Fade in={Boolean(message)}>
+      <Box
+        role="status"
+        sx={{
+          position: 'fixed',
+          left: '50%',
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 94px)',
+          zIndex: 2200,
+          width: 'min(330px, calc(100vw - 36px))',
+          transform: 'translateX(-50%)',
+          borderRadius: '10px',
+          bgcolor: alpha(dndColors.panelStrong, 0.96),
+          border: `1px solid ${dndColors.borderSoft}`,
+          boxShadow: `0 18px 44px ${alpha('#000000', 0.42)}`,
+          px: 2,
+          py: 1.25,
+          pointerEvents: 'none',
+          textAlign: 'center',
+        }}
+      >
+        <Typography sx={{ color: dndColors.text, fontSize: 14, fontWeight: 950 }}>
+          Item Added
+        </Typography>
+        <Typography sx={{ mt: 0.25, color: dndColors.muted, fontSize: 13, fontWeight: 750 }}>
+          {message}
+        </Typography>
+      </Box>
+    </Fade>
+  );
+}
+
 function AppMenu({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab: DndTab) => void }) {
   const menuItems: Array<{ tab: DndTab; label: string; icon: ReactNode }> = [
     { tab: 'abilities', label: 'Abilities, Saves, Senses', icon: <ShieldIcon /> },
@@ -7853,12 +7892,14 @@ function ItemCatalogDialog({
   items,
   onCreateCustom,
   onSelect,
+  onQuickAdd,
   onClose,
 }: {
   open: boolean;
   items: ItemCatalogEntry[];
   onCreateCustom: () => void;
   onSelect: (item: ItemCatalogEntry) => void;
+  onQuickAdd: (item: ItemCatalogEntry) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -8130,19 +8171,23 @@ function ItemCatalogDialog({
                   {item.weight} • {item.cost}
                 </Typography>
               </Box>
-              <Box
+              <IconButton
+                aria-label={`Add ${item.name}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onQuickAdd(item);
+                }}
                 sx={{
                   width: 42,
                   height: 42,
                   borderRadius: '50%',
-                  display: 'grid',
-                  placeItems: 'center',
                   bgcolor: dndColors.red,
                   color: '#ffffff',
+                  '&:hover': { bgcolor: dndColors.redDark },
                 }}
               >
                 <AddIcon fontSize="small" />
-              </Box>
+              </IconButton>
             </Box>
           ))}
         </Box>
@@ -8867,6 +8912,7 @@ function DungeonsAndDragons() {
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
   const [spellDetails, setSpellDetails] = useState<Spell | null>(null);
   const [itemDetails, setItemDetails] = useState<InventoryItem | null>(null);
+  const [itemAddedToastMessage, setItemAddedToastMessage] = useState<string | null>(null);
   const [featureForm, setFeatureForm] = useState<FeatureForm | null>(null);
   const [featForm, setFeatForm] = useState<FeatForm | null>(null);
   const [abilityForm, setAbilityForm] = useState<AbilityForm | null>(null);
@@ -9239,6 +9285,15 @@ function DungeonsAndDragons() {
       inventory: [...current.inventory, catalogItemToInventoryItem(item)],
     }));
     setItemCatalogOpen(false);
+    setUndoOpen(true);
+  };
+
+  const quickAddCatalogItemToCharacter = (item: ItemCatalogEntry) => {
+    setCharacter((current) => ({
+      ...current,
+      inventory: [...current.inventory, catalogItemToInventoryItem(item)],
+    }));
+    setItemAddedToastMessage(`${item.name} added`);
     setUndoOpen(true);
   };
 
@@ -9941,6 +9996,10 @@ function DungeonsAndDragons() {
           }}
           onClose={() => setUndoOpen(false)}
         />
+        <ItemAddedToast
+          message={itemAddedToastMessage}
+          onClose={() => setItemAddedToastMessage(null)}
+        />
         <ConfirmDeleteDialog
           open={pendingDelete !== null}
           title={pendingDelete?.title}
@@ -10057,6 +10116,7 @@ function DungeonsAndDragons() {
           items={itemCatalogOptions}
           onCreateCustom={openCustomItemFromCatalog}
           onSelect={addCatalogItemToCharacter}
+          onQuickAdd={quickAddCatalogItemToCharacter}
           onClose={() => setItemCatalogOpen(false)}
         />
         <SpellDetailsDialog spell={spellDetails} onClose={() => setSpellDetails(null)} />
