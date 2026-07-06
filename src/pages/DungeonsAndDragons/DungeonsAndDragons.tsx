@@ -7780,13 +7780,9 @@ type BackgroundForm = {
 };
 
 type ProficiencyForm = {
-  proficiencies: string;
-  languages: string;
+  proficiencies: string[];
+  languages: string[];
 };
-
-function joinListForEditing(values: string[]) {
-  return values.join('\n');
-}
 
 function parseEditableList(value: string) {
   const seen = new Set<string>();
@@ -7802,9 +7798,287 @@ function parseEditableList(value: string) {
 
 function createProficiencyForm(character: DndCharacter): ProficiencyForm {
   return {
-    proficiencies: joinListForEditing(character.proficiencies),
-    languages: joinListForEditing(character.languages),
+    proficiencies: [...character.proficiencies],
+    languages: [...character.languages],
   };
+}
+
+const dndProficiencyOptions = [
+  'Light armor',
+  'Medium armor',
+  'Heavy armor',
+  'Shields',
+  'Simple weapons',
+  'Martial weapons',
+  'Club',
+  'Dagger',
+  'Greatclub',
+  'Handaxe',
+  'Javelin',
+  'Light hammer',
+  'Mace',
+  'Quarterstaff',
+  'Sickle',
+  'Spear',
+  'Light crossbow',
+  'Dart',
+  'Shortbow',
+  'Sling',
+  'Battleaxe',
+  'Flail',
+  'Glaive',
+  'Greataxe',
+  'Greatsword',
+  'Halberd',
+  'Lance',
+  'Longsword',
+  'Maul',
+  'Morningstar',
+  'Pike',
+  'Rapier',
+  'Scimitar',
+  'Shortsword',
+  'Trident',
+  'War pick',
+  'Warhammer',
+  'Whip',
+  'Blowgun',
+  'Hand crossbow',
+  'Heavy crossbow',
+  'Longbow',
+  'Net',
+  "Alchemist's supplies",
+  "Brewer's supplies",
+  "Calligrapher's supplies",
+  "Carpenter's tools",
+  "Cartographer's tools",
+  "Cobbler's tools",
+  "Cook's utensils",
+  "Glassblower's tools",
+  "Jeweler's tools",
+  "Leatherworker's tools",
+  "Mason's tools",
+  "Painter's supplies",
+  "Potter's tools",
+  "Smith's tools",
+  "Tinker's tools",
+  "Weaver's tools",
+  "Woodcarver's tools",
+  'Disguise kit',
+  'Forgery kit',
+  'Dice set',
+  'Dragonchess set',
+  'Playing card set',
+  'Three-Dragon Ante set',
+  'Herbalism kit',
+  "Navigator's tools",
+  "Poisoner's kit",
+  "Thieves' tools",
+  'Vehicles (land)',
+  'Vehicles (water)',
+  'Acrobatics',
+  'Animal Handling',
+  'Arcana',
+  'Athletics',
+  'Deception',
+  'History',
+  'Insight',
+  'Intimidation',
+  'Investigation',
+  'Medicine',
+  'Nature',
+  'Perception',
+  'Performance',
+  'Persuasion',
+  'Religion',
+  'Sleight of Hand',
+  'Stealth',
+  'Survival',
+].sort((a, b) => a.localeCompare(b));
+
+const dndLanguageOptions = [
+  'Common',
+  'Dwarvish',
+  'Elvish',
+  'Giant',
+  'Gnomish',
+  'Goblin',
+  'Halfling',
+  'Orc',
+  'Abyssal',
+  'Celestial',
+  'Draconic',
+  'Deep Speech',
+  'Infernal',
+  'Primordial',
+  'Sylvan',
+  'Undercommon',
+  'Aquan',
+  'Auran',
+  'Ignan',
+  'Terran',
+  "Thieves' Cant",
+  'Druidic',
+].sort((a, b) => a.localeCompare(b));
+
+function addUniqueSorted(values: string[], value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || values.some((entry) => entry.toLowerCase() === trimmed.toLowerCase())) {
+    return values;
+  }
+  return [...values, trimmed].sort((a, b) => a.localeCompare(b));
+}
+
+function removeValueCaseInsensitive(values: string[], value: string) {
+  return values.filter((entry) => entry.toLowerCase() !== value.toLowerCase());
+}
+
+function mergeSelectableOptions(baseOptions: string[], selectedValues: string[]) {
+  const seen = new Set<string>();
+  return [...selectedValues, ...baseOptions]
+    .map((value) => value.trim())
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (!value || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function RemovableTagCloud({
+  values,
+  removeLabel,
+  onRemove,
+}: {
+  values: string[];
+  removeLabel: string;
+  onRemove: (value: string) => void;
+}) {
+  if (values.length === 0) {
+    return (
+      <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 750 }}>
+        None selected
+      </Typography>
+    );
+  }
+
+  return (
+    <Stack direction="row" flexWrap="wrap" gap={0.8}>
+      {values.map((value) => (
+        <Stack
+          key={value}
+          direction="row"
+          alignItems="center"
+          gap={0.45}
+          sx={{
+            pl: 1.1,
+            pr: 0.35,
+            py: 0.35,
+            bgcolor: dndColors.panelSoft,
+            border: `1px solid ${dndColors.border}`,
+            borderRadius: '999px',
+            color: dndColors.text,
+            fontWeight: 850,
+            fontSize: 13,
+          }}
+        >
+          <Box component="span">{value}</Box>
+          <IconButton
+            aria-label={`${removeLabel} ${value}`}
+            onClick={() => onRemove(value)}
+            sx={{
+              width: 24,
+              height: 24,
+              color: dndColors.muted,
+              '&:hover': {
+                color: '#ffffff',
+                bgcolor: alpha(dndColors.red, 0.72),
+              },
+            }}
+          >
+            <X size={15} />
+          </IconButton>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function ProficiencyPickerSection({
+  label,
+  placeholder,
+  values,
+  options,
+  onAdd,
+  onRemove,
+}: {
+  label: string;
+  placeholder: string;
+  values: string[];
+  options: string[];
+  onAdd: (value: string) => void;
+  onRemove: (value: string) => void;
+}) {
+  const selected = new Set(values.map((value) => value.toLowerCase()));
+  const availableOptions = mergeSelectableOptions(options, values).filter(
+    (option) => !selected.has(option.toLowerCase()),
+  );
+
+  return (
+    <Box>
+      <Typography
+        sx={{
+          color: dndColors.muted,
+          fontSize: 12,
+          fontWeight: 950,
+          letterSpacing: 0.4,
+          mb: 0.65,
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Typography>
+      <Box
+        component="select"
+        aria-label={`Add ${label}`}
+        value=""
+        onChange={(event) => onAdd(event.target.value)}
+        sx={{
+          width: '100%',
+          minHeight: 42,
+          mb: 1,
+          border: `1px solid ${dndColors.border}`,
+          borderRadius: '8px',
+          bgcolor: dndColors.panelStrong,
+          color: dndColors.text,
+          px: 1,
+          font: 'inherit',
+          fontSize: 16,
+          fontWeight: 800,
+          outline: 'none',
+          '&:focus-visible': {
+            borderColor: dndColors.blue,
+            boxShadow: `0 0 0 2px ${alpha(dndColors.blue, 0.22)}`,
+          },
+          '& option': {
+            color: '#11191e',
+            backgroundColor: '#ffffff',
+          },
+        }}
+      >
+        <option value="" disabled>
+          {availableOptions.length > 0 ? placeholder : `All ${label.toLowerCase()} selected`}
+        </option>
+        {availableOptions.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </Box>
+      <RemovableTagCloud values={values} removeLabel={`Remove ${label}`} onRemove={onRemove} />
+    </Box>
+  );
 }
 
 function createBackgroundForm(character: DndCharacter): BackgroundForm {
@@ -7825,32 +8099,38 @@ function ProficiencyEditDialog({
   onChange,
   onCancel,
   onSave,
+  onRequestRemove,
 }: {
   open: boolean;
   form: ProficiencyForm | null;
   onChange: (form: ProficiencyForm) => void;
   onCancel: () => void;
   onSave: () => void;
+  onRequestRemove: (kind: keyof ProficiencyForm, value: string) => void;
 }) {
   if (!form) return null;
-  const setField = (key: keyof ProficiencyForm, value: string) =>
-    onChange({ ...form, [key]: value });
   return (
     <DndEditDialog title="Edit Proficiencies" open={open} onCancel={onCancel} onSave={onSave}>
-      <MultilineFormField
+      <ProficiencyPickerSection
         label="Proficiencies"
-        value={form.proficiencies}
-        minRows={6}
-        onChange={(value) => setField('proficiencies', value)}
+        placeholder="Add a proficiency"
+        values={form.proficiencies}
+        options={dndProficiencyOptions}
+        onAdd={(value) =>
+          onChange({ ...form, proficiencies: addUniqueSorted(form.proficiencies, value) })
+        }
+        onRemove={(value) => onRequestRemove('proficiencies', value)}
       />
-      <MultilineFormField
+      <ProficiencyPickerSection
         label="Languages"
-        value={form.languages}
-        minRows={4}
-        onChange={(value) => setField('languages', value)}
+        placeholder="Add a language"
+        values={form.languages}
+        options={dndLanguageOptions}
+        onAdd={(value) => onChange({ ...form, languages: addUniqueSorted(form.languages, value) })}
+        onRemove={(value) => onRequestRemove('languages', value)}
       />
       <Typography sx={{ color: dndColors.muted, fontSize: 12, lineHeight: 1.4 }}>
-        Enter one item per line, or separate entries with commas.
+        Select a new entry from the dropdown, or remove an existing pill before saving.
       </Typography>
     </DndEditDialog>
   );
@@ -10773,10 +11053,30 @@ function DungeonsAndDragons() {
     if (!proficiencyForm) return;
     setCharacter((current) => ({
       ...current,
-      proficiencies: parseEditableList(proficiencyForm.proficiencies),
-      languages: parseEditableList(proficiencyForm.languages),
+      proficiencies: [...proficiencyForm.proficiencies],
+      languages: [...proficiencyForm.languages],
     }));
     setProficiencyForm(null);
+  };
+
+  const requestRemoveProficiencyFormValue = (kind: keyof ProficiencyForm, value: string) => {
+    const label = kind === 'languages' ? 'language' : 'proficiency';
+    confirmDelete(
+      () => {
+        setProficiencyForm((current) =>
+          current
+            ? {
+                ...current,
+                [kind]: removeValueCaseInsensitive(current[kind], value),
+              }
+            : current,
+        );
+      },
+      {
+        title: `Remove ${value}?`,
+        body: `This removes the ${label} from this edit form. Save the modal to apply the change to ${character.name}.`,
+      },
+    );
   };
 
   const saveBackground = () => {
@@ -11453,6 +11753,7 @@ function DungeonsAndDragons() {
           onChange={setProficiencyForm}
           onCancel={() => setProficiencyForm(null)}
           onSave={saveProficiencies}
+          onRequestRemove={requestRemoveProficiencyFormValue}
         />
         <AbilityEditDialog
           open={abilityForm !== null}
