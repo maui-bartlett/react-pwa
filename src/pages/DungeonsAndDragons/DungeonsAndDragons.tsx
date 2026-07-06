@@ -5579,14 +5579,15 @@ function DndFormDialog({
           disabled={submitDisabled}
           variant="contained"
           sx={{
-            bgcolor: dndColors.red,
+            bgcolor: dndColors.blue,
+            color: '#ffffff',
             borderRadius: '999px',
             px: 2.2,
             textTransform: 'none',
             fontWeight: 950,
-            '&:hover': { bgcolor: dndColors.redDark },
+            '&:hover': { bgcolor: alpha(dndColors.blue, 0.82) },
             '&.Mui-disabled': {
-              bgcolor: alpha(dndColors.red, 0.28),
+              bgcolor: alpha(dndColors.blue, 0.28),
               color: alpha('#ffffff', 0.42),
             },
           }}
@@ -6787,7 +6788,7 @@ function CharacterEditDialog({
               &lt; Prev
             </Button>
             {activeStep === wizardSteps.length - 1 ? (
-              <Button onClick={onSave} disabled={classErrors.length > 0} sx={wizardFooterButtonSx}>
+              <Button onClick={onSave} disabled={classErrors.length > 0} sx={wizardSaveButtonSx}>
                 Save
               </Button>
             ) : (
@@ -6847,6 +6848,17 @@ const wizardFooterButtonSx = {
   fontWeight: 950,
   textTransform: 'uppercase',
   '&.Mui-disabled': { color: alpha('#ffffff', 0.32) },
+};
+
+const wizardSaveButtonSx = {
+  ...wizardFooterButtonSx,
+  bgcolor: dndColors.blue,
+  color: '#ffffff',
+  '&:hover': { bgcolor: alpha(dndColors.blue, 0.82) },
+  '&.Mui-disabled': {
+    bgcolor: alpha(dndColors.blue, 0.28),
+    color: alpha('#ffffff', 0.42),
+  },
 };
 
 function wizardSubtabSx(active: boolean) {
