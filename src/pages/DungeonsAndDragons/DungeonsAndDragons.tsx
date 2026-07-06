@@ -5020,6 +5020,7 @@ function ConfirmDeleteDialog({
     <Dialog
       open={open}
       onClose={onCancel}
+      sx={{ zIndex: 2100 }}
       PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
     >
       <DialogTitle sx={{ fontWeight: 900 }}>{title}</DialogTitle>
