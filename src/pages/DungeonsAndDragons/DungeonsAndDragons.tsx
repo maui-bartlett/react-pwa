@@ -3353,6 +3353,162 @@ function formatSpellTime(value: string) {
   return `${amount}h`;
 }
 
+function DndDetailsDialog({
+  open,
+  title,
+  subtitle,
+  closeLabel,
+  onClose,
+  onEdit,
+  editLabel,
+  onDelete,
+  deleteLabel,
+  summary,
+  summaryAction,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  subtitle?: string;
+  closeLabel: string;
+  onClose: () => void;
+  onEdit?: () => void;
+  editLabel?: string;
+  onDelete?: () => void;
+  deleteLabel?: string;
+  summary?: ReactNode;
+  summaryAction?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      sx={{
+        zIndex: 1900,
+        '& .MuiDialog-container': {
+          alignItems: { xs: 'flex-start', sm: 'center' },
+        },
+      }}
+      PaperProps={{
+        sx: {
+          width: { xs: '100%', sm: 430 },
+          height: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
+          mt: { xs: 'calc(env(safe-area-inset-top, 0px) + 78px)', sm: 0 },
+          mx: { xs: 0, sm: 2 },
+          borderRadius: { xs: '26px 26px 0 0', sm: '18px' },
+          border: `1px solid ${dndColors.border}`,
+          bgcolor: dndColors.panelSoft,
+          color: dndColors.text,
+          boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
+          overflow: 'hidden',
+        },
+      }}
+    >
+      <IconButton
+        aria-label={closeLabel}
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          left: 16,
+          top: 16,
+          zIndex: 2,
+          width: 48,
+          height: 48,
+          borderRadius: '999px',
+          bgcolor: alpha('#000000', 0.28),
+          color: dndColors.text,
+          '&:hover': { bgcolor: alpha('#000000', 0.38) },
+        }}
+      >
+        <X size={30} />
+      </IconButton>
+      {onEdit || onDelete ? (
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            zIndex: 2,
+          }}
+        >
+          {onEdit ? (
+            <IconButton
+              aria-label={editLabel ?? 'Edit'}
+              onClick={onEdit}
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '999px',
+                bgcolor: alpha('#000000', 0.28),
+                color: dndSwipeEditColor,
+                '&:hover': { bgcolor: alpha('#000000', 0.38) },
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          ) : null}
+          {onDelete ? (
+            <IconButton
+              aria-label={deleteLabel ?? 'Delete'}
+              onClick={onDelete}
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: '999px',
+                bgcolor: alpha('#000000', 0.28),
+                color: dndColors.red,
+                '&:hover': { bgcolor: alpha('#000000', 0.38) },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          ) : null}
+        </Stack>
+      ) : null}
+      <DialogContent
+        sx={{
+          px: 2.2,
+          pt: 4.2,
+          pb: 3,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <Box sx={{ minHeight: 78, textAlign: 'center', px: 7 }}>
+          <Typography
+            sx={{ color: dndColors.text, fontSize: 19, fontWeight: 950, lineHeight: 1.1 }}
+          >
+            {title}
+          </Typography>
+          {subtitle ? (
+            <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 850 }}>
+              {subtitle}
+            </Typography>
+          ) : null}
+        </Box>
+        {summary || summaryAction ? (
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            gap={1.5}
+            sx={{ mt: 2.3 }}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>{summary}</Box>
+            {summaryAction}
+          </Stack>
+        ) : null}
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function SpellDetailsDialog({
   spell,
   onClose,
@@ -3395,286 +3551,178 @@ function SpellDetailsDialog({
   ];
 
   return (
-    <Dialog
+    <DndDetailsDialog
       open={Boolean(spell)}
+      title={displaySpell.name}
+      subtitle={(displaySpell.classes ?? []).slice(0, 3).join(' • ') || 'Spell'}
+      closeLabel="Close spell details"
       onClose={onClose}
-      fullWidth
-      maxWidth="xs"
-      sx={{
-        zIndex: 1900,
-        '& .MuiDialog-container': {
-          alignItems: { xs: 'flex-start', sm: 'center' },
-        },
-      }}
-      PaperProps={{
-        sx: {
-          width: { xs: '100%', sm: 430 },
-          height: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
-          mt: { xs: 'calc(env(safe-area-inset-top, 0px) + 78px)', sm: 0 },
-          mx: { xs: 0, sm: 2 },
-          borderRadius: { xs: '26px 26px 0 0', sm: '18px' },
-          border: `1px solid ${dndColors.border}`,
-          bgcolor: dndColors.panelSoft,
-          color: dndColors.text,
-          boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
-          overflow: 'hidden',
-        },
-      }}
-    >
-      <IconButton
-        aria-label="Close spell details"
-        onClick={onClose}
-        sx={{
-          position: 'absolute',
-          left: 16,
-          top: 16,
-          zIndex: 2,
-          width: 48,
-          height: 48,
-          borderRadius: '999px',
-          bgcolor: alpha('#000000', 0.28),
-          color: dndColors.text,
-          '&:hover': { bgcolor: alpha('#000000', 0.38) },
-        }}
-      >
-        <X size={30} />
-      </IconButton>
-      {!onSelect && !selectDisabledLabel && (onEdit || onDelete) ? (
-        <Stack
-          direction="row"
-          spacing={0.75}
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            zIndex: 2,
-          }}
-        >
-          {onEdit ? (
-            <IconButton
-              aria-label="Edit spell"
-              onClick={onEdit}
-              sx={{
-                width: 42,
-                height: 42,
-                borderRadius: '999px',
-                bgcolor: alpha('#000000', 0.28),
-                color: dndSwipeEditColor,
-                '&:hover': { bgcolor: alpha('#000000', 0.38) },
-              }}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-          ) : null}
-          {onDelete ? (
-            <IconButton
-              aria-label="Delete spell"
-              onClick={onDelete}
-              sx={{
-                width: 42,
-                height: 42,
-                borderRadius: '999px',
-                bgcolor: alpha('#000000', 0.28),
-                color: dndColors.red,
-                '&:hover': { bgcolor: alpha('#000000', 0.38) },
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          ) : null}
-        </Stack>
-      ) : null}
-      <DialogContent
-        sx={{
-          px: 2.2,
-          pt: 4.2,
-          pb: 3,
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
-        <Box sx={{ minHeight: 78, textAlign: 'center', px: 7 }}>
-          <Typography
-            sx={{ color: dndColors.text, fontSize: 19, fontWeight: 950, lineHeight: 1.1 }}
-          >
-            {displaySpell.name}
-          </Typography>
-          <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 850 }}>
-            {(displaySpell.classes ?? []).slice(0, 3).join(' • ') || 'Spell'}
-          </Typography>
-        </Box>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          gap={1.5}
-          sx={{ mt: 2.3 }}
-        >
-          <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
-            {formatSpellSubtitle(displaySpell)}
-          </Typography>
-          {onSelect ? (
-            <Button
-              onClick={onSelect}
-              sx={{
-                minHeight: 32,
-                borderRadius: '999px',
-                px: 1.6,
-                flex: '0 0 auto',
-                bgcolor: dndColors.red,
-                color: '#ffffff',
-                fontSize: 13,
-                fontWeight: 950,
-                textTransform: 'none',
-                '&:hover': { bgcolor: dndColors.redDark },
-              }}
-            >
-              Select
-            </Button>
-          ) : null}
-          {!onSelect && selectDisabledLabel ? (
-            <Box
-              sx={{
-                minHeight: 32,
-                borderRadius: '999px',
-                px: 1.3,
-                flex: '0 0 auto',
-                display: 'grid',
-                placeItems: 'center',
-                bgcolor: alpha(dndColors.muted, 0.18),
-                color: dndColors.muted,
-                border: `1px solid ${alpha(dndColors.muted, 0.42)}`,
-                fontSize: 12,
-                fontWeight: 950,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {selectDisabledLabel}
-            </Box>
-          ) : null}
-        </Stack>
-        <DividerLine />
-        <Typography sx={{ color: dndColors.text, fontSize: 15, fontWeight: 950, mb: 1.2 }}>
-          CAST{' '}
-          {isCantrip ? (
-            <Box component="span" sx={{ fontWeight: 700 }}>
-              At Will
-            </Box>
-          ) : null}
+      onEdit={!onSelect && !selectDisabledLabel ? onEdit : undefined}
+      editLabel="Edit spell"
+      onDelete={!onSelect && !selectDisabledLabel ? onDelete : undefined}
+      deleteLabel="Delete spell"
+      summary={
+        <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
+          {formatSpellSubtitle(displaySpell)}
         </Typography>
-        {!isCantrip ? (
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{ mb: 1.35 }}
-          >
-            <Stack direction="row" alignItems="center" spacing={0.8}>
-              <Typography sx={{ color: dndColors.text, fontSize: 14, fontWeight: 900 }}>
-                Lvl
-              </Typography>
-              <Box sx={spellLevelStepperSx}>-</Box>
-              <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 950 }}>
-                {getSpellSlotLevel(displaySpell.level) ?? displaySpell.level}
-              </Typography>
-              <Box sx={{ ...spellLevelStepperSx, bgcolor: dndColors.red }}>+</Box>
-            </Stack>
-            <Button
-              sx={{
-                minHeight: 32,
-                border: `1px solid ${dndColors.blue}`,
-                color: dndColors.blue,
-                fontSize: 13,
-                fontWeight: 900,
-                textTransform: 'none',
-              }}
-            >
-              Spell Slot
-            </Button>
-          </Stack>
-        ) : null}
-        <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 850, mb: 1.4 }}>
-          <Box component="span" sx={{ fontWeight: 950 }}>
-            {effect}
-          </Box>{' '}
-          {effect !== 'Utility' ? 'Effect' : ''}
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            minHeight: 46,
-            px: 1.2,
-            mb: 1.3,
-            bgcolor: alpha('#000000', 0.16),
-            color: dndColors.text,
-            fontWeight: 950,
-          }}
-        >
-          Slots
-          <Typography sx={{ color: dndColors.red, fontSize: 24, lineHeight: 1 }}>⌄</Typography>
-        </Box>
-        <DividerLine />
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            minHeight: 44,
-            color: dndColors.text,
-            fontWeight: 950,
-          }}
-        >
-          Customize
-          <Typography sx={{ fontSize: 30, lineHeight: 1 }}>›</Typography>
-        </Box>
-        <DividerLine />
-        <Stack spacing={0.75}>
-          {detailRows.map((detail) => (
-            <Typography
-              key={detail.label}
-              sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
-            >
-              <Box component="span" sx={{ fontWeight: 950 }}>
-                {detail.label}:
-              </Box>{' '}
-              {detail.value}
-            </Typography>
-          ))}
-          {displaySpell.ritual ? (
-            <Typography sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}>
-              <Box component="span" sx={{ fontWeight: 950 }}>
-                Ritual:
-              </Box>{' '}
-              Yes
-            </Typography>
-          ) : null}
-        </Stack>
-        <DividerLine />
-        <Typography
-          sx={{ color: dndColors.text, fontSize: 16, lineHeight: 1.65, whiteSpace: 'pre-line' }}
-        >
-          {description}
-        </Typography>
-        {higherLevel ? (
-          <Typography
+      }
+      summaryAction={
+        onSelect ? (
+          <Button
+            onClick={onSelect}
             sx={{
-              color: dndColors.text,
-              fontSize: 16,
-              lineHeight: 1.65,
-              whiteSpace: 'pre-line',
-              mt: 1.8,
+              minHeight: 32,
+              borderRadius: '999px',
+              px: 1.6,
+              flex: '0 0 auto',
+              bgcolor: dndColors.red,
+              color: '#ffffff',
+              fontSize: 13,
+              fontWeight: 950,
+              textTransform: 'none',
+              '&:hover': { bgcolor: dndColors.redDark },
             }}
           >
-            <Box component="span" sx={{ fontStyle: 'italic', fontWeight: 950 }}>
-              At Higher Levels.
+            Select
+          </Button>
+        ) : selectDisabledLabel ? (
+          <Box
+            sx={{
+              minHeight: 32,
+              borderRadius: '999px',
+              px: 1.3,
+              flex: '0 0 auto',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: alpha(dndColors.muted, 0.18),
+              color: dndColors.muted,
+              border: `1px solid ${alpha(dndColors.muted, 0.42)}`,
+              fontSize: 12,
+              fontWeight: 950,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {selectDisabledLabel}
+          </Box>
+        ) : null
+      }
+    >
+      <DividerLine />
+      <Typography sx={{ color: dndColors.text, fontSize: 15, fontWeight: 950, mb: 1.2 }}>
+        CAST{' '}
+        {isCantrip ? (
+          <Box component="span" sx={{ fontWeight: 700 }}>
+            At Will
+          </Box>
+        ) : null}
+      </Typography>
+      {!isCantrip ? (
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.35 }}>
+          <Stack direction="row" alignItems="center" spacing={0.8}>
+            <Typography sx={{ color: dndColors.text, fontSize: 14, fontWeight: 900 }}>
+              Lvl
+            </Typography>
+            <Box sx={spellLevelStepperSx}>-</Box>
+            <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 950 }}>
+              {getSpellSlotLevel(displaySpell.level) ?? displaySpell.level}
+            </Typography>
+            <Box sx={{ ...spellLevelStepperSx, bgcolor: dndColors.red }}>+</Box>
+          </Stack>
+          <Button
+            sx={{
+              minHeight: 32,
+              border: `1px solid ${dndColors.blue}`,
+              color: dndColors.blue,
+              fontSize: 13,
+              fontWeight: 900,
+              textTransform: 'none',
+            }}
+          >
+            Spell Slot
+          </Button>
+        </Stack>
+      ) : null}
+      <Typography sx={{ color: dndColors.text, fontSize: 16, fontWeight: 850, mb: 1.4 }}>
+        <Box component="span" sx={{ fontWeight: 950 }}>
+          {effect}
+        </Box>{' '}
+        {effect !== 'Utility' ? 'Effect' : ''}
+      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minHeight: 46,
+          px: 1.2,
+          mb: 1.3,
+          bgcolor: alpha('#000000', 0.16),
+          color: dndColors.text,
+          fontWeight: 950,
+        }}
+      >
+        Slots
+        <Typography sx={{ color: dndColors.red, fontSize: 24, lineHeight: 1 }}>⌄</Typography>
+      </Box>
+      <DividerLine />
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          minHeight: 44,
+          color: dndColors.text,
+          fontWeight: 950,
+        }}
+      >
+        Customize
+        <Typography sx={{ fontSize: 30, lineHeight: 1 }}>›</Typography>
+      </Box>
+      <DividerLine />
+      <Stack spacing={0.75}>
+        {detailRows.map((detail) => (
+          <Typography
+            key={detail.label}
+            sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
+          >
+            <Box component="span" sx={{ fontWeight: 950 }}>
+              {detail.label}:
             </Box>{' '}
-            {higherLevel.replace(/^At Higher Levels\.\s*/i, '')}
+            {detail.value}
+          </Typography>
+        ))}
+        {displaySpell.ritual ? (
+          <Typography sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}>
+            <Box component="span" sx={{ fontWeight: 950 }}>
+              Ritual:
+            </Box>{' '}
+            Yes
           </Typography>
         ) : null}
-      </DialogContent>
-    </Dialog>
+      </Stack>
+      <DividerLine />
+      <Typography
+        sx={{ color: dndColors.text, fontSize: 16, lineHeight: 1.65, whiteSpace: 'pre-line' }}
+      >
+        {description}
+      </Typography>
+      {higherLevel ? (
+        <Typography
+          sx={{
+            color: dndColors.text,
+            fontSize: 16,
+            lineHeight: 1.65,
+            whiteSpace: 'pre-line',
+            mt: 1.8,
+          }}
+        >
+          <Box component="span" sx={{ fontStyle: 'italic', fontWeight: 950 }}>
+            At Higher Levels.
+          </Box>{' '}
+          {higherLevel.replace(/^At Higher Levels\.\s*/i, '')}
+        </Typography>
+      ) : null}
+    </DndDetailsDialog>
   );
 }
 
@@ -3993,6 +4041,11 @@ function FeaturesScreen({
   onUpdateFeatureUses: (id: string, used: number) => void;
   embedded?: boolean;
 }) {
+  const [featureDetails, setFeatureDetails] = useState<{
+    feature: Feature;
+    editable: boolean;
+  } | null>(null);
+  const [featDetails, setFeatDetails] = useState<Feat | null>(null);
   const activeClassNames = new Set(
     character.classes.map((entry) => normalizeClassCatalogKey(entry.name)).filter(Boolean),
   );
@@ -4040,18 +4093,32 @@ function FeaturesScreen({
           </Button>
         </Stack>
         {derivedClassFeatures.map((feature) => (
-          <FeatureBlock key={feature.id} feature={feature} />
+          <Box
+            key={feature.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => setFeatureDetails({ feature, editable: false })}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setFeatureDetails({ feature, editable: false });
+              }
+            }}
+            sx={{ cursor: 'pointer' }}
+          >
+            <FeatureBlock feature={feature} />
+          </Box>
         ))}
         {persistedClassFeatures.map((feature) => (
           <SwipeRow key={feature.id} onDelete={() => onDeleteFeature(feature.id)}>
             <Box
               role="button"
               tabIndex={0}
-              onClick={() => onEditFeature(feature)}
+              onClick={() => setFeatureDetails({ feature, editable: true })}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  onEditFeature(feature);
+                  setFeatureDetails({ feature, editable: true });
                 }
               }}
               sx={{ cursor: 'pointer' }}
@@ -4073,11 +4140,11 @@ function FeaturesScreen({
             <Box
               role="button"
               tabIndex={0}
-              onClick={() => onEditFeature(feature)}
+              onClick={() => setFeatureDetails({ feature, editable: true })}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  onEditFeature(feature);
+                  setFeatureDetails({ feature, editable: true });
                 }
               }}
               sx={{ cursor: 'pointer' }}
@@ -4111,11 +4178,11 @@ function FeaturesScreen({
             <Box
               role="button"
               tabIndex={0}
-              onClick={() => onEditFeat(feat)}
+              onClick={() => setFeatDetails(feat)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  onEditFeat(feat);
+                  setFeatDetails(feat);
                 }
               }}
               sx={{ cursor: 'pointer' }}
@@ -4146,6 +4213,46 @@ function FeaturesScreen({
           <TagGroup label="Languages" values={character.languages} />
         </Stack>
       </Box>
+      <FeatureDetailsDialog
+        feature={featureDetails?.feature ?? null}
+        onClose={() => setFeatureDetails(null)}
+        onEdit={
+          featureDetails?.editable
+            ? () => {
+                onEditFeature(featureDetails.feature);
+                setFeatureDetails(null);
+              }
+            : undefined
+        }
+        onDelete={
+          featureDetails?.editable
+            ? () => {
+                onDeleteFeature(featureDetails.feature.id);
+                setFeatureDetails(null);
+              }
+            : undefined
+        }
+      />
+      <FeatDetailsDialog
+        feat={featDetails}
+        onClose={() => setFeatDetails(null)}
+        onEdit={
+          featDetails
+            ? () => {
+                onEditFeat(featDetails);
+                setFeatDetails(null);
+              }
+            : undefined
+        }
+        onDelete={
+          featDetails
+            ? () => {
+                onDeleteFeat(featDetails.id);
+                setFeatDetails(null);
+              }
+            : undefined
+        }
+      />
     </>
   );
 }
@@ -8820,131 +8927,173 @@ function ItemDetailsDialog({
   ];
 
   return (
-    <Dialog
+    <DndDetailsDialog
       open={Boolean(item)}
+      title={item.name}
+      subtitle={item.equipped ? 'Equipped' : 'Inventory Item'}
+      closeLabel="Close item details"
       onClose={onClose}
-      fullWidth
-      maxWidth="xs"
-      sx={{
-        zIndex: 1900,
-        '& .MuiDialog-container': {
-          alignItems: { xs: 'flex-start', sm: 'center' },
-        },
-      }}
-      PaperProps={{
-        sx: {
-          width: { xs: '100%', sm: 430 },
-          height: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
-          mt: { xs: 'calc(env(safe-area-inset-top, 0px) + 78px)', sm: 0 },
-          mx: { xs: 0, sm: 2 },
-          borderRadius: { xs: '26px 26px 0 0', sm: '18px' },
-          border: `1px solid ${dndColors.border}`,
-          bgcolor: dndColors.panelSoft,
-          color: dndColors.text,
-          boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
-          overflow: 'hidden',
-        },
-      }}
-    >
-      <IconButton
-        aria-label="Close item details"
-        onClick={onClose}
-        sx={{
-          position: 'absolute',
-          left: 16,
-          top: 16,
-          zIndex: 2,
-          width: 48,
-          height: 48,
-          borderRadius: '999px',
-          bgcolor: alpha('#000000', 0.28),
-          color: dndColors.text,
-          '&:hover': { bgcolor: alpha('#000000', 0.38) },
-        }}
-      >
-        <X size={30} />
-      </IconButton>
-      <DialogContent
-        sx={{
-          px: 2.2,
-          pt: 4.2,
-          pb: 3,
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
-        <Box sx={{ minHeight: 78, textAlign: 'center', px: 7 }}>
-          <Typography
-            sx={{ color: dndColors.text, fontSize: 19, fontWeight: 950, lineHeight: 1.1 }}
+      summary={
+        <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
+          {item.category}
+          {item.rarity ? ` • ${item.rarity}` : ''}
+        </Typography>
+      }
+      summaryAction={
+        onAdd ? (
+          <Button
+            onClick={onAdd}
+            sx={{
+              minHeight: 32,
+              borderRadius: '999px',
+              px: 1.6,
+              flex: '0 0 auto',
+              bgcolor: dndColors.red,
+              color: '#ffffff',
+              fontSize: 13,
+              fontWeight: 950,
+              textTransform: 'none',
+              '&:hover': { bgcolor: dndColors.redDark },
+            }}
           >
-            {item.name}
+            Add
+          </Button>
+        ) : null
+      }
+    >
+      <DividerLine />
+      <Stack spacing={0.75}>
+        {detailRows.map((detail) => (
+          <Typography
+            key={detail.label}
+            sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
+          >
+            <Box component="span" sx={{ fontWeight: 950 }}>
+              {detail.label}:
+            </Box>{' '}
+            {detail.value}
           </Typography>
-          <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 850 }}>
-            {item.equipped ? 'Equipped' : 'Inventory Item'}
+        ))}
+      </Stack>
+      {item.description ? (
+        <>
+          <DividerLine />
+          <Typography
+            sx={{
+              color: dndColors.text,
+              fontSize: 16,
+              lineHeight: 1.65,
+              whiteSpace: 'pre-line',
+            }}
+          >
+            {item.description}
           </Typography>
-        </Box>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          gap={1.5}
-          sx={{ mt: 2.3 }}
-        >
-          <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
-            {item.category}
-            {item.rarity ? ` • ${item.rarity}` : ''}
+        </>
+      ) : null}
+    </DndDetailsDialog>
+  );
+}
+
+function FeatureDetailsDialog({
+  feature,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  feature: Feature | null;
+  onClose: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  if (!feature) return null;
+  const detailRows = [
+    { label: 'Source', value: feature.source },
+    ...(feature.uses
+      ? [
+          { label: 'Uses', value: `${feature.uses.used} / ${feature.uses.max}` },
+          { label: 'Reset', value: feature.uses.reset },
+        ]
+      : []),
+  ];
+
+  return (
+    <DndDetailsDialog
+      open={Boolean(feature)}
+      title={feature.name}
+      subtitle={feature.source || 'Feature'}
+      closeLabel="Close feature details"
+      onClose={onClose}
+      onEdit={onEdit}
+      editLabel="Edit feature"
+      onDelete={onDelete}
+      deleteLabel="Delete feature"
+      summary={
+        <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
+          {feature.uses ? 'Tracked Feature' : 'Feature'}
+        </Typography>
+      }
+    >
+      <DividerLine />
+      <Stack spacing={0.75}>
+        {detailRows.map((detail) => (
+          <Typography
+            key={detail.label}
+            sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
+          >
+            <Box component="span" sx={{ fontWeight: 950 }}>
+              {detail.label}:
+            </Box>{' '}
+            {detail.value}
           </Typography>
-          {onAdd ? (
-            <Button
-              onClick={onAdd}
-              sx={{
-                minHeight: 32,
-                borderRadius: '999px',
-                px: 1.6,
-                flex: '0 0 auto',
-                bgcolor: dndColors.red,
-                color: '#ffffff',
-                fontSize: 13,
-                fontWeight: 950,
-                textTransform: 'none',
-                '&:hover': { bgcolor: dndColors.redDark },
-              }}
-            >
-              Add
-            </Button>
-          ) : null}
-        </Stack>
-        <DividerLine />
-        <Stack spacing={0.75}>
-          {detailRows.map((detail) => (
-            <Typography
-              key={detail.label}
-              sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
-            >
-              <Box component="span" sx={{ fontWeight: 950 }}>
-                {detail.label}:
-              </Box>{' '}
-              {detail.value}
-            </Typography>
-          ))}
-        </Stack>
-        {item.description ? (
-          <>
-            <DividerLine />
-            <Typography
-              sx={{
-                color: dndColors.text,
-                fontSize: 16,
-                lineHeight: 1.65,
-                whiteSpace: 'pre-line',
-              }}
-            >
-              {item.description}
-            </Typography>
-          </>
-        ) : null}
-      </DialogContent>
-    </Dialog>
+        ))}
+      </Stack>
+      <DividerLine />
+      <Typography
+        sx={{ color: dndColors.text, fontSize: 16, lineHeight: 1.65, whiteSpace: 'pre-line' }}
+      >
+        {feature.summary || 'No description has been recorded for this feature yet.'}
+      </Typography>
+    </DndDetailsDialog>
+  );
+}
+
+function FeatDetailsDialog({
+  feat,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  feat: Feat | null;
+  onClose: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
+  if (!feat) return null;
+
+  return (
+    <DndDetailsDialog
+      open={Boolean(feat)}
+      title={feat.name}
+      subtitle="Feat"
+      closeLabel="Close feat details"
+      onClose={onClose}
+      onEdit={onEdit}
+      editLabel="Edit feat"
+      onDelete={onDelete}
+      deleteLabel="Delete feat"
+      summary={
+        <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
+          Character Feat
+        </Typography>
+      }
+    >
+      <DividerLine />
+      <Typography
+        sx={{ color: dndColors.text, fontSize: 16, lineHeight: 1.65, whiteSpace: 'pre-line' }}
+      >
+        {feat.summary || 'No description has been recorded for this feat yet.'}
+      </Typography>
+    </DndDetailsDialog>
   );
 }
 
