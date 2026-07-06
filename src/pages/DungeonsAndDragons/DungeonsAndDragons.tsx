@@ -4073,7 +4073,10 @@ function FeaturesScreen({
             Edit
           </Button>
         </Stack>
-        <TagCloud values={[...character.proficiencies, ...character.languages]} />
+        <Stack spacing={1.25}>
+          <TagGroup label="Proficiencies" values={character.proficiencies} />
+          <TagGroup label="Languages" values={character.languages} />
+        </Stack>
       </Box>
     </>
   );
@@ -4353,6 +4356,32 @@ function TagCloud({ values }: { values: string[] }) {
         </Box>
       ))}
     </Stack>
+  );
+}
+
+function TagGroup({ label, values }: { label: string; values: string[] }) {
+  return (
+    <Box>
+      <Typography
+        sx={{
+          color: dndColors.muted,
+          fontSize: 12,
+          fontWeight: 950,
+          letterSpacing: 0.4,
+          mb: 0.65,
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Typography>
+      {values.length > 0 ? (
+        <TagCloud values={values} />
+      ) : (
+        <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 750 }}>
+          None recorded
+        </Typography>
+      )}
+    </Box>
   );
 }
 
@@ -4948,6 +4977,7 @@ function DndEditDialog({
   children,
   onCancel,
   onSave,
+  titleAction,
   hideTitle = false,
   saveDisabled = false,
 }: {
@@ -4956,6 +4986,7 @@ function DndEditDialog({
   children: ReactNode;
   onCancel: () => void;
   onSave: () => void;
+  titleAction?: ReactNode;
   hideTitle?: boolean;
   saveDisabled?: boolean;
 }) {
@@ -4967,7 +4998,23 @@ function DndEditDialog({
       maxWidth="xs"
       PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
     >
-      {hideTitle ? null : <DialogTitle sx={{ fontWeight: 900 }}>{title}</DialogTitle>}
+      {hideTitle ? null : (
+        <DialogTitle
+          sx={{
+            pr: titleAction ? 2 : undefined,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1,
+            fontWeight: 900,
+          }}
+        >
+          <Box component="span" sx={{ minWidth: 0 }}>
+            {title}
+          </Box>
+          {titleAction}
+        </DialogTitle>
+      )}
       <DialogContent sx={{ pt: hideTitle ? 2.5 : undefined }}>
         <Stack spacing={1.2} sx={{ pt: 0.5 }}>
           {children}
@@ -8663,12 +8710,14 @@ function FeatureEditDialog({
   onChange,
   onCancel,
   onSave,
+  onDelete,
 }: {
   open: boolean;
   form: FeatureForm | null;
   onChange: (form: FeatureForm) => void;
   onCancel: () => void;
   onSave: () => void;
+  onDelete: (id: string) => void;
 }) {
   if (!form) return null;
   const setField = (key: 'name' | 'source' | 'summary', value: string) =>
@@ -8687,7 +8736,25 @@ function FeatureEditDialog({
     });
 
   return (
-    <DndEditDialog title="Edit Feature" open={open} onCancel={onCancel} onSave={onSave}>
+    <DndEditDialog
+      title="Edit Feature"
+      open={open}
+      onCancel={onCancel}
+      onSave={onSave}
+      titleAction={
+        <IconButton
+          aria-label="Delete feature"
+          onClick={() => onDelete(form.id)}
+          sx={{
+            color: dndColors.red,
+            bgcolor: alpha(dndColors.red, 0.12),
+            '&:hover': { bgcolor: alpha(dndColors.red, 0.2) },
+          }}
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      }
+    >
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <FormField
         label="Source"
@@ -10139,6 +10206,10 @@ function DungeonsAndDragons() {
           onChange={setFeatureForm}
           onCancel={() => setFeatureForm(null)}
           onSave={saveFeature}
+          onDelete={(id) => {
+            setFeatureForm(null);
+            deleteById('features', id);
+          }}
         />
         <MoneyEditDialog
           open={moneyForm !== null}
