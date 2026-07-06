@@ -37,7 +37,7 @@ import { alpha, keyframes } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
-import { Backpack, Grid3X3, House, Lightbulb, Search, Sword, X } from 'lucide-react';
+import { Backpack, ChevronDown, Grid3X3, House, Lightbulb, Search, Sword, X } from 'lucide-react';
 
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
@@ -7735,25 +7735,73 @@ function SpellCatalogFilterGroup({
   onClear: () => void;
   onToggle: (option: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const selectedLabel = selected.length === 0 ? allLabel : `${selected.length} selected`;
+
   return (
-    <Box sx={{ mt: 1.25 }}>
-      <Typography
+    <Box
+      sx={{
+        mt: 1.25,
+        border: `1px solid ${dndColors.borderSoft}`,
+        borderRadius: '10px',
+        bgcolor: alpha(dndColors.panel, 0.4),
+        overflow: 'hidden',
+      }}
+    >
+      <Button
+        fullWidth
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
         sx={{
-          color: dndColors.muted,
-          fontSize: 12,
-          fontWeight: 950,
-          letterSpacing: 0.6,
-          textTransform: 'uppercase',
-          mb: 0.65,
+          minHeight: 48,
+          justifyContent: 'space-between',
+          px: 1.2,
+          py: 0.9,
+          color: dndColors.text,
+          textAlign: 'left',
+          textTransform: 'none',
+          '&:hover': { bgcolor: alpha('#9a6cff', 0.12) },
         }}
       >
-        {title}
-      </Typography>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{
+              color: dndColors.text,
+              fontSize: 14,
+              fontWeight: 950,
+              lineHeight: 1.1,
+            }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            sx={{
+              mt: 0.25,
+              color: selected.length === 0 ? dndColors.muted : '#9a6cff',
+              fontSize: 12,
+              fontWeight: 850,
+              lineHeight: 1.1,
+            }}
+          >
+            {selectedLabel}
+          </Typography>
+        </Box>
+        <ChevronDown
+          size={20}
+          style={{
+            flex: '0 0 auto',
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 160ms ease',
+          }}
+        />
+      </Button>
       <Box
         sx={{
-          display: 'grid',
+          display: expanded ? 'grid' : 'none',
           gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
           gap: 0.65,
+          px: 1,
+          pb: 1,
         }}
       >
         <Button
