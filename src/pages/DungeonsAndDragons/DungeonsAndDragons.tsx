@@ -508,6 +508,44 @@ type ItemCatalogEntry = Omit<InventoryItem, 'id' | 'equipped'> & {
   type?: string;
 };
 
+type FeatCatalogEntry = Omit<Feat, 'id'> & {
+  category?: string;
+  prerequisite?: string;
+  source?: string;
+  sourceUrl?: string;
+  licenseUrl?: string;
+  metadata?: {
+    gameSystem?: string;
+    type?: string;
+    sourceType?: string;
+    index?: string;
+  };
+  meta?: {
+    gameSystem?: string;
+  };
+  type?: string;
+};
+
+type FeatureCatalogEntry = Omit<Feature, 'id' | 'uses'> & {
+  category?: string;
+  level?: number;
+  className?: string;
+  subclassName?: string;
+  prerequisites?: string[];
+  sourceUrl?: string;
+  licenseUrl?: string;
+  metadata?: {
+    gameSystem?: string;
+    type?: string;
+    sourceType?: string;
+    index?: string;
+  };
+  meta?: {
+    gameSystem?: string;
+  };
+  type?: string;
+};
+
 function catalogItemToInventoryItem(item: ItemCatalogEntry): InventoryItem {
   return {
     id: createEntryId('item'),
@@ -528,6 +566,23 @@ function catalogItemToInventoryItem(item: ItemCatalogEntry): InventoryItem {
     ...(item.properties ? { properties: item.properties } : {}),
     ...(item.damage ? { damage: item.damage } : {}),
     ...(item.damageType ? { damageType: item.damageType } : {}),
+  };
+}
+
+function catalogFeatToFeat(feat: FeatCatalogEntry): Feat {
+  return {
+    id: createEntryId('feat'),
+    name: feat.name,
+    summary: feat.summary,
+  };
+}
+
+function catalogFeatureToFeature(feature: FeatureCatalogEntry): Feature {
+  return {
+    id: createEntryId('feature'),
+    name: feature.name,
+    source: feature.source,
+    summary: feature.summary,
   };
 }
 
@@ -8255,6 +8310,311 @@ function ItemCatalogDialog({
   );
 }
 
+function TextCatalogDialog<TEntry extends { name: string; summary: string }>({
+  open,
+  title,
+  subtitle,
+  searchPlaceholder,
+  customLabel,
+  emptyLabel,
+  entries,
+  getMeta,
+  icon,
+  onCreateCustom,
+  onSelect,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  subtitle: string;
+  searchPlaceholder: string;
+  customLabel: string;
+  emptyLabel: string;
+  entries: TEntry[];
+  getMeta: (entry: TEntry) => string[];
+  icon: ReactNode;
+  onCreateCustom: () => void;
+  onSelect: (entry: TEntry) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const normalizedQuery = query.trim().toLowerCase();
+  useEffect(() => {
+    if (!open) setQuery('');
+  }, [open]);
+
+  const filteredEntries = entries.filter((entry) => {
+    if (!normalizedQuery) return true;
+    return [entry.name, entry.summary, ...getMeta(entry)]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  return (
+    <Dialog
+      fullScreen
+      open={open}
+      onClose={onClose}
+      PaperProps={{
+        sx: {
+          bgcolor: dndColors.page,
+          color: dndColors.text,
+          backgroundImage: `linear-gradient(180deg, ${alpha(dndColors.page, 0.98)}, ${alpha(
+            dndColors.panelStrong,
+            0.99,
+          )})`,
+        },
+      }}
+      sx={{ zIndex: 1800 }}
+    >
+      <Box sx={{ minHeight: '100dvh', pb: 11, pt: 'max(20px, env(safe-area-inset-top))' }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ px: 3.2, pt: 1.1, pb: 2.2 }}
+        >
+          <Box
+            sx={{
+              width: 58,
+              height: 58,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: dndColors.red,
+              border: `1px solid ${dndColors.redDark}`,
+              color: '#ffffff',
+              boxShadow: `0 0 0 1px ${alpha(dndColors.red, 0.24)}, inset 0 0 18px ${alpha(
+                '#000000',
+                0.16,
+              )}`,
+            }}
+          >
+            {icon}
+          </Box>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography sx={{ fontSize: 21, fontWeight: 850, lineHeight: 1.05 }}>
+              Listings
+            </Typography>
+            <Typography sx={{ mt: 0.8, color: '#9a6cff', fontSize: 15, fontWeight: 850 }}>
+              {subtitle}
+            </Typography>
+          </Box>
+          <IconButton
+            aria-label={`Close ${title} catalog`}
+            onClick={onClose}
+            sx={{
+              width: 58,
+              height: 58,
+              color: dndColors.text,
+              bgcolor: alpha(dndColors.panelSoft, 0.86),
+              border: `1px solid ${dndColors.borderSoft}`,
+              boxShadow: `inset 0 0 20px ${alpha('#000000', 0.34)}`,
+              '&:hover': { bgcolor: dndColors.panelSoft },
+            }}
+          >
+            <X size={26} />
+          </IconButton>
+        </Stack>
+
+        <Box sx={{ px: 3.2 }}>
+          <Box
+            sx={{
+              height: 55,
+              borderRadius: '4px',
+              bgcolor: dndColors.chrome,
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr auto',
+              alignItems: 'center',
+              gap: 1.4,
+              px: 1.7,
+              color: dndColors.text,
+              boxShadow: `inset 0 0 0 1px ${dndColors.borderSoft}`,
+            }}
+          >
+            <Box sx={{ color: '#9a6cff', display: 'grid', placeItems: 'center' }}>{icon}</Box>
+            <Typography sx={{ fontSize: 20, fontWeight: 900 }}>{title}</Typography>
+            <Grid3X3 size={28} color={dndColors.red} strokeWidth={3} />
+          </Box>
+          <Box
+            sx={{
+              mt: 2.1,
+              mb: 1.9,
+              height: 55,
+              bgcolor: dndColors.panelSoft,
+              borderRadius: '3px',
+              display: 'flex',
+              alignItems: 'center',
+              px: 1.7,
+              gap: 1.2,
+              color: dndColors.muted,
+            }}
+          >
+            <Search size={27} />
+            <InputBase
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={searchPlaceholder}
+              inputProps={{ 'aria-label': searchPlaceholder }}
+              sx={{
+                flex: 1,
+                color: dndColors.text,
+                fontSize: 19,
+                fontWeight: 650,
+                '& input::placeholder': {
+                  color: dndColors.muted,
+                  opacity: 1,
+                },
+              }}
+            />
+            {query ? (
+              <IconButton
+                aria-label={`Clear ${title} search`}
+                onClick={() => setQuery('')}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  color: dndColors.muted,
+                  '&:hover': {
+                    color: dndColors.text,
+                    bgcolor: alpha(dndColors.text, 0.08),
+                  },
+                }}
+              >
+                <X size={18} />
+              </IconButton>
+            ) : null}
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            borderTop: `1px solid ${dndColors.borderSoft}`,
+            borderBottom: `1px solid ${dndColors.borderSoft}`,
+          }}
+        >
+          <Box sx={{ bgcolor: dndColors.panel, px: 3.2, py: 1.4 }}>
+            <Button
+              fullWidth
+              startIcon={<AddIcon />}
+              onClick={onCreateCustom}
+              sx={{
+                minHeight: 54,
+                borderRadius: '4px',
+                bgcolor: dndColors.red,
+                color: '#ffffff',
+                fontSize: 18,
+                fontWeight: 950,
+                textTransform: 'none',
+                '&:hover': { bgcolor: dndColors.redDark },
+              }}
+            >
+              {customLabel}
+            </Button>
+          </Box>
+          {filteredEntries.length === 0 ? (
+            <Typography
+              sx={{
+                color: dndColors.muted,
+                fontSize: 16,
+                fontWeight: 750,
+                py: 4,
+                textAlign: 'center',
+              }}
+            >
+              {emptyLabel}
+            </Typography>
+          ) : null}
+          {filteredEntries.map((entry) => {
+            const meta = getMeta(entry).filter(Boolean);
+            return (
+              <Box
+                key={`${entry.name}-${meta.join('-')}`}
+                component="button"
+                type="button"
+                onClick={() => onSelect(entry)}
+                sx={{
+                  width: '100%',
+                  minHeight: 98,
+                  bgcolor: dndColors.panel,
+                  color: dndColors.text,
+                  border: 0,
+                  borderBottom: `1px solid ${dndColors.borderSoft}`,
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) auto',
+                  alignItems: 'center',
+                  gap: 1.4,
+                  px: 3.2,
+                  py: 1.3,
+                  textAlign: 'left',
+                  font: 'inherit',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: dndColors.panelSoft },
+                }}
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      color: dndColors.text,
+                      fontSize: 22,
+                      fontWeight: 950,
+                      lineHeight: 1.05,
+                    }}
+                  >
+                    {entry.name}
+                  </Typography>
+                  {meta.length > 0 ? (
+                    <Typography
+                      sx={{
+                        mt: 0.4,
+                        color: dndColors.muted,
+                        fontSize: 15,
+                        fontWeight: 850,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {meta.join(' • ')}
+                    </Typography>
+                  ) : null}
+                  <Typography
+                    sx={{
+                      mt: 0.55,
+                      color: alpha(dndColors.muted, 0.9),
+                      fontSize: 14,
+                      lineHeight: 1.25,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {entry.summary}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '50%',
+                    display: 'grid',
+                    placeItems: 'center',
+                    bgcolor: dndColors.red,
+                    color: '#ffffff',
+                  }}
+                >
+                  <AddIcon fontSize="small" />
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+    </Dialog>
+  );
+}
+
 function ItemDetailsDialog({
   item,
   onClose,
@@ -8924,7 +9284,9 @@ function DungeonsAndDragons() {
   );
   const dndCatalogItems = useQuery(api.catalog.listByGameSystem, {
     gameSystem: DND_GAME_SYSTEM,
-  }) as Array<SpellCatalogEntry | ItemCatalogEntry> | undefined;
+  }) as
+    | Array<SpellCatalogEntry | ItemCatalogEntry | FeatCatalogEntry | FeatureCatalogEntry>
+    | undefined;
   const dndSpellOptions = (dndCatalogItems ?? [])
     .filter(
       (entry) =>
@@ -8936,9 +9298,21 @@ function DungeonsAndDragons() {
       (entry) =>
         entry.metadata?.type === 'item' ||
         entry.type === 'item' ||
-        (entry.category !== 'Spell' && entry.metadata?.type !== 'spell'),
+        (!entry.metadata?.type &&
+          entry.category !== 'Spell' &&
+          entry.type !== 'spell' &&
+          entry.type !== 'feat' &&
+          entry.type !== 'feature'),
     )
     .filter((entry): entry is ItemCatalogEntry => asNonEmptyString(entry.name) !== null);
+  const dndFeatOptions = (dndCatalogItems ?? [])
+    .filter((entry) => entry.metadata?.type === 'feat' || entry.type === 'feat')
+    .filter((entry): entry is FeatCatalogEntry => asNonEmptyString(entry.name) !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const dndFeatureOptions = (dndCatalogItems ?? [])
+    .filter((entry) => entry.metadata?.type === 'feature' || entry.type === 'feature')
+    .filter((entry): entry is FeatureCatalogEntry => asNonEmptyString(entry.name) !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
   const spellCatalogSource = mergeSpellCatalogs(
     standardDndSpellCatalogEntries,
     dndSpellCatalog,
@@ -8975,6 +9349,8 @@ function DungeonsAndDragons() {
   const [spellForm, setSpellForm] = useState<SpellForm | null>(null);
   const [spellCatalogOpen, setSpellCatalogOpen] = useState(false);
   const [itemCatalogOpen, setItemCatalogOpen] = useState(false);
+  const [featureCatalogOpen, setFeatureCatalogOpen] = useState(false);
+  const [featCatalogOpen, setFeatCatalogOpen] = useState(false);
   const [spellcastingForm, setSpellcastingForm] = useState<SpellcastingForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
   const [spellDetails, setSpellDetails] = useState<Spell | null>(null);
@@ -9386,12 +9762,26 @@ function DungeonsAndDragons() {
   };
 
   const addFeature = () => {
+    setFeatureCatalogOpen(true);
+  };
+
+  const openCustomFeatureForm = () => {
+    setFeatureCatalogOpen(false);
     setFeatureForm({
       id: createEntryId('feature'),
       name: 'New Feature',
       source: character.classes[0]?.name ?? 'Class',
       summary: 'Describe what this feature allows the character to do.',
     });
+  };
+
+  const addCatalogFeatureToCharacter = (feature: FeatureCatalogEntry) => {
+    setCharacter((current) => ({
+      ...current,
+      features: [...current.features, catalogFeatureToFeature(feature)],
+    }));
+    setFeatureCatalogOpen(false);
+    setUndoOpen(true);
   };
 
   const saveFeature = () => {
@@ -9418,11 +9808,25 @@ function DungeonsAndDragons() {
   };
 
   const addFeat = () => {
+    setFeatCatalogOpen(true);
+  };
+
+  const openCustomFeatForm = () => {
+    setFeatCatalogOpen(false);
     setFeatForm({
       id: createEntryId('feat'),
       name: 'New Feat',
       summary: 'Describe what this feat changes for the character.',
     });
+  };
+
+  const addCatalogFeatToCharacter = (feat: FeatCatalogEntry) => {
+    setCharacter((current) => ({
+      ...current,
+      feats: [...current.feats, catalogFeatToFeat(feat)],
+    }));
+    setFeatCatalogOpen(false);
+    setUndoOpen(true);
   };
 
   const saveFeat = () => {
@@ -10185,6 +10589,45 @@ function DungeonsAndDragons() {
           onSelect={addCatalogItemToCharacter}
           onQuickAdd={quickAddCatalogItemToCharacter}
           onClose={() => setItemCatalogOpen(false)}
+        />
+        <TextCatalogDialog
+          open={featureCatalogOpen}
+          title="Features"
+          subtitle="Features: A - Z ^"
+          searchPlaceholder="Search features"
+          customLabel="Custom Feature"
+          emptyLabel="No features match your search."
+          entries={dndFeatureOptions}
+          getMeta={(feature) =>
+            [
+              feature.category,
+              feature.className ?? feature.source,
+              feature.subclassName,
+              typeof feature.level === 'number' ? `Level ${feature.level}` : null,
+            ].filter((value): value is string => Boolean(value))
+          }
+          icon={<PersonIcon sx={{ fontSize: 30 }} />}
+          onCreateCustom={openCustomFeatureForm}
+          onSelect={addCatalogFeatureToCharacter}
+          onClose={() => setFeatureCatalogOpen(false)}
+        />
+        <TextCatalogDialog
+          open={featCatalogOpen}
+          title="Feats"
+          subtitle="Feats: A - Z ^"
+          searchPlaceholder="Search feats"
+          customLabel="Custom Feat"
+          emptyLabel="No feats match your search."
+          entries={dndFeatOptions}
+          getMeta={(feat) =>
+            [feat.category, feat.prerequisite ? `Prerequisite: ${feat.prerequisite}` : null].filter(
+              (value): value is string => Boolean(value),
+            )
+          }
+          icon={<AutoAwesomeIcon sx={{ fontSize: 30 }} />}
+          onCreateCustom={openCustomFeatForm}
+          onSelect={addCatalogFeatToCharacter}
+          onClose={() => setFeatCatalogOpen(false)}
         />
         <SpellDetailsDialog spell={spellDetails} onClose={() => setSpellDetails(null)} />
         <ItemDetailsDialog item={itemDetails} onClose={() => setItemDetails(null)} />

@@ -1,6 +1,8 @@
 import { v } from 'convex/values';
 
 import { type MutationCtx, internalMutation, query } from './_generated/server';
+import { DUNGEONS_AND_DRAGONS_FEATS } from './data/dungeonsAndDragonsFeats';
+import { DUNGEONS_AND_DRAGONS_FEATURES } from './data/dungeonsAndDragonsFeatures';
 import { DUNGEONS_AND_DRAGONS_ITEMS } from './data/dungeonsAndDragonsItems';
 import { DUNGEONS_AND_DRAGONS_SPELLS } from './data/dungeonsAndDragonsSpells';
 import { FABULA_ULTIMA_ITEMS } from './data/fabulaUltimaItems';
@@ -9,7 +11,7 @@ import { openDndSpellCatalog } from './data/openDndSpellCatalog';
 const FABULA_ULTIMA_GAME_SYSTEM = 'fabula-ultima';
 const DUNGEONS_AND_DRAGONS_GAME_SYSTEM = 'dungeons-and-dragons';
 
-type CatalogType = 'item' | 'spell';
+type CatalogType = 'item' | 'spell' | 'feat' | 'feature';
 type CatalogRecord = Record<string, unknown>;
 
 function asObject(value: unknown): CatalogRecord {
@@ -24,7 +26,11 @@ function asString(value: unknown): string | null {
 
 function normalizeCatalogType(value: unknown, fallback: CatalogType): CatalogType {
   const normalized = asString(value)?.toLowerCase();
-  return normalized === 'spell' ? 'spell' : fallback;
+  if (normalized === 'spell') return 'spell';
+  if (normalized === 'feat') return 'feat';
+  if (normalized === 'feature') return 'feature';
+  if (normalized === 'item') return 'item';
+  return fallback;
 }
 
 function inferCatalogType(record: CatalogRecord, fallback: CatalogType): CatalogType {
@@ -232,7 +238,7 @@ export const migrateItemsToCatalog = internalMutation({
 export const dedupeCatalog = internalMutation({
   args: {
     gameSystem: v.string(),
-    type: v.union(v.literal('item'), v.literal('spell')),
+    type: v.union(v.literal('item'), v.literal('spell'), v.literal('feat'), v.literal('feature')),
   },
   handler: async (ctx, args) => {
     return await dedupeCatalogRows(ctx, args.gameSystem, args.type);
@@ -278,6 +284,39 @@ export const seedDungeonsAndDragonsItems = internalMutation({
       DUNGEONS_AND_DRAGONS_GAME_SYSTEM,
       DUNGEONS_AND_DRAGONS_ITEMS.map((item) => item as CatalogRecord),
       'item',
+    );
+  },
+});
+
+/**
+ * Seed all DnD feat catalog entries into the renamed `catalog` table.
+ * Idempotent; existing feat rows are updated and keep their document IDs.
+ */
+export const seedDungeonsAndDragonsFeats = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await upsertCatalogRecords(
+      ctx,
+      DUNGEONS_AND_DRAGONS_GAME_SYSTEM,
+      DUNGEONS_AND_DRAGONS_FEATS.map((feat) => feat as CatalogRecord),
+      'feat',
+    );
+  },
+});
+
+/**
+ * Seed all DnD class/subclass feature catalog entries into the renamed
+ * `catalog` table. Idempotent; existing feature rows are updated and keep
+ * their document IDs.
+ */
+export const seedDungeonsAndDragonsFeatures = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await upsertCatalogRecords(
+      ctx,
+      DUNGEONS_AND_DRAGONS_GAME_SYSTEM,
+      DUNGEONS_AND_DRAGONS_FEATURES.map((feature) => feature as CatalogRecord),
+      'feature',
     );
   },
 });

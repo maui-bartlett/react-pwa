@@ -14,6 +14,8 @@ import type * as campaigns from "../campaigns.js";
 import type * as catalog from "../catalog.js";
 import type * as characters from "../characters.js";
 import type * as classes from "../classes.js";
+import type * as data_dungeonsAndDragonsFeats from "../data/dungeonsAndDragonsFeats.js";
+import type * as data_dungeonsAndDragonsFeatures from "../data/dungeonsAndDragonsFeatures.js";
 import type * as data_dungeonsAndDragonsItems from "../data/dungeonsAndDragonsItems.js";
 import type * as data_dungeonsAndDragonsSpells from "../data/dungeonsAndDragonsSpells.js";
 import type * as data_fabulaUltimaItems from "../data/fabulaUltimaItems.js";
@@ -41,6 +43,8 @@ declare const fullApi: ApiFromModules<{
   catalog: typeof catalog;
   characters: typeof characters;
   classes: typeof classes;
+  "data/dungeonsAndDragonsFeats": typeof data_dungeonsAndDragonsFeats;
+  "data/dungeonsAndDragonsFeatures": typeof data_dungeonsAndDragonsFeatures;
   "data/dungeonsAndDragonsItems": typeof data_dungeonsAndDragonsItems;
   "data/dungeonsAndDragonsSpells": typeof data_dungeonsAndDragonsSpells;
   "data/fabulaUltimaItems": typeof data_fabulaUltimaItems;
