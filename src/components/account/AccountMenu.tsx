@@ -12,6 +12,7 @@ import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { useAtomValue } from 'jotai';
@@ -83,6 +84,7 @@ type AccountMenuProps = {
   onSelectCharacterState?: (characterState: unknown) => void;
   onEditLocalCharacter?: (id: string) => void;
   selectCharacterEventName?: string;
+  triggerSx?: SxProps<Theme>;
 };
 
 type AuthResult = {
@@ -467,6 +469,7 @@ function AccountMenu({
   onSelectCharacterState,
   onEditLocalCharacter,
   selectCharacterEventName = FAB_U_SELECT_CHARACTER_EVENT,
+  triggerSx,
 }: AccountMenuProps) {
   const fabUTokens = useFabUTokens();
   const { data: session, refetch } = authClient.useSession();
@@ -798,6 +801,7 @@ function AccountMenu({
           '&:hover': {
             bgcolor: user ? '#ffffff' : alpha('#ffffff', 0.24),
           },
+          ...triggerSx,
         }}
       >
         {user?.image ? (

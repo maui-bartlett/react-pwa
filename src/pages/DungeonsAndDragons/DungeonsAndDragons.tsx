@@ -1581,11 +1581,11 @@ function HitPointsButton({
         textAlign: 'left',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         '&:hover': { bgcolor: '#05090b' },
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.35 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 0.15 }}>
         <Typography
           sx={{
             color: dndColors.text,
@@ -1614,6 +1614,8 @@ function HitPointsButton({
         value={percent}
         sx={{
           height: 3,
+          mt: 'auto',
+          mb: 0.35,
           bgcolor: dndColors.border,
           '& .MuiLinearProgress-bar': { bgcolor: dndColors.blue },
         }}
@@ -3653,6 +3655,7 @@ function InventoryScreen({
   onDeleteItem,
   onAddItem,
   onEditItem,
+  onViewItem,
   onEditMoney,
   onToggleItemEquipped,
 }: {
@@ -3660,6 +3663,7 @@ function InventoryScreen({
   onDeleteItem: (id: string) => void;
   onAddItem: () => void;
   onEditItem: (item: InventoryItem) => void;
+  onViewItem: (item: InventoryItem) => void;
   onEditMoney: () => void;
   onToggleItemEquipped: (id: string) => void;
 }) {
@@ -3743,7 +3747,11 @@ function InventoryScreen({
             onDelete={() => onDeleteItem(item.id)}
             onEdit={() => onEditItem(item)}
           >
-            <InventoryRow item={item} onToggleEquipped={() => onToggleItemEquipped(item.id)} />
+            <InventoryRow
+              item={item}
+              onView={() => onViewItem(item)}
+              onToggleEquipped={() => onToggleItemEquipped(item.id)}
+            />
           </SwipeRow>
         ))}
       </Box>
@@ -3753,14 +3761,25 @@ function InventoryScreen({
 
 function InventoryRow({
   item,
+  onView,
   onToggleEquipped,
 }: {
   item: InventoryItem;
+  onView: () => void;
   onToggleEquipped: () => void;
 }) {
   const equipped = Boolean(item.equipped);
   return (
     <Box
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onView();
+        }
+      }}
       sx={{
         display: 'grid',
         gridTemplateColumns: '42px 1fr 1fr 1fr',
@@ -3769,6 +3788,7 @@ function InventoryRow({
         alignItems: 'center',
         borderBottom: `1px solid ${dndColors.borderSoft}`,
         bgcolor: dndColors.page,
+        cursor: 'pointer',
       }}
     >
       <IconButton
@@ -3846,6 +3866,25 @@ function FeaturesScreen({
   onUpdateFeatureUses: (id: string, used: number) => void;
   embedded?: boolean;
 }) {
+  const activeClassNames = new Set(
+    character.classes.map((entry) => normalizeClassCatalogKey(entry.name)).filter(Boolean),
+  );
+  const derivedClassFeatures = deriveDndClassFields({
+    classes: character.classes,
+    catalogByName: classCatalogByName,
+    currentHitDicePools: character.hitPoints.hitDicePools,
+  }).features;
+  const persistedClassFeatures = character.features.filter(
+    (feature) =>
+      activeClassNames.has(normalizeClassCatalogKey(feature.source)) &&
+      !feature.id.startsWith('class-summary-'),
+  );
+  const otherFeatures = character.features.filter(
+    (feature) =>
+      !feature.id.startsWith('class-summary-') &&
+      !activeClassNames.has(normalizeClassCatalogKey(feature.source)),
+  );
+
   return (
     <>
       {embedded ? null : <SectionHeader icon={<PersonIcon />} title="Features & Traits" />}
@@ -3873,7 +3912,36 @@ function FeaturesScreen({
             Add Feature
           </Button>
         </Stack>
-        {character.features.map((feature) => (
+        {derivedClassFeatures.map((feature) => (
+          <FeatureBlock key={feature.id} feature={feature} />
+        ))}
+        {persistedClassFeatures.map((feature) => (
+          <SwipeRow key={feature.id} onDelete={() => onDeleteFeature(feature.id)}>
+            <Box
+              role="button"
+              tabIndex={0}
+              onClick={() => onEditFeature(feature)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onEditFeature(feature);
+                }
+              }}
+              sx={{ cursor: 'pointer' }}
+            >
+              <FeatureBlock
+                feature={feature}
+                onUpdateUses={
+                  feature.uses ? (used) => onUpdateFeatureUses(feature.id, used) : undefined
+                }
+              />
+            </Box>
+          </SwipeRow>
+        ))}
+        {otherFeatures.length ? (
+          <Typography sx={{ ...subSectionSx, mt: 2.4, mb: 1 }}>Other Features</Typography>
+        ) : null}
+        {otherFeatures.map((feature) => (
           <SwipeRow key={feature.id} onDelete={() => onDeleteFeature(feature.id)}>
             <Box
               role="button"
@@ -7733,9 +7801,13 @@ function ItemCatalogDialog({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
+  const [previewItem, setPreviewItem] = useState<ItemCatalogEntry | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
   useEffect(() => {
-    if (!open) setQuery('');
+    if (!open) {
+      setQuery('');
+      setPreviewItem(null);
+    }
   }, [open]);
 
   const filteredItems = items.filter((item) => {
@@ -7933,7 +8005,7 @@ function ItemCatalogDialog({
               key={`${item.category}-${item.name}-${item.source ?? ''}`}
               component="button"
               type="button"
-              onClick={() => onSelect(item)}
+              onClick={() => setPreviewItem(item)}
               sx={{
                 width: '100%',
                 minHeight: 94,
@@ -8014,6 +8086,173 @@ function ItemCatalogDialog({
           ))}
         </Box>
       </Box>
+      <ItemDetailsDialog
+        item={previewItem ? catalogItemToInventoryItem(previewItem) : null}
+        onClose={() => setPreviewItem(null)}
+        onAdd={
+          previewItem
+            ? () => {
+                onSelect(previewItem);
+                setPreviewItem(null);
+              }
+            : undefined
+        }
+      />
+    </Dialog>
+  );
+}
+
+function ItemDetailsDialog({
+  item,
+  onClose,
+  onAdd,
+}: {
+  item: InventoryItem | null;
+  onClose: () => void;
+  onAdd?: () => void;
+}) {
+  if (!item) return null;
+  const detailRows = [
+    { label: 'Category', value: item.category },
+    { label: 'Weight', value: item.weight },
+    { label: 'Quantity', value: item.quantity },
+    { label: 'Cost', value: item.cost },
+    ...(item.rarity ? [{ label: 'Rarity', value: item.rarity }] : []),
+    ...(typeof item.armorClassModifier === 'number'
+      ? [{ label: 'AC Modifier', value: formatModifier(item.armorClassModifier) }]
+      : []),
+    ...(item.damage ? [{ label: 'Damage', value: `${item.damage} ${item.damageType ?? ''}` }] : []),
+    ...(item.properties?.length
+      ? [{ label: 'Properties', value: item.properties.join(', ') }]
+      : []),
+    ...(item.source ? [{ label: 'Source', value: item.source }] : []),
+  ];
+
+  return (
+    <Dialog
+      open={Boolean(item)}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      sx={{
+        zIndex: 1900,
+        '& .MuiDialog-container': {
+          alignItems: { xs: 'flex-start', sm: 'center' },
+        },
+      }}
+      PaperProps={{
+        sx: {
+          width: { xs: '100%', sm: 430 },
+          height: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
+          mt: { xs: 'calc(env(safe-area-inset-top, 0px) + 78px)', sm: 0 },
+          mx: { xs: 0, sm: 2 },
+          borderRadius: { xs: '26px 26px 0 0', sm: '18px' },
+          border: `1px solid ${dndColors.border}`,
+          bgcolor: dndColors.panelSoft,
+          color: dndColors.text,
+          boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
+          overflow: 'hidden',
+        },
+      }}
+    >
+      <IconButton
+        aria-label="Close item details"
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          left: 16,
+          top: 16,
+          zIndex: 2,
+          width: 48,
+          height: 48,
+          borderRadius: '999px',
+          bgcolor: alpha('#000000', 0.28),
+          color: dndColors.text,
+          '&:hover': { bgcolor: alpha('#000000', 0.38) },
+        }}
+      >
+        <X size={30} />
+      </IconButton>
+      <DialogContent
+        sx={{
+          px: 2.2,
+          pt: 4.2,
+          pb: 3,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <Box sx={{ minHeight: 78, textAlign: 'center', px: 7 }}>
+          <Typography
+            sx={{ color: dndColors.text, fontSize: 19, fontWeight: 950, lineHeight: 1.1 }}
+          >
+            {item.name}
+          </Typography>
+          <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 850 }}>
+            {item.equipped ? 'Equipped' : 'Inventory Item'}
+          </Typography>
+        </Box>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={1.5}
+          sx={{ mt: 2.3 }}
+        >
+          <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
+            {item.category}
+            {item.rarity ? ` • ${item.rarity}` : ''}
+          </Typography>
+          {onAdd ? (
+            <Button
+              onClick={onAdd}
+              sx={{
+                minHeight: 32,
+                borderRadius: '999px',
+                px: 1.6,
+                flex: '0 0 auto',
+                bgcolor: dndColors.red,
+                color: '#ffffff',
+                fontSize: 13,
+                fontWeight: 950,
+                textTransform: 'none',
+                '&:hover': { bgcolor: dndColors.redDark },
+              }}
+            >
+              Add
+            </Button>
+          ) : null}
+        </Stack>
+        <DividerLine />
+        <Stack spacing={0.75}>
+          {detailRows.map((detail) => (
+            <Typography
+              key={detail.label}
+              sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
+            >
+              <Box component="span" sx={{ fontWeight: 950 }}>
+                {detail.label}:
+              </Box>{' '}
+              {detail.value}
+            </Typography>
+          ))}
+        </Stack>
+        {item.description ? (
+          <>
+            <DividerLine />
+            <Typography
+              sx={{
+                color: dndColors.text,
+                fontSize: 16,
+                lineHeight: 1.65,
+                whiteSpace: 'pre-line',
+              }}
+            >
+              {item.description}
+            </Typography>
+          </>
+        ) : null}
+      </DialogContent>
     </Dialog>
   );
 }
@@ -8565,6 +8804,7 @@ function DungeonsAndDragons() {
   const [itemCatalogOpen, setItemCatalogOpen] = useState(false);
   const [spellcastingForm, setSpellcastingForm] = useState<SpellcastingForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
+  const [itemDetails, setItemDetails] = useState<InventoryItem | null>(null);
   const [featureForm, setFeatureForm] = useState<FeatureForm | null>(null);
   const [featForm, setFeatForm] = useState<FeatForm | null>(null);
   const [abilityForm, setAbilityForm] = useState<AbilityForm | null>(null);
@@ -9360,6 +9600,7 @@ function DungeonsAndDragons() {
             character={character}
             onAddItem={addItem}
             onEditItem={(item) => setItemForm({ ...item })}
+            onViewItem={(item) => setItemDetails(item)}
             onDeleteItem={(id) => deleteById('inventory', id)}
             onEditMoney={() => setMoneyForm(createMoneyForm(character.money))}
             onToggleItemEquipped={toggleItemEquipped}
@@ -9496,6 +9737,19 @@ function DungeonsAndDragons() {
                 onSelectCharacterState={selectRemoteCharacter}
                 onEditLocalCharacter={editLocalCharacter}
                 selectCharacterEventName={DND_SELECT_CHARACTER_EVENT}
+                triggerSx={{
+                  bgcolor: alpha(dndColors.panelSoft, 0.86),
+                  border: `1px solid ${dndColors.borderSoft}`,
+                  color: dndColors.text,
+                  boxShadow: `inset 0 0 18px ${alpha('#000000', 0.12)}`,
+                  '&:hover': {
+                    bgcolor: dndColors.panelSoft,
+                  },
+                  '& .MuiAvatar-root': {
+                    bgcolor: dndColors.panelStrong,
+                    color: dndColors.text,
+                  },
+                }}
               />
             }
           />
@@ -9677,6 +9931,7 @@ function DungeonsAndDragons() {
           onSelect={addCatalogItemToCharacter}
           onClose={() => setItemCatalogOpen(false)}
         />
+        <ItemDetailsDialog item={itemDetails} onClose={() => setItemDetails(null)} />
         <ItemEditDialog
           open={itemForm !== null}
           form={itemForm}

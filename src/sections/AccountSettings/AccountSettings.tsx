@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react';
 
+import type { SxProps, Theme } from '@mui/material/styles';
+
 import { useSetAtom } from 'jotai';
 
 import AccountMenu from '@/components/account/AccountMenu';
@@ -43,6 +45,8 @@ type AccountSettingsProps = {
   onEditLocalCharacter?: (id: string) => void;
   /** App-specific event fired after selecting a character. */
   selectCharacterEventName?: string;
+  /** Optional trigger button override for host app chrome. */
+  triggerSx?: SxProps<Theme>;
 };
 
 /**
@@ -61,6 +65,7 @@ function AccountSettings({
   onSelectCharacterState,
   onEditLocalCharacter,
   selectCharacterEventName,
+  triggerSx,
 }: AccountSettingsProps) {
   const setGameSystem = useSetAtom(gameSystemAtom);
   const { isDarkMode, toggle } = useThemeMode();
@@ -95,6 +100,7 @@ function AccountSettings({
         onSelectCharacterState={onSelectCharacterState}
         onEditLocalCharacter={onEditLocalCharacter}
         selectCharacterEventName={selectCharacterEventName}
+        triggerSx={triggerSx}
       />
     </FabUTokensContext.Provider>
   );
