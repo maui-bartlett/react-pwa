@@ -1127,6 +1127,8 @@ function HeroHeader({
   homeAction: ReactNode;
   accountAction: ReactNode;
 }) {
+  const { themeMode } = useThemeMode();
+  const isLightMode = themeMode !== ThemeMode.DARK;
   const hpPercent = Math.max(
     0,
     Math.min(100, (character.hitPoints.current / character.hitPoints.max) * 100),
@@ -1140,7 +1142,14 @@ function HeroHeader({
   };
 
   return (
-    <Box sx={{ bgcolor: dndColors.chrome, px: { xs: 1.35, sm: 1.8 }, pt: 2.4, pb: 2 }}>
+    <Box
+      sx={{
+        bgcolor: isLightMode ? alpha('#000000', 0.08) : dndColors.chrome,
+        px: { xs: 1.35, sm: 1.8 },
+        pt: 2.4,
+        pb: 2,
+      }}
+    >
       <Box
         sx={{
           mt: 5.4,
@@ -1589,7 +1598,7 @@ function HitPointsButton({
         <Typography
           sx={{
             color: dndColors.text,
-            fontSize: { xs: 11, sm: 12 },
+            fontSize: { xs: 12, sm: 13 },
             fontWeight: 900,
             lineHeight: 1,
             textAlign: 'left',
@@ -1600,7 +1609,7 @@ function HitPointsButton({
         <Typography
           sx={{
             color: dndColors.text,
-            fontSize: { xs: 13, sm: 15 },
+            fontSize: { xs: 14, sm: 16 },
             fontWeight: 900,
             lineHeight: 1,
             textAlign: 'right',
@@ -1638,6 +1647,9 @@ function DefenseBadge({
   onRoll?: () => void;
 }) {
   const isArmorClass = label === 'Armor Class';
+  const { themeMode } = useThemeMode();
+  const initiativeHighlight = themeMode === ThemeMode.DARK ? dndColors.red : '#e40712';
+  const initiativeHighlightDark = themeMode === ThemeMode.DARK ? dndColors.redDark : '#e40712';
   const badgeSize = compact ? { xs: 48, sm: 62 } : 68;
   const [rollFlashing, setRollFlashing] = useState(false);
   const rollFlashTimeout = useRef<number | null>(null);
@@ -1708,8 +1720,8 @@ function DefenseBadge({
                   shape === 'shield'
                     ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
                     : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
-                bgcolor: alpha(dndColors.red, 0.72),
-                boxShadow: `0 0 18px ${alpha(dndColors.red, 0.78)}, 0 0 34px ${alpha(dndColors.red, 0.5)}`,
+                bgcolor: alpha(initiativeHighlight, 0.72),
+                boxShadow: `0 0 18px ${alpha(initiativeHighlight, 0.78)}, 0 0 34px ${alpha(initiativeHighlight, 0.5)}`,
                 animation: `${initiativePulse} 980ms ease-out forwards`,
                 pointerEvents: 'none',
                 zIndex: 0,
@@ -1758,7 +1770,7 @@ function DefenseBadge({
                 borderColor: 'transparent',
                 bgcolor: 'transparent',
                 filter: rollFlashing
-                  ? `drop-shadow(0 0 6px ${alpha(dndColors.red, 0.95)}) drop-shadow(0 0 18px ${alpha(dndColors.red, 0.58)})`
+                  ? `drop-shadow(0 0 6px ${alpha(initiativeHighlight, 0.95)}) drop-shadow(0 0 18px ${alpha(initiativeHighlight, 0.58)})`
                   : `drop-shadow(0 0 5px ${alpha('#ffffff', 0.82)}) drop-shadow(0 0 14px ${alpha('#ffffff', 0.42)})`,
                 '&::before': {
                   content: '""',
@@ -1768,7 +1780,7 @@ function DefenseBadge({
                     shape === 'shield'
                       ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
                       : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
-                  bgcolor: rollFlashing ? alpha(dndColors.red, 0.96) : alpha('#ffffff', 0.98),
+                  bgcolor: rollFlashing ? alpha(initiativeHighlight, 0.96) : alpha('#ffffff', 0.98),
                 },
                 '&::after': {
                   content: '""',
@@ -1778,7 +1790,7 @@ function DefenseBadge({
                     shape === 'shield'
                       ? 'polygon(14% 18%, 50% 7%, 86% 18%, 80% 74%, 50% 95%, 20% 74%)'
                       : 'polygon(50% 5%, 92% 28%, 92% 72%, 50% 95%, 8% 72%, 8% 28%)',
-                  bgcolor: rollFlashing ? dndColors.redDark : dndColors.panelStrong,
+                  bgcolor: rollFlashing ? initiativeHighlightDark : dndColors.panelStrong,
                 },
                 '&:hover': {
                   filter: `brightness(1.1) drop-shadow(0 0 5px ${alpha('#ffffff', 0.74)}) drop-shadow(0 0 11px ${alpha('#ffffff', 0.38)})`,
@@ -2485,12 +2497,14 @@ function ActionsScreen({
   onDeleteAttack,
   onAddAttack,
   onEditAttack,
+  onViewAttack,
   onToggleAttackEquipped,
 }: {
   character: DndCharacter;
   onDeleteAttack: (id: string) => void;
   onAddAttack: () => void;
   onEditAttack: (attack: Attack) => void;
+  onViewAttack: (attack: Attack) => void;
   onToggleAttackEquipped: (id: string) => void;
 }) {
   return (
@@ -2515,7 +2529,11 @@ function ActionsScreen({
             onDelete={() => onDeleteAttack(attack.id)}
             onEdit={() => onEditAttack(attack)}
           >
-            <AttackRow attack={attack} onToggleEquipped={() => onToggleAttackEquipped(attack.id)} />
+            <AttackRow
+              attack={attack}
+              onToggleEquipped={() => onToggleAttackEquipped(attack.id)}
+              onView={() => onViewAttack(attack)}
+            />
           </SwipeRow>
         ))}
       </Box>
@@ -2523,10 +2541,28 @@ function ActionsScreen({
   );
 }
 
-function AttackRow({ attack, onToggleEquipped }: { attack: Attack; onToggleEquipped: () => void }) {
+function AttackRow({
+  attack,
+  onToggleEquipped,
+  onView,
+}: {
+  attack: Attack;
+  onToggleEquipped: () => void;
+  onView: () => void;
+}) {
   const equipped = Boolean(attack.equipped);
   return (
     <Box
+      role="button"
+      tabIndex={0}
+      aria-label={`View ${attack.name} details`}
+      onClick={onView}
+      onKeyDown={(event: ReactKeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onView();
+        }
+      }}
       sx={{
         display: 'grid',
         gridTemplateColumns: '34px 1fr 1fr 0.8fr',
@@ -2535,6 +2571,12 @@ function AttackRow({ attack, onToggleEquipped }: { attack: Attack; onToggleEquip
         py: 1.4,
         borderBottom: `1px solid ${dndColors.borderSoft}`,
         bgcolor: dndColors.page,
+        cursor: 'pointer',
+        outline: 'none',
+        '&:hover': { bgcolor: alpha(dndColors.panelSoft, 0.58) },
+        '&:focus-visible': {
+          boxShadow: `inset 0 0 0 2px ${alpha(dndColors.blue, 0.64)}`,
+        },
       }}
     >
       <IconButton
@@ -2635,12 +2677,20 @@ function RollBox({
       role={onRoll ? 'button' : undefined}
       tabIndex={onRoll ? 0 : undefined}
       aria-label={ariaLabel}
-      onClick={onRoll}
+      onClick={
+        onRoll
+          ? (event) => {
+              event.stopPropagation();
+              onRoll();
+            }
+          : undefined
+      }
       onKeyDown={
         onRoll
           ? (event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
+                event.stopPropagation();
                 onRoll();
               }
             }
@@ -3582,8 +3632,17 @@ function formatSpellSubtitle(spell: Spell) {
 }
 
 function getKnownSpellData(name: string) {
-  const normalized = name.trim().toLowerCase();
-  return dndSpellCatalog.find((spell) => spell.name.trim().toLowerCase() === normalized);
+  const normalized = normalizeDndLookupName(name);
+  return dndSpellCatalog.find((spell) => normalizeDndLookupName(spell.name) === normalized);
+}
+
+function normalizeDndLookupName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\+\d+\s*$/u, '')
+    .replace(/[^\w\s'-]/gu, '')
+    .replace(/\s+/gu, ' ');
 }
 
 function getSpellDescription(spell: Spell) {
@@ -4674,6 +4733,8 @@ function TabMenuDialog({
   onClose: () => void;
   onSelectTab: (tab: DndTab) => void;
 }) {
+  const { themeMode } = useThemeMode();
+  const isLightMode = themeMode !== ThemeMode.DARK;
   const selectTab = (tab: DndTab) => {
     onSelectTab(tab);
     onClose();
@@ -4705,9 +4766,9 @@ function TabMenuDialog({
               width: 54,
               height: 54,
               bgcolor: dndColors.panelStrong,
-              color: '#ffffff',
+              color: isLightMode ? '#303a40' : '#ffffff',
               boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
-              '&:hover': { bgcolor: '#05090b' },
+              '&:hover': { bgcolor: isLightMode ? dndColors.panelSoft : '#05090b' },
             }}
           >
             <X size={31} />
@@ -8804,6 +8865,7 @@ function DungeonsAndDragons() {
   const [itemCatalogOpen, setItemCatalogOpen] = useState(false);
   const [spellcastingForm, setSpellcastingForm] = useState<SpellcastingForm | null>(null);
   const [itemForm, setItemForm] = useState<ItemForm | null>(null);
+  const [spellDetails, setSpellDetails] = useState<Spell | null>(null);
   const [itemDetails, setItemDetails] = useState<InventoryItem | null>(null);
   const [featureForm, setFeatureForm] = useState<FeatureForm | null>(null);
   const [featForm, setFeatForm] = useState<FeatForm | null>(null);
@@ -9547,6 +9609,71 @@ function DungeonsAndDragons() {
     return true;
   };
 
+  const viewActionDetails = (attack: Attack) => {
+    const normalizedAttackName = normalizeDndLookupName(attack.name);
+    const matchingSpell =
+      character.spells.find(
+        (spell) => normalizeDndLookupName(spell.name) === normalizedAttackName,
+      ) ?? getKnownSpellData(attack.name);
+    const isSpellAction = /\b(cantrip|spell)\b/iu.test(attack.kind) || Boolean(matchingSpell);
+
+    if (isSpellAction) {
+      setSpellDetails(
+        matchingSpell
+          ? {
+              ...matchingSpell,
+              id: 'id' in matchingSpell ? matchingSpell.id : attack.id,
+              prepared:
+                'prepared' in matchingSpell && typeof matchingSpell.prepared === 'boolean'
+                  ? matchingSpell.prepared
+                  : false,
+            }
+          : {
+              id: attack.id,
+              name: attack.name,
+              level: /\bcantrip\b/iu.test(attack.kind) ? 'Cantrip' : 'Spell',
+              school: 'Unknown',
+              castingTime: '1 action',
+              range: attack.range,
+              hitDc: attack.hitDc,
+              damage: attack.damage,
+              effect: `${attack.damage} ${formatDamageTypeLabel(attack.damageType)}`,
+              description: 'No description has been recorded for this spell action yet.',
+              source: attack.kind,
+            },
+      );
+      return;
+    }
+
+    const matchingItemByExactName = character.inventory.find(
+      (item) => normalizeDndLookupName(item.name) === normalizedAttackName,
+    );
+    const attackNameTokens = new Set(
+      normalizedAttackName.split(' ').filter((token) => token.length > 2),
+    );
+    const matchingItemByTokens = character.inventory.find((item) => {
+      const itemName = normalizeDndLookupName(item.name);
+      const itemTokens = itemName.split(' ').filter((token) => token.length > 2);
+      return itemTokens.length > 0 && itemTokens.every((token) => attackNameTokens.has(token));
+    });
+    const matchingItem = matchingItemByExactName ?? matchingItemByTokens;
+
+    setItemDetails(
+      matchingItem ?? {
+        id: attack.id,
+        name: attack.name,
+        category: attack.kind || 'Action',
+        weight: '--',
+        quantity: '1',
+        cost: '--',
+        damage: attack.damage,
+        damageType: formatDamageTypeLabel(attack.damageType),
+        description: `Range: ${attack.range}. Hit/DC: ${attack.hitDc}. Damage: ${attack.damage} ${formatDamageTypeLabel(attack.damageType)}.`,
+        equipped: attack.equipped,
+      },
+    );
+  };
+
   const renderTabContent = (tab: DndTab) => {
     switch (tab) {
       case 'abilities':
@@ -9577,6 +9704,7 @@ function DungeonsAndDragons() {
             character={character}
             onAddAttack={addAttack}
             onEditAttack={(attack) => setAttackForm({ ...attack })}
+            onViewAttack={viewActionDetails}
             onDeleteAttack={(id) => deleteById('attacks', id)}
             onToggleAttackEquipped={toggleAttackEquipped}
           />
@@ -9931,6 +10059,7 @@ function DungeonsAndDragons() {
           onSelect={addCatalogItemToCharacter}
           onClose={() => setItemCatalogOpen(false)}
         />
+        <SpellDetailsDialog spell={spellDetails} onClose={() => setSpellDetails(null)} />
         <ItemDetailsDialog item={itemDetails} onClose={() => setItemDetails(null)} />
         <ItemEditDialog
           open={itemForm !== null}
