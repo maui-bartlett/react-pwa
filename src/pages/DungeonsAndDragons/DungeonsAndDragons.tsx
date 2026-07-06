@@ -31,7 +31,6 @@ import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import LinearProgress from '@mui/material/LinearProgress';
-import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, keyframes } from '@mui/material/styles';
@@ -5421,8 +5420,9 @@ function formatWizardList(values: string[] | undefined) {
 
 function formatWizardSkillChoices(skillChoices: DndClassInfo['skillChoices']) {
   if (!skillChoices) return 'No skill choice data is listed for this class.';
-  const choices =
-    Array.isArray(skillChoices.from) ? skillChoices.from.join(', ') : skillChoices.from;
+  const choices = Array.isArray(skillChoices.from)
+    ? skillChoices.from.join(', ')
+    : skillChoices.from;
   return `Choose ${skillChoices.choose ?? '?'} from ${choices ?? 'the listed class skills'}.`;
 }
 
@@ -5516,9 +5516,8 @@ function getWizardClassFeatureSchedule({
       return Boolean(normalizedSubclass) && featureSubclass === normalizedSubclass;
     })
     .map((feature) => {
-      const level = typeof feature.level === 'number' && Number.isFinite(feature.level)
-        ? feature.level
-        : null;
+      const level =
+        typeof feature.level === 'number' && Number.isFinite(feature.level) ? feature.level : null;
       return {
         id: `wizard-${classIndex}-${feature.metadata?.index ?? normalizeClassCatalogKey(feature.name)}`,
         name: feature.name,
@@ -7716,6 +7715,127 @@ function AttackEditDialog({
   );
 }
 
+function SpellCatalogFilterGroup({
+  title,
+  options,
+  selected,
+  allLabel,
+  onClear,
+  onToggle,
+}: {
+  title: string;
+  options: string[];
+  selected: string[];
+  allLabel: string;
+  onClear: () => void;
+  onToggle: (option: string) => void;
+}) {
+  return (
+    <Box sx={{ mt: 1.25 }}>
+      <Typography
+        sx={{
+          color: dndColors.muted,
+          fontSize: 12,
+          fontWeight: 950,
+          letterSpacing: 0.6,
+          textTransform: 'uppercase',
+          mb: 0.65,
+        }}
+      >
+        {title}
+      </Typography>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+          gap: 0.65,
+        }}
+      >
+        <Button
+          role="checkbox"
+          aria-checked={selected.length === 0}
+          onClick={onClear}
+          sx={{
+            minHeight: 42,
+            justifyContent: 'space-between',
+            gap: 1,
+            color: dndColors.text,
+            bgcolor: selected.length === 0 ? alpha('#9a6cff', 0.16) : alpha(dndColors.panel, 0.55),
+            border: `1px solid ${selected.length === 0 ? alpha('#9a6cff', 0.54) : dndColors.borderSoft}`,
+            borderRadius: '8px',
+            fontWeight: 850,
+            textTransform: 'none',
+            textAlign: 'left',
+            px: 1.1,
+            '&:hover': { bgcolor: alpha('#9a6cff', 0.2) },
+          }}
+        >
+          <Box component="span" sx={{ minWidth: 0 }}>
+            {allLabel}
+          </Box>
+          <Checkbox
+            checked={selected.length === 0}
+            onClick={(event) => event.stopPropagation()}
+            onChange={onClear}
+            sx={{
+              p: 0,
+              color: alpha(dndColors.text, 0.42),
+              '&.Mui-checked': { color: '#9a6cff' },
+            }}
+          />
+        </Button>
+        {options.map((option) => {
+          const checked = selected.includes(option);
+          return (
+            <Button
+              key={option}
+              role="checkbox"
+              aria-checked={checked}
+              onClick={() => onToggle(option)}
+              sx={{
+                minHeight: 42,
+                justifyContent: 'space-between',
+                gap: 1,
+                color: dndColors.text,
+                bgcolor: checked ? alpha('#9a6cff', 0.16) : alpha(dndColors.panel, 0.55),
+                border: `1px solid ${checked ? alpha('#9a6cff', 0.54) : dndColors.borderSoft}`,
+                borderRadius: '8px',
+                fontWeight: 850,
+                textTransform: 'none',
+                textAlign: 'left',
+                px: 1.1,
+                '&:hover': { bgcolor: alpha('#9a6cff', 0.2) },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {option}
+              </Box>
+              <Checkbox
+                checked={checked}
+                onClick={(event) => event.stopPropagation()}
+                onChange={() => onToggle(option)}
+                sx={{
+                  p: 0,
+                  color: alpha(dndColors.text, 0.42),
+                  '&.Mui-checked': { color: '#9a6cff' },
+                }}
+              />
+            </Button>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+}
+
 function SpellCatalogDialog({
   open,
   spells,
@@ -7735,31 +7855,41 @@ function SpellCatalogDialog({
 }) {
   const [query, setQuery] = useState('');
   const [schoolFilters, setSchoolFilters] = useState<string[]>([]);
-  const [schoolFilterOpen, setSchoolFilterOpen] = useState(false);
+  const [levelFilters, setLevelFilters] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [previewSpell, setPreviewSpell] = useState<SpellCatalogEntry | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
   useEffect(() => {
     if (!open) {
       setPreviewSpell(null);
-      setSchoolFilterOpen(false);
+      setFilterOpen(false);
     }
   }, [open]);
   const schoolOptions = Array.from(
     new Set(spells.map((spell) => spell.school.trim()).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b));
+  const levelOptions = Array.from(
+    new Set(spells.map((spell) => spell.level.trim()).filter(Boolean)),
+  ).sort((a, b) => {
+    const rankA = getSpellSlotRank(a) ?? (/\bcantrip\b/iu.test(a) ? 0 : 99);
+    const rankB = getSpellSlotRank(b) ?? (/\bcantrip\b/iu.test(b) ? 0 : 99);
+    if (rankA !== rankB) return rankA - rankB;
+    return a.localeCompare(b);
+  });
   const toggleSchoolFilter = (school: string) => {
     setSchoolFilters((current) =>
       current.includes(school) ? current.filter((entry) => entry !== school) : [...current, school],
     );
   };
-  const schoolFilterLabel =
-    schoolFilters.length === 0
-      ? 'All Schools'
-      : schoolFilters.length === 1
-        ? schoolFilters[0]
-        : `${schoolFilters.length} Schools`;
+  const toggleLevelFilter = (level: string) => {
+    setLevelFilters((current) =>
+      current.includes(level) ? current.filter((entry) => entry !== level) : [...current, level],
+    );
+  };
+  const activeFilterCount = schoolFilters.length + levelFilters.length;
   const filteredSpells = spells.filter((spell) => {
     if (schoolFilters.length > 0 && !schoolFilters.includes(spell.school)) return false;
+    if (levelFilters.length > 0 && !levelFilters.includes(spell.level)) return false;
     if (!normalizedQuery) return true;
     return [spell.name, spell.level, spell.school, spell.source]
       .filter(Boolean)
@@ -7933,115 +8063,157 @@ function SpellCatalogDialog({
             </Box>
             <Box
               sx={{
-                flex: '0 0 128px',
+                flex: '0 0 auto',
                 position: 'relative',
+                overflow: 'visible',
               }}
             >
               <Button
-                aria-expanded={schoolFilterOpen}
-                aria-haspopup="listbox"
-                onClick={() => setSchoolFilterOpen((current) => !current)}
-                endIcon={
+                aria-expanded={filterOpen}
+                aria-haspopup="dialog"
+                onClick={() => setFilterOpen((current) => !current)}
+                sx={{
+                  minWidth: 88,
+                  height: 55,
+                  borderRadius: '14px',
+                  bgcolor: '#3a2564',
+                  color: '#ffffff',
+                  fontSize: 15,
+                  fontWeight: 950,
+                  px: 1.35,
+                  gap: 0.65,
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: '#4b3180' },
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-grid',
+                    placeItems: 'center',
+                    width: 23,
+                    height: 23,
+                    position: 'relative',
+                    '&::before, &::after': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 3,
+                      right: 3,
+                      height: 2,
+                      borderRadius: '999px',
+                      bgcolor: '#ffffff',
+                    },
+                    '&::before': { top: 6 },
+                    '&::after': { bottom: 6 },
+                  }}
+                >
                   <Box
                     component="span"
                     sx={{
-                      display: 'block',
-                      width: 0,
-                      height: 0,
-                      borderLeft: '4px solid transparent',
-                      borderRight: '4px solid transparent',
-                      borderTop: `5px solid #9a6cff`,
+                      position: 'absolute',
+                      left: 3,
+                      right: 3,
+                      top: '50%',
+                      height: 2,
+                      borderRadius: '999px',
+                      bgcolor: '#ffffff',
+                      transform: 'translateY(-50%)',
                     }}
                   />
-                }
-                sx={{
-                  width: '100%',
-                  minWidth: 0,
-                  justifyContent: 'space-between',
-                  textTransform: 'none',
-                  px: 1.2,
-                  pr: 0.7,
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
-                  '& .MuiButton-endIcon': { ml: 0.6 },
-                }}
-              >
-                {schoolFilterLabel}
+                  <Box
+                    component="span"
+                    sx={{
+                      position: 'absolute',
+                      top: 3,
+                      left: 13,
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      bgcolor: '#ffffff',
+                    }}
+                  />
+                  <Box
+                    component="span"
+                    sx={{
+                      position: 'absolute',
+                      top: 9,
+                      left: 5,
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      bgcolor: '#ffffff',
+                    }}
+                  />
+                  <Box
+                    component="span"
+                    sx={{
+                      position: 'absolute',
+                      bottom: 3,
+                      left: 15,
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      bgcolor: '#ffffff',
+                    }}
+                  />
+                </Box>
+                Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
               </Button>
-              {schoolFilterOpen ? (
+              {filterOpen ? (
                 <Box
-                  role="listbox"
-                  aria-label="Filter spell schools"
+                  role="dialog"
+                  aria-label="Filter spells"
                   sx={{
                     position: 'absolute',
                     top: 'calc(100% + 8px)',
                     right: 0,
                     zIndex: 5,
-                    width: 226,
-                    maxHeight: 'calc(100dvh - 250px)',
+                    width: { xs: 'min(326px, calc(100vw - 38px))', sm: 360 },
+                    maxHeight: 'calc(100dvh - 238px)',
                     overflowY: 'auto',
                     bgcolor: dndColors.panelSoft,
                     color: dndColors.text,
                     border: `1px solid ${dndColors.borderSoft}`,
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     boxShadow: `0 18px 34px ${alpha('#000000', 0.45)}`,
-                    py: 0.5,
+                    p: 1.4,
                   }}
                 >
-                  <Button
-                    fullWidth
-                    role="option"
-                    aria-selected={schoolFilters.length === 0}
-                    onClick={() => setSchoolFilters([])}
-                    sx={{
-                      minHeight: 44,
-                      justifyContent: 'space-between',
-                      gap: 1,
-                      color: dndColors.text,
-                      fontWeight: 850,
-                      textTransform: 'none',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <ListItemText primary="All Schools" sx={{ m: 0, ml: '10px' }} />
-                    <Checkbox
-                      checked={schoolFilters.length === 0}
-                      sx={{
-                        p: 0.6,
-                        color: alpha(dndColors.text, 0.42),
-                        '&.Mui-checked': { color: '#9a6cff' },
-                      }}
-                    />
-                  </Button>
-                  {schoolOptions.map((school) => (
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography sx={{ fontSize: 18, fontWeight: 950 }}>Filters</Typography>
                     <Button
-                      key={school}
-                      fullWidth
-                      role="option"
-                      aria-selected={schoolFilters.includes(school)}
-                      onClick={() => toggleSchoolFilter(school)}
+                      disabled={activeFilterCount === 0}
+                      onClick={() => {
+                        setSchoolFilters([]);
+                        setLevelFilters([]);
+                      }}
                       sx={{
-                        minHeight: 44,
-                        justifyContent: 'space-between',
-                        gap: 1,
-                        color: dndColors.text,
-                        fontWeight: 850,
+                        minWidth: 0,
+                        color: activeFilterCount === 0 ? dndColors.muted : '#9a6cff',
+                        fontWeight: 900,
                         textTransform: 'none',
-                        textAlign: 'left',
+                        '&.Mui-disabled': { color: alpha(dndColors.muted, 0.58) },
                       }}
                     >
-                      <ListItemText primary={school} sx={{ m: 0, ml: '10px' }} />
-                      <Checkbox
-                        checked={schoolFilters.includes(school)}
-                        sx={{
-                          p: 0.6,
-                          color: alpha(dndColors.text, 0.42),
-                          '&.Mui-checked': { color: '#9a6cff' },
-                        }}
-                      />
+                      Clear
                     </Button>
-                  ))}
+                  </Stack>
+                  <SpellCatalogFilterGroup
+                    title="School of Magic"
+                    options={schoolOptions}
+                    selected={schoolFilters}
+                    allLabel="All Schools"
+                    onClear={() => setSchoolFilters([])}
+                    onToggle={toggleSchoolFilter}
+                  />
+                  <SpellCatalogFilterGroup
+                    title="Spell Level"
+                    options={levelOptions}
+                    selected={levelFilters}
+                    allLabel="All Levels"
+                    onClear={() => setLevelFilters([])}
+                    onToggle={toggleLevelFilter}
+                  />
                 </Box>
               ) : null}
             </Box>
