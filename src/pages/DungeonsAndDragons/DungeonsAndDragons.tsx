@@ -4835,7 +4835,7 @@ function AppMenu({ activeTab, onChange }: { activeTab: DndTab; onChange: (tab: D
               textTransform: 'none',
               fontSize: 18,
               fontWeight: 900,
-              '& .MuiButton-startIcon': { color: selected ? '#ffffff' : dndColors.muted },
+              '& .MuiButton-startIcon': { color: selected ? dndColors.red : dndColors.muted },
               '&:hover': { bgcolor: '#243640' },
             }}
           >
@@ -4932,7 +4932,7 @@ function TabMenuDialog({
                   fontSize: 18,
                   fontWeight: 900,
                   '& .MuiButton-startIcon': {
-                    color: selected ? '#ffffff' : dndColors.muted,
+                    color: selected ? dndColors.red : dndColors.muted,
                     mr: 1.5,
                     '& svg': { fontSize: 23 },
                   },
@@ -9486,11 +9486,15 @@ function DungeonsAndDragons() {
   const dndFeatRows = (dndCatalogItems ?? [])
     .filter((entry) => entry.metadata?.type === 'feat' || entry.type === 'feat')
     .filter((entry): entry is FeatCatalogEntry => asNonEmptyString(entry.name) !== null);
-  const dndFeatOptions = [
-    ...(dndFeatRows.length > 0
-      ? dndFeatRows
-      : (DUNGEONS_AND_DRAGONS_FEATS as unknown as FeatCatalogEntry[])),
-  ].sort((a, b) => a.name.localeCompare(b.name));
+  const dndFeatOptions = Array.from(
+    [...dndFeatRows, ...(DUNGEONS_AND_DRAGONS_FEATS as unknown as FeatCatalogEntry[])]
+      .reduce((entriesByName, feat) => {
+        const key = feat.name.trim().toLowerCase();
+        if (!entriesByName.has(key)) entriesByName.set(key, feat);
+        return entriesByName;
+      }, new Map<string, FeatCatalogEntry>())
+      .values(),
+  ).sort((a, b) => a.name.localeCompare(b.name));
   const dndFeatureRows = (dndCatalogItems ?? [])
     .filter((entry) => entry.metadata?.type === 'feature' || entry.type === 'feature')
     .filter((entry): entry is FeatureCatalogEntry => asNonEmptyString(entry.name) !== null);
