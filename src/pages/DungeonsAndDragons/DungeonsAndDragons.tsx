@@ -5457,12 +5457,154 @@ function MultilineFormField({
   );
 }
 
+function DndFormDialog({
+  title,
+  open,
+  children,
+  onCancel,
+  onSubmit,
+  submitLabel,
+  subtitle,
+  titleAction,
+  hideTitle = false,
+  submitDisabled = false,
+}: {
+  title: string;
+  open: boolean;
+  children: ReactNode;
+  onCancel: () => void;
+  onSubmit: () => void;
+  submitLabel: string;
+  subtitle?: string;
+  titleAction?: ReactNode;
+  hideTitle?: boolean;
+  submitDisabled?: boolean;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      fullWidth
+      maxWidth="xs"
+      sx={{
+        zIndex: 1900,
+        '& .MuiDialog-container': {
+          alignItems: { xs: 'flex-start', sm: 'center' },
+        },
+      }}
+      PaperProps={{
+        sx: {
+          width: { xs: '100%', sm: 430 },
+          maxHeight: { xs: 'calc(100dvh - 82px)', sm: 'min(760px, calc(100dvh - 40px))' },
+          mt: { xs: 'calc(env(safe-area-inset-top, 0px) + 78px)', sm: 0 },
+          mx: { xs: 0, sm: 2 },
+          borderRadius: { xs: '26px 26px 0 0', sm: '18px' },
+          border: `1px solid ${dndColors.border}`,
+          bgcolor: dndColors.panelSoft,
+          color: dndColors.text,
+          boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
+          overflow: 'hidden',
+        },
+      }}
+    >
+      <IconButton
+        aria-label={`Close ${title}`}
+        onClick={onCancel}
+        sx={{
+          position: 'absolute',
+          left: 16,
+          top: 16,
+          zIndex: 2,
+          width: 48,
+          height: 48,
+          borderRadius: '999px',
+          bgcolor: alpha('#000000', 0.28),
+          color: dndColors.text,
+          '&:hover': { bgcolor: alpha('#000000', 0.38) },
+        }}
+      >
+        <X size={30} />
+      </IconButton>
+      {titleAction ? (
+        <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 2 }}>{titleAction}</Box>
+      ) : null}
+      {hideTitle ? null : (
+        <Box sx={{ minHeight: 78, textAlign: 'center', px: titleAction ? 8 : 7, pt: 4.2 }}>
+          <Typography
+            component="h2"
+            sx={{ color: dndColors.text, fontSize: 19, fontWeight: 950, lineHeight: 1.1 }}
+          >
+            {title}
+          </Typography>
+          <Typography sx={{ color: dndColors.muted, fontSize: 13, fontWeight: 850 }}>
+            {subtitle ?? submitLabel}
+          </Typography>
+        </Box>
+      )}
+      <DialogContent
+        sx={{
+          px: 2.2,
+          pt: hideTitle ? 8.8 : 2,
+          pb: 2.4,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        <Stack spacing={1.2} sx={{ pt: 0.5 }}>
+          {children}
+        </Stack>
+      </DialogContent>
+      <DialogActions
+        sx={{
+          px: 2.2,
+          py: 1.6,
+          borderTop: `1px solid ${alpha(dndColors.border, 0.45)}`,
+          bgcolor: alpha('#000000', 0.1),
+        }}
+      >
+        <Button
+          onClick={onCancel}
+          sx={{
+            color: dndColors.text,
+            borderRadius: '999px',
+            px: 1.8,
+            textTransform: 'none',
+            fontWeight: 900,
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={onSubmit}
+          disabled={submitDisabled}
+          variant="contained"
+          sx={{
+            bgcolor: dndColors.red,
+            borderRadius: '999px',
+            px: 2.2,
+            textTransform: 'none',
+            fontWeight: 950,
+            '&:hover': { bgcolor: dndColors.redDark },
+            '&.Mui-disabled': {
+              bgcolor: alpha(dndColors.red, 0.28),
+              color: alpha('#ffffff', 0.42),
+            },
+          }}
+        >
+          {submitLabel}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 function DndEditDialog({
   title,
   open,
   children,
   onCancel,
   onSave,
+  subtitle,
   titleAction,
   hideTitle = false,
   saveDisabled = false,
@@ -5472,61 +5614,25 @@ function DndEditDialog({
   children: ReactNode;
   onCancel: () => void;
   onSave: () => void;
+  subtitle?: string;
   titleAction?: ReactNode;
   hideTitle?: boolean;
   saveDisabled?: boolean;
 }) {
   return (
-    <Dialog
+    <DndFormDialog
+      title={title}
       open={open}
-      onClose={onCancel}
-      fullWidth
-      maxWidth="xs"
-      PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
+      onCancel={onCancel}
+      onSubmit={onSave}
+      submitLabel="Save"
+      subtitle={subtitle ?? (title.toLowerCase().startsWith('create') ? 'Create' : 'Edit')}
+      titleAction={titleAction}
+      hideTitle={hideTitle}
+      submitDisabled={saveDisabled}
     >
-      {hideTitle ? null : (
-        <DialogTitle
-          sx={{
-            pr: titleAction ? 2 : undefined,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 1,
-            fontWeight: 900,
-          }}
-        >
-          <Box component="span" sx={{ minWidth: 0 }}>
-            {title}
-          </Box>
-          {titleAction}
-        </DialogTitle>
-      )}
-      <DialogContent sx={{ pt: hideTitle ? 2.5 : undefined }}>
-        <Stack spacing={1.2} sx={{ pt: 0.5 }}>
-          {children}
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onCancel} sx={{ color: dndColors.text }}>
-          Cancel
-        </Button>
-        <Button
-          onClick={onSave}
-          disabled={saveDisabled}
-          variant="contained"
-          sx={{
-            bgcolor: dndColors.red,
-            '&:hover': { bgcolor: dndColors.redDark },
-            '&.Mui-disabled': {
-              bgcolor: alpha(dndColors.red, 0.28),
-              color: alpha('#ffffff', 0.42),
-            },
-          }}
-        >
-          Save
-        </Button>
-      </DialogActions>
-    </Dialog>
+      {children}
+    </DndFormDialog>
   );
 }
 
@@ -7003,110 +7109,93 @@ function CharacterBuilderDialog({
   const resolvedClassOptions =
     classOptions.length > 0 ? classOptions : [form.className || 'Fighter'];
   return (
-    <Dialog
+    <DndFormDialog
+      title="Guided Character Creation"
       open={open}
-      onClose={onCancel}
-      fullWidth
-      maxWidth="xs"
-      PaperProps={{ sx: { bgcolor: dndColors.panelSoft, color: dndColors.text } }}
+      onCancel={onCancel}
+      onSubmit={onCreate}
+      submitLabel="Create"
     >
-      <DialogTitle sx={{ fontWeight: 900 }}>Guided Character Creation</DialogTitle>
-      <DialogContent>
-        <Stack spacing={1.2} sx={{ pt: 0.5 }}>
-          <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
-          <Stack direction="row" spacing={1}>
-            <FormField
-              label="Species"
-              value={form.species}
-              onChange={(value) => setField('species', value)}
-            />
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, mb: 0.4 }}>
-                CLASS
-              </Typography>
-              <Box
-                component="select"
-                value={form.className}
-                onChange={(event) => setField('className', event.target.value)}
-                sx={{
-                  width: '100%',
-                  minHeight: 42,
-                  border: `1px solid ${dndColors.border}`,
-                  borderRadius: '6px',
-                  bgcolor: dndColors.panelStrong,
-                  color: dndColors.text,
-                  px: 1,
-                  font: 'inherit',
-                  fontWeight: 800,
-                }}
-              >
-                {resolvedClassOptions.map((className) => (
-                  <option key={className} value={className}>
-                    {className}
-                  </option>
-                ))}
-              </Box>
-            </Box>
-          </Stack>
-          <Stack direction="row" spacing={1}>
-            <FormField
-              label="Background"
-              value={form.background}
-              onChange={(value) => setField('background', value)}
-            />
-            <FormField
-              label="Alignment"
-              value={form.alignment}
-              onChange={(value) => setField('alignment', value)}
-            />
-          </Stack>
-          <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
-            Ability Scores
+      <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
+      <Stack direction="row" spacing={1}>
+        <FormField
+          label="Species"
+          value={form.species}
+          onChange={(value) => setField('species', value)}
+        />
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ color: dndColors.muted, fontSize: 11, fontWeight: 900, mb: 0.4 }}>
+            CLASS
           </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
-            {abilityKeys.map((ability) => (
-              <FormField
-                key={ability}
-                label={ability.toUpperCase()}
-                value={form[ability]}
-                inputMode="numeric"
-                onChange={(value) => setField(ability, value)}
-              />
+          <Box
+            component="select"
+            value={form.className}
+            onChange={(event) => setField('className', event.target.value)}
+            sx={{
+              width: '100%',
+              minHeight: 42,
+              border: `1px solid ${dndColors.border}`,
+              borderRadius: '6px',
+              bgcolor: dndColors.panelStrong,
+              color: dndColors.text,
+              px: 1,
+              font: 'inherit',
+              fontWeight: 800,
+            }}
+          >
+            {resolvedClassOptions.map((className) => (
+              <option key={className} value={className}>
+                {className}
+              </option>
             ))}
           </Box>
-          <MultilineFormField
-            label="Proficiencies"
-            value={form.proficiencies}
-            minRows={3}
-            onChange={(value) => setField('proficiencies', value)}
+        </Box>
+      </Stack>
+      <Stack direction="row" spacing={1}>
+        <FormField
+          label="Background"
+          value={form.background}
+          onChange={(value) => setField('background', value)}
+        />
+        <FormField
+          label="Alignment"
+          value={form.alignment}
+          onChange={(value) => setField('alignment', value)}
+        />
+      </Stack>
+      <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
+        Ability Scores
+      </Typography>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+        {abilityKeys.map((ability) => (
+          <FormField
+            key={ability}
+            label={ability.toUpperCase()}
+            value={form[ability]}
+            inputMode="numeric"
+            onChange={(value) => setField(ability, value)}
           />
-          <MultilineFormField
-            label="Equipment"
-            value={form.equipment}
-            minRows={3}
-            onChange={(value) => setField('equipment', value)}
-          />
-          <MultilineFormField
-            label="Spells"
-            value={form.spells}
-            minRows={3}
-            onChange={(value) => setField('spells', value)}
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onCancel} sx={{ color: dndColors.text }}>
-          Cancel
-        </Button>
-        <Button
-          onClick={onCreate}
-          variant="contained"
-          sx={{ bgcolor: dndColors.red, '&:hover': { bgcolor: dndColors.redDark } }}
-        >
-          Create
-        </Button>
-      </DialogActions>
-    </Dialog>
+        ))}
+      </Box>
+      <MultilineFormField
+        label="Proficiencies"
+        value={form.proficiencies}
+        minRows={3}
+        onChange={(value) => setField('proficiencies', value)}
+      />
+      <MultilineFormField
+        label="Equipment"
+        value={form.equipment}
+        minRows={3}
+        onChange={(value) => setField('equipment', value)}
+      />
+      <MultilineFormField
+        label="Spells"
+        value={form.spells}
+        minRows={3}
+        onChange={(value) => setField('spells', value)}
+      />
+    </DndFormDialog>
   );
 }
 
@@ -8088,12 +8177,14 @@ function parseSpellSlots(value: string, currentSlots: DndCharacter['spellcasting
 function AttackEditDialog({
   open,
   form,
+  title = 'Edit Attack',
   onChange,
   onCancel,
   onSave,
 }: {
   open: boolean;
   form: AttackForm | null;
+  title?: string;
   onChange: (form: AttackForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -8101,7 +8192,7 @@ function AttackEditDialog({
   if (!form) return null;
   const setField = (key: keyof AttackForm, value: string) => onChange({ ...form, [key]: value });
   return (
-    <DndEditDialog title="Edit Attack" open={open} onCancel={onCancel} onSave={onSave}>
+    <DndEditDialog title={title} open={open} onCancel={onCancel} onSave={onSave}>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <FormField label="Kind" value={form.kind} onChange={(value) => setField('kind', value)} />
       <Stack direction="row" spacing={1}>
@@ -9411,6 +9502,7 @@ function FeatDetailsDialog({
 function SpellEditDialog({
   open,
   form,
+  title = 'Edit Spell',
   spellCatalog,
   canSelectCatalogSpell,
   onChange,
@@ -9419,6 +9511,7 @@ function SpellEditDialog({
 }: {
   open: boolean;
   form: SpellForm | null;
+  title?: string;
   spellCatalog: SpellCatalogEntry[];
   canSelectCatalogSpell?: (spell: SpellCatalogEntry) => boolean;
   onChange: (form: SpellForm) => void;
@@ -9458,7 +9551,7 @@ function SpellEditDialog({
   };
   return (
     <>
-      <DndEditDialog title="Edit Spell" open={open} onCancel={onCancel} onSave={onSave}>
+      <DndEditDialog title={title} open={open} onCancel={onCancel} onSave={onSave}>
         <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
           Spell Catalog
         </Typography>
@@ -9705,6 +9798,7 @@ function ItemEditDialog({
 function FeatureEditDialog({
   open,
   form,
+  title = 'Edit Feature',
   onChange,
   onCancel,
   onSave,
@@ -9712,6 +9806,7 @@ function FeatureEditDialog({
 }: {
   open: boolean;
   form: FeatureForm | null;
+  title?: string;
   onChange: (form: FeatureForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -9735,7 +9830,7 @@ function FeatureEditDialog({
 
   return (
     <DndEditDialog
-      title="Edit Feature"
+      title={title}
       open={open}
       onCancel={onCancel}
       onSave={onSave}
@@ -9813,12 +9908,14 @@ function FeatureEditDialog({
 function FeatEditDialog({
   open,
   form,
+  title = 'Edit Feat',
   onChange,
   onCancel,
   onSave,
 }: {
   open: boolean;
   form: FeatForm | null;
+  title?: string;
   onChange: (form: FeatForm) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -9826,7 +9923,7 @@ function FeatEditDialog({
   if (!form) return null;
   const setField = (key: keyof FeatForm, value: string) => onChange({ ...form, [key]: value });
   return (
-    <DndEditDialog title="Edit Feat" open={open} onCancel={onCancel} onSave={onSave}>
+    <DndEditDialog title={title} open={open} onCancel={onCancel} onSave={onSave}>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
       <MultilineFormField
         label="Summary"
@@ -11204,6 +11301,11 @@ function DungeonsAndDragons() {
         <AttackEditDialog
           open={attackForm !== null}
           form={attackForm}
+          title={
+            character.attacks.some((attack) => attack.id === attackForm?.id)
+              ? 'Edit Attack'
+              : 'Create Attack'
+          }
           onChange={setAttackForm}
           onCancel={() => setAttackForm(null)}
           onSave={saveAttack}
@@ -11211,6 +11313,11 @@ function DungeonsAndDragons() {
         <SpellEditDialog
           open={spellForm !== null}
           form={spellForm}
+          title={
+            character.spells.some((spell) => spell.id === spellForm?.id)
+              ? 'Edit Spell'
+              : 'Create Spell'
+          }
           spellCatalog={spellCatalogOptions}
           canSelectCatalogSpell={(spell) =>
             characterCanAddSpellForSlots(spell, character.spellcasting.slots)
@@ -11298,6 +11405,11 @@ function DungeonsAndDragons() {
         <FeatureEditDialog
           open={featureForm !== null}
           form={featureForm}
+          title={
+            character.features.some((feature) => feature.id === featureForm?.id)
+              ? 'Edit Feature'
+              : 'Create Feature'
+          }
           onChange={setFeatureForm}
           onCancel={() => setFeatureForm(null)}
           onSave={saveFeature}
@@ -11316,6 +11428,9 @@ function DungeonsAndDragons() {
         <FeatEditDialog
           open={featForm !== null}
           form={featForm}
+          title={
+            character.feats.some((feat) => feat.id === featForm?.id) ? 'Edit Feat' : 'Create Feat'
+          }
           onChange={setFeatForm}
           onCancel={() => setFeatForm(null)}
           onSave={saveFeat}
