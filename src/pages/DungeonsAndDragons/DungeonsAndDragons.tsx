@@ -581,11 +581,29 @@ function catalogItemToInventoryItem(item: ItemCatalogEntry): InventoryItem {
 }
 
 function catalogFeatToFeat(feat: FeatCatalogEntry): Feat {
+  const uses = feat.uses ?? getDefaultFeatUses(feat.name);
+
   return {
     id: createEntryId('feat'),
     name: feat.name,
     summary: feat.summary,
+    ...(uses ? { uses: { ...uses } } : {}),
   };
+}
+
+function getDefaultFeatUses(featName: string): Feat['uses'] | undefined {
+  switch (normalizeDndLookupName(featName)) {
+    case 'lucky':
+      return { label: 'Luck Points', used: 0, max: 3, reset: 'Long Rest' };
+    case 'magic initiate':
+      return { label: 'Free Casting', used: 0, max: 1, reset: 'Long Rest' };
+    case 'martial adept':
+      return { label: 'Superiority Die', used: 0, max: 1, reset: 'Short or Long Rest' };
+    case 'boon of fate':
+      return { label: 'Improve Fate', used: 0, max: 1, reset: 'Initiative, Short or Long Rest' };
+    default:
+      return undefined;
+  }
 }
 
 function catalogFeatureToFeature(feature: FeatureCatalogEntry): Feature {
@@ -951,7 +969,10 @@ function createDndCharacter() {
       ...entry,
       uses: entry.uses ? { ...entry.uses } : undefined,
     })),
-    feats: initialDndCharacter.feats.map((entry) => ({ ...entry })),
+    feats: initialDndCharacter.feats.map((entry) => ({
+      ...entry,
+      uses: entry.uses ? { ...entry.uses } : undefined,
+    })),
     proficiencies: [...initialDndCharacter.proficiencies],
     languages: [...initialDndCharacter.languages],
     personality: { ...initialDndCharacter.personality },
@@ -4338,6 +4359,7 @@ function FeaturesScreen({
   onEditProficiencies,
   onDeleteFeature,
   onUpdateFeatureUses,
+  onUpdateFeatUses,
   embedded = false,
 }: {
   character: DndCharacter;
@@ -4350,6 +4372,7 @@ function FeaturesScreen({
   onEditProficiencies: () => void;
   onDeleteFeature: (id: string) => void;
   onUpdateFeatureUses: (id: string, used: number) => void;
+  onUpdateFeatUses: (id: string, used: number) => void;
   embedded?: boolean;
 }) {
   const [featureDetails, setFeatureDetails] = useState<{
@@ -4499,7 +4522,14 @@ function FeaturesScreen({
               sx={{ cursor: 'pointer' }}
             >
               <FeatureBlock
-                feature={{ id: feat.id, name: feat.name, source: 'Feat', summary: feat.summary }}
+                feature={{
+                  id: feat.id,
+                  name: feat.name,
+                  source: 'Feat',
+                  summary: feat.summary,
+                  uses: feat.uses,
+                }}
+                onUpdateUses={feat.uses ? (used) => onUpdateFeatUses(feat.id, used) : undefined}
               />
             </Box>
           </SwipeRow>
@@ -4884,7 +4914,17 @@ function BackgroundScreen({
     <>
       {embedded ? null : <SectionHeader icon={<PersonIcon />} title="Background" mode="list" />}
       <Box sx={{ px: embedded ? 0 : 1.6, pb: embedded ? 0 : 12 }}>
-        <DndCard title={character.background} sx={{ p: 1.6 }}>
+        <DndCard
+          title={character.background}
+          sx={{
+            p: 1.6,
+            '& > .MuiTypography-root:first-of-type': {
+              pl: 0,
+              ml: 0,
+              textAlign: 'left',
+            },
+          }}
+        >
           <Button onClick={onEditBackground} sx={{ ...inlineEditButtonSx, mb: 1 }}>
             Edit Background
           </Button>
@@ -5504,6 +5544,8 @@ function DndFormDialog({
           bgcolor: dndColors.panelSoft,
           color: dndColors.text,
           boxShadow: `0 18px 50px ${alpha('#000000', 0.46)}`,
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden',
         },
       }}
@@ -5547,6 +5589,7 @@ function DndFormDialog({
           px: 2.2,
           pt: hideTitle ? 8.8 : 2,
           pb: 2.4,
+          flex: 1,
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
         }}
@@ -5559,6 +5602,7 @@ function DndFormDialog({
         sx={{
           px: 2.2,
           py: 1.6,
+          flex: '0 0 auto',
           borderTop: `1px solid ${alpha(dndColors.border, 0.45)}`,
           bgcolor: alpha('#000000', 0.1),
         }}
@@ -9865,6 +9909,14 @@ function FeatDetailsDialog({
   onDelete?: () => void;
 }) {
   if (!feat) return null;
+  const detailRows = [
+    ...(feat.uses
+      ? [
+          { label: 'Uses', value: `${feat.uses.used} / ${feat.uses.max}` },
+          { label: 'Reset', value: feat.uses.reset },
+        ]
+      : []),
+  ];
 
   return (
     <DndDetailsDialog
@@ -9879,11 +9931,29 @@ function FeatDetailsDialog({
       deleteLabel="Delete feat"
       summary={
         <Typography sx={{ color: dndColors.text, fontSize: 16, minWidth: 0 }}>
-          Character Feat
+          {feat.uses ? 'Tracked Feat' : 'Character Feat'}
         </Typography>
       }
     >
       <DividerLine />
+      {detailRows.length > 0 ? (
+        <>
+          <Stack spacing={0.75}>
+            {detailRows.map((detail) => (
+              <Typography
+                key={detail.label}
+                sx={{ color: dndColors.text, fontSize: 15, lineHeight: 1.45 }}
+              >
+                <Box component="span" sx={{ fontWeight: 950 }}>
+                  {detail.label}:
+                </Box>{' '}
+                {detail.value}
+              </Typography>
+            ))}
+          </Stack>
+          <DividerLine />
+        </>
+      ) : null}
       <Typography
         sx={{ color: dndColors.text, fontSize: 16, lineHeight: 1.65, whiteSpace: 'pre-line' }}
       >
@@ -10315,7 +10385,19 @@ function FeatEditDialog({
   onSave: () => void;
 }) {
   if (!form) return null;
-  const setField = (key: keyof FeatForm, value: string) => onChange({ ...form, [key]: value });
+  const setField = (key: 'name' | 'summary', value: string) => onChange({ ...form, [key]: value });
+  const uses = form.uses;
+  const updateUses = (next: Partial<NonNullable<Feat['uses']>>) =>
+    onChange({
+      ...form,
+      uses: {
+        label: uses?.label ?? form.name,
+        used: uses?.used ?? 0,
+        max: uses?.max ?? 1,
+        reset: uses?.reset ?? 'Long Rest',
+        ...next,
+      },
+    });
   return (
     <DndEditDialog title={title} open={open} onCancel={onCancel} onSave={onSave}>
       <FormField label="Name" value={form.name} onChange={(value) => setField('name', value)} />
@@ -10325,6 +10407,54 @@ function FeatEditDialog({
         minRows={5}
         onChange={(value) => setField('summary', value)}
       />
+      <Button
+        onClick={() =>
+          onChange({
+            ...form,
+            uses: uses
+              ? undefined
+              : (getDefaultFeatUses(form.name) ?? {
+                  label: form.name,
+                  used: 0,
+                  max: 1,
+                  reset: 'Long Rest',
+                }),
+          })
+        }
+        sx={toggleButtonSx(Boolean(uses))}
+      >
+        {uses ? 'Tracks Uses' : 'No Use Tracking'}
+      </Button>
+      {uses ? (
+        <>
+          <FormField
+            label="Use Label"
+            value={uses.label}
+            onChange={(value) => updateUses({ label: value })}
+          />
+          <Stack direction="row" spacing={1}>
+            <FormField
+              label="Used"
+              value={String(uses.used)}
+              inputMode="numeric"
+              onChange={(value) => updateUses({ used: parseIntOrFallback(value, uses.used) })}
+            />
+            <FormField
+              label="Max"
+              value={String(uses.max)}
+              inputMode="numeric"
+              onChange={(value) =>
+                updateUses({ max: Math.max(1, parseIntOrFallback(value, uses.max)) })
+              }
+            />
+          </Stack>
+          <FormField
+            label="Reset"
+            value={uses.reset}
+            onChange={(value) => updateUses({ reset: value })}
+          />
+        </>
+      ) : null}
     </DndEditDialog>
   );
 }
@@ -10972,11 +11102,21 @@ function DungeonsAndDragons() {
 
   const saveFeat = () => {
     if (!featForm) return;
+    const normalizedFeat = {
+      ...featForm,
+      uses: featForm.uses
+        ? {
+            ...featForm.uses,
+            used: Math.max(0, Math.min(featForm.uses.max, featForm.uses.used)),
+            max: Math.max(1, featForm.uses.max),
+          }
+        : undefined,
+    };
     setCharacter((current) => ({
       ...current,
-      feats: current.feats.some((feat) => feat.id === featForm.id)
-        ? current.feats.map((feat) => (feat.id === featForm.id ? featForm : feat))
-        : [...current.feats, featForm],
+      feats: current.feats.some((feat) => feat.id === normalizedFeat.id)
+        ? current.feats.map((feat) => (feat.id === normalizedFeat.id ? normalizedFeat : feat))
+        : [...current.feats, normalizedFeat],
     }));
     setFeatForm(null);
   };
@@ -11225,6 +11365,22 @@ function DungeonsAndDragons() {
     }));
   };
 
+  const updateFeatUses = (id: string, nextUsed: number) => {
+    setCharacter((current) => ({
+      ...current,
+      feats: current.feats.map((feat) => {
+        if (feat.id !== id || !feat.uses) return feat;
+        return {
+          ...feat,
+          uses: {
+            ...feat.uses,
+            used: Math.min(feat.uses.max, Math.max(0, nextUsed)),
+          },
+        };
+      }),
+    }));
+  };
+
   const applyRest = (restType: RestType) => {
     setCharacter(applyDndRest(character, restType));
     setRestOpen(false);
@@ -11442,6 +11598,7 @@ function DungeonsAndDragons() {
               onEditProficiencies={() => setProficiencyForm(createProficiencyForm(character))}
               onDeleteFeature={(id) => deleteById('features', id)}
               onUpdateFeatureUses={updateFeatureUses}
+              onUpdateFeatUses={updateFeatUses}
               embedded
             />
           </MoreScreen>

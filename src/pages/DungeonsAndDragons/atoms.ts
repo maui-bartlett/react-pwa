@@ -102,6 +102,12 @@ type Feat = {
   id: string;
   name: string;
   summary: string;
+  uses?: {
+    label: string;
+    used: number;
+    max: number;
+    reset: string;
+  };
 };
 
 type Money = {
