@@ -2562,19 +2562,24 @@ function SkillDetailsDialog({ skill, onClose }: { skill: Skill | null; onClose: 
 
 function ActionsScreen({
   character,
+  classCatalogByName,
   onDeleteAttack,
   onAddAttack,
   onEditAttack,
   onViewAttack,
   onToggleAttackEquipped,
+  onUpdateFeatureUses,
 }: {
   character: DndCharacter;
+  classCatalogByName: Map<string, DndClassInfo>;
   onDeleteAttack: (id: string) => void;
   onAddAttack: () => void;
   onEditAttack: (attack: Attack) => void;
   onViewAttack: (attack: Attack) => void;
   onToggleAttackEquipped: (id: string) => void;
+  onUpdateFeatureUses: (id: string, used: number) => void;
 }) {
+  const featureActions = getDndFeatureActions(character, classCatalogByName);
   return (
     <>
       <SectionHeader icon={<Sword />} title="Actions" />
@@ -2604,8 +2609,314 @@ function ActionsScreen({
             />
           </SwipeRow>
         ))}
+        {featureActions.length > 0 ? (
+          <>
+            <Typography
+              sx={{
+                color: dndColors.text,
+                fontSize: 20,
+                fontWeight: 900,
+                mt: 2.4,
+                mb: 0.75,
+              }}
+            >
+              <Box component="span" sx={{ color: dndColors.blue }}>
+                FEATURE
+              </Box>{' '}
+              • Actions
+            </Typography>
+            <GridHeader columns="1fr 1fr 0.8fr" labels={['Timing', 'Check/DC', 'Effect']} />
+            {featureActions.map((featureAction) => (
+              <FeatureActionRow
+                key={featureAction.id}
+                featureAction={featureAction}
+                onUpdateUses={
+                  featureAction.canUpdateUses
+                    ? (used) => onUpdateFeatureUses(featureAction.feature.id, used)
+                    : undefined
+                }
+              />
+            ))}
+          </>
+        ) : null}
       </Box>
     </>
+  );
+}
+
+type DndFeatureAction = {
+  id: string;
+  feature: Feature;
+  timing: string;
+  checkDc: string;
+  effect: string;
+  canUpdateUses: boolean;
+  rollExpression?: string;
+};
+
+function getDndFeatureActions(
+  character: DndCharacter,
+  classCatalogByName: Map<string, DndClassInfo>,
+): DndFeatureAction[] {
+  return getDndActionCandidateFeatures(character, classCatalogByName)
+    .map(({ feature, persisted }) => getDndFeatureAction(character, feature, persisted))
+    .filter((featureAction): featureAction is DndFeatureAction => featureAction !== null);
+}
+
+function getDndActionCandidateFeatures(
+  character: DndCharacter,
+  classCatalogByName: Map<string, DndClassInfo>,
+) {
+  const featuresByKey = new Map<string, { feature: Feature; persisted: boolean }>();
+  const addFeature = (feature: Feature, persisted: boolean) => {
+    const key = `${normalizeDndLookupName(feature.source)}:${normalizeDndLookupName(feature.name)}`;
+    if (!featuresByKey.has(key)) featuresByKey.set(key, { feature, persisted });
+  };
+  character.features.forEach((feature) => addFeature(feature, true));
+  deriveDndClassFields({
+    classes: character.classes,
+    catalogByName: classCatalogByName,
+    currentHitDicePools: character.hitPoints.hitDicePools,
+  }).features.forEach((feature) => addFeature(feature, false));
+  return Array.from(featuresByKey.values());
+}
+
+function getDndFeatureAction(
+  character: DndCharacter,
+  feature: Feature,
+  persisted: boolean,
+): DndFeatureAction | null {
+  const name = normalizeDndLookupName(feature.name);
+  const summary = feature.summary.toLowerCase();
+  const source = feature.source.toLowerCase();
+
+  if (name.includes('sneak attack')) {
+    const dice = getSneakAttackDice(character);
+    return {
+      id: feature.id,
+      feature,
+      timing: 'On Hit',
+      checkDc: 'Weapon Hit',
+      effect: dice,
+      canUpdateUses: persisted,
+      rollExpression: dice,
+    };
+  }
+
+  if (name.includes('breath weapon')) {
+    const dice = getDragonbornBreathWeaponDice(character);
+    return {
+      id: feature.id,
+      feature,
+      timing: 'Action',
+      checkDc: `DC ${getDragonbornBreathWeaponDc(character)}`,
+      effect: dice,
+      canUpdateUses: persisted,
+      rollExpression: dice,
+    };
+  }
+
+  const timing = getFeatureActionTiming(name, summary);
+  if (!timing) return null;
+
+  return {
+    id: feature.id,
+    feature,
+    timing,
+    checkDc: getFeatureActionCheckDc(name, summary, source),
+    effect: getFeatureActionEffect(feature),
+    canUpdateUses: persisted,
+  };
+}
+
+function getFeatureActionTiming(name: string, summary: string) {
+  if (name.includes('cunning action') || summary.includes('bonus action')) return 'Bonus Action';
+  if (
+    name.includes('uncanny dodge') ||
+    name.includes('deflect missiles') ||
+    summary.includes('reaction')
+  ) {
+    return 'Reaction';
+  }
+  if (
+    name.includes('action surge') ||
+    name.includes('lay on hands') ||
+    name.includes('channel divinity') ||
+    name.includes('divine sense') ||
+    name.includes('wild shape') ||
+    name.includes('second wind') ||
+    name.includes('bardic inspiration') ||
+    name.includes('rage') ||
+    summary.includes('as an action') ||
+    summary.includes('use your action') ||
+    summary.includes('as a bonus action')
+  ) {
+    return summary.includes('bonus action') ||
+      name.includes('second wind') ||
+      name.includes('bardic inspiration') ||
+      name.includes('rage')
+      ? 'Bonus Action'
+      : 'Action';
+  }
+  return null;
+}
+
+function getFeatureActionCheckDc(name: string, summary: string, source: string) {
+  if (summary.includes('saving throw')) return 'Save';
+  if (name.includes('bardic inspiration')) return 'Ally Roll';
+  if (source.includes('paladin') && name.includes('lay on hands')) return 'Touch';
+  return '--';
+}
+
+function getFeatureActionEffect(feature: Feature) {
+  const summary = feature.summary.trim();
+  if (!summary) return 'Feature';
+  const firstSentence = summary.split(/(?<=[.!?])\s+/u)[0] ?? summary;
+  return firstSentence.length > 42 ? `${firstSentence.slice(0, 39).trim()}...` : firstSentence;
+}
+
+function getSneakAttackDice(character: DndCharacter) {
+  const rogueLevel = getCharacterClassLevel(character, 'rogue');
+  const diceCount = Math.max(1, Math.ceil(Math.max(1, rogueLevel) / 2));
+  return `${diceCount}d6`;
+}
+
+function getDragonbornBreathWeaponDice(character: DndCharacter) {
+  const level = getCharacterTotalLevel(character);
+  if (level >= 16) return '5d6';
+  if (level >= 11) return '4d6';
+  if (level >= 6) return '3d6';
+  return '2d6';
+}
+
+function getDragonbornBreathWeaponDc(character: DndCharacter) {
+  return 8 + character.proficiencyBonus + getAbilityModifier(character, 'con');
+}
+
+function getCharacterClassLevel(character: DndCharacter, className: string) {
+  const normalizedClassName = normalizeClassCatalogKey(className);
+  return character.classes
+    .filter((entry) => normalizeClassCatalogKey(entry.name) === normalizedClassName)
+    .reduce((sum, entry) => sum + Math.max(0, Number(entry.level) || 0), 0);
+}
+
+function getCharacterTotalLevel(character: DndCharacter) {
+  return character.classes.reduce((sum, entry) => sum + Math.max(0, Number(entry.level) || 0), 0);
+}
+
+function getAbilityModifier(character: DndCharacter, key: AbilityKey) {
+  const score = character.abilities.find((ability) => ability.key === key)?.score ?? 10;
+  return Math.floor((score - 10) / 2);
+}
+
+function FeatureActionRow({
+  featureAction,
+  onUpdateUses,
+}: {
+  featureAction: DndFeatureAction;
+  onUpdateUses?: (used: number) => void;
+}) {
+  const { feature } = featureAction;
+  const uses = feature.uses;
+  const canRoll = featureAction.rollExpression
+    ? parseDiceExpression(featureAction.rollExpression) !== null
+    : false;
+
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: '34px 1fr 1fr 0.8fr',
+        gap: 1,
+        alignItems: 'center',
+        py: 1.4,
+        borderBottom: `1px solid ${dndColors.borderSoft}`,
+        bgcolor: dndColors.page,
+      }}
+    >
+      <Box
+        sx={{
+          width: 34,
+          height: 34,
+          borderRadius: '6px',
+          border: `1px solid ${dndColors.border}`,
+          bgcolor: dndColors.panelStrong,
+          color: dndColors.red,
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        <AutoAwesomeIcon fontSize="small" />
+      </Box>
+      <Stack>
+        <Typography sx={{ color: dndColors.text, fontSize: 18, fontWeight: 800 }}>
+          {feature.name}
+        </Typography>
+        <Typography sx={{ color: dndColors.muted, fontSize: 12, fontWeight: 900 }}>
+          {feature.source.toUpperCase()}
+        </Typography>
+        <Typography sx={{ color: dndColors.text, fontSize: 17, fontWeight: 900, mt: 0.8 }}>
+          {featureAction.timing}
+        </Typography>
+        {uses ? (
+          <Stack direction="row" spacing={0.45} sx={{ mt: 0.75 }}>
+            {Array.from({ length: uses.max }).map((_, index) => (
+              <Box
+                component="button"
+                key={index}
+                type="button"
+                aria-label={`${feature.name}: set ${uses.label} used to ${index + 1} of ${uses.max}`}
+                aria-pressed={index < uses.used}
+                disabled={!onUpdateUses}
+                onClick={() => onUpdateUses?.(index + 1 === uses.used ? index : index + 1)}
+                sx={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: '4px',
+                  border: `2px solid ${dndColors.muted}`,
+                  bgcolor: index < uses.used ? dndColors.muted : 'transparent',
+                  cursor: onUpdateUses ? 'pointer' : 'default',
+                  p: 0,
+                }}
+              />
+            ))}
+          </Stack>
+        ) : null}
+      </Stack>
+      <Stack alignItems="center" spacing={0.35}>
+        <Typography
+          sx={{ color: dndColors.text, fontSize: 16, fontWeight: 900, textAlign: 'center' }}
+        >
+          {featureAction.checkDc}
+        </Typography>
+      </Stack>
+      <Stack alignItems="center" spacing={0}>
+        {canRoll && featureAction.rollExpression ? (
+          <Box sx={{ width: '100%', mb: '5px' }}>
+            <RollBox
+              ariaLabel={`Roll ${feature.name} effect`}
+              onRoll={() =>
+                rollDiceExpression(`${feature.name} Effect`, featureAction.rollExpression!)
+              }
+            >
+              {featureAction.effect}
+            </RollBox>
+          </Box>
+        ) : (
+          <Typography
+            sx={{
+              color: dndColors.text,
+              fontSize: 13,
+              fontWeight: 850,
+              lineHeight: 1.2,
+              textAlign: 'center',
+            }}
+          >
+            {featureAction.effect}
+          </Typography>
+        )}
+      </Stack>
+    </Box>
   );
 }
 
@@ -10567,11 +10878,13 @@ function DungeonsAndDragons() {
         return (
           <ActionsScreen
             character={character}
+            classCatalogByName={dndClassCatalogByName}
             onAddAttack={addAttack}
             onEditAttack={(attack) => setAttackForm({ ...attack })}
             onViewAttack={viewActionDetails}
             onDeleteAttack={(id) => deleteById('attacks', id)}
             onToggleAttackEquipped={toggleAttackEquipped}
+            onUpdateFeatureUses={updateFeatureUses}
           />
         );
       case 'spells':
