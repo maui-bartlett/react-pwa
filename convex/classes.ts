@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 
 import { internalMutation, query } from './_generated/server';
+import { FABULA_ULTIMA_MISSING_CLASSES } from './data/fabulaUltimaClasses';
 import { deriveTechniqueFatigue } from './lib/avatarTechniqueFatigue';
 
 const AVATAR_LEGENDS_GAME_SYSTEM = 'avatar-legends';
@@ -777,6 +778,66 @@ export const clearFabulaUltimaClasses = internalMutation({
     await Promise.all(existing.map((classDoc) => ctx.db.delete(classDoc._id)));
 
     return { deleted: existing.length };
+  },
+});
+
+/**
+ * Seed selectable Fabula Ultima classes that are exposed by the UI but absent
+ * from the original core class import. Idempotent — upserts by class name and
+ * preserves existing core class documents.
+ */
+export const seedFabulaUltimaMissingClasses = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db
+      .query('classes')
+      .withIndex('by_classMetaGameSystem', (q) =>
+        q.eq('class.meta.gameSystem', FABULA_ULTIMA_GAME_SYSTEM),
+      )
+      .collect();
+
+    const existingByName = new Map(
+      existing
+        .map((doc) => {
+          const classInfo = doc.class as { name?: unknown; className?: unknown };
+          const name =
+            typeof classInfo.name === 'string'
+              ? classInfo.name
+              : typeof classInfo.className === 'string'
+                ? classInfo.className
+                : null;
+          return name ? [name.toLowerCase(), doc] : null;
+        })
+        .filter((entry): entry is [string, (typeof existing)[number]] => entry !== null),
+    );
+
+    const now = Date.now();
+    let inserted = 0;
+    let updated = 0;
+    for (const classInfo of FABULA_ULTIMA_MISSING_CLASSES) {
+      const existingDoc = existingByName.get(classInfo.name.toLowerCase());
+      const nextClass = {
+        ...classInfo,
+        meta: { ...(classInfo.meta ?? {}), gameSystem: FABULA_ULTIMA_GAME_SYSTEM },
+        updatedAt: now,
+        ...(existingDoc ? {} : { createdAt: now }),
+      };
+
+      if (existingDoc) {
+        await ctx.db.patch(existingDoc._id, { class: nextClass });
+        updated += 1;
+      } else {
+        await ctx.db.insert('classes', { class: nextClass });
+        inserted += 1;
+      }
+    }
+
+    return {
+      inserted,
+      updated,
+      scannedExisting: existing.length,
+      seeded: FABULA_ULTIMA_MISSING_CLASSES.length,
+    };
   },
 });
 

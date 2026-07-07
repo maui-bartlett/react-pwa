@@ -18,6 +18,7 @@ import type * as data_dungeonsAndDragonsFeats from "../data/dungeonsAndDragonsFe
 import type * as data_dungeonsAndDragonsFeatures from "../data/dungeonsAndDragonsFeatures.js";
 import type * as data_dungeonsAndDragonsItems from "../data/dungeonsAndDragonsItems.js";
 import type * as data_dungeonsAndDragonsSpells from "../data/dungeonsAndDragonsSpells.js";
+import type * as data_fabulaUltimaClasses from "../data/fabulaUltimaClasses.js";
 import type * as data_fabulaUltimaItems from "../data/fabulaUltimaItems.js";
 import type * as data_openDndSpellCatalog from "../data/openDndSpellCatalog.js";
 import type * as gameSystems from "../gameSystems.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   "data/dungeonsAndDragonsFeatures": typeof data_dungeonsAndDragonsFeatures;
   "data/dungeonsAndDragonsItems": typeof data_dungeonsAndDragonsItems;
   "data/dungeonsAndDragonsSpells": typeof data_dungeonsAndDragonsSpells;
+  "data/fabulaUltimaClasses": typeof data_fabulaUltimaClasses;
   "data/fabulaUltimaItems": typeof data_fabulaUltimaItems;
   "data/openDndSpellCatalog": typeof data_openDndSpellCatalog;
   gameSystems: typeof gameSystems;
