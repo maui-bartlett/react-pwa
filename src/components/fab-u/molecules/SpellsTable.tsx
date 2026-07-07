@@ -741,6 +741,7 @@ function SpellsTable({
   const [editingSpell, setEditingSpell] = useState<EditingSpellState | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const nameSelectRef = useRef<HTMLSelectElement>(null);
+  const draftDurationSelectRef = useRef<HTMLSelectElement>(null);
   const originalSpellDataRef = useRef<SpellRow | null>(null);
   const availableSpellOptions = spellOptions.filter(
     (option) => !rows.some((row) => row.name === option.name),
@@ -1050,13 +1051,15 @@ function SpellsTable({
                 width: DURATION_COLUMN_WIDTH,
                 flexShrink: 0,
                 pl: 0,
-                pr: '10px',
+                pr: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
+                gap: 0.2,
               }}
             >
               <select
+                ref={draftDurationSelectRef}
                 value={draftSpell.duration}
                 onChange={(e) =>
                   setDraftSpell((d) =>
@@ -1073,12 +1076,24 @@ function SpellsTable({
                   fontFamily: 'inherit',
                   cursor: 'pointer',
                   minWidth: 0,
+                  flex: '1 1 auto',
                   colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}
               >
                 <option value="Instant">Instant</option>
                 <option value="Scene">Scene</option>
               </select>
+              <IconButton
+                size="small"
+                aria-label="Open duration options"
+                onClick={() => {
+                  draftDurationSelectRef.current?.focus();
+                  draftDurationSelectRef.current?.showPicker?.();
+                }}
+                sx={{ color: fabUTokens.color.textSecondary, p: 0, flexShrink: 0 }}
+              >
+                <KeyboardArrowDownIcon sx={{ fontSize: 15 }} />
+              </IconButton>
             </Box>
           </Box>
         )}
