@@ -3070,19 +3070,19 @@ function FabU() {
             aria-label="Edit character name"
             onClick={openNameEdit}
             sx={{
-              width: 27,
-              height: 27,
+              width: 30,
+              height: 30,
               flex: '0 0 auto',
-              borderRadius: '8px',
-              border: `1px solid ${alpha('#ffffff', 0.28)}`,
-              bgcolor: alpha('#ffffff', 0.12),
-              color: '#ffffff',
+              borderRadius: '50%',
+              border: `1px solid ${fabUTokens.color.border}`,
+              bgcolor: fabUTokens.color.surface,
+              color: fabUTokens.color.brand,
               '&:hover': {
-                bgcolor: alpha('#ffffff', 0.2),
+                bgcolor: fabUTokens.color.surfaceMuted,
               },
             }}
           >
-            <Pencil size={14} strokeWidth={2.2} />
+            <Pencil size={15} />
           </IconButton>
         </Stack>
       ) : (
@@ -3339,7 +3339,7 @@ function FabU() {
                 ['Last name', 'lastName'],
                 ['Nickname', 'nickName'],
               ] as const
-            ).map(([label, key], index) => (
+            ).map(([label, key]) => (
               <Stack key={key} spacing={0.25}>
                 <Typography
                   sx={{
@@ -3354,7 +3354,6 @@ function FabU() {
                 </Typography>
                 <InputBase
                   value={nameDraft[key] ?? ''}
-                  autoFocus={index === 0}
                   inputProps={{
                     'aria-label': `Character ${label.toLowerCase()}`,
                   }}
