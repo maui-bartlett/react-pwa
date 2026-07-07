@@ -1,6 +1,7 @@
 export { default as AccountMenu } from './AccountMenu';
 export { default as BondsCard } from './BondsCard';
 export { default as DetailListCard } from './DetailListCard';
+export { default as FabUCatalogPickerDialog } from './FabUCatalogPickerDialog';
 export { default as HpMpManagementModal } from './HpMpManagementModal';
 export type { HpMpKind } from './HpMpManagementModal';
 export { default as ItemPickerDialog } from './ItemPickerDialog';

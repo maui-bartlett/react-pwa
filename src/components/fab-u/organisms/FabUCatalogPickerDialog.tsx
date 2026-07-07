@@ -1,0 +1,252 @@
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
+import Box from '@mui/material/Box';
+import Dialog from '@mui/material/Dialog';
+import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
+
+import { Plus, Search, X } from 'lucide-react';
+
+import { useFabUTokens } from '../ThemeContext';
+
+type FabUCatalogPickerDialogProps<TEntry> = {
+  open: boolean;
+  title: string;
+  label: string;
+  searchPlaceholder: string;
+  customLabel: string;
+  entries: TEntry[];
+  getKey: (entry: TEntry) => string;
+  getSearchText: (entry: TEntry) => string[];
+  renderEntry: (entry: TEntry) => ReactNode;
+  onClose: () => void;
+  onSelect: (entry: TEntry) => void;
+  onCreateCustom: () => void;
+};
+
+function FabUCatalogPickerDialog<TEntry>({
+  open,
+  title,
+  label,
+  searchPlaceholder,
+  customLabel,
+  entries,
+  getKey,
+  getSearchText,
+  renderEntry,
+  onClose,
+  onSelect,
+  onCreateCustom,
+}: FabUCatalogPickerDialogProps<TEntry>) {
+  const fabUTokens = useFabUTokens();
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (open) setSearch('');
+  }, [open]);
+
+  const filteredEntries = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return entries.filter((entry) => {
+      if (!query) return true;
+      return getSearchText(entry).filter(Boolean).join(' ').toLowerCase().includes(query);
+    });
+  }, [entries, getSearchText, search]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      data-pw="fab-u-catalog-picker-dialog"
+      PaperProps={{
+        sx: {
+          bgcolor: fabUTokens.color.surface,
+          backgroundImage: fabUTokens.isDark
+            ? `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.84)} 0%, ${fabUTokens.color.surface} 38%)`
+            : `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 42%)`,
+          border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+          borderRadius: `${fabUTokens.radius.lg}px`,
+          boxShadow: fabUTokens.shadow.soft,
+          m: 1.5,
+          height: 'min(84vh, 680px)',
+          maxHeight: 'min(84vh, 680px)',
+          overflow: 'hidden',
+        },
+      }}
+      slotProps={{ backdrop: { sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 } } }}
+    >
+      <Stack sx={{ height: '100%', minHeight: 0 }}>
+        <Stack spacing={1.15} sx={{ p: 1.6, pb: 1, flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5}>
+            <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+              <Stack direction="row" spacing={0.65} alignItems="center">
+                <AutoAwesomeOutlinedIcon sx={{ fontSize: 17, color: fabUTokens.color.highlight }} />
+                <Typography
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: '1.02rem',
+                    lineHeight: 1.1,
+                    color: fabUTokens.color.textPrimary,
+                  }}
+                >
+                  {title}
+                </Typography>
+              </Stack>
+              <Typography
+                sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  color: fabUTokens.color.textSecondary,
+                }}
+              >
+                {label}
+              </Typography>
+            </Stack>
+            <Box
+              component="button"
+              type="button"
+              onClick={onClose}
+              data-pw="fab-u-catalog-picker-close"
+              aria-label={`Close ${title}`}
+              sx={{
+                background: 'none',
+                border: 'none',
+                p: 0.25,
+                cursor: 'pointer',
+                color: fabUTokens.color.textSecondary,
+                display: 'flex',
+                flexShrink: 0,
+              }}
+            >
+              <X size={21} />
+            </Box>
+          </Stack>
+
+          <Box
+            component="button"
+            type="button"
+            onClick={onCreateCustom}
+            data-pw="fab-u-catalog-custom"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.7,
+              width: '100%',
+              minHeight: 42,
+              border: `1px dashed ${fabUTokens.color.highlight}`,
+              borderRadius: `${fabUTokens.radius.sm}px`,
+              bgcolor: alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.1 : 0.07),
+              color: fabUTokens.color.highlight,
+              px: 1,
+              cursor: 'pointer',
+              font: 'inherit',
+              textAlign: 'left',
+            }}
+          >
+            <Plus size={17} />
+            <Typography sx={{ fontWeight: 900, fontSize: '0.82rem' }}>{customLabel}</Typography>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              border: `1px solid ${fabUTokens.color.border}`,
+              borderRadius: `${fabUTokens.radius.sm}px`,
+              bgcolor: fabUTokens.color.pillSurface,
+              px: 1,
+              py: 0.55,
+            }}
+          >
+            <Search size={16} color={fabUTokens.color.textSecondary} />
+            <InputBase
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={searchPlaceholder}
+              inputProps={{ 'data-pw': 'fab-u-catalog-search', 'aria-label': searchPlaceholder }}
+              sx={{
+                flex: 1,
+                fontSize: '0.86rem',
+                color: fabUTokens.color.textPrimary,
+                '& input::placeholder': { color: fabUTokens.color.textSecondary, opacity: 0.85 },
+              }}
+            />
+            {search ? (
+              <IconButton
+                size="small"
+                aria-label="Clear search"
+                onClick={() => setSearch('')}
+                sx={{ color: fabUTokens.color.textSecondary, p: 0.2 }}
+              >
+                <X size={15} />
+              </IconButton>
+            ) : null}
+          </Box>
+        </Stack>
+
+        <Stack
+          spacing={0.72}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            px: 1.5,
+            pb: 1.5,
+            overflowY: 'auto',
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+          }}
+        >
+          {filteredEntries.length === 0 ? (
+            <Typography sx={{ fontSize: '0.84rem', color: fabUTokens.color.textSecondary, py: 1 }}>
+              No matching options.
+            </Typography>
+          ) : (
+            filteredEntries.map((entry) => (
+              <Box
+                key={getKey(entry)}
+                component="button"
+                type="button"
+                onClick={() => {
+                  onSelect(entry);
+                  onClose();
+                }}
+                data-pw="fab-u-catalog-row"
+                sx={{
+                  textAlign: 'left',
+                  background: fabUTokens.color.pillSurface,
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: `${fabUTokens.radius.sm}px`,
+                  px: 1.1,
+                  py: 0.9,
+                  cursor: 'pointer',
+                  width: '100%',
+                  font: 'inherit',
+                  color: fabUTokens.color.textPrimary,
+                  boxShadow: fabUTokens.shadow.card,
+                  '&:hover': { borderColor: fabUTokens.color.highlight },
+                  '&:focus-visible': {
+                    outline: `2px solid ${fabUTokens.color.highlight}`,
+                    outlineOffset: 2,
+                  },
+                }}
+              >
+                {renderEntry(entry)}
+              </Box>
+            ))
+          )}
+        </Stack>
+      </Stack>
+    </Dialog>
+  );
+}
+
+export default FabUCatalogPickerDialog;

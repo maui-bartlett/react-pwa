@@ -6,19 +6,23 @@ import CheckIcon from '@mui/icons-material/Check';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
+import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { CheckCircle, Pencil, Trash2, XCircle } from 'lucide-react';
+import { CheckCircle, Pencil, Trash2, X, XCircle } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
 import { scaledEditableTextStyle } from '../editableText';
+import FabUCatalogPickerDialog from '../organisms/FabUCatalogPickerDialog';
 import { SkillRow } from '../types';
 
 const ACTION_WIDTH = 128;
@@ -50,6 +54,13 @@ type EditingSkillState = {
   originalName: string;
   name: string;
   level: string;
+};
+
+type CustomSkillDraft = {
+  name: string;
+  level: string;
+  effect: string;
+  description: string;
 };
 
 type SwipeableSkillRowProps = {
@@ -627,6 +638,15 @@ function SkillsTable({
     name: string;
     level: string;
   } | null>(null);
+  const [skillPickerOpen, setSkillPickerOpen] = useState(false);
+  const [customSkillOpen, setCustomSkillOpen] = useState(false);
+  const [customSkillDraft, setCustomSkillDraft] = useState<CustomSkillDraft>({
+    name: '',
+    level: '1',
+    effect: '',
+    description: '',
+  });
+  const [customSkillError, setCustomSkillError] = useState('');
   const [editingSkill, setEditingSkill] = useState<EditingSkillState | null>(null);
   const originalSkillDataRef = useRef<SkillRow | null>(null);
 
@@ -635,7 +655,8 @@ function SkillsTable({
     return sum + (isNaN(n) ? 0 : n);
   }, 0);
   const headingLabel = `${label ?? title} • ${tableTotal}/10`;
-  const showAddSkillButton = !!onAddSkill && tableTotal < 10 && !draftSkill;
+  const showAddSkillButton =
+    !!onAddSkill && tableTotal < 10 && !draftSkill && !skillPickerOpen && !customSkillOpen;
   const availableSkillOptions = skillOptions.filter(
     (option) => !rows.some((row) => row.name === option.name),
   );
@@ -687,6 +708,53 @@ function SkillsTable({
       description: selectedOption?.description,
     });
     setDraftSkill(null);
+  }
+
+  function openSkillPickerOrCustom() {
+    if (availableSkillOptions.length > 0) {
+      setSkillPickerOpen(true);
+      return;
+    }
+    openCustomSkill();
+  }
+
+  function addPickedSkill(skill: SkillRow) {
+    if (!onAddSkill) return;
+    onAddSkill({
+      ...skill,
+      level: '1',
+    });
+    setSkillPickerOpen(false);
+  }
+
+  function openCustomSkill() {
+    setSkillPickerOpen(false);
+    setCustomSkillDraft({
+      name: '',
+      level: '1',
+      effect: '',
+      description: '',
+    });
+    setCustomSkillError('');
+    setCustomSkillOpen(true);
+  }
+
+  function commitCustomSkill() {
+    if (!onAddSkill) return;
+    const name = customSkillDraft.name.trim() || 'Custom Skill';
+    if (rows.some((row) => row.name.trim().toLowerCase() === name.toLowerCase())) {
+      setCustomSkillError('A skill with this name already exists.');
+      return;
+    }
+    onAddSkill({
+      name,
+      level: customSkillDraft.level || '1',
+      maxLevel: DEFAULT_SKILL_MAX_LEVEL,
+      effect: customSkillDraft.effect.trim(),
+      description: customSkillDraft.description.trim() || undefined,
+    });
+    setCustomSkillOpen(false);
+    setCustomSkillError('');
   }
 
   function startEditingSkill(row: SkillRow) {
@@ -958,9 +1026,7 @@ function SkillsTable({
         {showAddSkillButton ? (
           <Box
             data-pw="add-skill-button"
-            onClick={() =>
-              setDraftSkill({ name: availableSkillOptions[0]?.name ?? '', level: '1' })
-            }
+            onClick={openSkillPickerOrCustom}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -983,6 +1049,261 @@ function SkillsTable({
           </Box>
         ) : null}
       </SurfaceCard>
+
+      <FabUCatalogPickerDialog
+        open={skillPickerOpen}
+        title="Choose Skill"
+        label={label ?? title}
+        searchPlaceholder="Search skills..."
+        customLabel="Custom Skill"
+        entries={[...availableSkillOptions].sort((a, b) => a.name.localeCompare(b.name))}
+        getKey={(skill) => skill.name}
+        getSearchText={(skill) => [
+          skill.name,
+          skill.level ?? '',
+          skill.effect,
+          skill.description ?? '',
+        ]}
+        renderEntry={(skill) => (
+          <Stack spacing={0.5}>
+            <Typography
+              sx={{
+                fontWeight: 900,
+                fontSize: '0.92rem',
+                lineHeight: 1.16,
+                color: fabUTokens.color.textPrimary,
+              }}
+            >
+              {skill.name}
+            </Typography>
+            <Stack direction="row" flexWrap="wrap" gap={0.55}>
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'baseline',
+                  gap: 0.35,
+                  border: `1px solid ${alpha(fabUTokens.color.highlight, 0.5)}`,
+                  borderRadius: '999px',
+                  px: 0.72,
+                  py: 0.18,
+                  bgcolor: alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.1 : 0.08),
+                }}
+              >
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: '0.58rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.055em',
+                    textTransform: 'uppercase',
+                    color: fabUTokens.color.highlight,
+                  }}
+                >
+                  Max
+                </Typography>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    color: fabUTokens.color.textPrimary,
+                  }}
+                >
+                  {skill.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL}
+                </Typography>
+              </Box>
+            </Stack>
+            {skill.effect ? (
+              <Typography
+                sx={{
+                  fontSize: '0.76rem',
+                  lineHeight: 1.38,
+                  color: fabUTokens.color.textSecondary,
+                }}
+              >
+                {skill.effect}
+              </Typography>
+            ) : null}
+            {skill.description ? (
+              <Typography
+                sx={{
+                  fontSize: '0.74rem',
+                  lineHeight: 1.36,
+                  color: fabUTokens.color.textSecondary,
+                  opacity: 0.86,
+                }}
+              >
+                {skill.description}
+              </Typography>
+            ) : null}
+          </Stack>
+        )}
+        onClose={() => setSkillPickerOpen(false)}
+        onSelect={addPickedSkill}
+        onCreateCustom={openCustomSkill}
+      />
+
+      <Dialog
+        open={customSkillOpen}
+        onClose={() => setCustomSkillOpen(false)}
+        fullWidth
+        maxWidth="xs"
+        data-pw="fab-u-custom-skill-dialog"
+        PaperProps={{
+          sx: {
+            bgcolor: fabUTokens.color.surface,
+            backgroundImage: 'none',
+            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+            borderRadius: `${fabUTokens.radius.lg}px`,
+            boxShadow: fabUTokens.shadow.soft,
+            m: 1.5,
+            p: 1.65,
+          },
+        }}
+        slotProps={{
+          backdrop: { sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 } },
+        }}
+      >
+        <Stack spacing={1.25}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5}>
+            <Typography sx={{ color: fabUTokens.color.textPrimary, fontWeight: 900 }}>
+              Custom Skill
+            </Typography>
+            <IconButton
+              aria-label="Close custom skill"
+              onClick={() => setCustomSkillOpen(false)}
+              sx={{ color: fabUTokens.color.textSecondary, p: 0.25 }}
+            >
+              <X size={20} />
+            </IconButton>
+          </Stack>
+          {[
+            ['Name', 'name', 'Skill name'],
+            ['Effect', 'effect', 'What does the skill do?'],
+          ].map(([fieldLabel, key, placeholder]) => (
+            <Stack key={key} spacing={0.35}>
+              <Typography
+                sx={{ fontSize: '0.68rem', fontWeight: 900, color: fabUTokens.color.highlight }}
+              >
+                {fieldLabel}
+              </Typography>
+              <InputBase
+                multiline={key === 'effect'}
+                minRows={key === 'effect' ? 2 : undefined}
+                value={customSkillDraft[key as 'name' | 'effect']}
+                onChange={(e) => {
+                  if (key === 'name') setCustomSkillError('');
+                  setCustomSkillDraft((draft) => ({ ...draft, [key]: e.target.value }));
+                }}
+                placeholder={placeholder}
+                sx={{
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: `${fabUTokens.radius.sm}px`,
+                  bgcolor: fabUTokens.color.pillSurface,
+                  color: fabUTokens.color.textPrimary,
+                  px: 1,
+                  py: key === 'effect' ? 0.7 : 0.35,
+                  fontSize: '0.86rem',
+                  alignItems: key === 'effect' ? 'flex-start' : 'center',
+                }}
+              />
+            </Stack>
+          ))}
+          {customSkillError ? (
+            <Typography sx={{ fontSize: '0.74rem', color: fabUTokens.color.danger }}>
+              {customSkillError}
+            </Typography>
+          ) : null}
+          <Stack spacing={0.35}>
+            <Typography
+              sx={{ fontSize: '0.68rem', fontWeight: 900, color: fabUTokens.color.highlight }}
+            >
+              Starting Level
+            </Typography>
+            <Box
+              component="select"
+              value={customSkillDraft.level}
+              onChange={(e) =>
+                setCustomSkillDraft((draft) => ({ ...draft, level: e.target.value }))
+              }
+              sx={{
+                border: `1px solid ${fabUTokens.color.border}`,
+                borderRadius: `${fabUTokens.radius.sm}px`,
+                bgcolor: fabUTokens.color.pillSurface,
+                color: fabUTokens.color.textPrimary,
+                px: 1,
+                py: 0.8,
+                font: 'inherit',
+                fontSize: '0.86rem',
+              }}
+            >
+              {Array.from(
+                { length: Math.min(DEFAULT_SKILL_MAX_LEVEL, Math.max(1, freeSkillLevels)) },
+                (_, i) => i + 1,
+              ).map((lvl) => (
+                <option key={lvl} value={String(lvl)}>
+                  {lvl}
+                </option>
+              ))}
+            </Box>
+          </Stack>
+          <Stack spacing={0.35}>
+            <Typography
+              sx={{ fontSize: '0.68rem', fontWeight: 900, color: fabUTokens.color.highlight }}
+            >
+              Description
+            </Typography>
+            <InputBase
+              multiline
+              minRows={3}
+              value={customSkillDraft.description}
+              onChange={(e) =>
+                setCustomSkillDraft((draft) => ({ ...draft, description: e.target.value }))
+              }
+              placeholder="Optional longer rules text"
+              sx={{
+                border: `1px solid ${fabUTokens.color.border}`,
+                borderRadius: `${fabUTokens.radius.sm}px`,
+                bgcolor: fabUTokens.color.pillSurface,
+                color: fabUTokens.color.textPrimary,
+                px: 1,
+                py: 0.7,
+                fontSize: '0.86rem',
+                alignItems: 'flex-start',
+              }}
+            />
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => setCustomSkillOpen(false)}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 800,
+                color: fabUTokens.color.textPrimary,
+                borderColor: fabUTokens.color.border,
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={commitCustomSkill}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 900,
+                color: fabUTokens.color.labelFg,
+                bgcolor: fabUTokens.color.highlight,
+                boxShadow: 'none',
+              }}
+            >
+              Add Skill
+            </Button>
+          </Stack>
+        </Stack>
+      </Dialog>
 
       {/* Level pick list */}
       <Menu
