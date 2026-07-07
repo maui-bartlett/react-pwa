@@ -279,64 +279,77 @@ function HpMpManagementModal({
             >
               {pointsLabel}
             </Typography>
-            <Stack
-              direction="row"
-              alignItems="flex-end"
-              justifyContent="center"
-              spacing={0.65}
-              sx={{ width: '100%', minWidth: 0 }}
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                minHeight: 50,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <InputBase
-                data-pw={`${kind}-management-current-control`}
-                value={currentDraft}
-                inputProps={{
-                  inputMode: 'numeric',
-                  'aria-label': `Current ${pointsLabel}`,
-                  'data-pw': `${kind}-management-current-input`,
-                  style: {
-                    textAlign: 'right',
-                    fontWeight: 800,
-                    fontSize: '1.6rem',
-                    lineHeight: 1.1,
-                    padding: 0,
-                  },
-                }}
-                onChange={(e) => setCurrentDraft(e.target.value.replace(/[^0-9]/g, ''))}
-                onBlur={(e) => commitCurrent(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                  if (e.key === 'Escape') setCurrentDraft(String(current));
-                }}
-                sx={{
-                  width: '4.25ch',
-                  minWidth: 0,
-                  height: 34,
-                  border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
-                  borderRadius: '7px',
-                  bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
-                  px: 0.45,
-                  boxSizing: 'border-box',
-                  color: accent,
-                  '& input': {
-                    height: 34,
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.55}>
+                <InputBase
+                  data-pw={`${kind}-management-current-control`}
+                  value={currentDraft}
+                  inputProps={{
+                    inputMode: 'numeric',
+                    'aria-label': `Current ${pointsLabel}`,
+                    'data-pw': `${kind}-management-current-input`,
+                    style: {
+                      textAlign: 'center',
+                      fontWeight: 800,
+                      fontSize: '1.12rem',
+                      lineHeight: 1,
+                      padding: 0,
+                    },
+                  }}
+                  onChange={(e) => setCurrentDraft(e.target.value.replace(/[^0-9]/g, ''))}
+                  onBlur={(e) => commitCurrent(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setCurrentDraft(String(current));
+                  }}
+                  sx={{
+                    width: '4.75ch',
+                    minWidth: 46,
+                    height: 27,
+                    border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
+                    borderRadius: '4px',
+                    bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
+                    px: 0.55,
+                    boxSizing: 'border-box',
                     color: accent,
-                  },
-                }}
-              />
-              <Typography
-                component="span"
+                    '& input': {
+                      height: 27,
+                      color: accent,
+                    },
+                  }}
+                />
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: '1.08rem',
+                    fontWeight: 800,
+                    color: fabUTokens.color.textSecondary,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  / {max}
+                </Typography>
+              </Stack>
+              <Stack
+                spacing={0.2}
                 sx={{
-                  pb: 0.16,
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  color: fabUTokens.color.textSecondary,
-                  whiteSpace: 'nowrap',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: 86,
+                  minWidth: 0,
+                  alignItems: 'stretch',
                 }}
               >
-                {' / '}
-                {max}
-              </Typography>
-              <Stack spacing={0.2} sx={{ width: 70, minWidth: 0, alignSelf: 'center', ml: 0.2 }}>
                 <Typography
                   data-pw={`${kind}-management-modifier-label`}
                   sx={{
@@ -369,16 +382,16 @@ function HpMpManagementModal({
                     border: `1px solid ${fabUTokens.color.border}`,
                     borderRadius: '4px',
                     bgcolor: fabUTokens.color.pillSurface,
-                    height: 28,
+                    height: 27,
                     px: 0.65,
                     color: fabUTokens.color.textPrimary,
                     '& input': {
-                      height: 28,
+                      height: 27,
                     },
                   }}
                 />
               </Stack>
-            </Stack>
+            </Box>
           </Stack>
 
           {/* Compact controls: actions left, number wheel right. */}
