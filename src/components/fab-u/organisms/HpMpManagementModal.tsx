@@ -284,10 +284,7 @@ function HpMpManagementModal({
           </Box>
 
           {/* Current readout */}
-          <Stack alignItems="flex-start" spacing={0.45} sx={{ mb: 1, pl: '28px' }}>
-            <Typography sx={{ ...fieldLabelSx, width: 'auto', textAlign: 'left' }}>
-              {pointsLabel}
-            </Typography>
+          <Stack alignItems="flex-start" sx={{ mb: 1, pl: '28px' }}>
             <Box
               sx={{
                 position: 'relative',
@@ -298,58 +295,76 @@ function HpMpManagementModal({
                 justifyContent: 'flex-start',
               }}
             >
-              <Stack direction="row" alignItems="center" justifyContent="flex-start" spacing={0.55}>
-                <InputBase
-                  data-pw={`${kind}-management-current-control`}
-                  value={currentDraft}
-                  inputProps={{
-                    inputMode: 'numeric',
-                    'aria-label': `Current ${pointsLabel}`,
-                    'data-pw': `${kind}-management-current-input`,
-                    style: {
-                      textAlign: 'center',
-                      fontWeight: 800,
-                      fontSize: '1.12rem',
-                      lineHeight: 1,
-                      padding: 0,
-                    },
-                  }}
-                  onChange={(e) => setCurrentDraft(e.target.value.replace(/[^0-9]/g, ''))}
-                  onBlur={(e) => commitCurrent(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                    if (e.key === 'Escape') setCurrentDraft(String(current));
-                  }}
-                  sx={{
-                    width: 56,
-                    minWidth: 56,
-                    height: 27,
-                    border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
-                    borderRadius: FIELD_RADIUS,
-                    bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
-                    px: 0.55,
-                    boxSizing: 'border-box',
-                    color: accent,
-                    '& .MuiInputBase-input': {
-                      textAlign: 'center',
-                    },
-                    '& input': {
-                      height: 27,
-                      color: accent,
-                    },
-                  }}
-                />
-                <Typography
-                  component="span"
-                  sx={{
-                    fontSize: '1.08rem',
-                    fontWeight: 800,
-                    color: fabUTokens.color.textSecondary,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  / {max}
+              <Stack
+                spacing={0.45}
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Typography sx={{ ...fieldLabelSx, width: 'auto', textAlign: 'left' }}>
+                  {pointsLabel}
                 </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="flex-start"
+                  spacing={0.55}
+                >
+                  <InputBase
+                    data-pw={`${kind}-management-current-control`}
+                    value={currentDraft}
+                    inputProps={{
+                      inputMode: 'numeric',
+                      'aria-label': `Current ${pointsLabel}`,
+                      'data-pw': `${kind}-management-current-input`,
+                      style: {
+                        textAlign: 'center',
+                        fontWeight: 800,
+                        fontSize: '1.12rem',
+                        lineHeight: 1,
+                        padding: 0,
+                      },
+                    }}
+                    onChange={(e) => setCurrentDraft(e.target.value.replace(/[^0-9]/g, ''))}
+                    onBlur={(e) => commitCurrent(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') setCurrentDraft(String(current));
+                    }}
+                    sx={{
+                      width: 56,
+                      minWidth: 56,
+                      height: 27,
+                      border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
+                      borderRadius: FIELD_RADIUS,
+                      bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
+                      px: 0.55,
+                      boxSizing: 'border-box',
+                      color: accent,
+                      '& .MuiInputBase-input': {
+                        textAlign: 'center',
+                      },
+                      '& input': {
+                        height: 27,
+                        color: accent,
+                      },
+                    }}
+                  />
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: '1.08rem',
+                      fontWeight: 800,
+                      color: fabUTokens.color.textSecondary,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    / {max}
+                  </Typography>
+                </Stack>
               </Stack>
               <Stack
                 spacing={0.45}
