@@ -242,12 +242,12 @@ function HpMpManagementModal({
           <Box sx={{ position: 'relative', minHeight: 30, mb: 1 }}>
             <Typography
               sx={{
-                ml: '28px',
-                pr: '34px',
                 minHeight: 30,
                 display: 'flex',
                 alignItems: 'center',
-                textAlign: 'left',
+                justifyContent: 'center',
+                px: '34px',
+                textAlign: 'center',
                 fontWeight: 800,
                 fontSize: '0.95rem',
                 color: fabUTokens.color.textPrimary,
@@ -318,8 +318,8 @@ function HpMpManagementModal({
                     if (e.key === 'Escape') setCurrentDraft(String(current));
                   }}
                   sx={{
-                    width: '4.75ch',
-                    minWidth: 46,
+                    width: 56,
+                    minWidth: 56,
                     height: 27,
                     border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
                     borderRadius: '4px',
@@ -346,23 +346,25 @@ function HpMpManagementModal({
                 </Typography>
               </Stack>
               <Stack
-                spacing={0.2}
+                spacing={0.45}
                 sx={{
                   position: 'absolute',
                   top: 0,
                   right: 0,
-                  width: 86,
+                  width: 'calc((100% - 8px) / 2)',
                   minWidth: 0,
-                  alignItems: 'stretch',
+                  alignItems: 'center',
                 }}
               >
                 <Typography
                   data-pw={`${kind}-management-modifier-label`}
                   sx={{
-                    fontSize: '0.47rem',
+                    width: '100%',
+                    fontSize: '0.6rem',
                     fontWeight: 800,
-                    letterSpacing: '0.035em',
-                    lineHeight: 1.05,
+                    letterSpacing: '0.06em',
+                    lineHeight: 1,
+                    textAlign: 'center',
                     textTransform: 'uppercase',
                     color: fabUTokens.color.textSecondary,
                   }}
@@ -376,7 +378,13 @@ function HpMpManagementModal({
                     inputMode: 'numeric',
                     'aria-label': modifierLabel,
                     'data-pw': `${kind}-management-modifier-input`,
-                    style: { textAlign: 'center', fontWeight: 700, padding: 0 },
+                    style: {
+                      textAlign: 'center',
+                      fontWeight: 800,
+                      fontSize: '1.12rem',
+                      lineHeight: 1,
+                      padding: 0,
+                    },
                   }}
                   onChange={(e) => setModifierDraft(e.target.value.replace(/[^0-9-]/g, ''))}
                   onBlur={(e) => commitModifier(e.target.value)}
@@ -385,6 +393,8 @@ function HpMpManagementModal({
                     if (e.key === 'Escape') setModifierDraft(String(modifier));
                   }}
                   sx={{
+                    width: 56,
+                    minWidth: 56,
                     border: `1px solid ${fabUTokens.color.border}`,
                     borderRadius: '4px',
                     bgcolor: fabUTokens.color.pillSurface,
