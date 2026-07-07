@@ -12,6 +12,7 @@ import { alpha } from '@mui/material/styles';
 
 import { Plus, Search, X } from 'lucide-react';
 
+import { useHideDiceRollerWhileOpen } from '../../DiceRoller/visibilityEvents';
 import { useFabUTokens } from '../ThemeContext';
 
 type FabUCatalogPickerDialogProps<TEntry> = {
@@ -47,6 +48,7 @@ function FabUCatalogPickerDialog<TEntry>({
 }: FabUCatalogPickerDialogProps<TEntry>) {
   const fabUTokens = useFabUTokens();
   const [search, setSearch] = useState('');
+  useHideDiceRollerWhileOpen(`fab-u-catalog-picker:${title}`, open);
 
   useEffect(() => {
     if (open) setSearch('');

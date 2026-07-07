@@ -29,6 +29,10 @@ import {
   withRollMetadata,
 } from './diceRollResults';
 import { TABLETOP_ROLL_DICE_EVENT, type TabletopRollDiceDetail } from './rollEvents';
+import {
+  TABLETOP_DICE_VISIBILITY_EVENT,
+  type TabletopDiceVisibilityDetail,
+} from './visibilityEvents';
 
 const diceRailReveal = keyframes`
   from {
@@ -1003,6 +1007,7 @@ function DiceRoller() {
   const [isResultDismissing, setIsResultDismissing] = useState(false);
   const [hasVisibleDice, setHasVisibleDice] = useState(false);
   const [isRailClosing, setIsRailClosing] = useState(false);
+  const [hiddenSources, setHiddenSources] = useState<Set<string>>(() => new Set());
   const [diceTrayStyle, setDiceTrayStyle] = useState<DiceTrayStyle>(defaultDiceTrayStyle);
   const [appAccent, setAppAccent] = useState(() => getThemeColor(theme.palette.primary.main));
   const [criticalPulseKey, setCriticalPulseKey] = useState(0);
@@ -1368,6 +1373,26 @@ function DiceRoller() {
   const railButtonBackground = dicePalette.railButtonBackground;
   const railIconColor = dicePalette.railIconColor;
   const selectedSummary = useMemo(() => formatDice(selectedDice), [selectedDice]);
+  const hideControls = hiddenSources.size > 0;
+
+  useEffect(() => {
+    const onDiceVisibility = (event: Event) => {
+      const detail = (event as CustomEvent<TabletopDiceVisibilityDetail>).detail;
+      if (!detail?.id) return;
+      setHiddenSources((current) => {
+        const next = new Set(current);
+        if (detail.hidden) {
+          next.add(detail.id);
+        } else {
+          next.delete(detail.id);
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener(TABLETOP_DICE_VISIBILITY_EVENT, onDiceVisibility);
+    return () => window.removeEventListener(TABLETOP_DICE_VISIBILITY_EVENT, onDiceVisibility);
+  }, []);
 
   return (
     <>
@@ -1412,7 +1437,7 @@ function DiceRoller() {
           // overlapped the right-most nav tab (Notes) and intercepted taps.
           bottom: { xs: 'calc(env(safe-area-inset-bottom, 0px) + 128px)', sm: 22 },
           zIndex: theme.zIndex.tooltip + 20,
-          display: 'flex',
+          display: hideControls ? 'none' : 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           width: 72,

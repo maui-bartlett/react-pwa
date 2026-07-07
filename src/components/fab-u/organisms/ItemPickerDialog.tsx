@@ -12,6 +12,7 @@ import { useQuery } from 'convex/react';
 import { Plus, Search, X } from 'lucide-react';
 
 import { api } from '../../../../convex/_generated/api';
+import { useHideDiceRollerWhileOpen } from '../../DiceRoller/visibilityEvents';
 import { useFabUTokens } from '../ThemeContext';
 import {
   type CatalogItem,
@@ -42,6 +43,7 @@ function ItemPickerDialog({
 }: ItemPickerDialogProps) {
   const fabUTokens = useFabUTokens();
   const [search, setSearch] = useState('');
+  useHideDiceRollerWhileOpen('fab-u-item-picker', open);
   const items = useQuery(api.catalog.listByGameSystem, {
     gameSystem: FABULA_ULTIMA_GAME_SYSTEM,
   }) as CatalogItem[] | undefined;

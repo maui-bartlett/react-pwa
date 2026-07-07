@@ -44,4 +44,20 @@ test.describe('Item picker — Equipment + Backpack (mobile viewport)', () => {
     await page.locator('[data-pw="item-picker-close"]').click();
     await expect(page.locator('[data-pw="item-picker-dialog"]')).not.toBeVisible();
   });
+
+  test('opening the item picker hides the main dice button', async ({ page }) => {
+    const diceButton = page.getByRole('button', { name: 'Open dice roller' });
+    await expect(diceButton).toBeVisible();
+
+    const slot = page.locator('[data-pw="equip-slot-add-armor"]').first();
+    await slot.scrollIntoViewIfNeeded();
+    await slot.click();
+
+    await expect(page.locator('[data-pw="item-picker-dialog"]')).toBeVisible();
+    await expect(diceButton).toBeHidden();
+
+    await page.locator('[data-pw="item-picker-close"]').click();
+    await expect(page.locator('[data-pw="item-picker-dialog"]')).not.toBeVisible();
+    await expect(diceButton).toBeVisible();
+  });
 });
