@@ -213,6 +213,12 @@ function getClassSpellRows(character: Character, className: string): SpellRow[] 
   return Array.isArray(classSpells) ? classSpells : undefined;
 }
 
+function hasChimeristSpellMimic(character: Character) {
+  return character.skillGroups
+    .find((group) => group.className === 'Chimerist')
+    ?.skills.some((skill) => skill.name.trim().toLowerCase() === 'spell mimic');
+}
+
 function readString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
 }
@@ -1149,7 +1155,11 @@ function FabU() {
   const classSpellGroups = character.classes.flatMap((cls) => {
     const spells = getClassSpellRows(character, cls.name);
     const spellOptions = spellOptionsByClass.get(cls.name) ?? [];
-    return spells || spellOptions.length > 0 ? [{ className: cls.name, spells: spells ?? [] }] : [];
+    const shouldShowSpellTable =
+      Boolean(spells) ||
+      spellOptions.length > 0 ||
+      (cls.name === 'Chimerist' && hasChimeristSpellMimic(character));
+    return shouldShowSpellTable ? [{ className: cls.name, spells: spells ?? [] }] : [];
   });
 
   const navigateToClassSkills = (index: number) => {
