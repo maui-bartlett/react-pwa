@@ -6,6 +6,7 @@ import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
+import { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
@@ -19,6 +20,7 @@ type FabUCatalogPickerDialogProps<TEntry> = {
   label: string;
   searchPlaceholder: string;
   customLabel: string;
+  HeaderIcon?: React.ComponentType<SvgIconProps>;
   entries: TEntry[];
   getKey: (entry: TEntry) => string;
   getSearchText: (entry: TEntry) => string[];
@@ -34,6 +36,7 @@ function FabUCatalogPickerDialog<TEntry>({
   label,
   searchPlaceholder,
   customLabel,
+  HeaderIcon = AutoAwesomeOutlinedIcon,
   entries,
   getKey,
   getSearchText,
@@ -86,7 +89,7 @@ function FabUCatalogPickerDialog<TEntry>({
           <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5}>
             <Stack spacing={0.25} sx={{ minWidth: 0 }}>
               <Stack direction="row" spacing={0.65} alignItems="center">
-                <AutoAwesomeOutlinedIcon sx={{ fontSize: 17, color: fabUTokens.color.highlight }} />
+                <HeaderIcon sx={{ fontSize: 17, color: fabUTokens.color.highlight }} />
                 <Typography
                   sx={{
                     fontWeight: 900,

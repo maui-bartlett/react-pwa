@@ -22,6 +22,7 @@ import { CheckCircle, Pencil, Trash2, X, XCircle } from 'lucide-react';
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
 import { scaledEditableTextStyle } from '../editableText';
+import { SkillCrystalIcon } from '../icons';
 import FabUCatalogPickerDialog from '../organisms/FabUCatalogPickerDialog';
 import { SkillRow } from '../types';
 
@@ -58,7 +59,7 @@ type EditingSkillState = {
 
 type CustomSkillDraft = {
   name: string;
-  level: string;
+  maxLevel: string;
   effect: string;
   description: string;
 };
@@ -642,7 +643,7 @@ function SkillsTable({
   const [customSkillOpen, setCustomSkillOpen] = useState(false);
   const [customSkillDraft, setCustomSkillDraft] = useState<CustomSkillDraft>({
     name: '',
-    level: '1',
+    maxLevel: String(DEFAULT_SKILL_MAX_LEVEL),
     effect: '',
     description: '',
   });
@@ -731,7 +732,7 @@ function SkillsTable({
     setSkillPickerOpen(false);
     setCustomSkillDraft({
       name: '',
-      level: '1',
+      maxLevel: String(DEFAULT_SKILL_MAX_LEVEL),
       effect: '',
       description: '',
     });
@@ -748,8 +749,8 @@ function SkillsTable({
     }
     onAddSkill({
       name,
-      level: customSkillDraft.level || '1',
-      maxLevel: DEFAULT_SKILL_MAX_LEVEL,
+      level: '1',
+      maxLevel: Math.max(1, parseInt(customSkillDraft.maxLevel, 10) || DEFAULT_SKILL_MAX_LEVEL),
       effect: customSkillDraft.effect.trim(),
       description: customSkillDraft.description.trim() || undefined,
     });
@@ -1056,6 +1057,7 @@ function SkillsTable({
         label={label ?? title}
         searchPlaceholder="Search skills..."
         customLabel="Custom Skill"
+        HeaderIcon={SkillCrystalIcon}
         entries={[...availableSkillOptions].sort((a, b) => a.name.localeCompare(b.name))}
         getKey={(skill) => skill.name}
         getSearchText={(skill) => [
@@ -1218,14 +1220,15 @@ function SkillsTable({
             <Typography
               sx={{ fontSize: '0.68rem', fontWeight: 900, color: fabUTokens.color.highlight }}
             >
-              Starting Level
+              Max Level
             </Typography>
-            <Box
-              component="select"
-              value={customSkillDraft.level}
+            <InputBase
+              value={customSkillDraft.maxLevel}
               onChange={(e) =>
-                setCustomSkillDraft((draft) => ({ ...draft, level: e.target.value }))
+                setCustomSkillDraft((draft) => ({ ...draft, maxLevel: e.target.value }))
               }
+              type="number"
+              inputProps={{ min: 1, max: 10, inputMode: 'numeric', 'aria-label': 'Max level' }}
               sx={{
                 border: `1px solid ${fabUTokens.color.border}`,
                 borderRadius: `${fabUTokens.radius.sm}px`,
@@ -1236,16 +1239,7 @@ function SkillsTable({
                 font: 'inherit',
                 fontSize: '0.86rem',
               }}
-            >
-              {Array.from(
-                { length: Math.min(DEFAULT_SKILL_MAX_LEVEL, Math.max(1, freeSkillLevels)) },
-                (_, i) => i + 1,
-              ).map((lvl) => (
-                <option key={lvl} value={String(lvl)}>
-                  {lvl}
-                </option>
-              ))}
-            </Box>
+            />
           </Stack>
           <Stack spacing={0.35}>
             <Typography
