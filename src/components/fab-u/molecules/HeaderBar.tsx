@@ -9,7 +9,7 @@ import { useFabUTokens } from '../ThemeContext';
 
 type HeaderBarProps = {
   eyebrow?: ReactNode;
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   action?: ReactNode;
   navigationAction?: ReactNode;

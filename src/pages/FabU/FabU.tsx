@@ -9,6 +9,10 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Collapse from '@mui/material/Collapse';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
@@ -89,6 +93,7 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import {
   type Character,
+  type CharacterName,
   MAX_CHARACTER_LEVEL,
   activeCombatTabState,
   activeTabState,
@@ -798,6 +803,12 @@ function FabU() {
 
   const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
+  const [nameEditOpen, setNameEditOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState<CharacterName>({
+    firstName: '',
+    lastName: '',
+    nickName: undefined,
+  });
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   // HP/MP management popover: which kind, and the pill it anchors to.
@@ -839,6 +850,31 @@ function FabU() {
   });
   const statusEffects = character.statusEffects;
   useFabUPopperScrollLock(Boolean(battleActionPopover));
+  const openNameEdit = () => {
+    setNameDraft({ ...character.name });
+    setNameEditOpen(true);
+  };
+  const closeNameEdit = () => {
+    setNameEditOpen(false);
+  };
+  const saveNameEdit = () => {
+    const firstName = nameDraft.firstName.trim();
+    const lastName = nameDraft.lastName.trim();
+    const nickName = nameDraft.nickName?.trim();
+    if (!firstName && !lastName && !nickName) {
+      closeNameEdit();
+      return;
+    }
+    setCharacter((current) => ({
+      ...current,
+      name: {
+        firstName,
+        lastName,
+        nickName: nickName || undefined,
+      },
+    }));
+    closeNameEdit();
+  };
   const handleToggleEffect = (id: string) => {
     setCharacter((c) => ({
       ...c,
@@ -2988,7 +3024,34 @@ function FabU() {
     }
 
     const meta = screenMeta[activeTab];
-    const headerTitle = activeTab === 'overview' ? fullCharacterName : meta.title;
+    const headerTitle =
+      activeTab === 'overview' ? (
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0 }}>
+          <Box component="span" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {fullCharacterName}
+          </Box>
+          <IconButton
+            aria-label="Edit character name"
+            onClick={openNameEdit}
+            sx={{
+              width: 27,
+              height: 27,
+              flex: '0 0 auto',
+              borderRadius: '8px',
+              border: `1px solid ${alpha('#ffffff', 0.28)}`,
+              bgcolor: alpha('#ffffff', 0.12),
+              color: '#ffffff',
+              '&:hover': {
+                bgcolor: alpha('#ffffff', 0.2),
+              },
+            }}
+          >
+            <Pencil size={14} strokeWidth={2.2} />
+          </IconButton>
+        </Stack>
+      ) : (
+        meta.title
+      );
     const headerSubtitle =
       activeTab === 'overview' ? safeTraits.identity.join(' · ') : meta.subtitle;
 
@@ -3206,6 +3269,132 @@ function FabU() {
           onClose={() => setHpMpModal(null)}
         />
       ) : null}
+      <Dialog
+        open={nameEditOpen}
+        onClose={closeNameEdit}
+        fullWidth
+        maxWidth="xs"
+        PaperProps={{
+          sx: {
+            width: { xs: 'calc(100vw - 32px)', sm: 390 },
+            borderRadius: '14px',
+            border: `1px solid ${fabUTokens.color.border}`,
+            bgcolor: fabUTokens.color.surface,
+            color: fabUTokens.color.textPrimary,
+            boxShadow: fabUTokens.shadow.soft,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            pb: 0.6,
+            color: fabUTokens.color.textPrimary,
+            fontSize: '1rem',
+            fontWeight: 900,
+          }}
+        >
+          Edit Character Name
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1.2 }}>
+          <Stack spacing={0.85}>
+            {(
+              [
+                ['First name', 'firstName'],
+                ['Last name', 'lastName'],
+                ['Nickname', 'nickName'],
+              ] as const
+            ).map(([label, key], index) => (
+              <Stack key={key} spacing={0.25}>
+                <Typography
+                  sx={{
+                    color: fabUTokens.color.textSecondary,
+                    fontSize: '0.58rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {label}
+                </Typography>
+                <InputBase
+                  value={nameDraft[key] ?? ''}
+                  autoFocus={index === 0}
+                  inputProps={{
+                    'aria-label': `Character ${label.toLowerCase()}`,
+                  }}
+                  onChange={(event) =>
+                    setNameDraft((current) => ({
+                      ...current,
+                      [key]: event.target.value,
+                    }))
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') saveNameEdit();
+                    if (event.key === 'Escape') closeNameEdit();
+                  }}
+                  sx={{
+                    minHeight: 40,
+                    borderRadius: '8px',
+                    border: `1px solid ${fabUTokens.color.border}`,
+                    bgcolor: fabUTokens.color.pillSurface,
+                    color: fabUTokens.color.textPrimary,
+                    px: 1.2,
+                    fontSize: '0.86rem',
+                    fontWeight: 700,
+                    boxShadow: fabUTokens.shadow.card,
+                    '& input': {
+                      p: 0,
+                      height: 40,
+                    },
+                  }}
+                />
+              </Stack>
+            ))}
+            <Typography
+              sx={{
+                color: fabUTokens.color.textSecondary,
+                fontSize: '0.72rem',
+                fontWeight: 700,
+              }}
+            >
+              Preview:{' '}
+              {[
+                nameDraft.firstName.trim(),
+                nameDraft.nickName?.trim() ? `"${nameDraft.nickName.trim()}"` : '',
+                nameDraft.lastName.trim(),
+              ]
+                .filter(Boolean)
+                .join(' ') || 'Unnamed character'}
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 0.5 }}>
+          <Button
+            onClick={closeNameEdit}
+            sx={{
+              textTransform: 'none',
+              color: fabUTokens.color.textSecondary,
+              fontWeight: 800,
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={saveNameEdit}
+            variant="contained"
+            sx={{
+              minWidth: 84,
+              textTransform: 'none',
+              bgcolor: fabUTokens.color.highlight,
+              color: fabUTokens.color.highlightFg,
+              fontWeight: 900,
+              '&:hover': { bgcolor: fabUTokens.color.highlight },
+            }}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
       <UndoSnackbar
         open={undoOpen}
         onUndo={() => {
