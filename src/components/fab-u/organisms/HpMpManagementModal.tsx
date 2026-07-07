@@ -19,6 +19,7 @@ import useFabUPopperScrollLock from '../useFabUPopperScrollLock';
 const ROW_H = 32;
 const WHEEL_HEIGHT = 114;
 const WHEEL_PADDING = (WHEEL_HEIGHT - ROW_H) / 2;
+const FIELD_RADIUS = '4px';
 
 type HpMpKind = 'hp' | 'mp';
 
@@ -167,6 +168,16 @@ function HpMpManagementModal({
   const addLabel = kind === 'hp' ? 'Heal' : 'Recover';
   const subtractLabel = kind === 'hp' ? 'Damage' : 'Spend';
   const modifierLabel = kind === 'hp' ? 'Max HP Modifier' : 'Max MP Modifier';
+  const fieldLabelSx = {
+    width: '100%',
+    fontSize: '0.6rem',
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    lineHeight: 1,
+    textAlign: 'center' as const,
+    textTransform: 'uppercase' as const,
+    color: fabUTokens.color.textSecondary,
+  };
 
   const [amount, setAmount] = useState(0);
   const [currentDraft, setCurrentDraft] = useState(String(current));
@@ -273,16 +284,8 @@ function HpMpManagementModal({
           </Box>
 
           {/* Current readout */}
-          <Stack alignItems="flex-start" sx={{ mb: 1, pl: '28px' }}>
-            <Typography
-              sx={{
-                fontSize: '0.6rem',
-                fontWeight: 800,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: fabUTokens.color.textSecondary,
-              }}
-            >
+          <Stack alignItems="flex-start" spacing={0.45} sx={{ mb: 1, pl: '28px' }}>
+            <Typography sx={{ ...fieldLabelSx, width: 'auto', textAlign: 'left' }}>
               {pointsLabel}
             </Typography>
             <Box
@@ -322,11 +325,14 @@ function HpMpManagementModal({
                     minWidth: 56,
                     height: 27,
                     border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
-                    borderRadius: '4px',
+                    borderRadius: FIELD_RADIUS,
                     bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
                     px: 0.55,
                     boxSizing: 'border-box',
                     color: accent,
+                    '& .MuiInputBase-input': {
+                      textAlign: 'center',
+                    },
                     '& input': {
                       height: 27,
                       color: accent,
@@ -356,19 +362,7 @@ function HpMpManagementModal({
                   alignItems: 'center',
                 }}
               >
-                <Typography
-                  data-pw={`${kind}-management-modifier-label`}
-                  sx={{
-                    width: '100%',
-                    fontSize: '0.6rem',
-                    fontWeight: 800,
-                    letterSpacing: '0.06em',
-                    lineHeight: 1,
-                    textAlign: 'center',
-                    textTransform: 'uppercase',
-                    color: fabUTokens.color.textSecondary,
-                  }}
-                >
+                <Typography data-pw={`${kind}-management-modifier-label`} sx={fieldLabelSx}>
                   {modifierLabel}
                 </Typography>
                 <InputBase
@@ -396,11 +390,14 @@ function HpMpManagementModal({
                     width: 56,
                     minWidth: 56,
                     border: `1px solid ${fabUTokens.color.border}`,
-                    borderRadius: '4px',
+                    borderRadius: FIELD_RADIUS,
                     bgcolor: fabUTokens.color.pillSurface,
                     height: 27,
                     px: 0.65,
                     color: fabUTokens.color.textPrimary,
+                    '& .MuiInputBase-input': {
+                      textAlign: 'center',
+                    },
                     '& input': {
                       height: 27,
                     },
@@ -494,7 +491,7 @@ function HpMpManagementModal({
                 gridRow: '1 / 4',
                 alignSelf: 'stretch',
                 border: `1px solid ${fabUTokens.color.border}`,
-                borderRadius: '12px',
+                borderRadius: FIELD_RADIUS,
                 bgcolor: fabUTokens.color.pillSurface,
                 overflow: 'hidden',
               }}

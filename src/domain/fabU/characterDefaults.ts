@@ -340,8 +340,8 @@ function createRandomFabUCharacter(): Character {
   const classNames = new Set(classes.map((entry) => entry.name));
   const attributes = createRandomAttributes();
   const level = classes.reduce((sum, entry) => sum + entry.level, 0);
-  const hpBonus = randomInt(0, 6);
-  const mpBonus = randomInt(0, 6);
+  const hpBonus = 0;
+  const mpBonus = 0;
   const maxHP = DIE_VALUES[attributes.might.die] * 5 + level + hpBonus;
   const maxMP = DIE_VALUES[attributes.willpower.die] * 5 + level + mpBonus;
   const identity = pickTwoDistinct(RANDOM_IDENTITIES);

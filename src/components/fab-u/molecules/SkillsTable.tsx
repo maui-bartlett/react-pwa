@@ -78,8 +78,8 @@ type SwipeableSkillRowProps = {
   onDelete?: (onCancel?: () => void, onBeforeConfirm?: () => void) => void;
   hasAddLevels: boolean;
   canAddLevels: boolean;
+  editLevelOptions: number[];
   onOpenLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
-  onOpenEditLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
   onUpdateSkillDescription?: (skillName: string, description: string) => void;
 };
 
@@ -97,8 +97,8 @@ function SwipeableSkillRow({
   onDelete,
   hasAddLevels,
   canAddLevels,
+  editLevelOptions,
   onOpenLevelMenu,
-  onOpenEditLevelMenu,
   onUpdateSkillDescription,
 }: SwipeableSkillRowProps) {
   const fabUTokens = useFabUTokens();
@@ -356,21 +356,15 @@ function SwipeableSkillRow({
               }}
             >
               <Box
-                component="button"
-                type="button"
+                component="select"
                 aria-label={`${editDraft.name || 'Skill'} level`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenEditLevelMenu(e);
-                }}
+                value={editDraft.level || '0'}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => onEditDraftChange({ ...editDraft, level: e.target.value })}
                 sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                  gap: 0.1,
                   minWidth: 0,
-                  width: 'auto',
-                  height: 'auto',
+                  width: '100%',
+                  height: 28,
                   p: 0,
                   border: 'none',
                   bgcolor: 'transparent',
@@ -380,11 +374,17 @@ function SwipeableSkillRow({
                   fontSize: 'inherit',
                   fontWeight: 'inherit',
                   lineHeight: 'inherit',
-                  textAlign: 'inherit',
+                  textAlign: 'right',
+                  textAlignLast: 'right',
+                  outline: 'none',
+                  colorScheme: fabUTokens.isDark ? 'dark' : undefined,
                 }}
               >
-                <Box component="span">{editDraft.level || '0'}</Box>
-                <KeyboardArrowDownIcon sx={{ fontSize: 14, ml: -0.15 }} />
+                {editLevelOptions.map((level) => (
+                  <option key={level} value={String(level)}>
+                    {level}
+                  </option>
+                ))}
               </Box>
             </Box>
             {hasAddLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
@@ -665,12 +665,7 @@ function SkillsTable({
   const availableSkillOptions = skillOptions.filter(
     (option) => !rows.some((row) => row.name === option.name),
   );
-  const activeSkill =
-    menuState?.mode === 'edit' && editingSkill
-      ? originalSkillDataRef.current
-      : menuState
-        ? rows.find((row) => row.name === menuState.skillName)
-        : null;
+  const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
   const activeSkillLevel =
     menuState?.mode === 'edit' && editingSkill
       ? parseInt(editingSkill.level ?? '0', 10)
@@ -689,10 +684,6 @@ function SkillsTable({
 
   function openLevelMenu(e: React.MouseEvent<HTMLElement>, skillName: string) {
     setMenuState({ anchorEl: e.currentTarget, skillName, mode: 'add' });
-  }
-
-  function openEditLevelMenu(e: React.MouseEvent<HTMLElement>, skillName: string) {
-    setMenuState({ anchorEl: e.currentTarget, skillName, mode: 'edit' });
   }
 
   function closeLevelMenu() {
@@ -886,6 +877,10 @@ function SkillsTable({
             );
             const canAddLevels = !!onAddSkillLevels && !classMastered && availableForSkill > 0;
             const isEditing = editingSkill?.originalName === row.name;
+            const totalWithoutActive = tableTotal - (isNaN(level) ? 0 : level);
+            const editLevelOptions = Array.from({ length: maxLevel + 1 }, (_, lvl) => lvl).filter(
+              (lvl) => totalWithoutActive + lvl <= 10,
+            );
             return (
               <SwipeableSkillRow
                 key={row.name}
@@ -904,8 +899,8 @@ function SkillsTable({
                 onDelete={onDeleteSkill ? (oc, obc) => onDeleteSkill(row.name, oc, obc) : undefined}
                 hasAddLevels={!!onAddSkillLevels}
                 canAddLevels={canAddLevels}
+                editLevelOptions={editLevelOptions}
                 onOpenLevelMenu={(e) => openLevelMenu(e, row.name)}
-                onOpenEditLevelMenu={(e) => openEditLevelMenu(e, row.name)}
                 onUpdateSkillDescription={onUpdateSkillDescription}
               />
             );
