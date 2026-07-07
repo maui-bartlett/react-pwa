@@ -17,7 +17,7 @@ import { useFabUTokens } from '../ThemeContext';
 import useFabUPopperScrollLock from '../useFabUPopperScrollLock';
 
 const ROW_H = 32;
-const WHEEL_HEIGHT = 150.8;
+const WHEEL_HEIGHT = 114;
 const WHEEL_PADDING = (WHEEL_HEIGHT - ROW_H) / 2;
 
 type HpMpKind = 'hp' | 'mp';
@@ -169,6 +169,7 @@ function HpMpManagementModal({
   const modifierLabel = kind === 'hp' ? 'Max HP Modifier' : 'Max MP Modifier';
 
   const [amount, setAmount] = useState(0);
+  const [currentDraft, setCurrentDraft] = useState(String(current));
   const [modifierDraft, setModifierDraft] = useState(String(modifier));
   useFabUPopperScrollLock(open);
 
@@ -177,6 +178,11 @@ function HpMpManagementModal({
   useEffect(() => {
     if (open) setAmount(0);
   }, [open]);
+
+  // Keep the current-value field in sync when changed by parent state.
+  useEffect(() => {
+    if (open) setCurrentDraft(String(current));
+  }, [open, current]);
 
   // Keep the modifier field in sync when it changes externally or on open.
   useEffect(() => {
@@ -191,6 +197,14 @@ function HpMpManagementModal({
     const next = Number.isNaN(parsed) ? 0 : parsed;
     setModifierDraft(String(next));
     if (next !== modifier) onChangeModifier(next);
+  }
+
+  function commitCurrent(raw: string) {
+    const cleaned = raw.replace(/[^0-9]/g, '');
+    const parsed = Number.parseInt(cleaned, 10);
+    const next = Math.max(0, Math.min(max, Number.isNaN(parsed) ? current : parsed));
+    setCurrentDraft(String(next));
+    if (next !== current) onApply(next);
   }
 
   function applyDelta(direction: 1 | -1) {
@@ -265,71 +279,119 @@ function HpMpManagementModal({
             >
               {pointsLabel}
             </Typography>
-            <Typography
-              sx={{ fontSize: '1.6rem', fontWeight: 800, color: accent, lineHeight: 1.1 }}
+            <Stack
+              direction="row"
+              alignItems="flex-end"
+              justifyContent="center"
+              spacing={0.65}
+              sx={{ width: '100%', minWidth: 0 }}
             >
-              {current}
+              <InputBase
+                data-pw={`${kind}-management-current-control`}
+                value={currentDraft}
+                inputProps={{
+                  inputMode: 'numeric',
+                  'aria-label': `Current ${pointsLabel}`,
+                  'data-pw': `${kind}-management-current-input`,
+                  style: {
+                    textAlign: 'right',
+                    fontWeight: 800,
+                    fontSize: '1.6rem',
+                    lineHeight: 1.1,
+                    padding: 0,
+                  },
+                }}
+                onChange={(e) => setCurrentDraft(e.target.value.replace(/[^0-9]/g, ''))}
+                onBlur={(e) => commitCurrent(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  if (e.key === 'Escape') setCurrentDraft(String(current));
+                }}
+                sx={{
+                  width: '4.25ch',
+                  minWidth: 0,
+                  height: 34,
+                  border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
+                  borderRadius: '7px',
+                  bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
+                  px: 0.45,
+                  boxSizing: 'border-box',
+                  color: accent,
+                  '& input': {
+                    height: 34,
+                    color: accent,
+                  },
+                }}
+              />
               <Typography
                 component="span"
-                sx={{ fontSize: '1rem', fontWeight: 700, color: fabUTokens.color.textSecondary }}
+                sx={{
+                  pb: 0.16,
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  color: fabUTokens.color.textSecondary,
+                  whiteSpace: 'nowrap',
+                }}
               >
                 {' / '}
                 {max}
               </Typography>
-            </Typography>
+              <Stack spacing={0.2} sx={{ width: 70, minWidth: 0, alignSelf: 'center', ml: 0.2 }}>
+                <Typography
+                  data-pw={`${kind}-management-modifier-label`}
+                  sx={{
+                    fontSize: '0.47rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.035em',
+                    lineHeight: 1.05,
+                    textTransform: 'uppercase',
+                    color: fabUTokens.color.textSecondary,
+                  }}
+                >
+                  {modifierLabel}
+                </Typography>
+                <InputBase
+                  data-pw={`${kind}-management-modifier-control`}
+                  value={modifierDraft}
+                  inputProps={{
+                    inputMode: 'numeric',
+                    'aria-label': modifierLabel,
+                    'data-pw': `${kind}-management-modifier-input`,
+                    style: { textAlign: 'center', fontWeight: 700, padding: 0 },
+                  }}
+                  onChange={(e) => setModifierDraft(e.target.value.replace(/[^0-9-]/g, ''))}
+                  onBlur={(e) => commitModifier(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setModifierDraft(String(modifier));
+                  }}
+                  sx={{
+                    border: `1px solid ${fabUTokens.color.border}`,
+                    borderRadius: '4px',
+                    bgcolor: fabUTokens.color.pillSurface,
+                    height: 28,
+                    px: 0.65,
+                    color: fabUTokens.color.textPrimary,
+                    '& input': {
+                      height: 28,
+                    },
+                  }}
+                />
+              </Stack>
+            </Stack>
           </Stack>
 
-          {/* Compact controls: modifier and actions left, number wheel right. */}
+          {/* Compact controls: actions left, number wheel right. */}
           <Box
             sx={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gridTemplateRows: 'auto 34px 32px 38px 32px',
+              gridTemplateRows: '32px 38px 32px',
               columnGap: 1,
               rowGap: 0.7,
               alignItems: 'stretch',
             }}
           >
-            <Typography
-              data-pw={`${kind}-management-modifier-label`}
-              sx={{
-                gridColumn: 1,
-                gridRow: 1,
-                mb: -0.3,
-                fontSize: '0.58rem',
-                fontWeight: 800,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-                color: fabUTokens.color.textSecondary,
-              }}
-            >
-              {modifierLabel}
-            </Typography>
-            <InputBase
-              data-pw={`${kind}-management-modifier-control`}
-              value={modifierDraft}
-              inputProps={{
-                inputMode: 'numeric',
-                'data-pw': `${kind}-management-modifier-input`,
-                style: { textAlign: 'center', fontWeight: 700, padding: 0 },
-              }}
-              onChange={(e) => setModifierDraft(e.target.value.replace(/[^0-9-]/g, ''))}
-              onBlur={(e) => commitModifier(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-              }}
-              sx={{
-                gridColumn: 1,
-                gridRow: 2,
-                border: `1px solid ${fabUTokens.color.border}`,
-                borderRadius: '4px',
-                bgcolor: fabUTokens.color.pillSurface,
-                height: 34,
-                px: 0.75,
-                color: fabUTokens.color.textPrimary,
-              }}
-            />
-
             <Button
               onClick={() => applyDelta(1)}
               data-pw={`${kind}-management-add`}
@@ -337,7 +399,7 @@ function HpMpManagementModal({
               disableElevation
               sx={{
                 gridColumn: 1,
-                gridRow: 3,
+                gridRow: 1,
                 bgcolor: addColor,
                 color: '#ffffff',
                 fontWeight: 800,
@@ -365,7 +427,7 @@ function HpMpManagementModal({
               }}
               sx={{
                 gridColumn: 1,
-                gridRow: 4,
+                gridRow: 2,
                 border: `1px solid ${fabUTokens.color.border}`,
                 borderRadius: '4px',
                 bgcolor: fabUTokens.color.pillSurface,
@@ -383,7 +445,7 @@ function HpMpManagementModal({
               disableElevation
               sx={{
                 gridColumn: 1,
-                gridRow: 5,
+                gridRow: 3,
                 bgcolor: fabUTokens.color.danger,
                 color: '#ffffff',
                 fontWeight: 800,
@@ -400,8 +462,8 @@ function HpMpManagementModal({
               data-pw={`${kind}-management-number-wheel`}
               sx={{
                 gridColumn: 2,
-                gridRow: '2 / 6',
-                alignSelf: 'start',
+                gridRow: '1 / 4',
+                alignSelf: 'stretch',
                 border: `1px solid ${fabUTokens.color.border}`,
                 borderRadius: '12px',
                 bgcolor: fabUTokens.color.pillSurface,
