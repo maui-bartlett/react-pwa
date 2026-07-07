@@ -20,6 +20,7 @@ const ROW_H = 32;
 const WHEEL_HEIGHT = 114;
 const WHEEL_PADDING = (WHEEL_HEIGHT - ROW_H) / 2;
 const FIELD_RADIUS = '4px';
+const FIELD_LABEL_FONT_WEIGHT = 800;
 
 type HpMpKind = 'hp' | 'mp';
 
@@ -171,7 +172,7 @@ function HpMpManagementModal({
   const fieldLabelSx = {
     width: '100%',
     fontSize: '0.6rem',
-    fontWeight: 800,
+    fontWeight: FIELD_LABEL_FONT_WEIGHT,
     letterSpacing: '0.06em',
     lineHeight: 1,
     textAlign: 'center' as const,
@@ -304,7 +305,14 @@ function HpMpManagementModal({
                   alignItems: 'flex-start',
                 }}
               >
-                <Typography sx={{ ...fieldLabelSx, width: 'auto', textAlign: 'left' }}>
+                <Typography
+                  sx={{
+                    ...fieldLabelSx,
+                    width: 'auto',
+                    textAlign: 'left',
+                    fontWeight: FIELD_LABEL_FONT_WEIGHT,
+                  }}
+                >
                   {pointsLabel}
                 </Typography>
                 <Stack
