@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -9,13 +9,14 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Collapse from '@mui/material/Collapse';
+import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Search, Trash2, X } from 'lucide-react';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -77,6 +78,271 @@ type SwipeableSpellRowProps = {
   onCommitEdit: () => void;
   onRevertEdit: () => void;
 };
+
+type SpellPickerDialogProps = {
+  open: boolean;
+  spells: SpellRow[];
+  label: string;
+  onClose: () => void;
+  onSelect: (spell: SpellRow) => void;
+};
+
+function SpellPickerDialog({ open, spells, label, onClose, onSelect }: SpellPickerDialogProps) {
+  const fabUTokens = useFabUTokens();
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (open) setSearch('');
+  }, [open]);
+
+  const filteredSpells = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return [...spells]
+      .filter((spell) => {
+        if (!query) return true;
+        return [spell.name, spell.cost, spell.target, spell.duration, spell.effect]
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [search, spells]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      data-pw="fab-u-spell-picker-dialog"
+      PaperProps={{
+        sx: {
+          bgcolor: fabUTokens.color.surface,
+          backgroundImage: fabUTokens.isDark
+            ? `linear-gradient(180deg, ${alpha(fabUTokens.color.surfaceMuted, 0.84)} 0%, ${fabUTokens.color.surface} 38%)`
+            : `linear-gradient(180deg, ${fabUTokens.color.surfaceMuted} 0%, ${fabUTokens.color.surface} 42%)`,
+          border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
+          borderRadius: `${fabUTokens.radius.lg}px`,
+          boxShadow: fabUTokens.shadow.soft,
+          m: 1.5,
+          height: 'min(84vh, 680px)',
+          maxHeight: 'min(84vh, 680px)',
+          overflow: 'hidden',
+        },
+      }}
+      slotProps={{ backdrop: { sx: { backgroundColor: fabUTokens.color.brand, opacity: 0.92 } } }}
+    >
+      <Stack sx={{ height: '100%', minHeight: 0 }}>
+        <Stack spacing={1.15} sx={{ p: 1.6, pb: 1, flexShrink: 0 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1.5}>
+            <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+              <Stack direction="row" spacing={0.65} alignItems="center">
+                <AutoAwesomeOutlinedIcon sx={{ fontSize: 17, color: fabUTokens.color.highlight }} />
+                <Typography
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: '1.02rem',
+                    lineHeight: 1.1,
+                    color: fabUTokens.color.textPrimary,
+                  }}
+                >
+                  Choose Spell
+                </Typography>
+              </Stack>
+              <Typography
+                sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  color: fabUTokens.color.textSecondary,
+                }}
+              >
+                {label}
+              </Typography>
+            </Stack>
+            <Box
+              component="button"
+              type="button"
+              onClick={onClose}
+              data-pw="fab-u-spell-picker-close"
+              aria-label="Close spell picker"
+              sx={{
+                background: 'none',
+                border: 'none',
+                p: 0.25,
+                cursor: 'pointer',
+                color: fabUTokens.color.textSecondary,
+                display: 'flex',
+                flexShrink: 0,
+              }}
+            >
+              <X size={21} />
+            </Box>
+          </Stack>
+
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              border: `1px solid ${fabUTokens.color.border}`,
+              borderRadius: `${fabUTokens.radius.sm}px`,
+              bgcolor: fabUTokens.color.pillSurface,
+              px: 1,
+              py: 0.55,
+            }}
+          >
+            <Search size={16} color={fabUTokens.color.textSecondary} />
+            <InputBase
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search spells..."
+              inputProps={{ 'data-pw': 'fab-u-spell-picker-search', 'aria-label': 'Search spells' }}
+              sx={{
+                flex: 1,
+                fontSize: '0.86rem',
+                color: fabUTokens.color.textPrimary,
+                '& input::placeholder': { color: fabUTokens.color.textSecondary, opacity: 0.85 },
+              }}
+            />
+            {search ? (
+              <IconButton
+                size="small"
+                aria-label="Clear spell search"
+                onClick={() => setSearch('')}
+                sx={{ color: fabUTokens.color.textSecondary, p: 0.2 }}
+              >
+                <X size={15} />
+              </IconButton>
+            ) : null}
+          </Box>
+        </Stack>
+
+        <Stack
+          spacing={0.72}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            px: 1.5,
+            pb: 1.5,
+            overflowY: 'auto',
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
+          }}
+        >
+          {filteredSpells.length === 0 ? (
+            <Typography sx={{ fontSize: '0.84rem', color: fabUTokens.color.textSecondary, py: 1 }}>
+              No matching spells.
+            </Typography>
+          ) : (
+            filteredSpells.map((spell) => (
+              <Box
+                key={spell.name}
+                component="button"
+                type="button"
+                onClick={() => {
+                  onSelect(spell);
+                  onClose();
+                }}
+                data-pw="fab-u-spell-picker-row"
+                sx={{
+                  textAlign: 'left',
+                  background: fabUTokens.color.pillSurface,
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: `${fabUTokens.radius.sm}px`,
+                  px: 1.1,
+                  py: 0.9,
+                  cursor: 'pointer',
+                  width: '100%',
+                  font: 'inherit',
+                  color: fabUTokens.color.textPrimary,
+                  boxShadow: fabUTokens.shadow.card,
+                  '&:hover': { borderColor: fabUTokens.color.highlight },
+                  '&:focus-visible': {
+                    outline: `2px solid ${fabUTokens.color.highlight}`,
+                    outlineOffset: 2,
+                  },
+                }}
+              >
+                <Stack spacing={0.5}>
+                  <Typography
+                    sx={{
+                      fontWeight: 900,
+                      fontSize: '0.92rem',
+                      lineHeight: 1.16,
+                      color: fabUTokens.color.textPrimary,
+                    }}
+                  >
+                    {spell.name}
+                  </Typography>
+                  <Stack direction="row" flexWrap="wrap" gap={0.55}>
+                    {[
+                      ['MP', spell.cost],
+                      ['Target', spell.target],
+                      ['Duration', spell.duration],
+                    ].map(([chipLabel, value]) => (
+                      <Box
+                        key={`${spell.name}-${chipLabel}`}
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'baseline',
+                          gap: 0.35,
+                          border: `1px solid ${alpha(fabUTokens.color.highlight, 0.5)}`,
+                          borderRadius: '999px',
+                          px: 0.72,
+                          py: 0.18,
+                          bgcolor: alpha(
+                            fabUTokens.color.highlight,
+                            fabUTokens.isDark ? 0.1 : 0.08,
+                          ),
+                        }}
+                      >
+                        <Typography
+                          component="span"
+                          sx={{
+                            fontSize: '0.58rem',
+                            fontWeight: 900,
+                            letterSpacing: '0.055em',
+                            textTransform: 'uppercase',
+                            color: fabUTokens.color.highlight,
+                          }}
+                        >
+                          {chipLabel}
+                        </Typography>
+                        <Typography
+                          component="span"
+                          sx={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            color: fabUTokens.color.textPrimary,
+                          }}
+                        >
+                          {value}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                  {spell.effect ? (
+                    <Typography
+                      sx={{
+                        fontSize: '0.76rem',
+                        lineHeight: 1.38,
+                        color: fabUTokens.color.textSecondary,
+                      }}
+                    >
+                      {spell.effect}
+                    </Typography>
+                  ) : null}
+                </Stack>
+              </Box>
+            ))
+          )}
+        </Stack>
+      </Stack>
+    </Dialog>
+  );
+}
 
 function SwipeableSpellRow({
   row,
@@ -738,6 +1004,7 @@ function SpellsTable({
   const fabUTokens = useFabUTokens();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [draftSpell, setDraftSpell] = useState<DraftSpell | null>(null);
+  const [spellPickerOpen, setSpellPickerOpen] = useState(false);
   const [editingSpell, setEditingSpell] = useState<EditingSpellState | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const nameSelectRef = useRef<HTMLSelectElement>(null);
@@ -753,13 +1020,21 @@ function SpellsTable({
       : (label ?? title);
 
   const showAddSpellButton =
-    !!onAddSpell && totalMagicLevels !== undefined && rows.length < totalMagicLevels && !draftSpell;
+    !!onAddSpell &&
+    totalMagicLevels !== undefined &&
+    rows.length < totalMagicLevels &&
+    !draftSpell &&
+    !spellPickerOpen;
 
   const toggleRow = (name: string) => {
     setExpandedRow((prev) => (prev === name ? null : name));
   };
 
   function startDraft() {
+    if (availableSpellOptions.length > 0) {
+      setSpellPickerOpen(true);
+      return;
+    }
     const selectedOption = availableSpellOptions[0];
     setDraftSpell({
       name: selectedOption?.name ?? '',
@@ -768,6 +1043,12 @@ function SpellsTable({
       duration: selectedOption?.duration ?? 'Instant',
     });
     window.requestAnimationFrame(() => (nameSelectRef.current ?? nameInputRef.current)?.focus());
+  }
+
+  function addPickedSpell(spell: SpellRow) {
+    if (!onAddSpell) return;
+    onAddSpell(spell);
+    setSpellPickerOpen(false);
   }
 
   function commitDraftSpell() {
@@ -1125,6 +1406,14 @@ function SpellsTable({
           </Typography>
         </Box>
       ) : null}
+
+      <SpellPickerDialog
+        open={spellPickerOpen}
+        spells={availableSpellOptions}
+        label={label ?? title}
+        onClose={() => setSpellPickerOpen(false)}
+        onSelect={addPickedSpell}
+      />
     </SurfaceCard>
   );
 }
