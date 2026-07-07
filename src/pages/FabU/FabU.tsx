@@ -93,7 +93,6 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { ConvexCharacterSyncBoundary } from './ConvexCharacterSyncBoundary';
 import {
   type Character,
-  type CharacterName,
   MAX_CHARACTER_LEVEL,
   activeCombatTabState,
   activeTabState,
@@ -817,7 +816,7 @@ function FabU() {
   const [targetClassName, setTargetClassName] = useState<string | null>(null);
   const [isEditingBackstoryPrompts, setIsEditingBackstoryPrompts] = useState(false);
   const [nameEditOpen, setNameEditOpen] = useState(false);
-  const [nameDraft, setNameDraft] = useState<CharacterName>({
+  const [nameDraft, setNameDraft] = useState<Character['name']>({
     firstName: '',
     lastName: '',
     nickName: undefined,
