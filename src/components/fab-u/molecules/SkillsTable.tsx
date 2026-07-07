@@ -364,7 +364,10 @@ function SwipeableSkillRow({
                   onOpenEditLevelMenu(e);
                 }}
                 sx={{
-                  display: 'inline',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: 0.1,
                   minWidth: 0,
                   width: 'auto',
                   height: 'auto',
@@ -380,7 +383,8 @@ function SwipeableSkillRow({
                   textAlign: 'inherit',
                 }}
               >
-                {editDraft.level || '0'}
+                <Box component="span">{editDraft.level || '0'}</Box>
+                <KeyboardArrowDownIcon sx={{ fontSize: 14, ml: -0.15 }} />
               </Box>
             </Box>
             {hasAddLevels ? <Box sx={{ width: 38, flexShrink: 0 }} /> : null}
@@ -662,7 +666,12 @@ function SkillsTable({
     (option) => !rows.some((row) => row.name === option.name),
   );
   const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
-  const activeSkillLevel = activeSkill ? parseInt(activeSkill.level ?? '0', 10) : 0;
+  const activeSkillLevel =
+    menuState?.mode === 'edit' && editingSkill
+      ? parseInt(editingSkill.level ?? '0', 10)
+      : activeSkill
+        ? parseInt(activeSkill.level ?? '0', 10)
+        : 0;
   const activeSkillMax = activeSkill?.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
   const activeSkillAvailable = Math.min(
     Math.max(0, activeSkillMax - (isNaN(activeSkillLevel) ? 0 : activeSkillLevel)),
@@ -687,8 +696,8 @@ function SkillsTable({
 
   function selectLevel(targetLevel: number) {
     if (!menuState || !activeSkill) return;
-    const currentLevel = parseInt(activeSkill.level ?? '0', 10);
     if (menuState.mode === 'add') {
+      const currentLevel = parseInt(activeSkill.level ?? '0', 10);
       const delta = targetLevel - currentLevel;
       if (delta > 0 && onAddSkillLevels) onAddSkillLevels(menuState.skillName, delta);
     } else if (editingSkill && onEditSkill) {
@@ -1327,9 +1336,13 @@ function SkillsTable({
             { length: (activeSkill.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL) + 1 },
             (_, i) => i,
           ).map((level) => {
-            const currentLevel = parseInt(activeSkill.level ?? '0', 10);
-            const totalWithoutActive = tableTotal - (isNaN(currentLevel) ? 0 : currentLevel);
-            const isSelected = level === currentLevel;
+            const savedLevel = parseInt(activeSkill.level ?? '0', 10);
+            const currentLevel =
+              menuState?.mode === 'edit' && editingSkill
+                ? parseInt(editingSkill.level ?? '0', 10)
+                : savedLevel;
+            const totalWithoutActive = tableTotal - (isNaN(savedLevel) ? 0 : savedLevel);
+            const isSelected = level === (isNaN(currentLevel) ? 0 : currentLevel);
             const fitsClassTotal = totalWithoutActive + level <= 10;
             const canSelect =
               menuState?.mode === 'edit'
