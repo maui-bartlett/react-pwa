@@ -242,13 +242,26 @@ function combineSpellDescription(...parts: unknown[]): string {
     .trim();
 }
 
-function mapFabulaUltimaSkillOption(skill: FabulaUltimaSkillInfo): SkillRow | null {
+function getFabulaUltimaSkillMaxLevel(
+  className: string,
+  skillName: string,
+  catalogMaxLevel?: number,
+) {
+  if (className === 'Spiritist' && skillName === 'Spiritual Magic') return 8;
+  return catalogMaxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
+}
+
+function mapFabulaUltimaSkillOption(
+  className: string,
+  skill: FabulaUltimaSkillInfo,
+): SkillRow | null {
   const name = readString(skill.name);
   if (!name) return null;
+  const catalogMaxLevel = typeof skill.maxLevel === 'number' ? skill.maxLevel : undefined;
   return {
     name,
     level: '1',
-    maxLevel: typeof skill.maxLevel === 'number' ? skill.maxLevel : DEFAULT_SKILL_MAX_LEVEL,
+    maxLevel: getFabulaUltimaSkillMaxLevel(className, name, catalogMaxLevel),
     effect: readString(skill.summary) ?? readString(skill.description) ?? '',
     description: readString(skill.description),
   };
@@ -1108,7 +1121,7 @@ function FabU() {
     [...convexClassByName.entries()].map(([className, classInfo]) => {
       const skills = Array.isArray(classInfo.skillsExpanded)
         ? classInfo.skillsExpanded
-            .map((skill) => mapFabulaUltimaSkillOption(skill as FabulaUltimaSkillInfo))
+            .map((skill) => mapFabulaUltimaSkillOption(className, skill as FabulaUltimaSkillInfo))
             .filter((skill): skill is SkillRow => !!skill)
         : [];
       return [className, skills] as const;
@@ -1126,7 +1139,13 @@ function FabU() {
   );
   const classSkillGroups = character.classes.map((cls) => ({
     className: cls.name,
-    skills: character.skillGroups.find((group) => group.className === cls.name)?.skills ?? [],
+    skills:
+      character.skillGroups
+        .find((group) => group.className === cls.name)
+        ?.skills.map((skill) => ({
+          ...skill,
+          maxLevel: getFabulaUltimaSkillMaxLevel(cls.name, skill.name, skill.maxLevel),
+        })) ?? [],
   }));
   const classSpellGroups = character.classes.flatMap((cls) => {
     const spells = getClassSpellRows(character, cls.name);
@@ -1316,8 +1335,8 @@ function FabU() {
     if (!group) return 0;
     const defaultGroup = defaultSkillGroups.find((g) => g.className === className);
     const magicSkill = group.skills.find((s) => {
-      const fallbackMax = defaultGroup?.skills.find((ds) => ds.name === s.name)?.maxLevel ?? 5;
-      return (s.maxLevel ?? fallbackMax) > 5;
+      const fallbackMax = defaultGroup?.skills.find((ds) => ds.name === s.name)?.maxLevel;
+      return getFabulaUltimaSkillMaxLevel(className, s.name, s.maxLevel ?? fallbackMax) > 5;
     });
     if (!magicSkill) return 0;
     return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
@@ -1480,10 +1499,18 @@ function FabU() {
                   if (skill.name !== skillName) return skill;
                   const currentLevel = parseInt(skill.level ?? '0', 10);
                   const normalizedLevel = isNaN(currentLevel) ? 0 : currentLevel;
-                  const remainingSkillLevels =
-                    (skill.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL) - normalizedLevel;
+                  const maxLevel = getFabulaUltimaSkillMaxLevel(
+                    className,
+                    skill.name,
+                    skill.maxLevel,
+                  );
+                  const remainingSkillLevels = maxLevel - normalizedLevel;
                   const levelsToAdd = Math.min(levels, availableLevels, remainingSkillLevels);
-                  return { ...skill, level: String(normalizedLevel + Math.max(0, levelsToAdd)) };
+                  return {
+                    ...skill,
+                    maxLevel,
+                    level: String(normalizedLevel + Math.max(0, levelsToAdd)),
+                  };
                 }),
               }
             : group,
