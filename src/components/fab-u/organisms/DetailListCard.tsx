@@ -503,6 +503,7 @@ function DetailListCard({
         {addLabel ? (
           <Box
             role="button"
+            data-pw={`detail-list-add-${addLabel.toLowerCase().replace(/\s+/g, '-')}`}
             tabIndex={0}
             onClick={onAdd}
             onKeyDown={handleAddKeyDown}

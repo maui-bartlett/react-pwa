@@ -285,7 +285,7 @@ function HpMpManagementModal({
           </Box>
 
           {/* Current readout */}
-          <Stack alignItems="flex-start" sx={{ mb: 1, pl: '28px' }}>
+          <Stack alignItems="flex-start" sx={{ mb: 1 }}>
             <Box
               sx={{
                 position: 'relative',
@@ -301,11 +301,12 @@ function HpMpManagementModal({
                 sx={{
                   position: 'absolute',
                   top: 0,
-                  left: 0,
+                  left: '28px',
                   alignItems: 'flex-start',
                 }}
               >
                 <Typography
+                  data-pw={`${kind}-management-points-label`}
                   sx={{
                     ...fieldLabelSx,
                     width: 'auto',

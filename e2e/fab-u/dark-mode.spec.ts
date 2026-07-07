@@ -70,18 +70,26 @@ test.describe('Dark mode', () => {
 
   // ── Add buttons are yellow in dark mode ────────────────────────────────────
 
-  test('+ Class and + Bond add buttons render in yellow accent in dark mode', async ({ page }) => {
-    const addButtonColors = await page.evaluate(() => {
-      // Add buttons are Boxes containing AddIcon + "Class" or "Bond" text.
-      // They use fabUTokens.color.highlight for their text color.
-      const allDivs = Array.from(document.querySelectorAll('div'));
-      const addBtns = allDivs.filter((d) => {
-        const text = d.textContent?.trim();
-        return text === 'Class' || text === 'Bond';
-      });
-      return addBtns.map((d) => getComputedStyle(d).color);
-    });
-    expect(addButtonColors.length, 'should find add buttons (Class / Bond)').toBeGreaterThan(0);
+  test('add buttons render in yellow accent in dark mode', async ({ page }) => {
+    const addButtonColors: string[] = [];
+    const addButtonTestIds = ['bond-add-new', 'detail-list-add-class'];
+
+    for (const testId of addButtonTestIds) {
+      const locator = page.locator(`[data-pw="${testId}"]`);
+      if ((await locator.count()) > 0 && (await locator.first().isVisible())) {
+        addButtonColors.push(await locator.first().evaluate((element) => getComputedStyle(element).color));
+      }
+    }
+
+    await page.getByText('Skills', { exact: true }).click();
+    for (const testId of ['detail-list-add-class', 'add-skill-button']) {
+      const locator = page.locator(`[data-pw="${testId}"]`);
+      if ((await locator.count()) > 0 && (await locator.first().isVisible())) {
+        addButtonColors.push(await locator.first().evaluate((element) => getComputedStyle(element).color));
+      }
+    }
+
+    expect(addButtonColors.length, 'should find visible add buttons').toBeGreaterThan(0);
     for (const color of addButtonColors) {
       const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
       expect(match, `add button text should be rgb, got: ${color}`).toBeTruthy();

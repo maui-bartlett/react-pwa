@@ -27,18 +27,25 @@ test.describe('HP/MP management modal', () => {
     );
 
     const modifier = await page.locator('[data-pw="hp-management-modifier-control"]').boundingBox();
+    const pointsLabel = await page.locator('[data-pw="hp-management-points-label"]').boundingBox();
+    const modifierLabel = await page
+      .locator('[data-pw="hp-management-modifier-label"]')
+      .boundingBox();
     const heal = await page.locator('[data-pw="hp-management-add"]').boundingBox();
     const amount = await page.locator('[data-pw="hp-management-amount-control"]').boundingBox();
     const damage = await page.locator('[data-pw="hp-management-subtract"]').boundingBox();
     const wheel = await page.locator('[data-pw="hp-management-number-wheel"]').boundingBox();
     const paper = await popper.boundingBox();
-    if (!modifier || !heal || !amount || !damage || !wheel || !paper) {
+    if (!modifier || !pointsLabel || !modifierLabel || !heal || !amount || !damage || !wheel || !paper) {
       throw new Error('HP management controls are not visible');
     }
 
-    expect(Math.abs(wheel.y - modifier.y)).toBeLessThan(1);
+    expect(Math.abs(pointsLabel.y - modifierLabel.y)).toBeLessThan(1);
+    expect(Math.abs(wheel.y - heal.y)).toBeLessThan(1);
+    expect(Math.abs(modifier.x + modifier.width / 2 - (wheel.x + wheel.width / 2))).toBeLessThan(
+      1,
+    );
     const gaps = [
-      heal.y - (modifier.y + modifier.height),
       amount.y - (heal.y + heal.height),
       damage.y - (amount.y + amount.height),
     ];

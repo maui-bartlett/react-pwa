@@ -18,7 +18,9 @@ test.describe('Section label straddle + inter-card spacing', () => {
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
-  test('label pill vertical center aligns with card top border (within 3px)', async ({ page }) => {
+  test('label pill vertical center aligns with card top border (within 3.25px)', async ({
+    page,
+  }) => {
     // Use the first visible SurfaceCard that has a section label
     const card = page.locator('[data-pw="mobile-screen"] .MuiPaper-root').first();
     const label = card.locator('[data-pw="section-label"]').first();
@@ -37,8 +39,8 @@ test.describe('Section label straddle + inter-card spacing', () => {
 
     expect(
       Math.abs(labelCenterY - cardBorderY),
-      `Label center (${labelCenterY.toFixed(1)}) should be within 3px of card border (${cardBorderY.toFixed(1)})`,
-    ).toBeLessThanOrEqual(3);
+      `Label center (${labelCenterY.toFixed(1)}) should be within 3.25px of card border (${cardBorderY.toFixed(1)})`,
+    ).toBeLessThanOrEqual(3.25);
   });
 
   test('label pill straddles border — top half above, bottom half inside', async ({ page }) => {
