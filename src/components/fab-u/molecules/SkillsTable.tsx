@@ -665,7 +665,12 @@ function SkillsTable({
   const availableSkillOptions = skillOptions.filter(
     (option) => !rows.some((row) => row.name === option.name),
   );
-  const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
+  const activeSkill =
+    menuState?.mode === 'edit' && editingSkill
+      ? originalSkillDataRef.current
+      : menuState
+        ? rows.find((row) => row.name === menuState.skillName)
+        : null;
   const activeSkillLevel =
     menuState?.mode === 'edit' && editingSkill
       ? parseInt(editingSkill.level ?? '0', 10)

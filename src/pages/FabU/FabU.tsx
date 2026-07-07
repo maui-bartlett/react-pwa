@@ -3314,7 +3314,7 @@ function FabU() {
             width: { xs: 'calc(100vw - 32px)', sm: 390 },
             borderRadius: '14px',
             border: `1px solid ${fabUTokens.color.border}`,
-            bgcolor: fabUTokens.color.surface,
+            bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : fabUTokens.color.surface,
             color: fabUTokens.color.textPrimary,
             boxShadow: fabUTokens.shadow.soft,
           },
@@ -3330,7 +3330,9 @@ function FabU() {
         >
           Edit Character Name
         </DialogTitle>
-        <DialogContent sx={{ pt: 1.2 }}>
+        <DialogContent
+          sx={{ pt: 1.2, bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : 'transparent' }}
+        >
           <Stack spacing={0.85}>
             {(
               [
@@ -3402,7 +3404,14 @@ function FabU() {
             </Typography>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 0.5 }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2,
+            pt: 0.5,
+            bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : 'transparent',
+          }}
+        >
           <Button
             onClick={closeNameEdit}
             sx={{

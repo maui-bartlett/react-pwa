@@ -35,14 +35,14 @@ const BACKSTORY_PROMPT_DEFAULTS: BackstoryPrompt[] = [
       'Me and my family are political refugees. My parents were studying a pure form of magic, research not looked upon kindly by the government.',
   },
   {
-    prompt: 'How do I feel about being in Efowyn?',
+    prompt: 'How do I feel about being in Elowyn?',
     response:
       'I feel out of place culturally, but I have a friendly and optimistic personality, and am trying my best to fit in and make friends.',
   },
   {
     prompt: 'How do I feel about the castle in the sky?',
     response:
-      "The capital city, Ad Astya, is the seat of the government that persecuted my family. I'm not a fan.",
+      "The capital city, Ad Astra, is the seat of the government that persecuted my family. I'm not a fan.",
   },
 ];
 
@@ -141,11 +141,11 @@ const RANDOM_THEMES = [
 ];
 
 const RANDOM_ORIGINS = [
-  'Ad Astya',
+  'Ad Astra',
   'Aurelian Coast',
   'Brasswood',
   'Cloudbreak Isles',
-  'Efowyn',
+  'Elowyn',
   'Infinita',
   'Moonlit Principality',
   'Old Meridian',
