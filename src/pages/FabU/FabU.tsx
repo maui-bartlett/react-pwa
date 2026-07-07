@@ -81,6 +81,7 @@ import {
 import type { SkillRow, SpellRow } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
+import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
 import { persistAppView } from '@/state/persistentAppLocation';
@@ -211,12 +212,6 @@ function getClassSpellRows(character: Character, className: string): SpellRow[] 
     character.classes.find((cls) => cls.name === className) as ClassWithSpells | undefined
   )?.spells;
   return Array.isArray(classSpells) ? classSpells : undefined;
-}
-
-function hasChimeristSpellMimic(character: Character) {
-  return character.skillGroups
-    .find((group) => group.className === 'Chimerist')
-    ?.skills.some((skill) => skill.name.trim().toLowerCase() === 'spell mimic');
 }
 
 function readString(value: unknown): string | undefined {
@@ -1349,6 +1344,10 @@ function FabU() {
     });
     if (!magicSkill) return 0;
     return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
+  };
+
+  const getSpellCapacity = (className: string): number => {
+    return getFabUClassSpellCapacity(character, className, getMagicSkillLevel(className));
   };
 
   const handleDeleteEquipment = (
@@ -2531,7 +2530,7 @@ function FabU() {
                 rows={group.spells}
                 spellOptions={spellOptionsByClass.get(group.className) ?? []}
                 onCastSpell={handleCastSpell}
-                totalMagicLevels={getMagicSkillLevel(group.className)}
+                totalMagicLevels={getSpellCapacity(group.className)}
                 onAddSpell={(spell) => handleAddSpell(group.className, spell)}
                 onUpdateSpellEffect={(spellName, effect) =>
                   handleUpdateSpellEffect(group.className, spellName, effect)
@@ -2759,7 +2758,7 @@ function FabU() {
             rows={group.spells}
             spellOptions={spellOptionsByClass.get(group.className) ?? []}
             onCastSpell={handleCastSpell}
-            totalMagicLevels={getMagicSkillLevel(group.className)}
+            totalMagicLevels={getSpellCapacity(group.className)}
             onAddSpell={(spell) => handleAddSpell(group.className, spell)}
             onUpdateSpellEffect={(spellName, effect) =>
               handleUpdateSpellEffect(group.className, spellName, effect)
