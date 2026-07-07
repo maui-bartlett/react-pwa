@@ -239,11 +239,29 @@ function HpMpManagementModal({
           }}
         >
           {/* Header */}
-          <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+          <Box sx={{ position: 'relative', minHeight: 30, mb: 1 }}>
+            <Typography
+              sx={{
+                ml: '28px',
+                pr: '34px',
+                minHeight: 30,
+                display: 'flex',
+                alignItems: 'center',
+                textAlign: 'left',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                color: fabUTokens.color.textPrimary,
+              }}
+            >
+              {title}
+            </Typography>
             <IconButton
               onClick={onClose}
               data-pw={`${kind}-management-close`}
               sx={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
                 color: fabUTokens.color.textPrimary,
                 border: `1px solid ${fabUTokens.color.border}`,
                 width: 30,
@@ -252,22 +270,10 @@ function HpMpManagementModal({
             >
               <X size={16} />
             </IconButton>
-            <Typography
-              sx={{
-                flex: 1,
-                textAlign: 'center',
-                mr: '30px',
-                fontWeight: 800,
-                fontSize: '0.95rem',
-                color: fabUTokens.color.textPrimary,
-              }}
-            >
-              {title}
-            </Typography>
-          </Stack>
+          </Box>
 
           {/* Current readout */}
-          <Stack alignItems="center" sx={{ mb: 1 }}>
+          <Stack alignItems="flex-start" sx={{ mb: 1, pl: '28px' }}>
             <Typography
               sx={{
                 fontSize: '0.6rem',
@@ -286,10 +292,10 @@ function HpMpManagementModal({
                 minHeight: 50,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
               }}
             >
-              <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.55}>
+              <Stack direction="row" alignItems="center" justifyContent="flex-start" spacing={0.55}>
                 <InputBase
                   data-pw={`${kind}-management-current-control`}
                   value={currentDraft}

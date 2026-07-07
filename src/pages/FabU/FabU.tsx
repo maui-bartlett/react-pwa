@@ -3074,10 +3074,10 @@ function FabU() {
               flex: '0 0 auto',
               borderRadius: '50%',
               border: `1px solid ${fabUTokens.color.border}`,
-              bgcolor: fabUTokens.color.surface,
-              color: fabUTokens.color.brand,
+              bgcolor: 'transparent',
+              color: '#ffffff',
               '&:hover': {
-                bgcolor: fabUTokens.color.surfaceMuted,
+                bgcolor: alpha('#ffffff', 0.12),
               },
             }}
           >
