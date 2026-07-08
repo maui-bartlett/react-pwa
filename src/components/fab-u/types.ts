@@ -98,6 +98,10 @@ export type SpellRow = {
   target: string;
   duration: 'Instant' | 'Scene';
   effect: string;
+  /** Short app-friendly preview shown in pickers and compact rows. */
+  summary?: string;
+  /** Full description shown in expanded picker rows and spell panels. */
+  description?: string;
 };
 
 export type EquipmentItem = {

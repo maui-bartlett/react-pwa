@@ -673,9 +673,11 @@ function SkillsTable({
   const headingLabel = `${label ?? title} • ${tableTotal}/10`;
   const showAddSkillButton =
     !!onAddSkill && tableTotal < 10 && !draftSkill && !skillPickerOpen && !customSkillOpen;
+  const hasHeroicSkill = rows.some((row) => row.mastered);
   const showMasteredSkillButton =
     classMastered &&
     !!onAddMasteredSkill &&
+    !hasHeroicSkill &&
     !draftSkill &&
     !skillPickerOpen &&
     !masteredSkillPickerOpen &&
@@ -737,6 +739,7 @@ function SkillsTable({
       level: draftSkill.level || '0',
       maxLevel: selectedOption?.maxLevel,
       effect: selectedOption?.effect ?? '',
+      summary: selectedOption?.summary,
       description: selectedOption?.description,
     });
     setDraftSkill(null);
@@ -794,6 +797,7 @@ function SkillsTable({
       level: '1',
       maxLevel: Math.max(1, parseInt(customSkillDraft.maxLevel, 10) || DEFAULT_SKILL_MAX_LEVEL),
       effect: customSkillDraft.effect.trim(),
+      summary: customSkillDraft.effect.trim(),
       description: customSkillDraft.description.trim() || undefined,
     });
     setCustomSkillOpen(false);
@@ -1216,13 +1220,16 @@ function SkillsTable({
                 {skill.effect}
               </Typography>
             ) : null}
+          </Stack>
+        )}
+        renderExpandedEntry={(skill) => (
+          <Stack spacing={0.75}>
             {skill.description ? (
               <Typography
                 sx={{
-                  fontSize: '0.74rem',
-                  lineHeight: 1.36,
-                  color: fabUTokens.color.textSecondary,
-                  opacity: 0.86,
+                  fontSize: '0.8rem',
+                  lineHeight: 1.48,
+                  color: fabUTokens.color.textPrimary,
                 }}
               >
                 {skill.description}
@@ -1270,6 +1277,21 @@ function SkillsTable({
                 }}
               >
                 {skill.summary ?? skill.effect}
+              </Typography>
+            ) : null}
+          </Stack>
+        )}
+        renderExpandedEntry={(skill) => (
+          <Stack spacing={0.75}>
+            {skill.description ? (
+              <Typography
+                sx={{
+                  fontSize: '0.8rem',
+                  lineHeight: 1.48,
+                  color: fabUTokens.color.textPrimary,
+                }}
+              >
+                {skill.description}
               </Typography>
             ) : null}
           </Stack>

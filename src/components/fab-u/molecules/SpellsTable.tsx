@@ -678,10 +678,10 @@ function SwipeableSpellRow({
                         fontSize: '0.84rem',
                         lineHeight: 1.5,
                         color: fabUTokens.color.textPrimary,
-                        fontStyle: !row.effect ? 'italic' : 'normal',
+                        fontStyle: !row.description && !row.effect ? 'italic' : 'normal',
                       }}
                     >
-                      {row.effect || 'Swipe left to add description'}
+                      {(row.description ?? row.effect) || 'Swipe left to add description'}
                     </Typography>
                   )}
                 </Box>
@@ -824,6 +824,8 @@ function SpellsTable({
       target: customSpellDraft.target.trim() || '1',
       duration: customSpellDraft.duration,
       effect: customSpellDraft.effect.trim(),
+      summary: customSpellDraft.effect.trim(),
+      description: customSpellDraft.effect.trim() || undefined,
     });
     setCustomSpellOpen(false);
     setCustomSpellError('');
@@ -838,6 +840,8 @@ function SpellsTable({
       target: selectedOption?.target ?? (draftSpell.target.trim() || '1'),
       duration: selectedOption?.duration ?? draftSpell.duration,
       effect: selectedOption?.effect ?? '',
+      summary: selectedOption?.summary,
+      description: selectedOption?.description,
     });
     setDraftSpell(null);
   }
@@ -981,6 +985,8 @@ function SpellsTable({
                       target: draft.target.trim() || '1',
                       duration: draft.duration,
                       effect: rows.find((r) => r.name === draft.originalName)?.effect ?? '',
+                      summary: rows.find((r) => r.name === draft.originalName)?.summary,
+                      description: rows.find((r) => r.name === draft.originalName)?.description,
                     });
                   }
                 }}
@@ -1199,6 +1205,8 @@ function SpellsTable({
           spell.target,
           spell.duration,
           spell.effect,
+          spell.summary ?? '',
+          spell.description ?? '',
         ]}
         renderEntry={(spell) => (
           <Stack spacing={0.5}>
@@ -1256,7 +1264,7 @@ function SpellsTable({
                 </Box>
               ))}
             </Stack>
-            {spell.effect ? (
+            {(spell.summary ?? spell.effect) ? (
               <Typography
                 sx={{
                   fontSize: '0.76rem',
@@ -1264,9 +1272,22 @@ function SpellsTable({
                   color: fabUTokens.color.textSecondary,
                 }}
               >
-                {spell.effect}
+                {spell.summary ?? spell.effect}
               </Typography>
             ) : null}
+          </Stack>
+        )}
+        renderExpandedEntry={(spell) => (
+          <Stack spacing={0.75}>
+            <Typography
+              sx={{
+                fontSize: '0.8rem',
+                lineHeight: 1.48,
+                color: fabUTokens.color.textPrimary,
+              }}
+            >
+              {(spell.description ?? spell.effect) || 'No spell description available.'}
+            </Typography>
           </Stack>
         )}
         onClose={() => setSpellPickerOpen(false)}

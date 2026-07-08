@@ -300,7 +300,9 @@ function normalizeSkillRow(stored: unknown): SkillRow | null {
     ...(typeof skill.maxLevel === 'number' && Number.isFinite(skill.maxLevel)
       ? { maxLevel: skill.maxLevel }
       : {}),
+    ...(typeof skill.summary === 'string' ? { summary: skill.summary } : {}),
     ...(typeof skill.description === 'string' ? { description: skill.description } : {}),
+    ...(typeof skill.mastered === 'boolean' ? { mastered: skill.mastered } : {}),
   };
 }
 
@@ -343,6 +345,8 @@ function normalizeSpellRow(stored: unknown): SpellRow | null {
     target: normalizeString(spell.target, ''),
     duration: spell.duration === 'Scene' ? 'Scene' : 'Instant',
     effect: normalizeString(spell.effect, ''),
+    ...(typeof spell.summary === 'string' ? { summary: spell.summary } : {}),
+    ...(typeof spell.description === 'string' ? { description: spell.description } : {}),
   };
 }
 

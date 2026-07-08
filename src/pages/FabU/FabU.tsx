@@ -280,7 +280,7 @@ function mapFabulaUltimaSkillOption(
     maxLevel: getFabulaUltimaSkillMaxLevel(className, name, catalogMaxLevel),
     effect: summary,
     summary,
-    description: readString(skill.description),
+    description: readString(skill.description) ?? summary,
   };
 }
 
@@ -294,22 +294,30 @@ function mapFabulaUltimaSpellOption(spell: FabulaUltimaSpellInfo): SpellRow | nu
     !isSpellDuration(spell.duration);
   if (hasShiftedColumns) {
     const correctedCost = className ? SHIFTED_SPELL_COSTS.get(`${className}|${name}`) : undefined;
-    const effect = combineSpellDescription(spell.duration, spell.effect, spell.description);
+    const description = combineSpellDescription(spell.duration, spell.effect, spell.description);
+    const summary =
+      readString(spell.summary) ?? readString(spell.effect) ?? readString(spell.description) ?? '';
     return {
       name,
       cost: correctedCost ?? '0 MP',
       target: readString(spell.mpCost) ?? '1',
       duration: normalizeSpellDuration(spell.target),
-      effect,
+      effect: summary || description,
+      summary: summary || description,
+      description: description || summary,
     };
   }
+  const summary =
+    readString(spell.summary) ?? readString(spell.effect) ?? readString(spell.description) ?? '';
+  const description = readString(spell.description) ?? readString(spell.effect) ?? summary;
   return {
     name,
     cost: readString(spell.mpCost) ?? readString(spell.cost) ?? '0 MP',
     target: readString(spell.target) ?? '1',
     duration: normalizeSpellDuration(spell.duration),
-    effect:
-      readString(spell.effect) ?? readString(spell.description) ?? readString(spell.summary) ?? '',
+    effect: summary,
+    summary,
+    description,
   };
 }
 
@@ -1326,7 +1334,15 @@ function FabU() {
       ...c,
       skillGroups: c.skillGroups.some((g) => g.className === className)
         ? c.skillGroups.map((g) =>
-            g.className === className ? { ...g, skills: [...g.skills, skill] } : g,
+            g.className === className
+              ? {
+                  ...g,
+                  skills:
+                    skill.mastered && g.skills.some((existingSkill) => existingSkill.mastered)
+                      ? g.skills
+                      : [...g.skills, skill],
+                }
+              : g,
           )
         : [...c.skillGroups, { className, skills: [skill] }],
     }));

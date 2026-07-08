@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import Box from '@mui/material/Box';
+import Collapse from '@mui/material/Collapse';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
@@ -10,7 +11,7 @@ import { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Plus, Search, X } from 'lucide-react';
+import { ChevronDown, Plus, Search, X } from 'lucide-react';
 
 import { useHideDiceRollerWhileOpen } from '../../DiceRoller/visibilityEvents';
 import { useFabUTokens } from '../ThemeContext';
@@ -26,6 +27,8 @@ type FabUCatalogPickerDialogProps<TEntry> = {
   getKey: (entry: TEntry) => string;
   getSearchText: (entry: TEntry) => string[];
   renderEntry: (entry: TEntry) => ReactNode;
+  renderExpandedEntry?: (entry: TEntry) => ReactNode;
+  selectLabel?: string;
   onClose: () => void;
   onSelect: (entry: TEntry) => void;
   onCreateCustom?: () => void;
@@ -42,16 +45,22 @@ function FabUCatalogPickerDialog<TEntry>({
   getKey,
   getSearchText,
   renderEntry,
+  renderExpandedEntry,
+  selectLabel = 'Add',
   onClose,
   onSelect,
   onCreateCustom,
 }: FabUCatalogPickerDialogProps<TEntry>) {
   const fabUTokens = useFabUTokens();
   const [search, setSearch] = useState('');
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
   useHideDiceRollerWhileOpen(`fab-u-catalog-picker:${title}`, open);
 
   useEffect(() => {
-    if (open) setSearch('');
+    if (open) {
+      setSearch('');
+      setExpandedKey(null);
+    }
   }, [open]);
 
   const filteredEntries = useMemo(() => {
@@ -217,38 +226,131 @@ function FabUCatalogPickerDialog<TEntry>({
               No matching options.
             </Typography>
           ) : (
-            filteredEntries.map((entry) => (
-              <Box
-                key={getKey(entry)}
-                component="button"
-                type="button"
-                onClick={() => {
-                  onSelect(entry);
-                  onClose();
-                }}
-                data-pw="fab-u-catalog-row"
-                sx={{
-                  textAlign: 'left',
-                  background: fabUTokens.color.pillSurface,
-                  border: `1px solid ${fabUTokens.color.border}`,
-                  borderRadius: `${fabUTokens.radius.sm}px`,
-                  px: 1.1,
-                  py: 0.9,
-                  cursor: 'pointer',
-                  width: '100%',
-                  font: 'inherit',
-                  color: fabUTokens.color.textPrimary,
-                  boxShadow: fabUTokens.shadow.card,
-                  '&:hover': { borderColor: fabUTokens.color.highlight },
-                  '&:focus-visible': {
-                    outline: `2px solid ${fabUTokens.color.highlight}`,
-                    outlineOffset: 2,
-                  },
-                }}
-              >
-                {renderEntry(entry)}
-              </Box>
-            ))
+            filteredEntries.map((entry) => {
+              const key = getKey(entry);
+              const expanded = expandedKey === key;
+              if (!renderExpandedEntry) {
+                return (
+                  <Box
+                    key={key}
+                    component="button"
+                    type="button"
+                    onClick={() => {
+                      onSelect(entry);
+                      onClose();
+                    }}
+                    data-pw="fab-u-catalog-row"
+                    sx={{
+                      textAlign: 'left',
+                      background: fabUTokens.color.pillSurface,
+                      border: `1px solid ${fabUTokens.color.border}`,
+                      borderRadius: `${fabUTokens.radius.sm}px`,
+                      px: 1.1,
+                      py: 0.9,
+                      cursor: 'pointer',
+                      width: '100%',
+                      font: 'inherit',
+                      color: fabUTokens.color.textPrimary,
+                      boxShadow: fabUTokens.shadow.card,
+                      '&:hover': { borderColor: fabUTokens.color.highlight },
+                      '&:focus-visible': {
+                        outline: `2px solid ${fabUTokens.color.highlight}`,
+                        outlineOffset: 2,
+                      },
+                    }}
+                  >
+                    {renderEntry(entry)}
+                  </Box>
+                );
+              }
+
+              return (
+                <Box
+                  key={key}
+                  data-pw="fab-u-catalog-row"
+                  sx={{
+                    background: fabUTokens.color.pillSurface,
+                    border: `1px solid ${expanded ? fabUTokens.color.highlight : fabUTokens.color.border}`,
+                    borderRadius: `${fabUTokens.radius.sm}px`,
+                    overflow: 'hidden',
+                    color: fabUTokens.color.textPrimary,
+                    boxShadow: fabUTokens.shadow.card,
+                  }}
+                >
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedKey((current) => (current === key ? null : key))}
+                    sx={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: 0.8,
+                      textAlign: 'left',
+                      background: 'transparent',
+                      border: 'none',
+                      px: 1.1,
+                      py: 0.9,
+                      cursor: 'pointer',
+                      font: 'inherit',
+                      color: fabUTokens.color.textPrimary,
+                      '&:focus-visible': {
+                        outline: `2px solid ${fabUTokens.color.highlight}`,
+                        outlineOffset: -2,
+                      },
+                    }}
+                  >
+                    <Box sx={{ flex: 1, minWidth: 0 }}>{renderEntry(entry)}</Box>
+                    <ChevronDown
+                      size={18}
+                      color={fabUTokens.color.textSecondary}
+                      style={{
+                        flex: '0 0 auto',
+                        marginTop: 2,
+                        transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 160ms ease',
+                      }}
+                    />
+                  </Box>
+                  <Collapse in={expanded} timeout={180} unmountOnExit>
+                    <Stack
+                      spacing={1}
+                      sx={{
+                        borderTop: `1px solid ${alpha(fabUTokens.color.border, 0.8)}`,
+                        px: 1.1,
+                        py: 1,
+                      }}
+                    >
+                      {renderExpandedEntry(entry)}
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={() => {
+                          onSelect(entry);
+                          onClose();
+                        }}
+                        sx={{
+                          alignSelf: 'flex-end',
+                          minHeight: 36,
+                          border: `1px solid ${fabUTokens.color.highlight}`,
+                          borderRadius: `${fabUTokens.radius.sm}px`,
+                          bgcolor: fabUTokens.color.highlight,
+                          color: fabUTokens.isDark ? fabUTokens.color.brand : '#ffffff',
+                          px: 1.4,
+                          cursor: 'pointer',
+                          font: 'inherit',
+                          fontWeight: 900,
+                          boxShadow: fabUTokens.shadow.card,
+                        }}
+                      >
+                        {selectLabel}
+                      </Box>
+                    </Stack>
+                  </Collapse>
+                </Box>
+              );
+            })
           )}
         </Stack>
       </Stack>
