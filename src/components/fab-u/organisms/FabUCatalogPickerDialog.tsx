@@ -20,7 +20,7 @@ type FabUCatalogPickerDialogProps<TEntry> = {
   title: string;
   label: string;
   searchPlaceholder: string;
-  customLabel: string;
+  customLabel?: string;
   HeaderIcon?: React.ComponentType<SvgIconProps>;
   entries: TEntry[];
   getKey: (entry: TEntry) => string;
@@ -28,7 +28,7 @@ type FabUCatalogPickerDialogProps<TEntry> = {
   renderEntry: (entry: TEntry) => ReactNode;
   onClose: () => void;
   onSelect: (entry: TEntry) => void;
-  onCreateCustom: () => void;
+  onCreateCustom?: () => void;
 };
 
 function FabUCatalogPickerDialog<TEntry>({
@@ -135,30 +135,32 @@ function FabUCatalogPickerDialog<TEntry>({
             </Box>
           </Stack>
 
-          <Box
-            component="button"
-            type="button"
-            onClick={onCreateCustom}
-            data-pw="fab-u-catalog-custom"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.7,
-              width: '100%',
-              minHeight: 42,
-              border: `1px dashed ${fabUTokens.color.highlight}`,
-              borderRadius: `${fabUTokens.radius.sm}px`,
-              bgcolor: alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.1 : 0.07),
-              color: fabUTokens.color.highlight,
-              px: 1,
-              cursor: 'pointer',
-              font: 'inherit',
-              textAlign: 'left',
-            }}
-          >
-            <Plus size={17} />
-            <Typography sx={{ fontWeight: 900, fontSize: '0.82rem' }}>{customLabel}</Typography>
-          </Box>
+          {customLabel && onCreateCustom ? (
+            <Box
+              component="button"
+              type="button"
+              onClick={onCreateCustom}
+              data-pw="fab-u-catalog-custom"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.7,
+                width: '100%',
+                minHeight: 42,
+                border: `1px dashed ${fabUTokens.color.highlight}`,
+                borderRadius: `${fabUTokens.radius.sm}px`,
+                bgcolor: alpha(fabUTokens.color.highlight, fabUTokens.isDark ? 0.1 : 0.07),
+                color: fabUTokens.color.highlight,
+                px: 1,
+                cursor: 'pointer',
+                font: 'inherit',
+                textAlign: 'left',
+              }}
+            >
+              <Plus size={17} />
+              <Typography sx={{ fontWeight: 900, fontSize: '0.82rem' }}>{customLabel}</Typography>
+            </Box>
+          ) : null}
 
           <Box
             sx={{

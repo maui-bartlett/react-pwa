@@ -1,4 +1,3 @@
-import type { MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Link } from 'react-router';
@@ -30,7 +29,6 @@ import {
   Backpack,
   Ban,
   Check,
-  CheckCircle,
   ChevronDown,
   Feather,
   FlaskConical,
@@ -52,6 +50,7 @@ import {
   DetailListCard,
   EquipmentCard,
   type EquipmentSlot,
+  FabUCatalogPickerDialog,
   FabUTab,
   FabUThemeProvider,
   HeaderBar,
@@ -171,6 +170,10 @@ type FabulaUltimaSpellInfo = {
 
 type FabulaUltimaClassInfo = {
   name?: unknown;
+  summary?: unknown;
+  description?: unknown;
+  source?: unknown;
+  freeBenefits?: unknown;
   skillsExpanded?: unknown;
   spellsExpanded?: unknown;
   spells?: unknown;
@@ -178,6 +181,16 @@ type FabulaUltimaClassInfo = {
 
 type FabulaUltimaClassDoc = {
   class?: FabulaUltimaClassInfo;
+};
+
+type FabulaUltimaClassCatalogEntry = {
+  name: string;
+  summary: string;
+  description: string;
+  source: string;
+  freeBenefits: string[];
+  skillCount: number;
+  spellCount: number;
 };
 
 const SHIFTED_SPELL_COSTS = new Map(
@@ -833,7 +846,7 @@ function FabU() {
     const t = setTimeout(() => setNotEnoughMpToastOpen(false), 2400);
     return () => clearTimeout(t);
   }, [notEnoughMpToastOpen]);
-  const [classPickerAnchorEl, setClassPickerAnchorEl] = useState<HTMLElement | null>(null);
+  const [classPickerOpen, setClassPickerOpen] = useState(false);
   const [inventoryAnchorEl, setInventoryAnchorEl] = useState<HTMLElement | null>(null);
   const [inventoryAnchorDir, setInventoryAnchorDir] = useState<'above' | 'below'>('above');
   const [fabulaAnchorEl, setFabulaAnchorEl] = useState<HTMLElement | null>(null);
@@ -1194,14 +1207,36 @@ function FabU() {
     return () => clearTimeout(timer);
   }, [pendingCombatSubTabScroll]);
 
-  const classPickerOpen = Boolean(classPickerAnchorEl);
+  const classCatalogEntries: FabulaUltimaClassCatalogEntry[] = selectableClasses
+    .filter((selectableClass) => !selectedClassNames.has(selectableClass.name))
+    .map((selectableClass) => {
+      const classInfo = convexClassByName.get(selectableClass.name);
+      const freeBenefits = Array.isArray(classInfo?.freeBenefits)
+        ? classInfo.freeBenefits
+            .map((benefit) => readString(benefit))
+            .filter((benefit): benefit is string => !!benefit)
+        : [];
+      const summary =
+        readString(classInfo?.summary) ??
+        readString(classInfo?.description) ??
+        'Class details will appear after this class is added.';
+      return {
+        name: selectableClass.name,
+        summary,
+        description: readString(classInfo?.description) ?? summary,
+        source: readString(classInfo?.source) ?? 'Fabula Ultima',
+        freeBenefits,
+        skillCount: Array.isArray(classInfo?.skillsExpanded) ? classInfo.skillsExpanded.length : 0,
+        spellCount: Array.isArray(classInfo?.spellsExpanded) ? classInfo.spellsExpanded.length : 0,
+      };
+    });
 
-  const openClassPicker = (event: MouseEvent<HTMLElement>) => {
-    setClassPickerAnchorEl(event.currentTarget);
+  const openClassPicker = () => {
+    setClassPickerOpen(true);
   };
 
   const closeClassPicker = () => {
-    setClassPickerAnchorEl(null);
+    setClassPickerOpen(false);
   };
 
   const selectClass = (className: string) => {
@@ -2610,7 +2645,7 @@ function FabU() {
         })}
         {canAddClass ? (
           <Box
-            onClick={(e) => openClassPicker(e as React.MouseEvent<HTMLElement>)}
+            onClick={openClassPicker}
             sx={{
               position: 'relative',
               border: `1px dashed ${fabUTokens.color.highlight}`,
@@ -3210,83 +3245,89 @@ function FabU() {
             }
           >
             {content}
-            <Popover
-              open={classPickerOpen}
-              anchorEl={classPickerAnchorEl}
-              onClose={closeClassPicker}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              marginThreshold={12}
-              disableRestoreFocus
-              PaperProps={{
-                'data-pw': 'class-picker-popover',
-                sx: {
-                  mt: '5px',
-                  p: 1,
-                  width: 232,
-                  maxWidth: 'min(90vw, 280px)',
-                  maxHeight: 360,
-                  overflowY: 'auto',
-                  bgcolor: fabUTokens.color.surface,
-                  backgroundImage: 'none',
-                  border: `1px solid ${fabUTokens.isDark ? '#ffffff' : fabUTokens.color.brand}`,
-                  borderRadius: '12px',
-                  boxShadow: fabUTokens.shadow.soft,
-                },
-              }}
-            >
-              <Stack spacing={0.5}>
-                {[
-                  ...selectableClasses.filter((c) => selectedClassNames.has(c.name)),
-                  ...selectableClasses.filter((c) => !selectedClassNames.has(c.name)),
-                ].map((selectableClass) => {
-                  const isSelected = selectedClassNames.has(selectableClass.name);
-
-                  return (
-                    <Button
-                      key={selectableClass.name}
-                      data-pw="selectable-class-option"
-                      disabled={isSelected}
-                      onClick={() => selectClass(selectableClass.name)}
-                      sx={{
-                        justifyContent: 'space-between',
-                        minHeight: 36,
-                        px: 1.2,
-                        py: 0.75,
-                        borderRadius: '8px',
-                        color: isSelected
-                          ? fabUTokens.color.textSecondary
-                          : fabUTokens.color.textPrimary,
-                        bgcolor: isSelected ? fabUTokens.color.surfaceMuted : 'transparent',
-                        textTransform: 'none',
-                        fontSize: '0.82rem',
-                        fontWeight: 700,
-                        boxShadow: 'none',
-                        '&:hover': {
-                          bgcolor: fabUTokens.color.surfaceMuted,
-                          boxShadow: 'none',
-                        },
-                        '&.Mui-disabled': {
-                          color: fabUTokens.color.textSecondary,
-                          opacity: 1,
-                        },
-                      }}
-                    >
-                      <span>{selectableClass.name}</span>
-                      {isSelected ? (
-                        <CheckCircle
-                          size={15}
-                          style={{ color: fabUTokens.color.brand, flexShrink: 0 }}
-                        />
-                      ) : null}
-                    </Button>
-                  );
-                })}
-              </Stack>
-            </Popover>
           </MobileScreen>
         </Stack>
       </>
+      <FabUCatalogPickerDialog
+        open={classPickerOpen}
+        title="Class Catalog"
+        label="Choose a class"
+        searchPlaceholder="Search classes"
+        entries={classCatalogEntries}
+        getKey={(entry) => entry.name}
+        getSearchText={(entry) => [
+          entry.name,
+          entry.summary,
+          entry.description,
+          entry.source,
+          ...entry.freeBenefits,
+        ]}
+        renderEntry={(entry) => (
+          <Stack spacing={0.6}>
+            <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    color: fabUTokens.color.textPrimary,
+                    fontSize: '0.92rem',
+                    fontWeight: 900,
+                    lineHeight: 1.12,
+                  }}
+                >
+                  {entry.name}
+                </Typography>
+                <Typography
+                  sx={{
+                    color: fabUTokens.color.textSecondary,
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.035em',
+                    textTransform: 'uppercase',
+                    mt: 0.2,
+                  }}
+                >
+                  {entry.source}
+                </Typography>
+              </Box>
+              <Typography
+                sx={{
+                  color: fabUTokens.color.highlight,
+                  fontSize: '0.66rem',
+                  fontWeight: 900,
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {entry.skillCount} Skills{entry.spellCount ? ` • ${entry.spellCount} Spells` : ''}
+              </Typography>
+            </Stack>
+            <Typography
+              sx={{
+                color: fabUTokens.color.textSecondary,
+                fontSize: '0.78rem',
+                fontWeight: 650,
+                lineHeight: 1.28,
+              }}
+            >
+              {entry.summary}
+            </Typography>
+            {entry.freeBenefits.length > 0 ? (
+              <Typography
+                sx={{
+                  color: fabUTokens.color.textPrimary,
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  lineHeight: 1.25,
+                }}
+              >
+                {entry.freeBenefits.join(' ')}
+              </Typography>
+            ) : null}
+          </Stack>
+        )}
+        onClose={closeClassPicker}
+        onSelect={(entry) => selectClass(entry.name)}
+      />
       <ConfirmDeleteModal
         open={pendingDelete !== null}
         onConfirm={handleConfirmDelete}
