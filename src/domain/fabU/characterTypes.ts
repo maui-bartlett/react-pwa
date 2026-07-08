@@ -35,13 +35,16 @@ type Character = {
   magicDefense: number;
   magicDefenseTemp: number | null;
   fabulaPoints: number;
-  inventoryPoints: number;
+  currentIP: number;
+  maxIP: number;
   currentHP: number;
   /** Bonus added on top of (MIG die × 5 + level) to get max HP. */
   hpBonus: number;
   currentMP: number;
   /** Bonus added on top of (WLP die × 5 + level) to get max MP. */
   mpBonus: number;
+  /** Bonus added on top of the base Inventory Points maximum. */
+  ipBonus: number;
   currentXP: number;
   totalXP: number;
   level: number;

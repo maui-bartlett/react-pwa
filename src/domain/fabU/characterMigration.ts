@@ -255,11 +255,13 @@ const MIGRATION_DIE_VALUES: Record<string, number> = {
 function normalizeHpMpBonus(
   parsed: Record<string, unknown>,
   initialValue: Character,
-): { hpBonus: number; mpBonus: number } {
+): { hpBonus: number; mpBonus: number; ipBonus: number } {
+  const ipBonus = typeof parsed.ipBonus === 'number' ? parsed.ipBonus : initialValue.ipBonus;
   if (typeof parsed.hpBonus === 'number') {
     return {
       hpBonus: parsed.hpBonus,
       mpBonus: typeof parsed.mpBonus === 'number' ? parsed.mpBonus : initialValue.mpBonus,
+      ipBonus,
     };
   }
 
@@ -276,9 +278,10 @@ function normalizeHpMpBonus(
         typeof parsed.totalMP === 'number'
           ? Math.max(0, parsed.totalMP - mpBase)
           : initialValue.mpBonus,
+      ipBonus,
     };
   }
-  return { hpBonus: initialValue.hpBonus, mpBonus: initialValue.mpBonus };
+  return { hpBonus: initialValue.hpBonus, mpBonus: initialValue.mpBonus, ipBonus };
 }
 
 function normalizeSkillRow(stored: unknown): SkillRow | null {
@@ -391,7 +394,8 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
       initialValue.magicDefenseTemp,
     ),
     fabulaPoints: normalizeNumber(parsed.fabulaPoints, initialValue.fabulaPoints),
-    inventoryPoints: normalizeNumber(parsed.inventoryPoints, initialValue.inventoryPoints),
+    currentIP: normalizeNumber(parsed.currentIP ?? parsed.inventoryPoints, initialValue.currentIP),
+    maxIP: normalizeNumber(parsed.maxIP, 6),
     currentHP: normalizeNumber(parsed.currentHP, initialValue.currentHP),
     currentMP: normalizeNumber(parsed.currentMP, initialValue.currentMP),
     currentXP: normalizeNumber(parsed.currentXP, initialValue.currentXP),

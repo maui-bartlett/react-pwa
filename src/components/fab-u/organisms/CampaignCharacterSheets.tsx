@@ -252,6 +252,7 @@ function FabUSummary({ state }: { state: unknown }) {
   const willNum = DIE_TO_NUMBER[character.attributes.willpower.die] ?? 6;
   const maxHP = mightNum * 5 + character.level + character.hpBonus;
   const maxMP = willNum * 5 + character.level + character.mpBonus;
+  const maxIP = character.maxIP + character.ipBonus;
   const classes = character.classes
     .filter((entry) => entry.name.trim())
     .map((entry) => `${entry.name} ${entry.level}`)
@@ -278,7 +279,7 @@ function FabUSummary({ state }: { state: unknown }) {
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
         <StatBox label="HP" value={`${character.currentHP}/${maxHP}`} />
         <StatBox label="MP" value={`${character.currentMP}/${maxMP}`} />
-        <StatBox label="IP" value={character.inventoryPoints} />
+        <StatBox label="IP" value={`${character.currentIP}/${maxIP}`} />
       </Box>
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
         <StatBox label="DEF" value={character.defense} />

@@ -80,6 +80,7 @@ import {
 import type { SkillRow, SpellRow } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
+import { calculateFabUClassResourceBonuses } from '@/domain/fabU/resourceBonuses';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
@@ -972,11 +973,12 @@ function FabU() {
   const setMagicDefenseTemp = (v: number | null) =>
     setCharacter((c) => ({ ...c, magicDefenseTemp: v }));
   const setFP = (v: number) => setCharacter((c) => ({ ...c, fabulaPoints: v }));
-  const setIP = (v: number) => setCharacter((c) => ({ ...c, inventoryPoints: v }));
   const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
+  const setCurrentIP = (v: number) => setCharacter((c) => ({ ...c, currentIP: v }));
   const setHpBonus = (v: number) => setCharacter((c) => ({ ...c, hpBonus: v }));
   const setMpBonus = (v: number) => setCharacter((c) => ({ ...c, mpBonus: v }));
+  const setIpBonus = (v: number) => setCharacter((c) => ({ ...c, ipBonus: v }));
   const setCurrentXP = (v: number) =>
     setCharacter((c) => {
       if (v <= c.totalXP) return { ...c, currentXP: v };
@@ -993,15 +995,12 @@ function FabU() {
 
   // Die-value lookup used to derive max HP and MP from attributes + level + bonus
   const DIE_VALUES: Record<string, number> = { d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
-  const totalHP =
-    (DIE_VALUES[character.attributes.might.die] ?? 8) * 5 + character.level + character.hpBonus;
-  const totalMP =
-    (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + character.mpBonus;
-
-  // Spend 100 Zenit to gain 1 Inventory Point (Fabula Ultima rulebook exchange rate)
+  // Spend 10 Zenit to recover 1 Inventory Point (Fabula Ultima rulebook exchange rate)
   const handleBuyIP = () =>
     setCharacter((c) =>
-      c.zenit >= 10 ? { ...c, zenit: c.zenit - 10, inventoryPoints: c.inventoryPoints + 1 } : c,
+      c.zenit >= 10
+        ? { ...c, zenit: c.zenit - 10, currentIP: Math.min(totalMaxIP, c.currentIP + 1) }
+        : c,
     );
   const toggleBondType = (id: string, type: BondType) =>
     setCharacter((c) => ({
@@ -1150,6 +1149,31 @@ function FabU() {
       return [className, spells] as const;
     }),
   );
+  const freeBenefitsByClass = new Map(
+    [...convexClassByName.entries()].map(([className, classInfo]) => {
+      const freeBenefits = Array.isArray(classInfo.freeBenefits)
+        ? classInfo.freeBenefits
+            .map((benefit) => readString(benefit))
+            .filter((benefit): benefit is string => !!benefit)
+        : [];
+      return [className, freeBenefits] as const;
+    }),
+  );
+  const classResourceBonuses = calculateFabUClassResourceBonuses(
+    character.classes.map((cls) => cls.name),
+    freeBenefitsByClass,
+  );
+  const hpModifier = character.hpBonus + classResourceBonuses.hp;
+  const mpModifier = character.mpBonus + classResourceBonuses.mp;
+  const ipModifier = character.ipBonus + classResourceBonuses.ip;
+  const totalHP =
+    (DIE_VALUES[character.attributes.might.die] ?? 8) * 5 + character.level + hpModifier;
+  const totalMP =
+    (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + mpModifier;
+  const totalMaxIP = Math.max(0, character.maxIP + ipModifier);
+  const setTotalHpModifier = (v: number) => setHpBonus(v - classResourceBonuses.hp);
+  const setTotalMpModifier = (v: number) => setMpBonus(v - classResourceBonuses.mp);
+  const setTotalIpModifier = (v: number) => setIpBonus(v - classResourceBonuses.ip);
   const classSkillGroups = character.classes.map((cls) => ({
     className: cls.name,
     skills:
@@ -1716,8 +1740,11 @@ function FabU() {
             },
             {
               label: 'IP',
-              value: String(character.inventoryPoints),
-              onChange: setIP,
+              value: String(character.currentIP),
+              valueSuffix: ` / ${totalMaxIP}`,
+              valueGroupMinWidth: '7ch',
+              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              maxValue: totalMaxIP,
               pw: 'ov-ip',
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
@@ -1808,8 +1835,11 @@ function FabU() {
             },
             {
               label: 'IP',
-              value: String(character.inventoryPoints),
-              onChange: setIP,
+              value: String(character.currentIP),
+              valueSuffix: ` / ${totalMaxIP}`,
+              valueGroupMinWidth: '7ch',
+              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              maxValue: totalMaxIP,
               pw: 'cb-ip',
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
@@ -2316,7 +2346,7 @@ function FabU() {
                 description: '-3 IP · +50 HP',
                 color: fabUTokens.color.hp,
                 onUse: () => {
-                  setIP(Math.max(0, character.inventoryPoints - 3));
+                  setCurrentIP(Math.max(0, character.currentIP - 3));
                   setCurrentHP(Math.min(totalHP, character.currentHP + 50));
                   setInventoryAnchorEl(null);
                 },
@@ -2326,7 +2356,7 @@ function FabU() {
                 description: '-3 IP · +50 MP',
                 color: fabUTokens.color.mp,
                 onUse: () => {
-                  setIP(Math.max(0, character.inventoryPoints - 3));
+                  setCurrentIP(Math.max(0, character.currentIP - 3));
                   setCurrentMP(Math.min(totalMP, character.currentMP + 50));
                   setInventoryAnchorEl(null);
                 },
@@ -2343,7 +2373,7 @@ function FabU() {
 
                     return {
                       ...c,
-                      inventoryPoints: Math.max(0, c.inventoryPoints - 2),
+                      currentIP: Math.max(0, c.currentIP - 2),
                       statusEffects: nextStatusEffects,
                     };
                   });
@@ -2760,9 +2790,12 @@ function FabU() {
             },
             {
               label: 'IP',
-              value: String(character.inventoryPoints),
+              value: String(character.currentIP),
+              valueSuffix: ` / ${totalMaxIP}`,
+              valueGroupMinWidth: '7ch',
               pw: 'ip',
-              onChange: setIP,
+              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              maxValue: totalMaxIP,
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
             {
@@ -2824,9 +2857,12 @@ function FabU() {
           metrics={[
             {
               label: 'IP',
-              value: String(character.inventoryPoints),
+              value: String(character.currentIP),
+              valueSuffix: ` / ${totalMaxIP}`,
+              valueGroupMinWidth: '7ch',
               pw: 'ip',
-              onChange: setIP,
+              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              maxValue: totalMaxIP,
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
               trailingIcon: (
                 <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
@@ -3337,11 +3373,31 @@ function FabU() {
         <HpMpManagementModal
           anchorEl={hpMpModal.anchorEl}
           kind={hpMpModal.kind}
-          current={hpMpModal.kind === 'hp' ? character.currentHP : character.currentMP}
-          max={hpMpModal.kind === 'hp' ? totalHP : totalMP}
-          modifier={hpMpModal.kind === 'hp' ? character.hpBonus : character.mpBonus}
-          onApply={hpMpModal.kind === 'hp' ? setCurrentHP : setCurrentMP}
-          onChangeModifier={hpMpModal.kind === 'hp' ? setHpBonus : setMpBonus}
+          current={
+            hpMpModal.kind === 'hp'
+              ? character.currentHP
+              : hpMpModal.kind === 'mp'
+                ? character.currentMP
+                : character.currentIP
+          }
+          max={hpMpModal.kind === 'hp' ? totalHP : hpMpModal.kind === 'mp' ? totalMP : totalMaxIP}
+          modifier={
+            hpMpModal.kind === 'hp' ? hpModifier : hpMpModal.kind === 'mp' ? mpModifier : ipModifier
+          }
+          onApply={
+            hpMpModal.kind === 'hp'
+              ? setCurrentHP
+              : hpMpModal.kind === 'mp'
+                ? setCurrentMP
+                : setCurrentIP
+          }
+          onChangeModifier={
+            hpMpModal.kind === 'hp'
+              ? setTotalHpModifier
+              : hpMpModal.kind === 'mp'
+                ? setTotalMpModifier
+                : setTotalIpModifier
+          }
           onClose={() => setHpMpModal(null)}
         />
       ) : null}

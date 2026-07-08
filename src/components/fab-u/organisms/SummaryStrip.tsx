@@ -18,6 +18,7 @@ type SummaryMetric = {
   value: string;
   /** Read-only suffix displayed after value, e.g. " / 58". Clicks on it do not open edit mode. */
   valueSuffix?: string;
+  valueGroupMinWidth?: string;
   /** data-pw suffix for this pill (e.g. "hp" → data-pw="metric-hp") */
   pw?: string;
   /** When provided the pill is editable; called with the committed integer value */
@@ -152,6 +153,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                       alignItems: 'center',
                       gap: isXpMetric ? 0 : '2px',
                       width: '100%',
+                      minWidth: metric.valueGroupMinWidth,
                     }}
                   >
                     {isEditing ? (

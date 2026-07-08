@@ -22,7 +22,7 @@ const WHEEL_PADDING = (WHEEL_HEIGHT - ROW_H) / 2;
 const FIELD_RADIUS = '4px';
 const FIELD_LABEL_FONT_WEIGHT = 800;
 
-type HpMpKind = 'hp' | 'mp';
+type HpMpKind = 'hp' | 'mp' | 'ip';
 
 type HpMpManagementModalProps = {
   /** The pill the popover anchors to; null keeps it closed. */
@@ -30,7 +30,7 @@ type HpMpManagementModalProps = {
   kind: HpMpKind;
   current: number;
   max: number;
-  /** hpBonus / mpBonus — the flat modifier added on top of the derived max. */
+  /** hpBonus / mpBonus / ipBonus — the flat modifier added on top of the derived max. */
   modifier: number;
   onApply: (nextCurrent: number) => void;
   onChangeModifier: (nextModifier: number) => void;
@@ -161,14 +161,23 @@ function HpMpManagementModal({
 }: HpMpManagementModalProps) {
   const fabUTokens = useFabUTokens();
   const open = Boolean(anchorEl);
-  const accent = kind === 'hp' ? fabUTokens.color.hp : fabUTokens.color.mp;
-  // Heal stays the success green; MP's Recover uses the MP blue.
-  const addColor = kind === 'mp' ? fabUTokens.color.mp : fabUTokens.color.success;
-  const title = kind === 'hp' ? 'HP Management' : 'MP Management';
-  const pointsLabel = kind === 'hp' ? 'Hit Points' : 'Mind Points';
+  const accent =
+    kind === 'hp'
+      ? fabUTokens.color.hp
+      : kind === 'mp'
+        ? fabUTokens.color.mp
+        : fabUTokens.isDark
+          ? '#a0a5a0'
+          : '#1e2422';
+  // Heal stays the success green; MP/IP Recover uses the relevant resource color.
+  const addColor = kind === 'hp' ? fabUTokens.color.success : accent;
+  const title = kind === 'hp' ? 'HP Management' : kind === 'mp' ? 'MP Management' : 'IP Management';
+  const pointsLabel =
+    kind === 'hp' ? 'Hit Points' : kind === 'mp' ? 'Mind Points' : 'Inventory Points';
   const addLabel = kind === 'hp' ? 'Heal' : 'Recover';
   const subtractLabel = kind === 'hp' ? 'Damage' : 'Spend';
-  const modifierLabel = kind === 'hp' ? 'Max HP Modifier' : 'Max MP Modifier';
+  const modifierLabel =
+    kind === 'hp' ? 'Max HP Modifier' : kind === 'mp' ? 'Max MP Modifier' : 'Max IP Modifier';
   const fieldLabelSx = {
     width: '100%',
     fontSize: '0.6rem',

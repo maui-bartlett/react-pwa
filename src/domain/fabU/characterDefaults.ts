@@ -297,11 +297,13 @@ function createDefaultCharacter(): Character {
     magicDefense: 8,
     magicDefenseTemp: 12,
     fabulaPoints: 4,
-    inventoryPoints: 8,
+    currentIP: 6,
+    maxIP: 6,
     currentHP: 58,
     hpBonus: 5,
     currentMP: 58,
     mpBonus: 5,
+    ipBonus: 0,
     currentXP: 7,
     totalXP: 10,
     level: 13,
@@ -342,6 +344,7 @@ function createRandomFabUCharacter(): Character {
   const level = classes.reduce((sum, entry) => sum + entry.level, 0);
   const hpBonus = 0;
   const mpBonus = 0;
+  const ipBonus = 0;
   const maxHP = DIE_VALUES[attributes.might.die] * 5 + level + hpBonus;
   const maxMP = DIE_VALUES[attributes.willpower.die] * 5 + level + mpBonus;
   const identity = pickTwoDistinct(RANDOM_IDENTITIES);
@@ -365,11 +368,13 @@ function createRandomFabUCharacter(): Character {
     magicDefense: randomInt(8, 10),
     magicDefenseTemp: null,
     fabulaPoints: randomInt(3, 5),
-    inventoryPoints: randomInt(6, 10),
+    currentIP: 6,
+    maxIP: 6,
     currentHP: maxHP,
     hpBonus,
     currentMP: maxMP,
     mpBonus,
+    ipBonus,
     currentXP: randomInt(0, 8),
     totalXP: 10,
     level,
