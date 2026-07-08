@@ -242,6 +242,7 @@ function FabUCatalogPickerDialog<TEntry>({
                     data-pw="fab-u-catalog-row"
                     sx={{
                       textAlign: 'left',
+                      flexShrink: 0,
                       background: fabUTokens.color.pillSurface,
                       border: `1px solid ${fabUTokens.color.border}`,
                       borderRadius: `${fabUTokens.radius.sm}px`,
@@ -269,6 +270,7 @@ function FabUCatalogPickerDialog<TEntry>({
                   key={key}
                   data-pw="fab-u-catalog-row"
                   sx={{
+                    flexShrink: 0,
                     background: fabUTokens.color.pillSurface,
                     border: `1px solid ${expanded ? fabUTokens.color.highlight : fabUTokens.color.border}`,
                     borderRadius: `${fabUTokens.radius.sm}px`,

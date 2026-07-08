@@ -850,6 +850,13 @@ function FabU() {
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
   const [absorbMpPulse, setAbsorbMpPulse] = useState({ key: 0, label: '' });
+  useEffect(() => {
+    if (!absorbMpPulse.key) return;
+    const timeout = window.setTimeout(() => {
+      setAbsorbMpPulse({ key: 0, label: '' });
+    }, 1100);
+    return () => window.clearTimeout(timeout);
+  }, [absorbMpPulse.key]);
   // HP/MP management popover: which kind, and the pill it anchors to.
   const [hpMpModal, setHpMpModal] = useState<{ kind: HpMpKind; anchorEl: HTMLElement } | null>(
     null,
@@ -993,24 +1000,17 @@ function FabU() {
     return Number.isFinite(skillLevel) ? Math.max(0, skillLevel * 2) : 0;
   };
   const setCurrentHP = (v: number) => {
-    const damageTaken = Math.max(0, character.currentHP - v);
-    const absorbMpRecovery = damageTaken > 0 ? getAbsorbMpRecovery(character) : 0;
-    const nextMP =
-      absorbMpRecovery > 0
-        ? Math.min(totalMP, character.currentMP + absorbMpRecovery)
-        : character.currentMP;
-    if (nextMP > character.currentMP) {
-      setAbsorbMpPulse((pulse) => ({
-        key: pulse.key + 1,
-        label: `+${nextMP - character.currentMP} MP`,
-      }));
-    }
-
     setCharacter((c) => {
       const damageTaken = Math.max(0, c.currentHP - v);
       const absorbMpRecovery = damageTaken > 0 ? getAbsorbMpRecovery(c) : 0;
       const nextMP =
         absorbMpRecovery > 0 ? Math.min(totalMP, c.currentMP + absorbMpRecovery) : c.currentMP;
+      if (nextMP > c.currentMP) {
+        setAbsorbMpPulse((pulse) => ({
+          key: pulse.key + 1,
+          label: `+${nextMP - c.currentMP} MP`,
+        }));
+      }
 
       return {
         ...c,
