@@ -83,6 +83,8 @@ export type SkillRow = {
   effect: string;
   /** Full description shown in the accordion expand panel. */
   description?: string;
+  /** Heroic/mastered skills do not count toward the 10 class skill levels. */
+  mastered?: boolean;
 };
 
 export type SpellRow = {

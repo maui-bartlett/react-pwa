@@ -80,6 +80,7 @@ import {
 import type { SkillRow, SpellRow } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
+import { getFabUMasteredSkillOptionsForClass } from '@/domain/fabU/masteredSkills';
 import { calculateFabUClassResourceBonuses } from '@/domain/fabU/resourceBonuses';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
@@ -1120,6 +1121,12 @@ function FabU() {
   const unmasteredClassCount = character.classes.filter(
     (cls) => (skillLevelTotalsByClass[cls.name] ?? 0) < 10,
   ).length;
+  const masteredClassNames = character.classes
+    .map((cls) => cls.name)
+    .filter((className) => (skillLevelTotalsByClass[className] ?? 0) >= 10);
+  const selectedMasteredSkillNames = character.skillGroups.flatMap((group) =>
+    group.skills.filter((skill) => skill.mastered).map((skill) => skill.name),
+  );
   const canAddClass = canAddMoreSkills && unmasteredClassCount < 3;
   const selectedClassNames = new Set(character.classes.map((cls) => cls.name));
   const convexClassByName = new Map(
@@ -2562,9 +2569,15 @@ function FabU() {
                   title={`${group.className} Skills`}
                   rows={group.skills}
                   skillOptions={skillOptionsByClass.get(group.className) ?? []}
+                  masteredSkillOptions={getFabUMasteredSkillOptionsForClass(
+                    group.className,
+                    masteredClassNames,
+                  )}
+                  selectedMasteredSkillNames={selectedMasteredSkillNames}
                   onAddSkill={
                     canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                   }
+                  onAddMasteredSkill={(skill) => handleAddSkill(group.className, skill)}
                   freeSkillLevels={freeSkillLevels}
                   onAddSkillLevels={(skillName, levels) =>
                     handleAddSkillLevels(group.className, skillName, levels)
@@ -2654,9 +2667,15 @@ function FabU() {
                 title={`${group.className} Skills`}
                 rows={group.skills}
                 skillOptions={skillOptionsByClass.get(group.className) ?? []}
+                masteredSkillOptions={getFabUMasteredSkillOptionsForClass(
+                  group.className,
+                  masteredClassNames,
+                )}
+                selectedMasteredSkillNames={selectedMasteredSkillNames}
                 onAddSkill={
                   canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                 }
+                onAddMasteredSkill={(skill) => handleAddSkill(group.className, skill)}
                 freeSkillLevels={freeSkillLevels}
                 onAddSkillLevels={(skillName, levels) =>
                   handleAddSkillLevels(group.className, skillName, levels)

@@ -39,8 +39,12 @@ type SkillsTableProps = {
   label?: string;
   showTitle?: boolean;
   skillOptions?: SkillRow[];
+  masteredSkillOptions?: SkillRow[];
+  selectedMasteredSkillNames?: readonly string[];
   /** When provided, a "+ Skill" button appears if this table's total levels < 10 */
   onAddSkill?: (skill: SkillRow) => void;
+  /** When provided, a mastered-class button appears in place of "+ Skill". */
+  onAddMasteredSkill?: (skill: SkillRow) => void;
   freeSkillLevels?: number;
   onAddSkillLevels?: (skillName: string, levels: number) => void;
   /** When true, the add-level button is hidden even if onAddSkillLevels is provided */
@@ -469,7 +473,7 @@ function SwipeableSkillRow({
                 fontWeight: 700,
               }}
             >
-              {row.level ?? '—'}
+              {row.mastered ? 'M' : (row.level ?? '—')}
             </Box>
             {/* Add-levels button */}
             {hasAddLevels ? (
@@ -624,7 +628,10 @@ function SkillsTable({
   label,
   showTitle = false,
   onAddSkill,
+  onAddMasteredSkill,
   skillOptions = [],
+  masteredSkillOptions = [],
+  selectedMasteredSkillNames = [],
   freeSkillLevels = 0,
   onAddSkillLevels,
   classMastered = false,
@@ -644,6 +651,7 @@ function SkillsTable({
     level: string;
   } | null>(null);
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
+  const [masteredSkillPickerOpen, setMasteredSkillPickerOpen] = useState(false);
   const [customSkillOpen, setCustomSkillOpen] = useState(false);
   const [customSkillDraft, setCustomSkillDraft] = useState<CustomSkillDraft>({
     name: '',
@@ -656,14 +664,30 @@ function SkillsTable({
   const originalSkillDataRef = useRef<SkillRow | null>(null);
 
   const tableTotal = rows.reduce((sum, row) => {
+    if (row.mastered) return sum;
     const n = parseInt(row.level ?? '0', 10);
     return sum + (isNaN(n) ? 0 : n);
   }, 0);
   const headingLabel = `${label ?? title} • ${tableTotal}/10`;
   const showAddSkillButton =
     !!onAddSkill && tableTotal < 10 && !draftSkill && !skillPickerOpen && !customSkillOpen;
+  const showMasteredSkillButton =
+    classMastered &&
+    !!onAddMasteredSkill &&
+    !draftSkill &&
+    !skillPickerOpen &&
+    !masteredSkillPickerOpen &&
+    !customSkillOpen;
   const availableSkillOptions = skillOptions.filter(
     (option) => !rows.some((row) => row.name === option.name),
+  );
+  const selectedMasteredSkillNameSet = new Set(
+    selectedMasteredSkillNames.map((name) => name.trim().toLowerCase()),
+  );
+  const availableMasteredSkillOptions = masteredSkillOptions.filter(
+    (option) =>
+      !rows.some((row) => row.name === option.name) &&
+      !selectedMasteredSkillNameSet.has(option.name.trim().toLowerCase()),
   );
   const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
   const activeSkillLevel =
@@ -733,6 +757,17 @@ function SkillsTable({
     setSkillPickerOpen(false);
   }
 
+  function addPickedMasteredSkill(skill: SkillRow) {
+    if (!onAddMasteredSkill) return;
+    onAddMasteredSkill({
+      ...skill,
+      level: skill.level ?? 'M',
+      maxLevel: skill.maxLevel ?? 1,
+      mastered: true,
+    });
+    setMasteredSkillPickerOpen(false);
+  }
+
   function openCustomSkill() {
     setSkillPickerOpen(false);
     setCustomSkillDraft({
@@ -768,7 +803,7 @@ function SkillsTable({
     setEditingSkill({
       originalName: row.name,
       name: row.name,
-      level: row.level ?? '0',
+      level: row.mastered ? '0' : (row.level ?? '0'),
     });
   }
 
@@ -777,10 +812,11 @@ function SkillsTable({
     if (original && editingSkill && onEditSkill) {
       onEditSkill(editingSkill.originalName, {
         name: editingSkill.name.trim() || editingSkill.originalName,
-        level: editingSkill.level || '0',
+        level: original.mastered ? (original.level ?? 'M') : editingSkill.level || '0',
         maxLevel: original.maxLevel,
         effect: original.effect,
         description: original.description,
+        mastered: original.mastered,
       });
     }
     setEditingSkill(null);
@@ -869,18 +905,21 @@ function SkillsTable({
 
           {/* Data rows */}
           {rows.map((row, index) => {
-            const level = parseInt(row.level ?? '0', 10);
+            const level = row.mastered ? 0 : parseInt(row.level ?? '0', 10);
             const maxLevel = row.maxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
             const availableForSkill = Math.min(
               Math.max(0, maxLevel - (isNaN(level) ? 0 : level)),
               freeSkillLevels,
             );
-            const canAddLevels = !!onAddSkillLevels && !classMastered && availableForSkill > 0;
+            const canAddLevels =
+              !!onAddSkillLevels && !classMastered && !row.mastered && availableForSkill > 0;
             const isEditing = editingSkill?.originalName === row.name;
             const totalWithoutActive = tableTotal - (isNaN(level) ? 0 : level);
-            const editLevelOptions = Array.from({ length: maxLevel + 1 }, (_, lvl) => lvl).filter(
-              (lvl) => totalWithoutActive + lvl <= 10,
-            );
+            const editLevelOptions = row.mastered
+              ? [0]
+              : Array.from({ length: maxLevel + 1 }, (_, lvl) => lvl).filter(
+                  (lvl) => totalWithoutActive + lvl <= 10,
+                );
             return (
               <SwipeableSkillRow
                 key={row.name}
@@ -1058,6 +1097,44 @@ function SkillsTable({
             </Typography>
           </Box>
         ) : null}
+
+        {showMasteredSkillButton ? (
+          <Box
+            data-pw="add-mastered-skill-button"
+            onClick={() => {
+              if (availableMasteredSkillOptions.length > 0) setMasteredSkillPickerOpen(true);
+            }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1,
+              py: 0.6,
+              minHeight: 47,
+              cursor: availableMasteredSkillOptions.length > 0 ? 'pointer' : 'default',
+              color:
+                availableMasteredSkillOptions.length > 0
+                  ? fabUTokens.color.highlight
+                  : fabUTokens.color.textSecondary,
+              border: `1px dashed ${
+                availableMasteredSkillOptions.length > 0
+                  ? fabUTokens.color.highlight
+                  : fabUTokens.color.border
+              }`,
+              borderRadius: '8px',
+              bgcolor: fabUTokens.color.surface,
+              boxShadow: fabUTokens.shadow.card,
+              opacity: availableMasteredSkillOptions.length > 0 ? 1 : 0.74,
+            }}
+          >
+            <AddIcon sx={{ fontSize: '1rem' }} />
+            <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.74rem' }}>
+              {availableMasteredSkillOptions.length > 0
+                ? 'Mastered Skill'
+                : 'All Mastered Skills Added'}
+            </Typography>
+          </Box>
+        ) : null}
       </SurfaceCard>
 
       <FabUCatalogPickerDialog
@@ -1152,6 +1229,56 @@ function SkillsTable({
         onClose={() => setSkillPickerOpen(false)}
         onSelect={addPickedSkill}
         onCreateCustom={openCustomSkill}
+      />
+
+      <FabUCatalogPickerDialog
+        open={masteredSkillPickerOpen}
+        title="Choose Mastered Skill"
+        label={label ?? title}
+        searchPlaceholder="Search mastered skills..."
+        HeaderIcon={SkillCrystalIcon}
+        entries={[...availableMasteredSkillOptions].sort((a, b) => a.name.localeCompare(b.name))}
+        getKey={(skill) => skill.name}
+        getSearchText={(skill) => [skill.name, skill.effect, skill.description ?? '']}
+        renderEntry={(skill) => (
+          <Stack spacing={0.5}>
+            <Typography
+              sx={{
+                fontWeight: 900,
+                fontSize: '0.92rem',
+                lineHeight: 1.16,
+                color: fabUTokens.color.textPrimary,
+              }}
+            >
+              {skill.name}
+            </Typography>
+            {skill.effect ? (
+              <Typography
+                sx={{
+                  fontSize: '0.76rem',
+                  lineHeight: 1.38,
+                  color: fabUTokens.color.textSecondary,
+                }}
+              >
+                {skill.effect}
+              </Typography>
+            ) : null}
+            {skill.description ? (
+              <Typography
+                sx={{
+                  fontSize: '0.74rem',
+                  lineHeight: 1.36,
+                  color: fabUTokens.color.textSecondary,
+                  opacity: 0.86,
+                }}
+              >
+                {skill.description}
+              </Typography>
+            ) : null}
+          </Stack>
+        )}
+        onClose={() => setMasteredSkillPickerOpen(false)}
+        onSelect={addPickedMasteredSkill}
       />
 
       <Dialog
