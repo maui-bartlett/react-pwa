@@ -66,13 +66,14 @@ function skill(
   summary: string,
   source: string,
   sourceType: string,
+  description = summary,
 ): FabulaUltimaSkill {
   return {
     id: slug(name),
     name,
     ...(maxLevel && maxLevel > 1 ? { maxLevel } : {}),
     summary,
-    description: summary,
+    description,
     type: 'skill',
     source,
     sourceType,
@@ -114,7 +115,7 @@ function fabulaClass(args: {
   summary: string;
   description?: string;
   freeBenefits?: string[];
-  skills: Array<[string, number | undefined, string]>;
+  skills: Array<[string, number | undefined, string, string?]>;
   spells?: Array<[string, string, string, 'Instantaneous' | 'Scene', boolean, string]>;
 }): FabulaUltimaClass {
   return {
@@ -127,8 +128,8 @@ function fabulaClass(args: {
     description: args.description ?? args.summary,
     freeBenefits: args.freeBenefits ?? [],
     skills: args.skills.map(([name]) => name),
-    skillsExpanded: args.skills.map(([name, maxLevel, summary]) =>
-      skill(name, maxLevel, summary, args.source, args.sourceType),
+    skillsExpanded: args.skills.map(([name, maxLevel, summary, description]) =>
+      skill(name, maxLevel, summary, args.source, args.sourceType, description),
     ),
     ...(args.spells
       ? {
@@ -288,6 +289,12 @@ const FABULA_ULTIMA_MISSING_CLASSES: FabulaUltimaClass[] = [
     freeBenefits: ['Permanently increase your maximum Mind Points by 5.'],
     skills: [
       [
+        'Cognitive Focus',
+        5,
+        'Designate a focus and gain SL-based bonuses to examine, attack, or heal them.',
+        'At the start of your turn during a conflict, you may choose one ally who is able to hear you or one enemy you can see that is suffering from dazed, enraged, and/or shaken.\nUntil the start of your next turn, the chosen creature becomes your focus.\n\nYou gain a bonus equal to 【SL】 to Checks you perform to examine your focus, as well as to your Accuracy Checks and Magic Checks for attacks and offensive spells (r) that include your focus among the targets. When you cause your focus to recover Hit Points and/or Mind Points, they recover 【SL × 2】 additional HP and/or MP, respectively.',
+      ],
+      [
         'Cognitive Amplifier',
         5,
         'Improve damage or recovery when affecting creatures toward whom you have a Bond.',
@@ -301,6 +308,12 @@ const FABULA_ULTIMA_MISSING_CLASSES: FabulaUltimaClass[] = [
         'Navigator',
         undefined,
         'Communicate telepathically with bonded allies and use Ritualism through the Soul Network.',
+      ],
+      [
+        'Hypercognition',
+        5,
+        'Reduce the MP cost of spells and verses that include your focus.',
+        'The total MP cost of your spells and verses (see High Fantasy Atlas, page 138) that include your focus among their targets is reduced by 【SL】, or by 【SL × 2】 if your focus is the only target (to a minimum cost of 0 Mind Points).',
       ],
       ['Psychic Gifts', 5, 'Gain psychic gifts powered by your Brainwave Clock.'],
       ['Psychic Warrior', undefined, 'Replace one die in an Accuracy Check with Willpower.'],

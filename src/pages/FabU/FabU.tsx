@@ -1865,7 +1865,7 @@ function FabU() {
             },
           ]}
           topRowTemplate="1.1fr 1fr 0.9fr"
-          middleRowTemplate="0.62fr 0.62fr 1.12fr 1.12fr"
+          middleRowTemplate="0.56fr 0.92fr 0.96fr 0.96fr"
           bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
         >
