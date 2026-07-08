@@ -310,27 +310,22 @@ function HpMpManagementModal({
                 sx={{
                   position: 'absolute',
                   top: 0,
-                  left: '28px',
-                  alignItems: 'flex-start',
+                  left: 0,
+                  width: 'calc((100% - 8px) / 2)',
+                  minWidth: 0,
+                  alignItems: 'center',
                 }}
               >
                 <Typography
                   data-pw={`${kind}-management-points-label`}
                   sx={{
                     ...fieldLabelSx,
-                    width: 'auto',
-                    textAlign: 'left',
                     fontWeight: FIELD_LABEL_FONT_WEIGHT,
                   }}
                 >
                   {pointsLabel}
                 </Typography>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="flex-start"
-                  spacing={0.55}
-                >
+                <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.55}>
                   <InputBase
                     data-pw={`${kind}-management-current-control`}
                     value={currentDraft}
