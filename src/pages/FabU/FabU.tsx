@@ -839,6 +839,7 @@ function FabU() {
   });
   const [spellCastBurstId, setSpellCastBurstId] = useState<number | null>(null);
   const [notEnoughMpToastOpen, setNotEnoughMpToastOpen] = useState(false);
+  const [absorbMpPulse, setAbsorbMpPulse] = useState({ key: 0, label: '' });
   // HP/MP management popover: which kind, and the pill it anchors to.
   const [hpMpModal, setHpMpModal] = useState<{ kind: HpMpKind; anchorEl: HTMLElement } | null>(
     null,
@@ -981,20 +982,33 @@ function FabU() {
     const skillLevel = Number.parseInt(absorbMp?.level ?? '0', 10);
     return Number.isFinite(skillLevel) ? Math.max(0, skillLevel * 2) : 0;
   };
-  const setCurrentHP = (v: number) =>
+  const setCurrentHP = (v: number) => {
+    const damageTaken = Math.max(0, character.currentHP - v);
+    const absorbMpRecovery = damageTaken > 0 ? getAbsorbMpRecovery(character) : 0;
+    const nextMP =
+      absorbMpRecovery > 0
+        ? Math.min(totalMP, character.currentMP + absorbMpRecovery)
+        : character.currentMP;
+    if (nextMP > character.currentMP) {
+      setAbsorbMpPulse((pulse) => ({
+        key: pulse.key + 1,
+        label: `+${nextMP - character.currentMP} MP`,
+      }));
+    }
+
     setCharacter((c) => {
       const damageTaken = Math.max(0, c.currentHP - v);
-      if (damageTaken <= 0) return { ...c, currentHP: v };
-
-      const absorbMpRecovery = getAbsorbMpRecovery(c);
-      if (absorbMpRecovery <= 0) return { ...c, currentHP: v };
+      const absorbMpRecovery = damageTaken > 0 ? getAbsorbMpRecovery(c) : 0;
+      const nextMP =
+        absorbMpRecovery > 0 ? Math.min(totalMP, c.currentMP + absorbMpRecovery) : c.currentMP;
 
       return {
         ...c,
         currentHP: v,
-        currentMP: Math.min(totalMP, c.currentMP + absorbMpRecovery),
+        currentMP: nextMP,
       };
     });
+  };
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
   const setCurrentIP = (v: number) => setCharacter((c) => ({ ...c, currentIP: v }));
   const setHpBonus = (v: number) => setCharacter((c) => ({ ...c, hpBonus: v }));
@@ -1764,6 +1778,8 @@ function FabU() {
               onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               pw: 'ov-mp',
+              pulseKey: absorbMpPulse.key,
+              pulseLabel: absorbMpPulse.label,
             },
             {
               label: 'IP',
@@ -1889,6 +1905,8 @@ function FabU() {
               onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               pw: 'cb-mp',
+              pulseKey: absorbMpPulse.key,
+              pulseLabel: absorbMpPulse.label,
             },
           ]}
           topRowTemplate="1.1fr 1fr 0.9fr"
@@ -2854,6 +2872,8 @@ function FabU() {
               onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
               maxValue: totalMP,
               toneColor: fabUTokens.color.mp,
+              pulseKey: absorbMpPulse.key,
+              pulseLabel: absorbMpPulse.label,
             },
           ]}
         />

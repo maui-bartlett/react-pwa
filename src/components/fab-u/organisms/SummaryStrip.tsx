@@ -41,6 +41,9 @@ type SummaryMetric = {
   borderGradient?: string;
   /** When provided, applies a CSS gradient as the pill background fill (overrides bgcolor). */
   fillGradient?: string;
+  /** Changing this value retriggers a short feedback animation. */
+  pulseKey?: number;
+  pulseLabel?: string;
 };
 
 type SummaryStripProps = {
@@ -91,7 +94,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
           const useFillGradient = !!metric.fillGradient && !isEditing;
           const metricBox = (
             <Box
-              key={metric.label}
+              key={`${metric.label}-${metric.pulseKey ?? 'steady'}`}
               data-pw={metric.pw ? `metric-${metric.pw}` : undefined}
               onClick={(e) => {
                 if (metric.onManage) {
@@ -101,6 +104,31 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                 if (!isEditing) openEdit(metric);
               }}
               sx={{
+                '@keyframes fabuSummaryMetricPulse': {
+                  '0%': {
+                    transform: 'scale(1)',
+                    boxShadow: fabUTokens.shadow.card,
+                  },
+                  '28%': {
+                    transform: 'translateY(-2px) scale(1.055)',
+                    boxShadow: `0 0 0 2px ${alpha(tc ?? fabUTokens.color.textSecondary, 0.24)}, 0 0 22px ${alpha(tc ?? fabUTokens.color.textSecondary, 0.7)}`,
+                  },
+                  '58%': {
+                    transform: 'translateY(0) scale(0.985)',
+                    boxShadow: `0 0 0 1px ${alpha(tc ?? fabUTokens.color.textSecondary, 0.18)}, 0 0 14px ${alpha(tc ?? fabUTokens.color.textSecondary, 0.42)}`,
+                  },
+                  '100%': {
+                    transform: 'scale(1)',
+                    boxShadow: fabUTokens.shadow.card,
+                  },
+                },
+                '@keyframes fabuSummaryMetricPulseChip': {
+                  '0%': { opacity: 0, transform: 'translateY(5px) scale(0.86)' },
+                  '22%': { opacity: 1, transform: 'translateY(-2px) scale(1)' },
+                  '72%': { opacity: 1, transform: 'translateY(-7px) scale(1)' },
+                  '100%': { opacity: 0, transform: 'translateY(-12px) scale(0.96)' },
+                },
+                position: 'relative',
                 ...(useGradientBorder
                   ? {
                       border: '1px solid transparent',
@@ -122,8 +150,37 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                 minHeight: 52,
                 cursor: metric.onManage ? 'pointer' : editable && !isEditing ? 'text' : 'default',
                 transition: 'border-color 150ms ease',
+                animation: metric.pulseKey ? 'fabuSummaryMetricPulse 820ms ease-out' : 'none',
+                overflow: 'visible',
               }}
             >
+              {metric.pulseKey && metric.pulseLabel ? (
+                <Box
+                  key={metric.pulseKey}
+                  aria-hidden="true"
+                  sx={{
+                    position: 'absolute',
+                    right: 7,
+                    top: -9,
+                    zIndex: 2,
+                    px: 0.58,
+                    py: 0.12,
+                    borderRadius: '999px',
+                    bgcolor: tc ?? fabUTokens.color.textSecondary,
+                    color: fabUTokens.color.labelFg,
+                    fontSize: '0.56rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.035em',
+                    lineHeight: 1.2,
+                    textTransform: 'uppercase',
+                    boxShadow: `0 0 14px ${alpha(tc ?? fabUTokens.color.textSecondary, 0.65)}`,
+                    pointerEvents: 'none',
+                    animation: 'fabuSummaryMetricPulseChip 980ms ease-out both',
+                  }}
+                >
+                  {metric.pulseLabel}
+                </Box>
+              ) : null}
               <Stack spacing={0.08} sx={{ width: '100%', justifyContent: 'center' }}>
                 <Stack
                   direction="column"

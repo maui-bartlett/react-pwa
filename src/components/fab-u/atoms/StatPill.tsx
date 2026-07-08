@@ -30,6 +30,8 @@ function StatPill({
   valueColor,
   borderColor,
   fillGradient,
+  pulseKey,
+  pulseLabel,
   onManage,
 }: StatPillData) {
   const fabUTokens = useFabUTokens();
@@ -177,6 +179,7 @@ function StatPill({
   return (
     <>
       <Box
+        key={pulseKey ?? 'steady'}
         data-pw={pw ? `statpill-${pw}` : undefined}
         onClick={(e) => {
           if (onManage) {
@@ -190,6 +193,31 @@ function StatPill({
           if (!editing) openEdit();
         }}
         sx={{
+          '@keyframes fabuStatPillPulse': {
+            '0%': {
+              transform: 'scale(1)',
+              boxShadow: fabUTokens.shadow.card,
+            },
+            '28%': {
+              transform: 'translateY(-2px) scale(1.055)',
+              boxShadow: `0 0 0 2px ${alpha(toneStyles.color, 0.24)}, 0 0 22px ${alpha(toneStyles.color, 0.7)}`,
+            },
+            '58%': {
+              transform: 'translateY(0) scale(0.985)',
+              boxShadow: `0 0 0 1px ${alpha(toneStyles.color, 0.18)}, 0 0 14px ${alpha(toneStyles.color, 0.42)}`,
+            },
+            '100%': {
+              transform: 'scale(1)',
+              boxShadow: fabUTokens.shadow.card,
+            },
+          },
+          '@keyframes fabuStatPillPulseChip': {
+            '0%': { opacity: 0, transform: 'translateY(5px) scale(0.86)' },
+            '22%': { opacity: 1, transform: 'translateY(-2px) scale(1)' },
+            '72%': { opacity: 1, transform: 'translateY(-7px) scale(1)' },
+            '100%': { opacity: 0, transform: 'translateY(-12px) scale(0.96)' },
+          },
+          position: 'relative',
           border: `1px solid ${
             editing || popoverOpen
               ? fabUTokens.color.textSecondary
@@ -220,8 +248,37 @@ function StatPill({
                 : 'text'
               : 'default',
           transition: 'border-color 150ms ease',
+          animation: pulseKey ? 'fabuStatPillPulse 820ms ease-out' : 'none',
+          overflow: 'visible',
         }}
       >
+        {pulseKey && pulseLabel ? (
+          <Box
+            key={pulseKey}
+            aria-hidden="true"
+            sx={{
+              position: 'absolute',
+              right: 7,
+              top: -9,
+              zIndex: 2,
+              px: 0.58,
+              py: 0.12,
+              borderRadius: '999px',
+              bgcolor: toneStyles.color,
+              color: fabUTokens.color.labelFg,
+              fontSize: '0.56rem',
+              fontWeight: 900,
+              letterSpacing: '0.035em',
+              lineHeight: 1.2,
+              textTransform: 'uppercase',
+              boxShadow: `0 0 14px ${alpha(toneStyles.color, 0.65)}`,
+              pointerEvents: 'none',
+              animation: 'fabuStatPillPulseChip 980ms ease-out both',
+            }}
+          >
+            {pulseLabel}
+          </Box>
+        ) : null}
         <Stack spacing={inline ? 0.18 : 0.08} sx={{ width: '100%', justifyContent: 'center' }}>
           <Stack
             direction={inline ? 'row' : 'column'}

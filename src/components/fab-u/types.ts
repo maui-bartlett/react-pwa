@@ -60,6 +60,9 @@ export type StatPillData = {
   borderColor?: string;
   /** When provided, applies a CSS gradient as the pill background fill. */
   fillGradient?: string;
+  /** Changing this value retriggers a short feedback animation. */
+  pulseKey?: number;
+  pulseLabel?: string;
 };
 
 export type AttributeRow = {
