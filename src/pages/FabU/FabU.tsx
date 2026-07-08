@@ -273,11 +273,13 @@ function mapFabulaUltimaSkillOption(
   const name = readString(skill.name);
   if (!name) return null;
   const catalogMaxLevel = typeof skill.maxLevel === 'number' ? skill.maxLevel : undefined;
+  const summary = readString(skill.summary) ?? readString(skill.description) ?? '';
   return {
     name,
     level: '1',
     maxLevel: getFabulaUltimaSkillMaxLevel(className, name, catalogMaxLevel),
-    effect: readString(skill.summary) ?? readString(skill.description) ?? '',
+    effect: summary,
+    summary,
     description: readString(skill.description),
   };
 }

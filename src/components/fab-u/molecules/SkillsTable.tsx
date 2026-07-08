@@ -607,10 +607,12 @@ function SwipeableSkillRow({
                     fontSize: '0.84rem',
                     lineHeight: 1.5,
                     color: fabUTokens.color.textPrimary,
-                    fontStyle: !row.description && !row.effect ? 'italic' : 'normal',
+                    fontStyle:
+                      !row.description && !row.summary && !row.effect ? 'italic' : 'normal',
                   }}
                 >
-                  {(row.description ?? row.effect) || 'Swipe left to add description'}
+                  {(row.description ?? row.summary ?? row.effect) ||
+                    'Swipe left to add description'}
                 </Typography>
               )}
             </Box>
@@ -815,6 +817,7 @@ function SkillsTable({
         level: original.mastered ? (original.level ?? 'M') : editingSkill.level || '0',
         maxLevel: original.maxLevel,
         effect: original.effect,
+        summary: original.summary,
         description: original.description,
         mastered: original.mastered,
       });
@@ -1130,8 +1133,8 @@ function SkillsTable({
             <AddIcon sx={{ fontSize: '1rem' }} />
             <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.74rem' }}>
               {availableMasteredSkillOptions.length > 0
-                ? 'Mastered Skill'
-                : 'All Mastered Skills Added'}
+                ? 'Heroic Skill'
+                : 'All Heroic Skills Added'}
             </Typography>
           </Box>
         ) : null}
@@ -1150,6 +1153,7 @@ function SkillsTable({
           skill.name,
           skill.level ?? '',
           skill.effect,
+          skill.summary ?? '',
           skill.description ?? '',
         ]}
         renderEntry={(skill) => (
@@ -1233,13 +1237,18 @@ function SkillsTable({
 
       <FabUCatalogPickerDialog
         open={masteredSkillPickerOpen}
-        title="Choose Mastered Skill"
+        title="Choose Heroic Skill"
         label={label ?? title}
-        searchPlaceholder="Search mastered skills..."
+        searchPlaceholder="Search heroic skills..."
         HeaderIcon={SkillCrystalIcon}
         entries={[...availableMasteredSkillOptions].sort((a, b) => a.name.localeCompare(b.name))}
         getKey={(skill) => skill.name}
-        getSearchText={(skill) => [skill.name, skill.effect, skill.description ?? '']}
+        getSearchText={(skill) => [
+          skill.name,
+          skill.effect,
+          skill.summary ?? '',
+          skill.description ?? '',
+        ]}
         renderEntry={(skill) => (
           <Stack spacing={0.5}>
             <Typography
@@ -1252,7 +1261,7 @@ function SkillsTable({
             >
               {skill.name}
             </Typography>
-            {skill.effect ? (
+            {(skill.summary ?? skill.effect) ? (
               <Typography
                 sx={{
                   fontSize: '0.76rem',
@@ -1260,19 +1269,7 @@ function SkillsTable({
                   color: fabUTokens.color.textSecondary,
                 }}
               >
-                {skill.effect}
-              </Typography>
-            ) : null}
-            {skill.description ? (
-              <Typography
-                sx={{
-                  fontSize: '0.74rem',
-                  lineHeight: 1.36,
-                  color: fabUTokens.color.textSecondary,
-                  opacity: 0.86,
-                }}
-              >
-                {skill.description}
+                {skill.summary ?? skill.effect}
               </Typography>
             ) : null}
           </Stack>

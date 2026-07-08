@@ -84,6 +84,8 @@ export type SkillRow = {
   level?: string;
   maxLevel?: number;
   effect: string;
+  /** Short app-friendly preview shown in pickers and compact rows. */
+  summary?: string;
   /** Full description shown in the accordion expand panel. */
   description?: string;
   /** Heroic/mastered skills do not count toward the 10 class skill levels. */
