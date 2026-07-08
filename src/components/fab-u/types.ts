@@ -90,6 +90,10 @@ export type SkillRow = {
   description?: string;
   /** Heroic/mastered skills do not count toward the 10 class skill levels. */
   mastered?: boolean;
+  /** Used to sort class-specific heroic options above generic options. */
+  heroicScope?: 'class' | 'standard';
+  /** If this heroic skill grants a spell, add this spell to the class spell table. */
+  heroicSpell?: SpellRow;
 };
 
 export type SpellRow = {

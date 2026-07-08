@@ -288,6 +288,7 @@ function normalizeSkillRow(stored: unknown): SkillRow | null {
   if (!stored || typeof stored !== 'object') return null;
   const skill = stored as Record<string, unknown>;
   if (typeof skill.name !== 'string') return null;
+  const heroicSpell = normalizeSpellRow(skill.heroicSpell);
   return {
     name: skill.name,
     effect:
@@ -303,6 +304,10 @@ function normalizeSkillRow(stored: unknown): SkillRow | null {
     ...(typeof skill.summary === 'string' ? { summary: skill.summary } : {}),
     ...(typeof skill.description === 'string' ? { description: skill.description } : {}),
     ...(typeof skill.mastered === 'boolean' ? { mastered: skill.mastered } : {}),
+    ...(skill.heroicScope === 'class' || skill.heroicScope === 'standard'
+      ? { heroicScope: skill.heroicScope }
+      : {}),
+    ...(heroicSpell ? { heroicSpell } : {}),
   };
 }
 

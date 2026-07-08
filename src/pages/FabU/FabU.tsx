@@ -1330,22 +1330,46 @@ function FabU() {
   };
 
   const handleAddSkill = (className: string, skill: import('@/components/fab-u').SkillRow) =>
-    setCharacter((c) => ({
-      ...c,
-      skillGroups: c.skillGroups.some((g) => g.className === className)
-        ? c.skillGroups.map((g) =>
-            g.className === className
-              ? {
-                  ...g,
-                  skills:
-                    skill.mastered && g.skills.some((existingSkill) => existingSkill.mastered)
-                      ? g.skills
-                      : [...g.skills, skill],
-                }
-              : g,
-          )
-        : [...c.skillGroups, { className, skills: [skill] }],
-    }));
+    setCharacter((c) => {
+      const hasHeroicSkill = c.skillGroups
+        .find((group) => group.className === className)
+        ?.skills.some((existingSkill) => existingSkill.mastered);
+      if (skill.mastered && hasHeroicSkill) return c;
+
+      const spellToAdd = skill.heroicSpell;
+      const spellGroups = spellToAdd
+        ? (() => {
+            const existingSpells = getClassSpellRows(c, className) ?? [];
+            const hasSpell = existingSpells.some(
+              (spell) => spell.name.trim().toLowerCase() === spellToAdd.name.trim().toLowerCase(),
+            );
+            if (hasSpell) return c.spellGroups;
+            return c.spellGroups.some((group) => group.className === className)
+              ? c.spellGroups.map((group) =>
+                  group.className === className
+                    ? { ...group, spells: [...group.spells, spellToAdd] }
+                    : group,
+                )
+              : [
+                  ...c.spellGroups,
+                  {
+                    className,
+                    spells: [...existingSpells, spellToAdd],
+                  },
+                ];
+          })()
+        : c.spellGroups;
+
+      return {
+        ...c,
+        skillGroups: c.skillGroups.some((g) => g.className === className)
+          ? c.skillGroups.map((g) =>
+              g.className === className ? { ...g, skills: [...g.skills, skill] } : g,
+            )
+          : [...c.skillGroups, { className, skills: [skill] }],
+        spellGroups,
+      };
+    });
 
   const handleDeleteSkill = (
     className: string,
@@ -2944,6 +2968,7 @@ function FabU() {
               trailingIcon: (
                 <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
               ),
+              iconPosition: 'leading',
             },
             { label: 'ZENIT', value: String(character.zenit), pw: 'zenit', onChange: setZenit },
           ]}

@@ -31,6 +31,7 @@ type SummaryMetric = {
   maxValue?: number;
   /** Optional icon rendered at the trailing (right) edge of the pill */
   trailingIcon?: ReactNode;
+  iconPosition?: 'leading' | 'trailing';
   /** When provided, overrides the default border/background/label color with this accent color. */
   toneColor?: string;
   /** When provided, overrides the value text color (display mode only). */
@@ -249,25 +250,44 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                         }}
                       />
                     ) : (
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          color: metric.valueColor ?? fabUTokens.color.textPrimary,
-                          fontWeight: 700,
-                          fontSize: '0.98rem',
-                          lineHeight: 1.04,
-                          // Match edit-mode input width to prevent slash jump.
-                          // XP uses a dynamic ch width keyed to value length so
-                          // the slash stays put when edit mode opens.
-                          ...(metric.valueSuffix
-                            ? isXpMetric
-                              ? { minWidth: `${Math.max(metric.value.length, 1) + 0.5}ch` }
-                              : { minWidth: '2.5ch' }
-                            : {}),
-                        }}
-                      >
-                        {metric.value}
-                      </Typography>
+                      <>
+                        {!showZenitIcon &&
+                        metric.trailingIcon &&
+                        metric.iconPosition === 'leading' ? (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              flexShrink: 0,
+                              mr: 0.35,
+                              ...(isEditing && !fabUTokens.isDark
+                                ? { filter: 'brightness(0)' }
+                                : {}),
+                            }}
+                          >
+                            {metric.trailingIcon}
+                          </Box>
+                        ) : null}
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            color: metric.valueColor ?? fabUTokens.color.textPrimary,
+                            fontWeight: 700,
+                            fontSize: '0.98rem',
+                            lineHeight: 1.04,
+                            // Match edit-mode input width to prevent slash jump.
+                            // XP uses a dynamic ch width keyed to value length so
+                            // the slash stays put when edit mode opens.
+                            ...(metric.valueSuffix
+                              ? isXpMetric
+                                ? { minWidth: `${Math.max(metric.value.length, 1) + 0.5}ch` }
+                                : { minWidth: '2.5ch' }
+                              : {}),
+                          }}
+                        >
+                          {metric.value}
+                        </Typography>
+                      </>
                     )}
                     {showZenitIcon ? (
                       <Box
@@ -282,7 +302,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                         }}
                       />
                     ) : null}
-                    {!showZenitIcon && metric.trailingIcon ? (
+                    {!showZenitIcon && metric.trailingIcon && metric.iconPosition !== 'leading' ? (
                       <Box
                         sx={{
                           ml: 'auto',

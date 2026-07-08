@@ -741,6 +741,8 @@ function SkillsTable({
       effect: selectedOption?.effect ?? '',
       summary: selectedOption?.summary,
       description: selectedOption?.description,
+      heroicScope: selectedOption?.heroicScope,
+      heroicSpell: selectedOption?.heroicSpell,
     });
     setDraftSkill(null);
   }
@@ -824,6 +826,8 @@ function SkillsTable({
         summary: original.summary,
         description: original.description,
         mastered: original.mastered,
+        heroicScope: original.heroicScope,
+        heroicSpell: original.heroicSpell,
       });
     }
     setEditingSkill(null);
@@ -1248,7 +1252,12 @@ function SkillsTable({
         label={label ?? title}
         searchPlaceholder="Search heroic skills..."
         HeaderIcon={SkillCrystalIcon}
-        entries={[...availableMasteredSkillOptions].sort((a, b) => a.name.localeCompare(b.name))}
+        entries={[...availableMasteredSkillOptions].sort((a, b) => {
+          if (a.heroicScope !== b.heroicScope) {
+            return a.heroicScope === 'class' ? -1 : 1;
+          }
+          return a.name.localeCompare(b.name);
+        })}
         getKey={(skill) => skill.name}
         getSearchText={(skill) => [
           skill.name,

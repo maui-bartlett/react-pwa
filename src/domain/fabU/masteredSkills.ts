@@ -1,8 +1,9 @@
-import type { SkillRow } from '@/components/fab-u';
+import type { SkillRow, SpellRow } from '@/components/fab-u';
 
 type FabUMasteredSkillOption = SkillRow & {
   classRequirements: 'any' | readonly string[];
   minimumRequiredMasteredClasses?: number;
+  heroicSpell?: SpellRow;
 };
 
 const GENERIC_MASTERED_SKILLS: FabUMasteredSkillOption[] = [
@@ -54,12 +55,14 @@ function heroicSkill({
   summary,
   description,
   minimumRequiredMasteredClasses,
+  heroicSpell,
 }: {
   name: string;
   classRequirements: 'any' | readonly string[];
   summary: string;
   description: string;
   minimumRequiredMasteredClasses?: number;
+  heroicSpell?: SpellRow;
 }): FabUMasteredSkillOption {
   return {
     name,
@@ -71,6 +74,7 @@ function heroicSkill({
     effect: summary,
     summary,
     description,
+    heroicSpell,
   };
 }
 
@@ -102,6 +106,18 @@ const CORE_HEROIC_SKILLS: FabUMasteredSkillOption[] = [
     summary: 'Learn Comet, the ultimate Entropist spell for untyped enemy-wide damage.',
     description:
       'Requirements: you must have mastered the Entropist Class. You learn the ultimate Entropist spell: Comet. Comet costs 50 MP, has Target: Special, and Duration: Instantaneous. Choose one option: deal 60 damage to one enemy you can see; or deal 40 damage to every enemy you can see. This damage increases by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell has no type and ignores damage Affinities.',
+    heroicSpell: {
+      name: 'Comet',
+      cost: '50 MP',
+      target: 'Special',
+      duration: 'Instant',
+      effect:
+        'Choose one visible enemy for 60 untyped damage, or every visible enemy for 40 untyped damage.',
+      summary:
+        'Choose one visible enemy for 60 untyped damage, or every visible enemy for 40 untyped damage.',
+      description:
+        'Comet costs 50 MP, has Target: Special, and Duration: Instantaneous. Choose one option: deal 60 damage to one enemy you can see; or deal 40 damage to every enemy you can see. This damage increases by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell has no type and ignores damage Affinities.',
+    },
   }),
   heroicSkill({
     name: 'Deep Pockets',
@@ -130,6 +146,16 @@ const CORE_HEROIC_SKILLS: FabUMasteredSkillOption[] = [
     summary: 'Learn Hope, the ultimate Spiritist spell.',
     description:
       'Requirements: you must have mastered the Spiritist Class. You learn the ultimate Spiritist spell: Hope. Use it as a major restorative miracle for scenes where faith, resolve, and protection should turn the tide for the group.',
+    heroicSpell: {
+      name: 'Hope',
+      cost: '40 MP',
+      target: 'Special',
+      duration: 'Instant',
+      effect: 'A major restorative miracle that turns the tide for the group.',
+      summary: 'A major restorative miracle that turns the tide for the group.',
+      description:
+        'Hope is the ultimate Spiritist spell. Use it as a major restorative miracle for scenes where faith, resolve, and protection should turn the tide for the group.',
+    },
   }),
   heroicSkill({
     name: 'Heroic Companion',
@@ -249,6 +275,18 @@ const CORE_HEROIC_SKILLS: FabUMasteredSkillOption[] = [
     summary: 'Learn Volcano, the ultimate Elementalist spell.',
     description:
       'Requirements: you must have mastered the Elementalist Class. You learn the ultimate Elementalist spell: Volcano. Volcano costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose one visible creature to take 50 fire damage, or any number of visible creatures to each take 30 fire damage. This damage ignores Resistance and Immunity.',
+    heroicSpell: {
+      name: 'Volcano',
+      cost: '40 MP',
+      target: 'Special',
+      duration: 'Instant',
+      effect:
+        'Choose one visible creature for 50 fire damage, or any number of visible creatures for 30 fire damage.',
+      summary:
+        'Choose one visible creature for 50 fire damage, or any number of visible creatures for 30 fire damage.',
+      description:
+        'Volcano costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose one visible creature to take 50 fire damage, or any number of visible creatures to each take 30 fire damage. This damage ignores Resistance and Immunity.',
+    },
   }),
 ];
 
@@ -605,6 +643,8 @@ function toSkillRow(option: FabUMasteredSkillOption): SkillRow {
     effect: option.effect,
     summary: option.summary ?? option.effect,
     description: option.description,
+    heroicScope: option.classRequirements === 'any' ? 'standard' : 'class',
+    heroicSpell: option.heroicSpell,
   };
 }
 
