@@ -974,7 +974,27 @@ function FabU() {
   const setMagicDefenseTemp = (v: number | null) =>
     setCharacter((c) => ({ ...c, magicDefenseTemp: v }));
   const setFP = (v: number) => setCharacter((c) => ({ ...c, fabulaPoints: v }));
-  const setCurrentHP = (v: number) => setCharacter((c) => ({ ...c, currentHP: v }));
+  const getAbsorbMpRecovery = (current: Character) => {
+    const absorbMp = current.skillGroups
+      .find((group) => group.className === 'Entropist')
+      ?.skills.find((skill) => skill.name.trim().toLowerCase() === 'absorb mp');
+    const skillLevel = Number.parseInt(absorbMp?.level ?? '0', 10);
+    return Number.isFinite(skillLevel) ? Math.max(0, skillLevel * 2) : 0;
+  };
+  const setCurrentHP = (v: number) =>
+    setCharacter((c) => {
+      const damageTaken = Math.max(0, c.currentHP - v);
+      if (damageTaken <= 0) return { ...c, currentHP: v };
+
+      const absorbMpRecovery = getAbsorbMpRecovery(c);
+      if (absorbMpRecovery <= 0) return { ...c, currentHP: v };
+
+      return {
+        ...c,
+        currentHP: v,
+        currentMP: Math.min(totalMP, c.currentMP + absorbMpRecovery),
+      };
+    });
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
   const setCurrentIP = (v: number) => setCharacter((c) => ({ ...c, currentIP: v }));
   const setHpBonus = (v: number) => setCharacter((c) => ({ ...c, hpBonus: v }));
