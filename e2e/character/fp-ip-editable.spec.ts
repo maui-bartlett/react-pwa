@@ -4,7 +4,7 @@ import { readActiveFabUCharacter } from '../helpers/fabUStorage';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
 
-test.describe('FP / IP editable pills (mobile viewport)', () => {
+test.describe('FP editable / IP management pills (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
@@ -36,20 +36,24 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
     await expect(fpPill).toContainText('12');
   });
 
-  test('IP pill: click opens input, value commits, blur shows new value', async ({ page }) => {
+  test('IP pill: click opens management modal, value commits, blur shows new value', async ({
+    page,
+  }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
     const ipPill = page.locator('[data-pw="metric-ip"]');
-    const input = page.locator('[data-pw="metric-ip-input"]');
+    const input = page.locator('[data-pw="ip-management-current-input"]');
 
     await expect(ipPill).toContainText('8');
 
     await ipPill.click();
+    await expect(page.locator('[data-pw="ip-management-modal"]')).toBeVisible();
     await expect(input).toBeVisible();
-    await input.fill('25');
+    await input.fill('5');
     await input.blur();
+    await page.locator('[data-pw="ip-management-close"]').click();
 
-    await expect(input).not.toBeVisible();
-    await expect(ipPill).toContainText('25');
+    await expect(page.locator('[data-pw="ip-management-modal"]')).toBeHidden();
+    await expect(ipPill).toContainText('5');
   });
 
   test('FP and IP values persist across page reload', async ({ page }) => {
@@ -61,19 +65,20 @@ test.describe('FP / IP editable pills (mobile viewport)', () => {
     // Edit IP
     await page.getByRole('button', { name: 'Spells' }).first().click();
     await page.locator('[data-pw="metric-ip"]').click();
-    await page.locator('[data-pw="metric-ip-input"]').fill('15');
-    await page.locator('[data-pw="metric-ip-input"]').blur();
+    await page.locator('[data-pw="ip-management-current-input"]').fill('5');
+    await page.locator('[data-pw="ip-management-current-input"]').blur();
+    await page.locator('[data-pw="ip-management-close"]').click();
 
     await expect
       .poll(async () => readActiveFabUCharacter(page))
-      .toMatchObject({ fabulaPoints: 7, inventoryPoints: 15 });
+      .toMatchObject({ fabulaPoints: 7, inventoryPoints: 5 });
 
     // Reload and verify
     await page.reload();
     await page.getByRole('button', { name: 'Spells' }).first().click();
 
     await expect(page.locator('[data-pw="metric-fp"]')).toContainText('7');
-    await expect(page.locator('[data-pw="metric-ip"]')).toContainText('15');
+    await expect(page.locator('[data-pw="metric-ip"]')).toContainText('5');
   });
 
   test('Enter key commits the value', async ({ page }) => {

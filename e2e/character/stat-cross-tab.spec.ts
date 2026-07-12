@@ -54,13 +54,14 @@ test.describe('HP/MP/FP/IP cross-tab sync (mobile viewport)', () => {
     await expect.poll(async () => (await readActiveFabUCharacter(page)).fabulaPoints).toBe(9);
   });
 
-  test('editing IP in Gear tab reflects in IndexedDB', async ({ page }) => {
+  test('managing IP in Gear tab reflects in IndexedDB', async ({ page }) => {
     await page.getByRole('button', { name: 'Gear' }).first().click();
 
     await page.locator('[data-pw="metric-ip"]').click();
-    await page.locator('[data-pw="metric-ip-input"]').fill('12');
-    await page.locator('[data-pw="metric-ip-input"]').blur();
+    await page.locator('[data-pw="ip-management-current-input"]').fill('5');
+    await page.locator('[data-pw="ip-management-current-input"]').blur();
+    await page.locator('[data-pw="ip-management-close"]').click();
 
-    await expect.poll(async () => (await readActiveFabUCharacter(page)).inventoryPoints).toBe(12);
+    await expect.poll(async () => (await readActiveFabUCharacter(page)).inventoryPoints).toBe(5);
   });
 });
