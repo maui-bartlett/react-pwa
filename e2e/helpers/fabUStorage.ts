@@ -138,9 +138,31 @@ async function patchActiveFabUCharacter(page: Page, patch: Record<string, unknow
   }, patch);
 }
 
+async function seedFabUHpMpBaseline(page: Page): Promise<void> {
+  await patchActiveFabUCharacter(page, {
+    level: 13,
+    currentHP: 58,
+    hpBonus: 5,
+    currentMP: 58,
+    mpBonus: 5,
+    classes: [
+      { name: 'Entropist', level: 10, subtitle: 'Entropic Magic · Absorb MP · Stolen Time' },
+      { name: 'Sharpshooter', level: 2, subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP' },
+      { name: 'Tinkerer', level: 1, subtitle: 'Emergency Item · improvised gear in conflict' },
+    ],
+    attributes: {
+      dex: { die: 'd8', modifier: 0 },
+      insight: { die: 'd10', modifier: 0 },
+      might: { die: 'd8', modifier: 0 },
+      willpower: { die: 'd8', modifier: 1 },
+    },
+  });
+}
+
 export {
   activeFabUCharacterHasBond,
   clearFabUCharacterStorage,
   patchActiveFabUCharacter,
   readActiveFabUCharacter,
+  seedFabUHpMpBaseline,
 };

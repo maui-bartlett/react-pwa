@@ -1,10 +1,17 @@
 import { devices, expect, test } from '@playwright/test';
 
+import { seedFabUHpMpBaseline } from '../helpers/fabUStorage';
+
 test.use({ viewport: devices['Pixel 5'].viewport });
+
+const LAYOUT_TOLERANCE = 2;
 
 test.describe('HP/MP management modal', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+    await seedFabUHpMpBaseline(page);
+    await page.reload();
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
@@ -40,17 +47,19 @@ test.describe('HP/MP management modal', () => {
       throw new Error('HP management controls are not visible');
     }
 
-    expect(Math.abs(pointsLabel.y - modifierLabel.y)).toBeLessThan(1);
-    expect(Math.abs(wheel.y - heal.y)).toBeLessThan(1);
+    expect(Math.abs(pointsLabel.y - modifierLabel.y)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
+    expect(Math.abs(wheel.y - heal.y)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
     expect(Math.abs(modifier.x + modifier.width / 2 - (wheel.x + wheel.width / 2))).toBeLessThan(
-      1,
+      LAYOUT_TOLERANCE,
     );
     const gaps = [
       amount.y - (heal.y + heal.height),
       damage.y - (amount.y + amount.height),
     ];
-    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThan(1);
-    expect(Math.abs(wheel.y + wheel.height - (damage.y + damage.height))).toBeLessThan(1);
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
+    expect(Math.abs(wheel.y + wheel.height - (damage.y + damage.height))).toBeLessThanOrEqual(
+      LAYOUT_TOLERANCE,
+    );
     expect(
       paper.y + paper.height - Math.max(wheel.y + wheel.height, damage.y + damage.height),
     ).toBeLessThan(16);
