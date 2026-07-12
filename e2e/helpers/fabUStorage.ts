@@ -65,6 +65,13 @@ async function clearFabUCharacterStorage(page: Page): Promise<void> {
       transaction.onerror = () => reject(transaction.error);
     });
     db.close();
+
+    [
+      'fab-u-character',
+      'fab-u-character-notes',
+      'local-characters:fabula-ultima',
+      'local-characters:fabula-ultima:active',
+    ].forEach((key) => localStorage.removeItem(key));
   });
 }
 

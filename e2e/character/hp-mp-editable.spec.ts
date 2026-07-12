@@ -1,14 +1,38 @@
 import { devices, expect, test } from '@playwright/test';
 
-import { readActiveFabUCharacter } from '../helpers/fabUStorage';
+import { patchActiveFabUCharacter, readActiveFabUCharacter } from '../helpers/fabUStorage';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
+
+async function seedHpMpBaseline(page: Parameters<typeof patchActiveFabUCharacter>[0]) {
+  await patchActiveFabUCharacter(page, {
+    level: 13,
+    currentHP: 58,
+    hpBonus: 5,
+    currentMP: 58,
+    mpBonus: 5,
+    classes: [
+      { name: 'Entropist', level: 10, subtitle: 'Entropic Magic · Absorb MP · Stolen Time' },
+      { name: 'Sharpshooter', level: 2, subtitle: 'Ranged Weapon Mastery · Crossfire · Speed MP' },
+      { name: 'Tinkerer', level: 1, subtitle: 'Emergency Item · improvised gear in conflict' },
+    ],
+    attributes: {
+      dex: { die: 'd8', modifier: 0 },
+      insight: { die: 'd10', modifier: 0 },
+      might: { die: 'd8', modifier: 0 },
+      willpower: { die: 'd8', modifier: 1 },
+    },
+  });
+}
 
 // HP / MP are adjusted through the HP/MP management modal (see
 // hp-mp-management.spec.ts). The Spells-tab summary pills open that same modal.
 test.describe('HP / MP pills — Spells tab (mobile viewport)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/fab-u');
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+    await seedHpMpBaseline(page);
+    await page.reload();
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
     await page.getByRole('button', { name: 'Spells' }).first().click();
   });
