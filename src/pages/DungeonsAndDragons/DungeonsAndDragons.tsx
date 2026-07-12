@@ -42,6 +42,10 @@ import { Backpack, ChevronDown, Grid3X3, House, Lightbulb, Search, Sword, X } fr
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
 import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
+import {
+  APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
+  withFirefoxBottomNavInset,
+} from '@/components/appShell';
 import AccountSettings from '@/sections/AccountSettings';
 import { persistAppView } from '@/state/persistentAppLocation';
 import { useLocalCharacterSlots } from '@/state/useLocalCharacterSlots';
@@ -85,8 +89,6 @@ const DND_GAME_SYSTEM = 'dungeons-and-dragons';
 const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
 const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
 const DND_OPEN_TAB_MENU_EVENT = 'dnd-open-tab-menu';
-const DND_SCROLL_BOTTOM_CLEARANCE = 'calc(226px + max(20px, env(safe-area-inset-bottom, 0px)))';
-const DND_FIREFOX_BOTTOM_NAV_INSET = '48px';
 type RestType = DndRestType;
 
 const darkDndColors = {
@@ -12077,9 +12079,9 @@ function DungeonsAndDragons() {
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
             boxSizing: 'border-box',
-            pb: DND_SCROLL_BOTTOM_CLEARANCE,
+            pb: APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
             '@supports (-moz-appearance: none)': {
-              pb: `calc(${DND_SCROLL_BOTTOM_CLEARANCE} + ${DND_FIREFOX_BOTTOM_NAV_INSET})`,
+              pb: withFirefoxBottomNavInset(APP_SHELL_DICE_FAB_SCROLL_CLEARANCE),
             },
           }}
         >

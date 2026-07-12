@@ -28,6 +28,12 @@ import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { Backpack, ChevronRight, HandFist, House, Info, Pencil, Trash2 } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
+import {
+  APP_SHELL_BOTTOM_SAFE_AREA_PADDING,
+  APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
+  APP_SHELL_FIREFOX_BOTTOM_NAV_INSET,
+  withFirefoxBottomNavInset,
+} from '@/components/appShell';
 import UndoSnackbar from '@/components/fab-u/atoms/UndoSnackbar';
 import { avatarDarkTokens, avatarLightTokens } from '@/components/fab-u/tokens';
 import type { FabUTokens } from '@/components/fab-u/tokens';
@@ -8088,8 +8094,7 @@ function AvatarLegends() {
   const titleBarGradient = `linear-gradient(180deg, ${parchment} 0%, ${parchment} 18%, #ffffff 100%)`;
   const tabTitleBg = isDarkMode ? 'transparent' : titleBarGradient;
   const tabTitleColor = isDarkMode ? ink : '#000000';
-  const bottomSafeAreaPadding = 'max(20px, env(safe-area-inset-bottom, 0px))';
-  const firefoxBottomNavInset = '48px';
+  const bottomSafeAreaPadding = APP_SHELL_BOTTOM_SAFE_AREA_PADDING;
   return (
     <>
       {/* Render-less mount that keeps the characterStateAtom in lockstep
@@ -8425,9 +8430,9 @@ function AvatarLegends() {
                 // nav top. The +150px also clears the floating dice-roller FAB
                 // (which sits ~128px above the nav) so the last content isn't
                 // hidden under it.
-                pb: `calc(226px + ${bottomSafeAreaPadding})`,
+                pb: APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
                 '@supports (-moz-appearance: none)': {
-                  pb: `calc(226px + ${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
+                  pb: withFirefoxBottomNavInset(APP_SHELL_DICE_FAB_SCROLL_CLEARANCE),
                 },
               }}
             >
@@ -8451,7 +8456,7 @@ function AvatarLegends() {
                 pb: bottomSafeAreaPadding,
                 '@supports (-moz-appearance: none)': {
                   // Firefox installed PWAs need an extra bottom lift; Safari keeps using env().
-                  pb: `calc(${bottomSafeAreaPadding} + ${firefoxBottomNavInset})`,
+                  pb: `calc(${bottomSafeAreaPadding} + ${APP_SHELL_FIREFOX_BOTTOM_NAV_INSET})`,
                 },
                 pt: 0.3,
                 position: 'absolute',
