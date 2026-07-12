@@ -5995,7 +5995,9 @@ function isAbilityScoreImprovementFeature(feature: Pick<WizardClassFeature, 'nam
 }
 
 function isProficienciesFeature(feature: Pick<WizardClassFeature, 'name' | 'category'>) {
-  return normalizeDndLookupName(feature.name) === 'proficiencies' && feature.category === 'Class Setup';
+  return (
+    normalizeDndLookupName(feature.name) === 'proficiencies' && feature.category === 'Class Setup'
+  );
 }
 
 function normalizeChoiceOptions(value: string[] | string | undefined) {
@@ -6021,7 +6023,10 @@ const musicalInstrumentOptions = [
 
 function getSkillChoiceOptions(skillChoices: DndClassInfo['skillChoices']) {
   if (!skillChoices) return [];
-  if (typeof skillChoices.from === 'string' && normalizeDndLookupName(skillChoices.from) === 'any') {
+  if (
+    typeof skillChoices.from === 'string' &&
+    normalizeDndLookupName(skillChoices.from) === 'any'
+  ) {
     return initialDndCharacter.skills.map((skill) => skill.name);
   }
   return normalizeChoiceOptions(skillChoices.from);
@@ -6033,7 +6038,7 @@ function getToolChoiceOptions(entry: string) {
     const normalizedOption = normalizeDndLookupName(option);
     if (normalizedEntry.includes('artisan') && normalizedOption.includes('supplies')) return true;
     if (normalizedEntry.includes('gaming') && normalizedOption.includes('set')) return true;
-    if (normalizedEntry.includes("thieves") && normalizedOption.includes("thieves")) return true;
+    if (normalizedEntry.includes('thieves') && normalizedOption.includes('thieves')) return true;
     return false;
   });
   if (normalizedEntry.includes('musical')) options.push(...musicalInstrumentOptions);
@@ -6066,7 +6071,9 @@ function createProficiencySelectionGroups(classInfo?: DndClassInfo): Proficiency
   return groups;
 }
 
-function flattenSelectedProficiencies(selectedProficiencies: CharacterForm['selectedProficiencies']) {
+function flattenSelectedProficiencies(
+  selectedProficiencies: CharacterForm['selectedProficiencies'],
+) {
   return Object.values(selectedProficiencies).flat().filter(Boolean);
 }
 
@@ -6110,7 +6117,9 @@ function createAbilityScoreImprovementOptions(
   return options;
 }
 
-function abilityScoreImprovementIncreasesFromValue(value: string): Partial<Record<AbilityKey, number>> {
+function abilityScoreImprovementIncreasesFromValue(
+  value: string,
+): Partial<Record<AbilityKey, number>> {
   return value.split('|').reduce<Partial<Record<AbilityKey, number>>>((increases, part) => {
     const [ability, amount] = part.split('+');
     if (!abilityOrder.includes(ability as AbilityKey)) return increases;
@@ -6370,11 +6379,7 @@ function CharacterEditDialog({
     const previousValue = asiSelections[featureId] ?? '';
     onChange({
       ...form,
-      abilityScores: applyAbilityScoreImprovementOption(
-        form.abilityScores,
-        option,
-        previousValue,
-      ),
+      abilityScores: applyAbilityScoreImprovementOption(form.abilityScores, option, previousValue),
     });
     setAsiSelections((current) => ({ ...current, [featureId]: option.value }));
   };
@@ -6386,7 +6391,9 @@ function CharacterEditDialog({
         [key]: Array.from({
           length: Math.max(form.selectedProficiencies[key]?.length ?? 0, choiceIndex + 1),
         })
-          .map((_, index) => (index === choiceIndex ? value : (form.selectedProficiencies[key]?.[index] ?? '')))
+          .map((_, index) =>
+            index === choiceIndex ? value : (form.selectedProficiencies[key]?.[index] ?? ''),
+          )
           .filter(Boolean),
       },
     });
