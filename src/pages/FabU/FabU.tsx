@@ -2969,6 +2969,7 @@ function FabU() {
                 <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />
               ),
               iconPosition: 'leading',
+              valueAlign: 'right',
             },
             { label: 'ZENIT', value: String(character.zenit), pw: 'zenit', onChange: setZenit },
           ]}

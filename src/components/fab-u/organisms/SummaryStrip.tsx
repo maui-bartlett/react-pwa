@@ -32,6 +32,7 @@ type SummaryMetric = {
   /** Optional icon rendered at the trailing (right) edge of the pill */
   trailingIcon?: ReactNode;
   iconPosition?: 'leading' | 'trailing';
+  valueAlign?: 'left' | 'right';
   /** When provided, overrides the default border/background/label color with this accent color. */
   toneColor?: string;
   /** When provided, overrides the value text color (display mode only). */
@@ -275,6 +276,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                             fontWeight: 700,
                             fontSize: '0.98rem',
                             lineHeight: 1.04,
+                            ...(metric.valueAlign === 'right' ? { ml: 'auto' } : {}),
                             // Match edit-mode input width to prevent slash jump.
                             // XP uses a dynamic ch width keyed to value length so
                             // the slash stays put when edit mode opens.

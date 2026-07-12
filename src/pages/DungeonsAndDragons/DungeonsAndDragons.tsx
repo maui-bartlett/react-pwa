@@ -85,6 +85,8 @@ const DND_GAME_SYSTEM = 'dungeons-and-dragons';
 const DND_PENDING_SYNC_KEY = 'dnd-convex-pending-character';
 const DND_SELECT_CHARACTER_EVENT = 'dnd-select-character';
 const DND_OPEN_TAB_MENU_EVENT = 'dnd-open-tab-menu';
+const DND_SCROLL_BOTTOM_CLEARANCE = 'calc(226px + max(20px, env(safe-area-inset-bottom, 0px)))';
+const DND_FIREFOX_BOTTOM_NAV_INSET = '48px';
 type RestType = DndRestType;
 
 const darkDndColors = {
@@ -6351,7 +6353,9 @@ function CharacterEditDialog({
                   type="button"
                   onClick={() => setActiveStep(index)}
                   sx={{
-                    minWidth: { xs: 136, sm: 160 },
+                    flex: '0 0 auto',
+                    width: 'max-content',
+                    minWidth: 'max-content',
                     px: 1.4,
                     py: 1.6,
                     border: 0,
@@ -6361,6 +6365,7 @@ function CharacterEditDialog({
                     fontSize: 18,
                     fontWeight: 850,
                     textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
                     position: 'relative',
                     cursor: 'pointer',
                     '&::after': {
@@ -11669,7 +11674,19 @@ function DungeonsAndDragons() {
           boxShadow: { xs: 'none', md: '0 0 60px rgba(0,0,0,0.5)' },
         }}
       >
-        <Box sx={{ height: '100%', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <Box
+          data-dice-tray-scroll-root
+          sx={{
+            height: '100%',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            boxSizing: 'border-box',
+            pb: DND_SCROLL_BOTTOM_CLEARANCE,
+            '@supports (-moz-appearance: none)': {
+              pb: `calc(${DND_SCROLL_BOTTOM_CLEARANCE} + ${DND_FIREFOX_BOTTOM_NAV_INSET})`,
+            },
+          }}
+        >
           <HeroHeader
             character={character}
             onEditCharacter={() => setCharacterForm(createCharacterForm(character))}
