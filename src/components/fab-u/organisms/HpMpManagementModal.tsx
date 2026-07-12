@@ -24,16 +24,22 @@ const FIELD_LABEL_FONT_WEIGHT = 800;
 
 type HpMpKind = 'hp' | 'mp' | 'ip';
 
+type ResourceModifierSource = {
+  id: string;
+  label: string;
+  source: string;
+  value: number;
+};
+
 type HpMpManagementModalProps = {
   /** The pill the popover anchors to; null keeps it closed. */
   anchorEl: HTMLElement | null;
   kind: HpMpKind;
   current: number;
   max: number;
-  /** hpBonus / mpBonus / ipBonus — the flat modifier added on top of the derived max. */
-  modifier: number;
+  modifierSources: ResourceModifierSource[];
   onApply: (nextCurrent: number) => void;
-  onChangeModifier: (nextModifier: number) => void;
+  onAddModifier: (label: string, value: number) => void;
   onClose: () => void;
 };
 
@@ -124,9 +130,9 @@ function HpMpManagementModal({
   kind,
   current,
   max,
-  modifier,
+  modifierSources,
   onApply,
-  onChangeModifier,
+  onAddModifier,
   onClose,
 }: HpMpManagementModalProps) {
   const fabUTokens = useFabUTokens();
@@ -161,7 +167,10 @@ function HpMpManagementModal({
 
   const [amount, setAmount] = useState(0);
   const [currentDraft, setCurrentDraft] = useState(String(current));
-  const [modifierDraft, setModifierDraft] = useState(String(modifier));
+  const [showModifiers, setShowModifiers] = useState(false);
+  const [addingModifier, setAddingModifier] = useState(false);
+  const [modifierLabelDraft, setModifierLabelDraft] = useState('');
+  const [modifierValueDraft, setModifierValueDraft] = useState('');
   useFabUPopperScrollLock(open);
 
   // Reset the working amount only when the modal opens (so stale state from a
@@ -170,24 +179,33 @@ function HpMpManagementModal({
     if (open) setAmount(0);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) {
+      setShowModifiers(false);
+      setAddingModifier(false);
+      setModifierLabelDraft('');
+      setModifierValueDraft('');
+    }
+  }, [open]);
+
   // Keep the current-value field in sync when changed by parent state.
   useEffect(() => {
     if (open) setCurrentDraft(String(current));
   }, [open, current]);
 
-  // Keep the modifier field in sync when it changes externally or on open.
-  useEffect(() => {
-    if (open) setModifierDraft(String(modifier));
-  }, [open, modifier]);
-
   const wheelMax = Math.max(max, 30);
+  const totalModifier = modifierSources.reduce((sum, source) => sum + source.value, 0);
 
-  function commitModifier(raw: string) {
-    const cleaned = raw.replace(/[^0-9-]/g, '');
+  function commitCustomModifier() {
+    const label = modifierLabelDraft.trim();
+    if (!label) return;
+    const cleaned = modifierValueDraft.replace(/[^0-9-]/g, '');
     const parsed = Number.parseInt(cleaned, 10);
-    const next = Number.isNaN(parsed) ? 0 : parsed;
-    setModifierDraft(String(next));
-    if (next !== modifier) onChangeModifier(next);
+    if (Number.isNaN(parsed)) return;
+    onAddModifier(label, parsed);
+    setModifierLabelDraft('');
+    setModifierValueDraft('');
+    setAddingModifier(false);
   }
 
   function commitCurrent(raw: string) {
@@ -220,8 +238,8 @@ function HpMpManagementModal({
           data-pw={`${kind}-management-modal`}
           sx={{
             p: 1.4,
-            width: 'min(88vw, 268px)',
-            maxWidth: 'min(88vw, 268px)',
+            width: 'min(90vw, 300px)',
+            maxWidth: 'min(90vw, 300px)',
             bgcolor: fabUTokens.color.surface,
             backgroundImage: 'none',
             border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
@@ -363,47 +381,249 @@ function HpMpManagementModal({
                 <Typography data-pw={`${kind}-management-modifier-label`} sx={fieldLabelSx}>
                   {modifierLabel}
                 </Typography>
-                <InputBase
-                  data-pw={`${kind}-management-modifier-control`}
-                  value={modifierDraft}
-                  inputProps={{
-                    inputMode: 'numeric',
-                    'aria-label': modifierLabel,
-                    'data-pw': `${kind}-management-modifier-input`,
-                    style: {
-                      textAlign: 'center',
-                      fontWeight: 800,
-                      fontSize: '1.12rem',
-                      lineHeight: 1,
-                      padding: 0,
-                    },
-                  }}
-                  onChange={(e) => setModifierDraft(e.target.value.replace(/[^0-9-]/g, ''))}
-                  onBlur={(e) => commitModifier(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                    if (e.key === 'Escape') setModifierDraft(String(modifier));
-                  }}
+                <Button
+                  data-pw={`${kind}-management-show-modifiers`}
+                  onClick={() => setShowModifiers((visible) => !visible)}
+                  variant="outlined"
                   sx={{
-                    width: 56,
-                    minWidth: 56,
+                    width: '100%',
+                    minWidth: 0,
+                    height: 27,
                     border: `1px solid ${fabUTokens.color.border}`,
                     borderRadius: FIELD_RADIUS,
                     bgcolor: fabUTokens.color.pillSurface,
-                    height: 27,
-                    px: 0.65,
+                    px: 0.6,
                     color: fabUTokens.color.textPrimary,
-                    '& .MuiInputBase-input': {
-                      textAlign: 'center',
-                    },
-                    '& input': {
-                      height: 27,
+                    fontSize: '0.62rem',
+                    fontWeight: 850,
+                    lineHeight: 1.05,
+                    textTransform: 'none',
+                    whiteSpace: 'nowrap',
+                    '&:hover': {
+                      borderColor: fabUTokens.color.textSecondary,
+                      bgcolor: fabUTokens.color.pillSurface,
                     },
                   }}
-                />
+                >
+                  Show Modifiers
+                </Button>
               </Stack>
             </Box>
           </Stack>
+
+          {showModifiers ? (
+            <Stack
+              data-pw={`${kind}-management-modifier-list`}
+              spacing={0.75}
+              sx={{
+                mb: 1,
+                p: 0.85,
+                border: `1px solid ${fabUTokens.color.border}`,
+                borderRadius: FIELD_RADIUS,
+                bgcolor: alpha(fabUTokens.color.pillSurface, fabUTokens.isDark ? 0.65 : 0.9),
+              }}
+            >
+              <Button
+                data-pw={`${kind}-management-add-custom-modifier`}
+                onClick={() => setAddingModifier(true)}
+                variant="outlined"
+                disabled={addingModifier}
+                sx={{
+                  alignSelf: 'stretch',
+                  minHeight: 30,
+                  borderColor: alpha(accent, fabUTokens.isDark ? 0.65 : 0.5),
+                  color: accent,
+                  fontSize: '0.74rem',
+                  fontWeight: 850,
+                  textTransform: 'none',
+                }}
+              >
+                + Custom Modifier
+              </Button>
+
+              {addingModifier ? (
+                <Stack
+                  data-pw={`${kind}-management-custom-modifier-form`}
+                  spacing={0.65}
+                  sx={{
+                    p: 0.75,
+                    border: `1px solid ${alpha(accent, 0.4)}`,
+                    borderRadius: FIELD_RADIUS,
+                  }}
+                >
+                  <InputBase
+                    placeholder="Modifier label"
+                    value={modifierLabelDraft}
+                    inputProps={{ 'data-pw': `${kind}-management-custom-modifier-label` }}
+                    onChange={(e) => setModifierLabelDraft(e.target.value)}
+                    sx={{
+                      height: 30,
+                      px: 0.8,
+                      border: `1px solid ${fabUTokens.color.border}`,
+                      borderRadius: FIELD_RADIUS,
+                      bgcolor: fabUTokens.color.surface,
+                      color: fabUTokens.color.textPrimary,
+                      fontSize: '0.82rem',
+                    }}
+                  />
+                  <InputBase
+                    placeholder="Value"
+                    value={modifierValueDraft}
+                    inputProps={{
+                      inputMode: 'numeric',
+                      'data-pw': `${kind}-management-custom-modifier-value`,
+                    }}
+                    onChange={(e) => setModifierValueDraft(e.target.value.replace(/[^0-9-]/g, ''))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitCustomModifier();
+                    }}
+                    sx={{
+                      height: 30,
+                      px: 0.8,
+                      border: `1px solid ${fabUTokens.color.border}`,
+                      borderRadius: FIELD_RADIUS,
+                      bgcolor: fabUTokens.color.surface,
+                      color: fabUTokens.color.textPrimary,
+                      fontSize: '0.82rem',
+                    }}
+                  />
+                  <Stack direction="row" spacing={0.7}>
+                    <Button
+                      data-pw={`${kind}-management-confirm-custom-modifier`}
+                      onClick={commitCustomModifier}
+                      variant="contained"
+                      disableElevation
+                      sx={{
+                        flex: 1,
+                        minHeight: 30,
+                        bgcolor: accent,
+                        color: '#ffffff',
+                        fontSize: '0.74rem',
+                        fontWeight: 850,
+                        textTransform: 'none',
+                        '&:hover': { bgcolor: accent },
+                      }}
+                    >
+                      Confirm
+                    </Button>
+                    <Button
+                      data-pw={`${kind}-management-cancel-custom-modifier`}
+                      onClick={() => {
+                        setAddingModifier(false);
+                        setModifierLabelDraft('');
+                        setModifierValueDraft('');
+                      }}
+                      variant="outlined"
+                      sx={{
+                        flex: 1,
+                        minHeight: 30,
+                        borderColor: fabUTokens.color.border,
+                        color: fabUTokens.color.textPrimary,
+                        fontSize: '0.74rem',
+                        fontWeight: 850,
+                        textTransform: 'none',
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </Stack>
+                </Stack>
+              ) : null}
+
+              <Stack spacing={0.45}>
+                {modifierSources.length > 0 ? (
+                  modifierSources.map((source) => (
+                    <Box
+                      key={source.id}
+                      data-pw={`${kind}-management-modifier-source`}
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr auto',
+                        columnGap: 0.8,
+                        alignItems: 'center',
+                        p: 0.65,
+                        borderRadius: FIELD_RADIUS,
+                        bgcolor: alpha(fabUTokens.color.surface, fabUTokens.isDark ? 0.4 : 0.8),
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          sx={{
+                            color: fabUTokens.color.textPrimary,
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            lineHeight: 1.15,
+                          }}
+                        >
+                          {source.label}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: fabUTokens.color.textSecondary,
+                            fontSize: '0.63rem',
+                            fontWeight: 650,
+                            lineHeight: 1.15,
+                          }}
+                        >
+                          {source.source}
+                        </Typography>
+                      </Box>
+                      <Typography
+                        sx={{
+                          color: source.value >= 0 ? accent : fabUTokens.color.danger,
+                          fontSize: '0.82rem',
+                          fontWeight: 900,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {source.value >= 0 ? '+' : ''}
+                        {source.value}
+                      </Typography>
+                    </Box>
+                  ))
+                ) : (
+                  <Typography
+                    data-pw={`${kind}-management-no-modifiers`}
+                    sx={{
+                      color: fabUTokens.color.textSecondary,
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                    }}
+                  >
+                    No max modifiers applied.
+                  </Typography>
+                )}
+              </Stack>
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  pt: 0.2,
+                  borderTop: `1px solid ${alpha(fabUTokens.color.border, 0.65)}`,
+                }}
+              >
+                <Typography
+                  sx={{
+                    color: fabUTokens.color.textSecondary,
+                    fontSize: '0.65rem',
+                    fontWeight: 850,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Total
+                </Typography>
+                <Typography
+                  data-pw={`${kind}-management-modifier-total`}
+                  sx={{ color: accent, fontSize: '0.78rem', fontWeight: 900 }}
+                >
+                  {totalModifier >= 0 ? '+' : ''}
+                  {totalModifier}
+                </Typography>
+              </Box>
+            </Stack>
+          ) : null}
 
           {/* Compact controls: actions left, number wheel right. */}
           <Box
@@ -509,4 +729,4 @@ function HpMpManagementModal({
 }
 
 export default HpMpManagementModal;
-export type { HpMpKind };
+export type { HpMpKind, ResourceModifierSource };

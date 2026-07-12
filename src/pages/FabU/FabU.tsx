@@ -60,6 +60,7 @@ import {
   MobileScreen,
   ObjectiveClock,
   PrimaryNavBar,
+  type ResourceModifierSource,
   SegmentedTabs,
   SkillCrystalIcon,
   SkillsTable,
@@ -231,6 +232,43 @@ function getClassSpellRows(character: Character, className: string): SpellRow[] 
 
 function readString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+}
+
+function parseResourceModifierBenefit(benefit: string, kind: HpMpKind): number {
+  const normalized = benefit.toLowerCase();
+  if (!normalized.includes('permanently increase your maximum')) return 0;
+
+  const amount = Number.parseInt(benefit.match(/\bby\s+(\d+)/i)?.[1] ?? '', 10);
+  if (!Number.isFinite(amount)) return 0;
+
+  const affectsHP = /\b(?:maximum\s+)?hit points\b/.test(normalized);
+  const affectsMP = /\b(?:maximum\s+)?mind points\b/.test(normalized);
+  const affectsIP = /\b(?:maximum\s+)?inventory points\b/.test(normalized);
+  const affectedResourceCount = [affectsHP, affectsMP, affectsIP].filter(Boolean).length;
+  const isChoice = affectedResourceCount > 1 && /\bor\b/.test(normalized);
+  if (isChoice) return 0;
+
+  if (kind === 'hp' && affectsHP) return amount;
+  if (kind === 'mp' && affectsMP) return amount;
+  if (kind === 'ip' && affectsIP) return amount;
+  return 0;
+}
+
+function buildClassResourceModifierSources(
+  kind: HpMpKind,
+  classNames: readonly string[],
+  freeBenefitsByClass: ReadonlyMap<string, readonly string[]>,
+): ResourceModifierSource[] {
+  return classNames.flatMap((className) =>
+    (freeBenefitsByClass.get(className) ?? [])
+      .map((benefit, index) => ({
+        id: `class-${kind}-${className}-${index}`,
+        label: className,
+        source: benefit,
+        value: parseResourceModifierBenefit(benefit, kind),
+      }))
+      .filter((source) => source.value !== 0),
+  );
 }
 
 function normalizeSpellDuration(value: unknown): SpellRow['duration'] {
@@ -1022,9 +1060,27 @@ function FabU() {
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
   const setCurrentIP = (v: number) =>
     setCharacter((c) => ({ ...c, currentIP: v, inventoryPoints: v }));
-  const setHpBonus = (v: number) => setCharacter((c) => ({ ...c, hpBonus: v }));
-  const setMpBonus = (v: number) => setCharacter((c) => ({ ...c, mpBonus: v }));
-  const setIpBonus = (v: number) => setCharacter((c) => ({ ...c, ipBonus: v }));
+  const addCustomResourceModifier = (kind: HpMpKind, label: string, value: number) =>
+    setCharacter((c) => {
+      const customResourceModifiers = Array.isArray(c.customResourceModifiers)
+        ? c.customResourceModifiers
+        : [];
+      return {
+        ...c,
+        hpBonus: kind === 'hp' ? c.hpBonus + value : c.hpBonus,
+        mpBonus: kind === 'mp' ? c.mpBonus + value : c.mpBonus,
+        ipBonus: kind === 'ip' ? c.ipBonus + value : c.ipBonus,
+        customResourceModifiers: [
+          ...customResourceModifiers,
+          {
+            id: `${kind}-modifier-${Date.now()}-${customResourceModifiers.length}`,
+            resource: kind,
+            label,
+            value,
+          },
+        ],
+      };
+    });
   const setCurrentXP = (v: number) =>
     setCharacter((c) => {
       if (v <= c.totalXP) return { ...c, currentXP: v };
@@ -1215,6 +1271,40 @@ function FabU() {
     character.classes.map((cls) => cls.name),
     freeBenefitsByClass,
   );
+  const classNames = character.classes.map((cls) => cls.name);
+  const customResourceModifiers = Array.isArray(character.customResourceModifiers)
+    ? character.customResourceModifiers
+    : [];
+  const customModifierTotal = (kind: HpMpKind) =>
+    customResourceModifiers
+      .filter((modifier) => modifier.resource === kind)
+      .reduce((sum, modifier) => sum + modifier.value, 0);
+  const resourceBonus = (kind: HpMpKind) =>
+    kind === 'hp' ? character.hpBonus : kind === 'mp' ? character.mpBonus : character.ipBonus;
+  const resourceModifierSources = (kind: HpMpKind): ResourceModifierSource[] => {
+    const legacyCustomTotal = resourceBonus(kind) - customModifierTotal(kind);
+    return [
+      ...buildClassResourceModifierSources(kind, classNames, freeBenefitsByClass),
+      ...(legacyCustomTotal !== 0
+        ? [
+            {
+              id: `legacy-custom-${kind}`,
+              label: 'Custom Modifier',
+              source: 'Saved max modifier',
+              value: legacyCustomTotal,
+            },
+          ]
+        : []),
+      ...customResourceModifiers
+        .filter((modifier) => modifier.resource === kind)
+        .map((modifier) => ({
+          id: modifier.id,
+          label: modifier.label,
+          source: 'Custom Modifier',
+          value: modifier.value,
+        })),
+    ];
+  };
   const hpModifier = character.hpBonus + classResourceBonuses.hp;
   const mpModifier = character.mpBonus + classResourceBonuses.mp;
   const ipModifier = character.ipBonus + classResourceBonuses.ip;
@@ -1223,9 +1313,6 @@ function FabU() {
   const totalMP =
     (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + mpModifier;
   const totalMaxIP = Math.max(0, character.maxIP + ipModifier);
-  const setTotalHpModifier = (v: number) => setHpBonus(v - classResourceBonuses.hp);
-  const setTotalMpModifier = (v: number) => setMpBonus(v - classResourceBonuses.mp);
-  const setTotalIpModifier = (v: number) => setIpBonus(v - classResourceBonuses.ip);
   const classSkillGroups = character.classes.map((cls) => ({
     className: cls.name,
     skills:
@@ -3486,9 +3573,7 @@ function FabU() {
                 : character.currentIP
           }
           max={hpMpModal.kind === 'hp' ? totalHP : hpMpModal.kind === 'mp' ? totalMP : totalMaxIP}
-          modifier={
-            hpMpModal.kind === 'hp' ? hpModifier : hpMpModal.kind === 'mp' ? mpModifier : ipModifier
-          }
+          modifierSources={resourceModifierSources(hpMpModal.kind)}
           onApply={
             hpMpModal.kind === 'hp'
               ? setCurrentHP
@@ -3496,13 +3581,7 @@ function FabU() {
                 ? setCurrentMP
                 : setCurrentIP
           }
-          onChangeModifier={
-            hpMpModal.kind === 'hp'
-              ? setTotalHpModifier
-              : hpMpModal.kind === 'mp'
-                ? setTotalMpModifier
-                : setTotalIpModifier
-          }
+          onAddModifier={(label, value) => addCustomResourceModifier(hpMpModal.kind, label, value)}
           onClose={() => setHpMpModal(null)}
         />
       ) : null}

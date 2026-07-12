@@ -21,6 +21,15 @@ type BackpackItem = {
 
 type StatusEffects = Record<string, boolean>;
 
+type ResourceModifierKind = 'hp' | 'mp' | 'ip';
+
+type ResourceModifier = {
+  id: string;
+  resource: ResourceModifierKind;
+  label: string;
+  value: number;
+};
+
 type CharacterName = {
   firstName: string;
   lastName: string;
@@ -46,6 +55,7 @@ type Character = {
   mpBonus: number;
   /** Bonus added on top of the base Inventory Points maximum. */
   ipBonus: number;
+  customResourceModifiers: ResourceModifier[];
   currentXP: number;
   totalXP: number;
   level: number;
@@ -80,5 +90,7 @@ export type {
   CharacterName,
   ClassEntry,
   PersistedCharacterState,
+  ResourceModifier,
+  ResourceModifierKind,
   StatusEffects,
 };

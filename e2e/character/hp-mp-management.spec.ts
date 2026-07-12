@@ -33,7 +33,9 @@ test.describe('HP/MP management modal', () => {
       'true',
     );
 
-    const modifier = await page.locator('[data-pw="hp-management-modifier-control"]').boundingBox();
+    const modifierButton = await page
+      .locator('[data-pw="hp-management-show-modifiers"]')
+      .boundingBox();
     const pointsLabel = await page.locator('[data-pw="hp-management-points-label"]').boundingBox();
     const modifierLabel = await page
       .locator('[data-pw="hp-management-modifier-label"]')
@@ -43,15 +45,21 @@ test.describe('HP/MP management modal', () => {
     const damage = await page.locator('[data-pw="hp-management-subtract"]').boundingBox();
     const wheel = await page.locator('[data-pw="hp-management-number-wheel"]').boundingBox();
     const paper = await popper.boundingBox();
-    if (!modifier || !pointsLabel || !modifierLabel || !heal || !amount || !damage || !wheel || !paper) {
+    if (
+      !modifierButton ||
+      !pointsLabel ||
+      !modifierLabel ||
+      !heal ||
+      !amount ||
+      !damage ||
+      !wheel ||
+      !paper
+    ) {
       throw new Error('HP management controls are not visible');
     }
 
     expect(Math.abs(pointsLabel.y - modifierLabel.y)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
     expect(Math.abs(wheel.y - heal.y)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
-    expect(Math.abs(modifier.x + modifier.width / 2 - (wheel.x + wheel.width / 2))).toBeLessThan(
-      LAYOUT_TOLERANCE,
-    );
     const gaps = [
       amount.y - (heal.y + heal.height),
       damage.y - (amount.y + amount.height),
@@ -67,7 +75,7 @@ test.describe('HP/MP management modal', () => {
     const damageRadius = await page
       .locator('[data-pw="hp-management-subtract"]')
       .evaluate((element) => getComputedStyle(element).borderRadius);
-    await expect(page.locator('[data-pw="hp-management-modifier-control"]')).toHaveCSS(
+    await expect(page.locator('[data-pw="hp-management-show-modifiers"]')).toHaveCSS(
       'border-radius',
       damageRadius,
     );
@@ -78,6 +86,28 @@ test.describe('HP/MP management modal', () => {
 
     await page.mouse.click(12, 12);
     await expect(popper).toBeHidden();
+  });
+
+  test('modifier list shows sources and adds a custom max modifier', async ({ page }) => {
+    await page.locator('[data-pw="statpill-ov-hp"]').click();
+    await page.locator('[data-pw="hp-management-show-modifiers"]').click();
+
+    await expect(page.locator('[data-pw="hp-management-modifier-list"]')).toBeVisible();
+    await expect(page.locator('[data-pw="hp-management-modifier-source"]').first()).toContainText(
+      'Custom Modifier',
+    );
+    await expect(page.locator('[data-pw="hp-management-modifier-total"]')).toContainText('+5');
+
+    await page.locator('[data-pw="hp-management-add-custom-modifier"]').click();
+    await page.locator('[data-pw="hp-management-custom-modifier-label"]').fill('Tough as Nails');
+    await page.locator('[data-pw="hp-management-custom-modifier-value"]').fill('2');
+    await page.locator('[data-pw="hp-management-confirm-custom-modifier"]').click();
+
+    await expect(page.locator('[data-pw="hp-management-modifier-list"]')).toContainText(
+      'Tough as Nails',
+    );
+    await expect(page.locator('[data-pw="hp-management-modifier-total"]')).toContainText('+7');
+    await expect(page.locator('[data-pw="statpill-ov-hp"]')).toContainText('/ 60');
   });
 
   test('clicking the MP pill opens the MP management modal', async ({ page }) => {

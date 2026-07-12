@@ -25,6 +25,8 @@ import type {
   CharacterName,
   ClassEntry,
   PersistedCharacterState,
+  ResourceModifier,
+  ResourceModifierKind,
   StatusEffects,
 } from './characterTypes';
 
@@ -34,6 +36,7 @@ type CharacterMigrationOptions = {
 };
 
 const DIE_SIZES = new Set(['d6', 'd8', 'd10', 'd12', 'd20']);
+const RESOURCE_MODIFIER_KINDS = new Set<ResourceModifierKind>(['hp', 'mp', 'ip']);
 const BOND_TYPES = new Set<BondType>([
   'Admiration',
   'Loyalty',
@@ -284,6 +287,31 @@ function normalizeHpMpBonus(
   return { hpBonus: initialValue.hpBonus, mpBonus: initialValue.mpBonus, ipBonus };
 }
 
+function normalizeResourceModifiers(stored: unknown): ResourceModifier[] {
+  if (!Array.isArray(stored)) return [];
+
+  return stored
+    .map((entry, index): ResourceModifier | null => {
+      if (!entry || typeof entry !== 'object') return null;
+      const modifier = entry as Record<string, unknown>;
+      if (typeof modifier.resource !== 'string') return null;
+      if (!RESOURCE_MODIFIER_KINDS.has(modifier.resource as ResourceModifierKind)) return null;
+      if (typeof modifier.label !== 'string' || !modifier.label.trim()) return null;
+      if (typeof modifier.value !== 'number' || !Number.isFinite(modifier.value)) return null;
+
+      return {
+        id:
+          typeof modifier.id === 'string' && modifier.id
+            ? modifier.id
+            : `resource-modifier-${index}`,
+        resource: modifier.resource as ResourceModifierKind,
+        label: modifier.label.trim(),
+        value: Math.trunc(modifier.value),
+      };
+    })
+    .filter((entry): entry is ResourceModifier => entry !== null);
+}
+
 function normalizeSkillRow(stored: unknown): SkillRow | null {
   if (!stored || typeof stored !== 'object') return null;
   const skill = stored as Record<string, unknown>;
@@ -407,6 +435,7 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
     maxIP: normalizeNumber(parsed.maxIP, 6),
     currentHP: normalizeNumber(parsed.currentHP, initialValue.currentHP),
     currentMP: normalizeNumber(parsed.currentMP, initialValue.currentMP),
+    customResourceModifiers: normalizeResourceModifiers(parsed.customResourceModifiers),
     currentXP: normalizeNumber(parsed.currentXP, initialValue.currentXP),
     totalXP: normalizeNumber(parsed.totalXP, initialValue.totalXP),
     level: normalizeNumber(parsed.level, initialValue.level),
