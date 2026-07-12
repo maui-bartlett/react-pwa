@@ -598,9 +598,12 @@ function HpMpManagementModal({
 
               <Box
                 sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  pt: 0.2,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto',
+                  columnGap: 0.8,
+                  alignItems: 'center',
+                  px: 0.65,
+                  pt: 0.55,
                   borderTop: `1px solid ${alpha(fabUTokens.color.border, 0.65)}`,
                 }}
               >
@@ -616,7 +619,13 @@ function HpMpManagementModal({
                 </Typography>
                 <Typography
                   data-pw={`${kind}-management-modifier-total`}
-                  sx={{ color: accent, fontSize: '0.78rem', fontWeight: 900 }}
+                  sx={{
+                    color: accent,
+                    fontSize: '0.78rem',
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    textAlign: 'right',
+                  }}
                 >
                   {totalModifier >= 0 ? '+' : ''}
                   {totalModifier}
