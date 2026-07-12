@@ -1020,7 +1020,8 @@ function FabU() {
     });
   };
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
-  const setCurrentIP = (v: number) => setCharacter((c) => ({ ...c, currentIP: v }));
+  const setCurrentIP = (v: number) =>
+    setCharacter((c) => ({ ...c, currentIP: v, inventoryPoints: v }));
   const setHpBonus = (v: number) => setCharacter((c) => ({ ...c, hpBonus: v }));
   const setMpBonus = (v: number) => setCharacter((c) => ({ ...c, mpBonus: v }));
   const setIpBonus = (v: number) => setCharacter((c) => ({ ...c, ipBonus: v }));
@@ -1042,11 +1043,11 @@ function FabU() {
   const DIE_VALUES: Record<string, number> = { d6: 6, d8: 8, d10: 10, d12: 12, d20: 20 };
   // Spend 10 Zenit to recover 1 Inventory Point (Fabula Ultima rulebook exchange rate)
   const handleBuyIP = () =>
-    setCharacter((c) =>
-      c.zenit >= 10
-        ? { ...c, zenit: c.zenit - 10, currentIP: Math.min(totalMaxIP, c.currentIP + 1) }
-        : c,
-    );
+    setCharacter((c) => {
+      if (c.zenit < 10) return c;
+      const nextIP = Math.min(totalMaxIP, c.currentIP + 1);
+      return { ...c, zenit: c.zenit - 10, currentIP: nextIP, inventoryPoints: nextIP };
+    });
   const toggleBondType = (id: string, type: BondType) =>
     setCharacter((c) => ({
       ...c,
@@ -1828,8 +1829,7 @@ function FabU() {
               value: String(character.currentIP),
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
-              maxValue: totalMaxIP,
+              onChange: setCurrentIP,
               pw: 'ov-ip',
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
@@ -1923,8 +1923,7 @@ function FabU() {
               value: String(character.currentIP),
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
-              maxValue: totalMaxIP,
+              onChange: setCurrentIP,
               pw: 'cb-ip',
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
@@ -2461,6 +2460,7 @@ function FabU() {
                     return {
                       ...c,
                       currentIP: Math.max(0, c.currentIP - 2),
+                      inventoryPoints: Math.max(0, c.currentIP - 2),
                       statusEffects: nextStatusEffects,
                     };
                   });
@@ -2893,8 +2893,7 @@ function FabU() {
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
               pw: 'ip',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
-              maxValue: totalMaxIP,
+              onChange: setCurrentIP,
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
             {
@@ -2962,8 +2961,7 @@ function FabU() {
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
               pw: 'ip',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
-              maxValue: totalMaxIP,
+              onChange: setCurrentIP,
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
               trailingIcon: (
                 <FlaskConical size={15} color={fabUTokens.color.brandText} strokeWidth={2} />

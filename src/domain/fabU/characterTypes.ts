@@ -35,6 +35,7 @@ type Character = {
   magicDefense: number;
   magicDefenseTemp: number | null;
   fabulaPoints: number;
+  inventoryPoints?: number;
   currentIP: number;
   maxIP: number;
   currentHP: number;
