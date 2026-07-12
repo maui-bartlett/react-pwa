@@ -2896,10 +2896,14 @@ function FeatureActionRow({
                   width: 18,
                   height: 18,
                   borderRadius: '4px',
-                  border: `2px solid ${dndColors.muted}`,
-                  bgcolor: index < uses.used ? dndColors.muted : 'transparent',
+                  border: `2px solid ${dndColors.red}`,
+                  bgcolor: index < uses.used ? dndColors.red : 'transparent',
                   cursor: onUpdateUses ? 'pointer' : 'default',
                   p: 0,
+                  transition: 'background-color 140ms ease, border-color 140ms ease',
+                  '&:hover': {
+                    borderColor: alpha(dndColors.red, 0.72),
+                  },
                 }}
               />
             ))}
@@ -4838,10 +4842,14 @@ function FeatureBlock({
                   width: 28,
                   height: 28,
                   borderRadius: '4px',
-                  border: `2px solid ${dndColors.muted}`,
-                  bgcolor: index < feature.uses!.used ? dndColors.muted : 'transparent',
+                  border: `2px solid ${dndColors.red}`,
+                  bgcolor: index < feature.uses!.used ? dndColors.red : 'transparent',
                   cursor: onUpdateUses ? 'pointer' : 'default',
                   p: 0,
+                  transition: 'background-color 140ms ease, border-color 140ms ease',
+                  '&:hover': {
+                    borderColor: alpha(dndColors.red, 0.72),
+                  },
                   '&:focus-visible': { outline: `2px solid ${dndColors.blue}`, outlineOffset: 2 },
                 }}
               />
@@ -5816,6 +5824,7 @@ type CharacterForm = {
   alignment: string;
   classes: CharacterClassForm[];
   abilityScores: Record<AbilityKey, number>;
+  selectedProficiencies: Record<string, string[]>;
   spells: Spell[];
   armorClass: string;
   initiative: string;
@@ -5929,6 +5938,7 @@ function createCharacterForm(character: DndCharacter): CharacterForm {
     abilityScores: Object.fromEntries(
       character.abilities.map((ability) => [ability.key, ability.score]),
     ) as Record<AbilityKey, number>,
+    selectedProficiencies: {},
     spells: character.spells.map((spell) => ({ ...spell })),
     armorClass: String(character.armorClass),
     initiative: String(character.initiative),
@@ -5965,6 +5975,174 @@ const abilityLabels: Record<AbilityKey, string> = {
   wis: 'WIS',
   cha: 'CHA',
 };
+
+const abilityOrder: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+type AbilityScoreImprovementOption = {
+  value: string;
+  label: string;
+  increases: Partial<Record<AbilityKey, number>>;
+};
+
+type ProficiencySelectionGroup = {
+  label: string;
+  choose: number;
+  options: string[];
+};
+
+function isAbilityScoreImprovementFeature(feature: Pick<WizardClassFeature, 'name' | 'summary'>) {
+  return normalizeDndLookupName(feature.name) === 'ability score improvement';
+}
+
+function isProficienciesFeature(feature: Pick<WizardClassFeature, 'name' | 'category'>) {
+  return normalizeDndLookupName(feature.name) === 'proficiencies' && feature.category === 'Class Setup';
+}
+
+function normalizeChoiceOptions(value: string[] | string | undefined) {
+  if (Array.isArray(value)) return value.map((entry) => entry.trim()).filter(Boolean);
+  return (value ?? '')
+    .split(/,|\bor\b/iu)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+const musicalInstrumentOptions = [
+  'Bagpipes',
+  'Drum',
+  'Dulcimer',
+  'Flute',
+  'Lute',
+  'Lyre',
+  'Horn',
+  'Pan flute',
+  'Shawm',
+  'Viol',
+];
+
+function getSkillChoiceOptions(skillChoices: DndClassInfo['skillChoices']) {
+  if (!skillChoices) return [];
+  if (typeof skillChoices.from === 'string' && normalizeDndLookupName(skillChoices.from) === 'any') {
+    return initialDndCharacter.skills.map((skill) => skill.name);
+  }
+  return normalizeChoiceOptions(skillChoices.from);
+}
+
+function getToolChoiceOptions(entry: string) {
+  const normalizedEntry = normalizeDndLookupName(entry);
+  const options = dndProficiencyOptions.filter((option) => {
+    const normalizedOption = normalizeDndLookupName(option);
+    if (normalizedEntry.includes('artisan') && normalizedOption.includes('supplies')) return true;
+    if (normalizedEntry.includes('gaming') && normalizedOption.includes('set')) return true;
+    if (normalizedEntry.includes("thieves") && normalizedOption.includes("thieves")) return true;
+    return false;
+  });
+  if (normalizedEntry.includes('musical')) options.push(...musicalInstrumentOptions);
+  return [...new Set(options)].sort((a, b) => a.localeCompare(b));
+}
+
+function createProficiencySelectionGroups(classInfo?: DndClassInfo): ProficiencySelectionGroup[] {
+  if (!classInfo) return [];
+  const groups: ProficiencySelectionGroup[] = [];
+
+  if (classInfo.skillChoices?.choose && classInfo.skillChoices.choose > 0) {
+    groups.push({
+      label: 'Skill Proficiencies',
+      choose: classInfo.skillChoices.choose,
+      options: getSkillChoiceOptions(classInfo.skillChoices),
+    });
+  }
+
+  (classInfo.toolProficiencies ?? []).forEach((entry) => {
+    if (!/\b(one|two|three|choose)\b/iu.test(entry)) return;
+    const choose = /\bthree\b/iu.test(entry) ? 3 : /\btwo\b/iu.test(entry) ? 2 : 1;
+    const options = getToolChoiceOptions(entry);
+    groups.push({
+      label: entry,
+      choose,
+      options: options.length > 0 ? options : normalizeChoiceOptions(entry),
+    });
+  });
+
+  return groups;
+}
+
+function flattenSelectedProficiencies(selectedProficiencies: CharacterForm['selectedProficiencies']) {
+  return Object.values(selectedProficiencies).flat().filter(Boolean);
+}
+
+function createAbilityScoreImprovementOptions(
+  scores: Record<AbilityKey, number>,
+  previousValue = '',
+): AbilityScoreImprovementOption[] {
+  const previousIncreases = abilityScoreImprovementIncreasesFromValue(previousValue);
+  const baseScores = abilityOrder.reduce(
+    (nextScores, ability) => ({
+      ...nextScores,
+      [ability]: Math.max(1, (scores[ability] ?? 10) - (previousIncreases[ability] ?? 0)),
+    }),
+    { ...scores },
+  );
+  const options: AbilityScoreImprovementOption[] = [
+    { value: '', label: 'Choose improvement', increases: {} },
+  ];
+
+  abilityOrder.forEach((ability) => {
+    if ((baseScores[ability] ?? 0) <= 18) {
+      options.push({
+        value: `${ability}+2`,
+        label: `+2 ${abilityLabels[ability]} (${baseScores[ability]} -> ${baseScores[ability] + 2})`,
+        increases: { [ability]: 2 },
+      });
+    }
+  });
+
+  abilityOrder.forEach((firstAbility, firstIndex) => {
+    abilityOrder.slice(firstIndex + 1).forEach((secondAbility) => {
+      if ((baseScores[firstAbility] ?? 0) >= 20 || (baseScores[secondAbility] ?? 0) >= 20) return;
+      options.push({
+        value: `${firstAbility}+1|${secondAbility}+1`,
+        label: `+1 ${abilityLabels[firstAbility]}, +1 ${abilityLabels[secondAbility]}`,
+        increases: { [firstAbility]: 1, [secondAbility]: 1 },
+      });
+    });
+  });
+
+  return options;
+}
+
+function abilityScoreImprovementIncreasesFromValue(value: string): Partial<Record<AbilityKey, number>> {
+  return value.split('|').reduce<Partial<Record<AbilityKey, number>>>((increases, part) => {
+    const [ability, amount] = part.split('+');
+    if (!abilityOrder.includes(ability as AbilityKey)) return increases;
+    return {
+      ...increases,
+      [ability]: Number.parseInt(amount ?? '0', 10) || 0,
+    };
+  }, {});
+}
+
+function applyAbilityScoreImprovementOption(
+  scores: Record<AbilityKey, number>,
+  option: AbilityScoreImprovementOption,
+  previousValue = '',
+): Record<AbilityKey, number> {
+  const previousIncreases = abilityScoreImprovementIncreasesFromValue(previousValue);
+  return abilityOrder.reduce(
+    (nextScores, ability) => ({
+      ...nextScores,
+      [ability]: Math.min(
+        20,
+        Math.max(
+          1,
+          (scores[ability] ?? 10) -
+            (previousIncreases[ability] ?? 0) +
+            (option.increases[ability] ?? 0),
+        ),
+      ),
+    }),
+    { ...scores },
+  );
+}
 
 function formatClassRequirement(className: string) {
   const requirements = dndMulticlassRequirements[normalizeClassCatalogKey(className)];
@@ -6168,6 +6346,10 @@ function CharacterEditDialog({
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [expandedClassIndex, setExpandedClassIndex] = useState(0);
   const [classPanel, setClassPanel] = useState<'features' | 'spells'>('features');
+  const [asiSelections, setAsiSelections] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!open) setAsiSelections({});
+  }, [open]);
   if (!form) return null;
   const setField = (key: keyof CharacterForm, value: string) => {
     onChange({ ...form, [key]: value });
@@ -6178,6 +6360,34 @@ function CharacterEditDialog({
       abilityScores: {
         ...form.abilityScores,
         [key]: Math.max(1, Math.min(30, parseIntOrFallback(value, form.abilityScores[key]))),
+      },
+    });
+  };
+  const applyAbilityScoreImprovement = (
+    featureId: string,
+    option: AbilityScoreImprovementOption,
+  ) => {
+    const previousValue = asiSelections[featureId] ?? '';
+    onChange({
+      ...form,
+      abilityScores: applyAbilityScoreImprovementOption(
+        form.abilityScores,
+        option,
+        previousValue,
+      ),
+    });
+    setAsiSelections((current) => ({ ...current, [featureId]: option.value }));
+  };
+  const updateProficiencySelection = (key: string, choiceIndex: number, value: string) => {
+    onChange({
+      ...form,
+      selectedProficiencies: {
+        ...form.selectedProficiencies,
+        [key]: Array.from({
+          length: Math.max(form.selectedProficiencies[key]?.length ?? 0, choiceIndex + 1),
+        })
+          .map((_, index) => (index === choiceIndex ? value : (form.selectedProficiencies[key]?.[index] ?? '')))
+          .filter(Boolean),
       },
     });
   };
@@ -6396,9 +6606,24 @@ function CharacterEditDialog({
           >
             <Box sx={{ px: { xs: 2.4, sm: 4 }, py: 2.7 }}>
               <Box sx={{ mb: 3 }}>
-                <Typography sx={{ color: '#080b0e', fontSize: 22, fontWeight: 950, mb: 0.8 }}>
-                  Character Name
-                </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  gap={1.4}
+                  sx={{ mb: 0.8 }}
+                >
+                  <Typography sx={{ color: '#080b0e', fontSize: 22, fontWeight: 950 }}>
+                    Character Name
+                  </Typography>
+                  <Button
+                    onClick={onSave}
+                    disabled={classErrors.length > 0}
+                    sx={wizardContentSaveButtonSx}
+                  >
+                    Save
+                  </Button>
+                </Stack>
                 <Box
                   component="input"
                   value={form.name}
@@ -6463,6 +6688,9 @@ function CharacterEditDialog({
                         fontWeight: 900,
                         textTransform: 'uppercase',
                         alignSelf: { xs: 'flex-start', sm: 'center' },
+                        '&.Mui-disabled': {
+                          color: '#ffffff',
+                        },
                       }}
                     >
                       Manage HP
@@ -6589,6 +6817,7 @@ function CharacterEditDialog({
                                     <WizardFeatureCard
                                       key={feature.id}
                                       title={feature.name}
+                                      selectionKey={feature.id}
                                       subtitle={[
                                         feature.level ? `Level ${feature.level}` : 'Level varies',
                                         feature.category,
@@ -6598,6 +6827,28 @@ function CharacterEditDialog({
                                         .join(' • ')}
                                       body={feature.summary}
                                       available={feature.available}
+                                      asiValue={asiSelections[feature.id] ?? ''}
+                                      asiOptions={
+                                        isAbilityScoreImprovementFeature(feature)
+                                          ? createAbilityScoreImprovementOptions(
+                                              form.abilityScores,
+                                              asiSelections[feature.id] ?? '',
+                                            )
+                                          : undefined
+                                      }
+                                      onApplyAsi={
+                                        isAbilityScoreImprovementFeature(feature)
+                                          ? (option) =>
+                                              applyAbilityScoreImprovement(feature.id, option)
+                                          : undefined
+                                      }
+                                      proficiencyGroups={
+                                        isProficienciesFeature(feature)
+                                          ? createProficiencySelectionGroups(classInfo)
+                                          : undefined
+                                      }
+                                      proficiencySelections={form.selectedProficiencies}
+                                      onChangeProficiencySelection={updateProficiencySelection}
                                     />
                                   ))
                                 ) : (
@@ -6911,6 +7162,23 @@ const wizardSaveButtonSx = {
   },
 };
 
+const wizardContentSaveButtonSx = {
+  minWidth: 88,
+  minHeight: 38,
+  px: 2,
+  borderRadius: '3px',
+  bgcolor: dndColors.blue,
+  color: '#ffffff',
+  fontSize: 15,
+  fontWeight: 950,
+  textTransform: 'uppercase',
+  '&:hover': { bgcolor: alpha(dndColors.blue, 0.82) },
+  '&.Mui-disabled': {
+    bgcolor: alpha(dndColors.blue, 0.28),
+    color: alpha('#ffffff', 0.42),
+  },
+};
+
 function wizardSubtabSx(active: boolean) {
   return {
     color: active ? '#050607' : '#7b858e',
@@ -6946,16 +7214,38 @@ function WizardTextPane({
 
 function WizardFeatureCard({
   title,
+  selectionKey,
   subtitle,
   body,
   available = true,
+  asiValue = '',
+  asiOptions,
+  onApplyAsi,
+  proficiencyGroups,
+  proficiencySelections,
+  onChangeProficiencySelection,
 }: {
   title: string;
+  selectionKey?: string;
   subtitle?: string;
   body?: string;
   available?: boolean;
+  asiValue?: string;
+  asiOptions?: AbilityScoreImprovementOption[];
+  onApplyAsi?: (option: AbilityScoreImprovementOption) => void;
+  proficiencyGroups?: ProficiencySelectionGroup[];
+  proficiencySelections?: CharacterForm['selectedProficiencies'];
+  onChangeProficiencySelection?: (key: string, choiceIndex: number, value: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const showAsiPicker = expanded && available && asiOptions && onApplyAsi;
+  const showProficiencyPicker =
+    expanded &&
+    available &&
+    proficiencyGroups &&
+    proficiencyGroups.length > 0 &&
+    proficiencySelections &&
+    onChangeProficiencySelection;
   return (
     <Box
       sx={{
@@ -7010,20 +7300,104 @@ function WizardFeatureCard({
         </Typography>
       </Stack>
       {expanded ? (
-        <Typography
-          sx={{
-            px: 1.8,
-            pb: 1.8,
-            color: '#111',
-            fontSize: 17,
-            lineHeight: 1.45,
-            whiteSpace: 'pre-line',
-          }}
-        >
-          {body || 'No additional details have been recorded for this feature yet.'}
-        </Typography>
+        <Stack spacing={1.4} sx={{ px: 1.8, pb: 1.8 }}>
+          <Typography
+            sx={{
+              color: '#111',
+              fontSize: 17,
+              lineHeight: 1.45,
+              whiteSpace: 'pre-line',
+            }}
+          >
+            {body || 'No additional details have been recorded for this feature yet.'}
+          </Typography>
+          {showAsiPicker ? (
+            <ClassSelectField
+              label="Apply Ability Score Improvement"
+              value={asiValue}
+              options={asiOptions.map((option) => option.value)}
+              optionLabels={Object.fromEntries(
+                asiOptions.map((option) => [option.value, option.label]),
+              )}
+              onChange={(value) => {
+                const option = asiOptions.find((entry) => entry.value === value);
+                if (option) onApplyAsi(option);
+              }}
+              mode="wizard"
+            />
+          ) : null}
+          {showProficiencyPicker ? (
+            <WizardProficiencySelection
+              selectionKey={selectionKey ?? title}
+              groups={proficiencyGroups}
+              selections={proficiencySelections}
+              onChange={onChangeProficiencySelection}
+            />
+          ) : null}
+        </Stack>
       ) : null}
     </Box>
+  );
+}
+
+function WizardProficiencySelection({
+  selectionKey,
+  groups,
+  selections,
+  onChange,
+}: {
+  selectionKey: string;
+  groups: ProficiencySelectionGroup[];
+  selections: CharacterForm['selectedProficiencies'];
+  onChange: (key: string, choiceIndex: number, value: string) => void;
+}) {
+  return (
+    <Stack spacing={1.25}>
+      {groups.map((group, groupIndex) => {
+        const key = `${selectionKey}:${groupIndex}`;
+        const selectedValues = selections[key] ?? [];
+        return (
+          <Box key={key}>
+            <Typography
+              sx={{
+                color: '#050607',
+                fontSize: 15,
+                fontWeight: 950,
+                mb: 0.75,
+                textTransform: 'uppercase',
+              }}
+            >
+              {group.label}
+            </Typography>
+            <Stack spacing={0.9}>
+              {Array.from({ length: group.choose }).map((_, choiceIndex) => {
+                const currentValue = selectedValues[choiceIndex] ?? '';
+                const unavailable = new Set(
+                  selectedValues.filter((value, index) => value && index !== choiceIndex),
+                );
+                const options = [
+                  '',
+                  ...group.options.filter(
+                    (option) => option === currentValue || !unavailable.has(option),
+                  ),
+                ];
+                return (
+                  <ClassSelectField
+                    key={`${key}:${choiceIndex}`}
+                    label={`Choice ${choiceIndex + 1}`}
+                    value={currentValue}
+                    options={options}
+                    optionLabels={{ '': 'Choose proficiency' }}
+                    onChange={(value) => onChange(key, choiceIndex, value)}
+                    mode="wizard"
+                  />
+                );
+              })}
+            </Stack>
+          </Box>
+        );
+      })}
+    </Stack>
   );
 }
 
@@ -7090,12 +7464,14 @@ function ClassSelectField({
   label,
   value,
   options,
+  optionLabels,
   onChange,
   mode = 'default',
 }: {
   label: string;
   value: string;
   options: string[];
+  optionLabels?: Record<string, string>;
   onChange: (value: string) => void;
   mode?: 'default' | 'wizard';
 }) {
@@ -7142,7 +7518,7 @@ function ClassSelectField({
       >
         {options.map((option) => (
           <option key={option || 'none'} value={option}>
-            {option || 'None'}
+            {optionLabels?.[option] ?? (option || 'None')}
           </option>
         ))}
       </Box>
@@ -7373,16 +7749,16 @@ function HitPointEditDialog({
         <Stack spacing={0.8}>
           <Stack direction="row" spacing={1}>
             <FormField
-              label="Max"
-              value={form.max}
-              inputMode="numeric"
-              onChange={(value) => setField('max', value)}
-            />
-            <FormField
               label="Temp"
               value={form.temp}
               inputMode="numeric"
               onChange={(value) => setField('temp', value)}
+            />
+            <FormField
+              label="Max"
+              value={form.max}
+              inputMode="numeric"
+              onChange={(value) => setField('max', value)}
             />
           </Stack>
           <Button
@@ -11166,6 +11542,10 @@ function DungeonsAndDragons() {
         characterForm.proficiencyBonus,
         current.proficiencyBonus,
       );
+      const selectedProficiencies = flattenSelectedProficiencies(
+        characterForm.selectedProficiencies,
+      );
+      const selectedProficiencyKeys = new Set(selectedProficiencies.map(normalizeDndLookupName));
 
       return {
         ...current,
@@ -11189,13 +11569,18 @@ function DungeonsAndDragons() {
             ? derivedClassFields.savingThrowKeys.includes(ability.key)
             : ability.proficientSave,
         })),
-        skills: current.skills.map((skill) => ({
-          ...skill,
-          bonus:
-            abilityModifier(characterForm.abilityScores[skill.ability] ?? 10) +
-            (skill.proficient ? nextProficiencyBonus : 0) +
-            (skill.expertise ? nextProficiencyBonus : 0),
-        })),
+        skills: current.skills.map((skill) => {
+          const proficient =
+            skill.proficient || selectedProficiencyKeys.has(normalizeDndLookupName(skill.name));
+          return {
+            ...skill,
+            proficient,
+            bonus:
+              abilityModifier(characterForm.abilityScores[skill.ability] ?? 10) +
+              (proficient ? nextProficiencyBonus : 0) +
+              (skill.expertise ? nextProficiencyBonus : 0),
+          };
+        }),
         hitPoints: {
           ...current.hitPoints,
           hitDice: derivedClassFields.hitDice || current.hitPoints.hitDice,
@@ -11209,7 +11594,11 @@ function DungeonsAndDragons() {
           : current.spellcasting,
         proficiencies: [
           ...new Set(
-            [...current.proficiencies, ...derivedClassFields.proficiencies].filter(Boolean),
+            [
+              ...current.proficiencies,
+              ...derivedClassFields.proficiencies,
+              ...selectedProficiencies,
+            ].filter(Boolean),
           ),
         ],
         features: [...current.features, ...derivedClassFields.features],
