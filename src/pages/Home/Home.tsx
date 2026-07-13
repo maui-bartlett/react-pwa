@@ -119,7 +119,34 @@ function DungeonsAndDragonsIcon({ size = 'button' }: { size?: 'button' | 'card' 
 }
 
 function DungeonsAndDragonsButtonIcon() {
-  return <DungeonsAndDragonsIcon />;
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        width: 34,
+        height: 34,
+        borderRadius: '50%',
+        display: 'grid',
+        placeItems: 'center',
+        bgcolor: '#e40712',
+        boxShadow: `0 0 0 1px ${alpha('#8f0f12', 0.55)}, inset 0 0 12px ${alpha('#000000', 0.18)}`,
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <Box
+        component="img"
+        src="/dnd-dragon-ampersand-white.png"
+        alt=""
+        sx={{
+          width: 26,
+          height: 26,
+          display: 'block',
+          objectFit: 'contain',
+        }}
+      />
+    </Box>
+  );
 }
 
 const systems = [
