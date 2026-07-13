@@ -553,6 +553,7 @@ function HpMpManagementModal({
                             fontSize: '0.75rem',
                             fontWeight: 800,
                             lineHeight: 1.15,
+                            mb: '2px',
                           }}
                         >
                           {source.label}
