@@ -81,7 +81,10 @@ import {
 import type { SkillRow, SpellRow } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
-import { repairFabUCharacterResourceFields } from '@/domain/fabU/characterMigration';
+import {
+  getFabUCharacterMaxIP,
+  repairFabUCharacterResourceFields,
+} from '@/domain/fabU/characterMigration';
 import { getFabUMasteredSkillOptionsForClass } from '@/domain/fabU/masteredSkills';
 import { calculateFabUClassResourceBonuses } from '@/domain/fabU/resourceBonuses';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
@@ -104,6 +107,13 @@ import {
   initialFabUCharacter,
   migrateFabULocalCharacter,
 } from './atoms';
+import {
+  DANCER_CLASS,
+  DANCER_DANCES,
+  getDancerDanceSkillLevel,
+  getSelectedDancerDances,
+  hasDancerDanceSkill,
+} from './dancerDances';
 import { selectableClasses } from './selectableClasses';
 import { skillGroups as defaultSkillGroups } from './skills';
 import { useCharacterHistory } from './useCharacterHistory';
@@ -274,6 +284,9 @@ function buildClassResourceModifierSources(
 
 function normalizeSpellDuration(value: unknown): SpellRow['duration'] {
   const duration = readString(value)?.toLowerCase() ?? '';
+  if (duration.includes('start of your next turn') || duration.includes('next turn')) {
+    return 'Until next turn';
+  }
   return duration.includes('scene') ? 'Scene' : 'Instant';
 }
 
@@ -1064,13 +1077,16 @@ function FabU() {
   };
   const setCurrentMP = (v: number) => setCharacter((c) => ({ ...c, currentMP: v }));
   const setCurrentIP = (v: number) =>
-    setCharacter((c) => ({ ...c, currentIP: v, inventoryPoints: v }));
+    setCharacter((c) => {
+      const nextIP = Math.max(0, Math.min(totalMaxIP, v));
+      return { ...c, currentIP: nextIP, inventoryPoints: nextIP };
+    });
   const addCustomResourceModifier = (kind: HpMpKind, label: string, value: number) =>
     setCharacter((c) => {
       const customResourceModifiers = Array.isArray(c.customResourceModifiers)
         ? c.customResourceModifiers
         : [];
-      return {
+      const nextCharacter = {
         ...c,
         hpBonus: kind === 'hp' ? c.hpBonus + value : c.hpBonus,
         mpBonus: kind === 'mp' ? c.mpBonus + value : c.mpBonus,
@@ -1084,6 +1100,16 @@ function FabU() {
             value,
           },
         ],
+      };
+      if (kind !== 'ip') return nextCharacter;
+      const nextIP = Math.min(
+        nextCharacter.currentIP,
+        getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip),
+      );
+      return {
+        ...nextCharacter,
+        currentIP: nextIP,
+        inventoryPoints: nextIP,
       };
     });
   const setCurrentXP = (v: number) =>
@@ -1262,6 +1288,21 @@ function FabU() {
       return [className, spells] as const;
     }),
   );
+  const getMagicSkillLevel = (className: string): number => {
+    const group = character.skillGroups.find((g) => g.className === className);
+    if (!group) return 0;
+    const defaultGroup = defaultSkillGroups.find((g) => g.className === className);
+    const magicSkill = group.skills.find((s) => {
+      const fallbackMax = defaultGroup?.skills.find((ds) => ds.name === s.name)?.maxLevel;
+      return getFabulaUltimaSkillMaxLevel(className, s.name, s.maxLevel ?? fallbackMax) > 5;
+    });
+    if (!magicSkill) return 0;
+    return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
+  };
+
+  const getSpellCapacity = (className: string): number => {
+    return getFabUClassSpellCapacity(character, className, getMagicSkillLevel(className));
+  };
   const freeBenefitsByClass = new Map(
     [...convexClassByName.entries()].map(([className, classInfo]) => {
       const freeBenefits = Array.isArray(classInfo.freeBenefits)
@@ -1312,12 +1353,24 @@ function FabU() {
   };
   const hpModifier = character.hpBonus + classResourceBonuses.hp;
   const mpModifier = character.mpBonus + classResourceBonuses.mp;
-  const ipModifier = character.ipBonus + classResourceBonuses.ip;
   const totalHP =
     (DIE_VALUES[character.attributes.might.die] ?? 8) * 5 + character.level + hpModifier;
   const totalMP =
     (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + mpModifier;
-  const totalMaxIP = Math.max(0, character.maxIP + ipModifier);
+  const totalMaxIP = getFabUCharacterMaxIP(character, classResourceBonuses.ip);
+  useEffect(() => {
+    const currentIP = Number.isFinite(character.currentIP) ? character.currentIP : totalMaxIP;
+    const nextIP = Math.max(0, Math.min(totalMaxIP, currentIP));
+    if (character.currentIP === nextIP && character.inventoryPoints === nextIP) {
+      return;
+    }
+
+    setCharacter((current) => ({
+      ...current,
+      currentIP: nextIP,
+      inventoryPoints: nextIP,
+    }));
+  }, [character.currentIP, character.inventoryPoints, setCharacter, totalMaxIP]);
   const classSkillGroups = character.classes.map((cls) => ({
     className: cls.name,
     skills:
@@ -1328,14 +1381,42 @@ function FabU() {
           maxLevel: getFabulaUltimaSkillMaxLevel(cls.name, skill.name, skill.maxLevel),
         })) ?? [],
   }));
+  const hasDanceSkill = hasDancerDanceSkill(character);
+  const dancerDanceSkillLevel = getDancerDanceSkillLevel(character);
   const classSpellGroups = character.classes.flatMap((cls) => {
+    if (cls.name === DANCER_CLASS && hasDanceSkill) {
+      return [
+        {
+          className: cls.name,
+          tableLabel: 'Dancer Dances',
+          spells: getSelectedDancerDances(character),
+          spellOptions: DANCER_DANCES,
+          spellCapacity: dancerDanceSkillLevel,
+          isDancerDances: true,
+          generated: false,
+        },
+      ];
+    }
+
     const spells = getClassSpellRows(character, cls.name);
     const spellOptions = spellOptionsByClass.get(cls.name) ?? [];
     const shouldShowSpellTable =
       Boolean(spells) ||
       spellOptions.length > 0 ||
       (cls.name === 'Chimerist' && hasChimeristSpellMimic(character));
-    return shouldShowSpellTable ? [{ className: cls.name, spells: spells ?? [] }] : [];
+    return shouldShowSpellTable
+      ? [
+          {
+            className: cls.name,
+            tableLabel: `${cls.name} Spells`,
+            spells: spells ?? [],
+            spellOptions,
+            spellCapacity: getSpellCapacity(cls.name),
+            isDancerDances: false,
+            generated: false,
+          },
+        ]
+      : [];
   });
 
   const navigateToClassSkills = (index: number) => {
@@ -1568,22 +1649,6 @@ function FabU() {
             },
           ],
     }));
-
-  const getMagicSkillLevel = (className: string): number => {
-    const group = character.skillGroups.find((g) => g.className === className);
-    if (!group) return 0;
-    const defaultGroup = defaultSkillGroups.find((g) => g.className === className);
-    const magicSkill = group.skills.find((s) => {
-      const fallbackMax = defaultGroup?.skills.find((ds) => ds.name === s.name)?.maxLevel;
-      return getFabulaUltimaSkillMaxLevel(className, s.name, s.maxLevel ?? fallbackMax) > 5;
-    });
-    if (!magicSkill) return 0;
-    return Math.max(0, parseInt(magicSkill.level ?? '0', 10));
-  };
-
-  const getSpellCapacity = (className: string): number => {
-    return getFabUClassSpellCapacity(character, className, getMagicSkillLevel(className));
-  };
 
   const handleDeleteEquipment = (
     index: number,
@@ -2777,21 +2842,29 @@ function FabU() {
             {classSpellGroups.map((group) => (
               <SpellsTable
                 key={group.className}
-                label={`${group.className} Spells`}
-                title={`${group.className} Spells`}
+                label={group.tableLabel}
+                title={group.tableLabel}
                 rows={group.spells}
-                spellOptions={spellOptionsByClass.get(group.className) ?? []}
+                spellOptions={group.spellOptions}
                 onCastSpell={handleCastSpell}
-                totalMagicLevels={getSpellCapacity(group.className)}
+                totalMagicLevels={group.spellCapacity}
+                entryLabel={group.isDancerDances ? 'Dance' : 'Spell'}
+                allowCustomSpell={!group.isDancerDances}
                 onAddSpell={(spell) => handleAddSpell(group.className, spell)}
-                onUpdateSpellEffect={(spellName, effect) =>
-                  handleUpdateSpellEffect(group.className, spellName, effect)
+                onUpdateSpellEffect={
+                  group.isDancerDances
+                    ? undefined
+                    : (spellName, effect) =>
+                        handleUpdateSpellEffect(group.className, spellName, effect)
                 }
                 onDeleteSpell={(spellName, oc, obc) =>
                   handleDeleteSpell(group.className, spellName, oc, obc)
                 }
-                onEditSpell={(oldName, updatedSpell) =>
-                  handleEditSpell(group.className, oldName, updatedSpell)
+                onEditSpell={
+                  group.isDancerDances
+                    ? undefined
+                    : (oldName, updatedSpell) =>
+                        handleEditSpell(group.className, oldName, updatedSpell)
                 }
               />
             ))}
@@ -3016,19 +3089,25 @@ function FabU() {
         {classSpellGroups.map((group) => (
           <SpellsTable
             key={group.className}
-            label={`${group.className} Spells`}
-            title={`${group.className} Spells`}
+            label={group.tableLabel}
+            title={group.tableLabel}
             rows={group.spells}
-            spellOptions={spellOptionsByClass.get(group.className) ?? []}
+            spellOptions={group.spellOptions}
             onCastSpell={handleCastSpell}
-            totalMagicLevels={getSpellCapacity(group.className)}
+            totalMagicLevels={group.spellCapacity}
+            entryLabel={group.isDancerDances ? 'Dance' : 'Spell'}
+            allowCustomSpell={!group.isDancerDances}
             onAddSpell={(spell) => handleAddSpell(group.className, spell)}
-            onUpdateSpellEffect={(spellName, effect) =>
-              handleUpdateSpellEffect(group.className, spellName, effect)
+            onUpdateSpellEffect={
+              group.isDancerDances
+                ? undefined
+                : (spellName, effect) => handleUpdateSpellEffect(group.className, spellName, effect)
             }
             onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
-            onEditSpell={(oldName, updatedSpell) =>
-              handleEditSpell(group.className, oldName, updatedSpell)
+            onEditSpell={
+              group.isDancerDances
+                ? undefined
+                : (oldName, updatedSpell) => handleEditSpell(group.className, oldName, updatedSpell)
             }
           />
         ))}

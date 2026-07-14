@@ -24,6 +24,8 @@ import { scaledEditableTextStyle } from '../editableText';
 import FabUCatalogPickerDialog from '../organisms/FabUCatalogPickerDialog';
 import { SpellRow } from '../types';
 
+type SpellDuration = SpellRow['duration'];
+
 const ACTION_WIDTH = 128;
 const DESC_ACTION_WIDTH = 64;
 const COST_COLUMN_WIDTH = 48;
@@ -38,7 +40,7 @@ type DraftSpell = {
   name: string;
   cost: string;
   target: string;
-  duration: 'Scene' | 'Instant';
+  duration: SpellDuration;
 };
 
 type EditingSpellState = {
@@ -46,14 +48,14 @@ type EditingSpellState = {
   name: string;
   cost: string;
   target: string;
-  duration: 'Scene' | 'Instant';
+  duration: SpellDuration;
 };
 
 type CustomSpellDraft = {
   name: string;
   cost: string;
   target: string;
-  duration: 'Scene' | 'Instant';
+  duration: SpellDuration;
   effect: string;
 };
 
@@ -66,6 +68,8 @@ type SpellsTableProps = {
   onCastSpell?: (spellName: string, mpCost: string) => void;
   /** Total levels in the magic skill — enables label format "Name • N/total" and the + Spell button */
   totalMagicLevels?: number;
+  entryLabel?: string;
+  allowCustomSpell?: boolean;
   onAddSpell?: (spell: SpellRow) => void;
   onUpdateSpellEffect?: (spellName: string, effect: string) => void;
   onDeleteSpell?: (spellName: string, onCancel?: () => void, onBeforeConfirm?: () => void) => void;
@@ -441,7 +445,7 @@ function SwipeableSpellRow({
                 onChange={(e) =>
                   onEditDraftChange({
                     ...editDraft,
-                    duration: e.target.value as 'Scene' | 'Instant',
+                    duration: e.target.value as SpellDuration,
                   })
                 }
                 style={{
@@ -460,6 +464,7 @@ function SwipeableSpellRow({
                 }}
               >
                 <option value="Instant">Instant</option>
+                <option value="Until next turn">Until next turn</option>
                 <option value="Scene">Scene</option>
               </select>
             </Box>
@@ -740,6 +745,8 @@ function SpellsTable({
   spellOptions = [],
   onCastSpell,
   totalMagicLevels,
+  entryLabel = 'Spell',
+  allowCustomSpell = true,
   onAddSpell,
   onUpdateSpellEffect,
   onDeleteSpell,
@@ -789,10 +796,12 @@ function SpellsTable({
       setSpellPickerOpen(true);
       return;
     }
+    if (!allowCustomSpell) return;
     openCustomSpell();
   }
 
   function openCustomSpell() {
+    if (!allowCustomSpell) return;
     setSpellPickerOpen(false);
     setCustomSpellDraft({
       name: '',
@@ -1128,7 +1137,7 @@ function SpellsTable({
                 value={draftSpell.duration}
                 onChange={(e) =>
                   setDraftSpell((d) =>
-                    d ? { ...d, duration: e.target.value as 'Scene' | 'Instant' } : d,
+                    d ? { ...d, duration: e.target.value as SpellDuration } : d,
                   )
                 }
                 onKeyDown={draftKeyDown(true)}
@@ -1146,6 +1155,7 @@ function SpellsTable({
                 }}
               >
                 <option value="Instant">Instant</option>
+                <option value="Until next turn">Until next turn</option>
                 <option value="Scene">Scene</option>
               </select>
               <IconButton
@@ -1186,17 +1196,17 @@ function SpellsTable({
         >
           <AddIcon sx={{ fontSize: '1rem' }} />
           <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.74rem' }}>
-            Spell
+            {entryLabel}
           </Typography>
         </Box>
       ) : null}
 
       <FabUCatalogPickerDialog
         open={spellPickerOpen}
-        title="Choose Spell"
+        title={`Choose ${entryLabel}`}
         label={label ?? title}
-        searchPlaceholder="Search spells..."
-        customLabel="Custom Spell"
+        searchPlaceholder={`Search ${entryLabel.toLowerCase()}s...`}
+        customLabel={allowCustomSpell ? `Custom ${entryLabel}` : undefined}
         entries={[...availableSpellOptions].sort((a, b) => a.name.localeCompare(b.name))}
         getKey={(spell) => spell.name}
         getSearchText={(spell) => [
@@ -1292,7 +1302,7 @@ function SpellsTable({
         )}
         onClose={() => setSpellPickerOpen(false)}
         onSelect={addPickedSpell}
-        onCreateCustom={openCustomSpell}
+        onCreateCustom={allowCustomSpell ? openCustomSpell : undefined}
       />
 
       <Dialog
@@ -1376,7 +1386,7 @@ function SpellsTable({
               onChange={(e) =>
                 setCustomSpellDraft((draft) => ({
                   ...draft,
-                  duration: e.target.value as 'Scene' | 'Instant',
+                  duration: e.target.value as SpellDuration,
                 }))
               }
               sx={{
@@ -1391,6 +1401,7 @@ function SpellsTable({
               }}
             >
               <option value="Instant">Instant</option>
+              <option value="Until next turn">Until next turn</option>
               <option value="Scene">Scene</option>
             </Box>
           </Stack>

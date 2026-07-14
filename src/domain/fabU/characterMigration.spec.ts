@@ -70,6 +70,21 @@ test('repairFabUCharacterResourceFields repairs NaN IP values on existing local 
   expect(repaired.ipBonus).toBe(0);
 });
 
+test('repairFabUCharacterResourceFields clamps current IP to max IP', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    currentIP: 12,
+    inventoryPoints: 12,
+    maxIP: 6,
+    ipBonus: 1,
+  });
+
+  expect(repaired.currentIP).toBe(7);
+  expect(repaired.inventoryPoints).toBe(7);
+  expect(repaired.maxIP).toBe(6);
+  expect(repaired.ipBonus).toBe(1);
+});
+
 test('migrateCharacter removes legacy starter max resource bonuses', () => {
   const migrated = migrateCharacter({
     ...createDefaultCharacter(),

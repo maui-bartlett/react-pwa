@@ -376,7 +376,10 @@ function normalizeSpellRow(stored: unknown): SpellRow | null {
     name: spell.name,
     cost: normalizeString(spell.cost, ''),
     target: normalizeString(spell.target, ''),
-    duration: spell.duration === 'Scene' ? 'Scene' : 'Instant',
+    duration:
+      spell.duration === 'Scene' || spell.duration === 'Until next turn'
+        ? spell.duration
+        : 'Instant',
     effect: normalizeString(spell.effect, ''),
     ...(typeof spell.summary === 'string' ? { summary: spell.summary } : {}),
     ...(typeof spell.description === 'string' ? { description: spell.description } : {}),
@@ -414,13 +417,24 @@ function isLegacyStarterResourceBonus(character: Character): boolean {
   );
 }
 
+function getFabUCharacterMaxIP(
+  character: Pick<Character, 'maxIP' | 'ipBonus'>,
+  extraBonus = 0,
+): number {
+  return Math.max(
+    0,
+    normalizeNumber(character.maxIP, 6) + normalizeNumber(character.ipBonus, 0) + extraBonus,
+  );
+}
+
 function repairFabUCharacterResourceFields(character: Character): Character {
   const maxIP = normalizeNumber(character.maxIP, 6);
-  const currentIP = normalizeNumber(
-    character.currentIP,
-    normalizeNumber(character.inventoryPoints, maxIP),
-  );
   const ipBonus = normalizeNumber(character.ipBonus, 0);
+  const totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus });
+  const currentIP = Math.min(
+    totalMaxIP,
+    normalizeNumber(character.currentIP, normalizeNumber(character.inventoryPoints, maxIP)),
+  );
   const hpBonus = normalizeNumber(character.hpBonus, 0);
   const mpBonus = normalizeNumber(character.mpBonus, 0);
   const customResourceModifiers = Array.isArray(character.customResourceModifiers)
@@ -581,6 +595,7 @@ function deserializeCharacterFromBackend(raw: unknown): Character {
 
 export {
   deserializeCharacterFromBackend,
+  getFabUCharacterMaxIP,
   migrateCharacter,
   normalizeCharacter,
   repairFabUCharacterResourceFields,

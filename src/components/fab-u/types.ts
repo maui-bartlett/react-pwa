@@ -100,7 +100,7 @@ export type SpellRow = {
   name: string;
   cost: string;
   target: string;
-  duration: 'Instant' | 'Scene';
+  duration: 'Instant' | 'Scene' | 'Until next turn';
   effect: string;
   /** Short app-friendly preview shown in pickers and compact rows. */
   summary?: string;

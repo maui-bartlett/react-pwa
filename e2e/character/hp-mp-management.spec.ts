@@ -1,6 +1,10 @@
 import { devices, expect, test } from '@playwright/test';
 
-import { seedFabUHpMpBaseline } from '../helpers/fabUStorage';
+import {
+  patchActiveFabUCharacter,
+  readActiveFabUCharacter,
+  seedFabUHpMpBaseline,
+} from '../helpers/fabUStorage';
 
 test.use({ viewport: devices['Pixel 5'].viewport });
 
@@ -60,10 +64,7 @@ test.describe('HP/MP management modal', () => {
 
     expect(Math.abs(pointsLabel.y - modifierLabel.y)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
     expect(Math.abs(wheel.y - heal.y)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
-    const gaps = [
-      amount.y - (heal.y + heal.height),
-      damage.y - (amount.y + amount.height),
-    ];
+    const gaps = [amount.y - (heal.y + heal.height), damage.y - (amount.y + amount.height)];
     expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(LAYOUT_TOLERANCE);
     expect(Math.abs(wheel.y + wheel.height - (damage.y + damage.height))).toBeLessThanOrEqual(
       LAYOUT_TOLERANCE,
@@ -115,6 +116,31 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeVisible();
     await page.locator('[data-pw="mp-management-close"]').click();
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeHidden();
+  });
+
+  test('existing characters with too much IP are clamped to max IP', async ({ page }) => {
+    await patchActiveFabUCharacter(page, {
+      currentIP: 12,
+      inventoryPoints: 12,
+      maxIP: 6,
+      ipBonus: 0,
+      customResourceModifiers: [],
+    });
+    await page.reload();
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+
+    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first()).toHaveText('6');
+    await expect(page.locator('[data-pw="statpill-ov-ip"]')).toContainText('/ 6');
+
+    await expect
+      .poll(async () => {
+        const character = await readActiveFabUCharacter(page);
+        return {
+          currentIP: character.currentIP,
+          inventoryPoints: character.inventoryPoints,
+        };
+      })
+      .toEqual({ currentIP: 6, inventoryPoints: 6 });
   });
 
   test('damage reduces current HP by the entered amount', async ({ page }) => {
