@@ -37,6 +37,8 @@ type SummaryMetric = {
   toneColor?: string;
   /** When provided, overrides the value text color (display mode only). */
   valueColor?: string;
+  /** When provided, overrides the value suffix text color (display mode only). */
+  valueSuffixColor?: string;
   /** When provided, overrides the pill border color (display mode only). */
   borderColor?: string;
   /** When provided, applies a CSS gradient border using the padding-box/border-box technique. */
@@ -340,7 +342,7 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                         variant="body1"
                         sx={{
                           ml: '5px',
-                          color: fabUTokens.color.textSecondary,
+                          color: metric.valueSuffixColor ?? fabUTokens.color.textSecondary,
                           fontWeight: 700,
                           fontSize: '0.98rem',
                           lineHeight: 1.04,

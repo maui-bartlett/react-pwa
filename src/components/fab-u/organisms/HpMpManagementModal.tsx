@@ -48,15 +48,19 @@ function NumberWheel({
   value,
   maxValue,
   accent,
+  testId,
   onChange,
 }: {
   value: number;
   maxValue: number;
   accent: string;
+  testId?: string;
   onChange: (next: number) => void;
 }) {
   const fabUTokens = useFabUTokens();
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const syncingScrollRef = useRef(false);
+  const scrollFrameRef = useRef<number | null>(null);
   const numbers = useMemo(() => Array.from({ length: maxValue + 1 }, (_, i) => i), [maxValue]);
 
   // Keep the wheel aligned to the current value when it changes from the text
@@ -66,12 +70,40 @@ function NumberWheel({
     if (!el) return;
     const target = value * ROW_H;
     if (Math.abs(el.scrollTop - target) < 2) return;
+    syncingScrollRef.current = true;
     el.scrollTo({ top: target });
+    window.setTimeout(() => {
+      syncingScrollRef.current = false;
+    }, 80);
   }, [value]);
+
+  useEffect(
+    () => () => {
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+      }
+    },
+    [],
+  );
+
+  function syncAmountFromScroll() {
+    const el = scrollRef.current;
+    if (!el || syncingScrollRef.current) return;
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+    }
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
+      const next = Math.max(0, Math.min(maxValue, Math.round(el.scrollTop / ROW_H)));
+      if (next !== value) onChange(next);
+    });
+  }
 
   return (
     <Box
       ref={scrollRef}
+      data-pw={testId}
+      onScroll={syncAmountFromScroll}
       sx={{
         position: 'relative',
         height: WHEEL_HEIGHT,
@@ -728,6 +760,7 @@ function HpMpManagementModal({
                 value={amount}
                 maxValue={wheelMax}
                 accent={accent}
+                testId={`${kind}-management-number-wheel-scroll`}
                 onChange={setAmount}
               />
             </Box>

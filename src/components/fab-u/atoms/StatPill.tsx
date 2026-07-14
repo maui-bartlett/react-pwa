@@ -28,6 +28,7 @@ function StatPill({
   pw,
   toneColor,
   valueColor,
+  valueSuffixColor,
   borderColor,
   fillGradient,
   pulseKey,
@@ -366,7 +367,7 @@ function StatPill({
                     variant="h6"
                     sx={{
                       ml: '5px',
-                      color: fabUTokens.color.textSecondary,
+                      color: valueSuffixColor ?? fabUTokens.color.textSecondary,
                       fontWeight: 700,
                       fontSize: inline ? '0.96rem' : '0.98rem',
                       lineHeight: 1.04,

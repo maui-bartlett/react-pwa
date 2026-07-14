@@ -168,7 +168,11 @@ test.describe('HP/MP management modal', () => {
       .toContain('fabuStatPillPersistentPulse');
     await expect
       .poll(() => overviewHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
-      .toContain('rgb(179, 38, 30)');
+      .toContain('rgba(179, 38, 30, 0.78)');
+    await expect(overviewHpPill.locator('[data-pw="statpill-ov-hp-suffix"]')).toHaveCSS(
+      'color',
+      'rgb(255, 255, 255)',
+    );
 
     await page.locator('[data-pw="app-footer"]').getByText('Spells').click();
     const stripHpPill = page.locator('[data-pw="metric-hp"]');
@@ -178,7 +182,33 @@ test.describe('HP/MP management modal', () => {
       .toContain('fabuSummaryMetricPersistentPulse');
     await expect
       .poll(() => stripHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
-      .toContain('rgb(179, 38, 30)');
+      .toContain('rgba(179, 38, 30, 0.78)');
+    await expect(stripHpPill.locator('[data-pw="metric-hp-suffix"]')).toHaveCSS(
+      'color',
+      'rgb(255, 255, 255)',
+    );
+  });
+
+  test('scrolling the HP number wheel updates the amount input', async ({ page }) => {
+    await page.locator('[data-pw="statpill-ov-hp"]').click();
+    await expect(page.locator('[data-pw="hp-management-modal"]')).toBeVisible();
+
+    await page
+      .locator('[data-pw="hp-management-number-wheel-scroll"]')
+      .evaluate((element) => element.scrollTo({ top: 5 * 32 }));
+
+    await expect(page.locator('[data-pw="hp-management-amount-input"]')).toHaveValue('5');
+  });
+
+  test('scrolling the MP number wheel updates the amount input', async ({ page }) => {
+    await page.locator('[data-pw="statpill-ov-mp"]').click();
+    await expect(page.locator('[data-pw="mp-management-modal"]')).toBeVisible();
+
+    await page
+      .locator('[data-pw="mp-management-number-wheel-scroll"]')
+      .evaluate((element) => element.scrollTo({ top: 6 * 32 }));
+
+    await expect(page.locator('[data-pw="mp-management-amount-input"]')).toHaveValue('6');
   });
 
   test('damage reduces current HP by the entered amount', async ({ page }) => {

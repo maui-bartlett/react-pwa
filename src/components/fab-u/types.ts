@@ -56,6 +56,8 @@ export type StatPillData = {
   toneColor?: string;
   /** When provided, overrides the value text color (display mode only, not edit inputs). */
   valueColor?: string;
+  /** When provided, overrides the value suffix text color (display mode only). */
+  valueSuffixColor?: string;
   /** When provided, overrides the pill border color (display mode only). */
   borderColor?: string;
   /** When provided, applies a CSS gradient as the pill background fill. */
