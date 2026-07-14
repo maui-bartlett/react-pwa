@@ -910,7 +910,7 @@ function BraveFabUTabMenu({ activeTab, onChange }: BraveFabUTabMenuProps) {
             },
           }}
         >
-          Tabs
+          Menu
         </Button>
         <Popper
           open={open}

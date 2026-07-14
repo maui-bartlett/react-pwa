@@ -138,7 +138,7 @@ function HeaderBar({
           data-pw="header-below-actions"
           sx={{
             position: 'absolute',
-            top: compact ? 58 : 'max(60px, calc(env(safe-area-inset-top, 0px) + 54px))',
+            top: compact ? 63 : 'max(65px, calc(env(safe-area-inset-top, 0px) + 59px))',
             right: compact ? 20 : 22,
             zIndex: 3,
           }}

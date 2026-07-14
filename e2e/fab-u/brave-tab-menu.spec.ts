@@ -19,7 +19,7 @@ test('shows the FabU header tab menu only in Brave', async ({ page }) => {
   await mockBraveBrowser(page);
   await page.goto('/fab-u');
 
-  await expect(page.locator('[data-pw="fab-u-brave-tab-menu-button"]')).toBeVisible();
+  await expect(page.locator('[data-pw="fab-u-brave-tab-menu-button"]')).toHaveText('Menu');
 });
 
 test('switches FabU tabs from the Brave header tab menu', async ({ page }) => {
