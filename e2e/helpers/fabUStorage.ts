@@ -145,6 +145,20 @@ async function seedFabUHpMpBaseline(page: Page): Promise<void> {
     hpBonus: 5,
     currentMP: 58,
     mpBonus: 5,
+    customResourceModifiers: [
+      {
+        id: 'seeded-hp-modifier',
+        resource: 'hp',
+        label: 'Seeded HP Bonus',
+        value: 5,
+      },
+      {
+        id: 'seeded-mp-modifier',
+        resource: 'mp',
+        label: 'Seeded MP Bonus',
+        value: 5,
+      },
+    ],
     classes: [],
     attributes: {
       dex: { die: 'd8', modifier: 0 },

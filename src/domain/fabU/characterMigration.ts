@@ -400,13 +400,80 @@ function normalizeSpellGroups(storedSpellGroups: unknown, defaults: Character): 
   });
 }
 
+function isLegacyStarterResourceBonus(character: Character): boolean {
+  return (
+    character.name.firstName === 'Radovan' &&
+    character.name.lastName === 'Milincic' &&
+    character.level === 13 &&
+    character.hpBonus === 5 &&
+    character.mpBonus === 5 &&
+    character.ipBonus === 0 &&
+    character.customResourceModifiers.length === 0 &&
+    character.attributes.might.die === 'd8' &&
+    character.attributes.willpower.die === 'd8'
+  );
+}
+
+function repairFabUCharacterResourceFields(character: Character): Character {
+  const maxIP = normalizeNumber(character.maxIP, 6);
+  const currentIP = normalizeNumber(
+    character.currentIP,
+    normalizeNumber(character.inventoryPoints, maxIP),
+  );
+  const ipBonus = normalizeNumber(character.ipBonus, 0);
+  const hpBonus = normalizeNumber(character.hpBonus, 0);
+  const mpBonus = normalizeNumber(character.mpBonus, 0);
+  const customResourceModifiers = Array.isArray(character.customResourceModifiers)
+    ? character.customResourceModifiers
+    : [];
+
+  const resourceSafeCharacter = {
+    ...character,
+    currentIP,
+    inventoryPoints: currentIP,
+    maxIP,
+    hpBonus,
+    mpBonus,
+    ipBonus,
+    customResourceModifiers,
+  };
+
+  if (!isLegacyStarterResourceBonus(resourceSafeCharacter)) {
+    const changed =
+      resourceSafeCharacter.currentIP !== character.currentIP ||
+      resourceSafeCharacter.inventoryPoints !== character.inventoryPoints ||
+      resourceSafeCharacter.maxIP !== character.maxIP ||
+      resourceSafeCharacter.hpBonus !== character.hpBonus ||
+      resourceSafeCharacter.mpBonus !== character.mpBonus ||
+      resourceSafeCharacter.ipBonus !== character.ipBonus ||
+      resourceSafeCharacter.customResourceModifiers !== character.customResourceModifiers;
+
+    return changed ? resourceSafeCharacter : character;
+  }
+
+  const maxHP =
+    (MIGRATION_DIE_VALUES[resourceSafeCharacter.attributes.might.die] ?? 8) * 5 +
+    resourceSafeCharacter.level;
+  const maxMP =
+    (MIGRATION_DIE_VALUES[resourceSafeCharacter.attributes.willpower.die] ?? 8) * 5 +
+    resourceSafeCharacter.level;
+
+  return {
+    ...resourceSafeCharacter,
+    currentHP: Math.min(resourceSafeCharacter.currentHP, maxHP),
+    hpBonus: 0,
+    currentMP: Math.min(resourceSafeCharacter.currentMP, maxMP),
+    mpBonus: 0,
+  };
+}
+
 function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {}): Character {
   const initialValue = createDefaultCharacter();
   if (!raw || typeof raw !== 'object') {
-    return {
+    return repairFabUCharacterResourceFields({
       ...initialValue,
       statusEffects: normalizeStatusEffects(options.oldStatusEffects),
-    };
+    });
   }
 
   const parsed = raw as Record<string, unknown>;
@@ -418,7 +485,7 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
   delete withoutFlatName.firstName;
   delete withoutFlatName.lastName;
   delete withoutFlatName.nickName;
-  return {
+  return repairFabUCharacterResourceFields({
     ...initialValue,
     ...withoutFlatName,
     name: normalizeName(parsed, initialValue.name),
@@ -460,7 +527,7 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
     traits: normalizeTraits(parsed.traits, initialValue.traits),
     notes: normalizeString(parsed.notes, initialValue.notes),
     ...normalizeHpMpBonus(parsed, initialValue),
-  };
+  });
 }
 
 function migrateCharacter(
@@ -516,5 +583,6 @@ export {
   deserializeCharacterFromBackend,
   migrateCharacter,
   normalizeCharacter,
+  repairFabUCharacterResourceFields,
   serializeCharacterForBackend,
 };

@@ -4,6 +4,7 @@ import { createDefaultCharacter } from './characterDefaults';
 import {
   deserializeCharacterFromBackend,
   migrateCharacter,
+  repairFabUCharacterResourceFields,
   serializeCharacterForBackend,
 } from './characterMigration';
 
@@ -21,6 +22,69 @@ test('createDefaultCharacter includes notes, backstory prompts, status effects, 
     poisoned: false,
   });
   expect(character.zenit).toBe(30);
+});
+
+test('createDefaultCharacter starts without custom max resource modifiers', () => {
+  const character = createDefaultCharacter();
+
+  expect(character.hpBonus).toBe(0);
+  expect(character.mpBonus).toBe(0);
+  expect(character.ipBonus).toBe(0);
+  expect(character.customResourceModifiers).toEqual([]);
+});
+
+test('migrateCharacter does not add max resource modifiers to a fresh character', () => {
+  const migrated = migrateCharacter(null);
+
+  expect(migrated.character.hpBonus).toBe(0);
+  expect(migrated.character.mpBonus).toBe(0);
+  expect(migrated.character.ipBonus).toBe(0);
+  expect(migrated.character.customResourceModifiers).toEqual([]);
+});
+
+test('migrateCharacter repairs missing IP values from existing characters', () => {
+  const migrated = migrateCharacter({
+    ...createDefaultCharacter(),
+    currentIP: undefined,
+    inventoryPoints: undefined,
+    maxIP: undefined,
+  });
+
+  expect(migrated.character.currentIP).toBe(6);
+  expect(migrated.character.inventoryPoints).toBe(6);
+  expect(migrated.character.maxIP).toBe(6);
+});
+
+test('repairFabUCharacterResourceFields repairs NaN IP values on existing local slots', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    currentIP: Number.NaN,
+    inventoryPoints: Number.NaN,
+    maxIP: Number.NaN,
+    ipBonus: Number.NaN,
+  });
+
+  expect(repaired.currentIP).toBe(6);
+  expect(repaired.inventoryPoints).toBe(6);
+  expect(repaired.maxIP).toBe(6);
+  expect(repaired.ipBonus).toBe(0);
+});
+
+test('migrateCharacter removes legacy starter max resource bonuses', () => {
+  const migrated = migrateCharacter({
+    ...createDefaultCharacter(),
+    currentHP: 58,
+    hpBonus: 5,
+    currentMP: 58,
+    mpBonus: 5,
+    customResourceModifiers: [],
+  });
+
+  expect(migrated.character.hpBonus).toBe(0);
+  expect(migrated.character.mpBonus).toBe(0);
+  expect(migrated.character.currentHP).toBe(53);
+  expect(migrated.character.currentMP).toBe(53);
+  expect(migrated.character.customResourceModifiers).toEqual([]);
 });
 
 test('migrateCharacter normalizes current localStorage character shape', () => {

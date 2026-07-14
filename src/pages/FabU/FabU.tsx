@@ -81,6 +81,7 @@ import {
 import type { SkillRow, SpellRow } from '@/components/fab-u';
 import { scaledEditableTextStyle } from '@/components/fab-u/editableText';
 import { createRandomFabUCharacter } from '@/domain/fabU/characterDefaults';
+import { repairFabUCharacterResourceFields } from '@/domain/fabU/characterMigration';
 import { getFabUMasteredSkillOptionsForClass } from '@/domain/fabU/masteredSkills';
 import { calculateFabUClassResourceBonuses } from '@/domain/fabU/resourceBonuses';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
@@ -932,6 +933,10 @@ function FabU() {
     describeCharacter: describeFabULocalCharacter,
     migrate: migrateFabULocalCharacter,
   });
+  useEffect(() => {
+    if (!localCharacters.hydrated) return;
+    setCharacter(repairFabUCharacterResourceFields);
+  }, [character, localCharacters.hydrated, setCharacter]);
   const statusEffects = character.statusEffects;
   useFabUPopperScrollLock(Boolean(battleActionPopover));
   const openNameEdit = () => {

@@ -346,9 +346,6 @@ function Home() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installMessage, setInstallMessage] = useState('');
   const [isBrave, setIsBrave] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(() =>
-    typeof window === 'undefined' ? false : isStandalonePwa(),
-  );
 
   useEffect(() => {
     let active = true;
@@ -368,7 +365,6 @@ function Home() {
     };
     const handleAppInstalled = () => {
       setInstallPrompt(null);
-      setIsInstalled(true);
       setInstallMessage('Installed.');
     };
 
@@ -381,6 +377,11 @@ function Home() {
   }, []);
 
   async function handleInstallClick() {
+    if (isStandalonePwa()) {
+      setInstallMessage('Already installed.');
+      return;
+    }
+
     if (installPrompt) {
       await installPrompt.prompt();
       const choice = await installPrompt.userChoice;
@@ -571,44 +572,42 @@ function Home() {
             >
               Keep your characters, progress, combat options, and campaign notes close at hand.
             </Typography>
-            {!isInstalled ? (
-              <Stack spacing={0.8} alignItems="center">
-                <Button
-                  type="button"
-                  variant="contained"
-                  onClick={handleInstallClick}
-                  data-pw="home-install-pwa"
+            <Stack spacing={0.8} alignItems="center">
+              <Button
+                type="button"
+                variant="contained"
+                onClick={handleInstallClick}
+                data-pw="home-install-pwa"
+                sx={{
+                  minHeight: 44,
+                  borderRadius: 1.4,
+                  bgcolor: '#f8f4ec',
+                  color: '#182237',
+                  fontWeight: 850,
+                  px: 2.2,
+                  textTransform: 'none',
+                  boxShadow: '0 12px 28px rgba(0,0,0,0.24)',
+                  '&:hover': {
+                    bgcolor: '#fffaf0',
+                  },
+                }}
+              >
+                Install App
+              </Button>
+              {installMessage ? (
+                <Typography
+                  data-pw="home-install-pwa-message"
                   sx={{
-                    minHeight: 44,
-                    borderRadius: 1.4,
-                    bgcolor: '#f8f4ec',
-                    color: '#182237',
-                    fontWeight: 850,
-                    px: 2.2,
-                    textTransform: 'none',
-                    boxShadow: '0 12px 28px rgba(0,0,0,0.24)',
-                    '&:hover': {
-                      bgcolor: '#fffaf0',
-                    },
+                    color: alpha('#f8f4ec', 0.82),
+                    fontSize: 13,
+                    fontWeight: 700,
+                    lineHeight: 1.3,
                   }}
                 >
-                  Install App
-                </Button>
-                {installMessage ? (
-                  <Typography
-                    data-pw="home-install-pwa-message"
-                    sx={{
-                      color: alpha('#f8f4ec', 0.82),
-                      fontSize: 13,
-                      fontWeight: 700,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {installMessage}
-                  </Typography>
-                ) : null}
-              </Stack>
-            ) : null}
+                  {installMessage}
+                </Typography>
+              ) : null}
+            </Stack>
           </Stack>
         </Box>
 
