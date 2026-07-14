@@ -63,6 +63,8 @@ export type StatPillData = {
   /** Changing this value retriggers a short feedback animation. */
   pulseKey?: number;
   pulseLabel?: string;
+  /** When provided, applies a persistent glow pulse using this accent color. */
+  persistentPulseColor?: string;
 };
 
 export type AttributeRow = {

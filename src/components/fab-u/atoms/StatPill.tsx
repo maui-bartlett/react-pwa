@@ -32,6 +32,7 @@ function StatPill({
   fillGradient,
   pulseKey,
   pulseLabel,
+  persistentPulseColor,
   onManage,
 }: StatPillData) {
   const fabUTokens = useFabUTokens();
@@ -217,6 +218,14 @@ function StatPill({
             '72%': { opacity: 1, transform: 'translateY(-7px) scale(1)' },
             '100%': { opacity: 0, transform: 'translateY(-12px) scale(0.96)' },
           },
+          '@keyframes fabuStatPillPersistentPulse': {
+            '0%, 100%': {
+              boxShadow: `${fabUTokens.shadow.card}, 0 0 0 0 ${alpha(persistentPulseColor ?? toneStyles.color, 0.34)}`,
+            },
+            '50%': {
+              boxShadow: `${fabUTokens.shadow.card}, 0 0 0 3px ${alpha(persistentPulseColor ?? toneStyles.color, 0.26)}, 0 0 22px ${alpha(persistentPulseColor ?? toneStyles.color, 0.68)}`,
+            },
+          },
           position: 'relative',
           border: `1px solid ${
             editing || popoverOpen
@@ -248,7 +257,12 @@ function StatPill({
                 : 'text'
               : 'default',
           transition: 'border-color 150ms ease',
-          animation: pulseKey ? 'fabuStatPillPulse 820ms ease-out' : 'none',
+          animation: [
+            pulseKey ? 'fabuStatPillPulse 820ms ease-out' : '',
+            persistentPulseColor ? 'fabuStatPillPersistentPulse 1.45s ease-in-out infinite' : '',
+          ]
+            .filter(Boolean)
+            .join(', ') || 'none',
           overflow: 'visible',
         }}
       >

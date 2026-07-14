@@ -143,6 +143,44 @@ test.describe('HP/MP management modal', () => {
       .toEqual({ currentIP: 6, inventoryPoints: 6 });
   });
 
+  test('HP pills fill red and pulse at half HP or less', async ({ page }) => {
+    await patchActiveFabUCharacter(page, { currentHP: 30 });
+    await page.reload();
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+
+    await expect(page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first()).toHaveText('30');
+    await expect
+      .poll(() =>
+        page
+          .locator('[data-pw="statpill-ov-hp"]')
+          .evaluate((element) => getComputedStyle(element).animationName),
+      )
+      .toBe('none');
+
+    await patchActiveFabUCharacter(page, { currentHP: 29 });
+    await page.reload();
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+
+    const overviewHpPill = page.locator('[data-pw="statpill-ov-hp"]');
+    await expect(overviewHpPill.locator('h6').first()).toHaveText('29');
+    await expect
+      .poll(() => overviewHpPill.evaluate((element) => getComputedStyle(element).animationName))
+      .toContain('fabuStatPillPersistentPulse');
+    await expect
+      .poll(() => overviewHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
+      .toContain('rgb(179, 38, 30)');
+
+    await page.locator('[data-pw="app-footer"]').getByText('Spells').click();
+    const stripHpPill = page.locator('[data-pw="metric-hp"]');
+    await expect(stripHpPill).toContainText('29');
+    await expect
+      .poll(() => stripHpPill.evaluate((element) => getComputedStyle(element).animationName))
+      .toContain('fabuSummaryMetricPersistentPulse');
+    await expect
+      .poll(() => stripHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
+      .toContain('rgb(179, 38, 30)');
+  });
+
   test('damage reduces current HP by the entered amount', async ({ page }) => {
     const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first();
     await expect(hpValue).toHaveText('58'); // seeded at full HP; wait for hydration

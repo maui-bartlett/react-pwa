@@ -46,6 +46,8 @@ type SummaryMetric = {
   /** Changing this value retriggers a short feedback animation. */
   pulseKey?: number;
   pulseLabel?: string;
+  /** When provided, applies a persistent glow pulse using this accent color. */
+  persistentPulseColor?: string;
 };
 
 type SummaryStripProps = {
@@ -130,6 +132,14 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                   '72%': { opacity: 1, transform: 'translateY(-7px) scale(1)' },
                   '100%': { opacity: 0, transform: 'translateY(-12px) scale(0.96)' },
                 },
+                '@keyframes fabuSummaryMetricPersistentPulse': {
+                  '0%, 100%': {
+                    boxShadow: `${fabUTokens.shadow.card}, 0 0 0 0 ${alpha(metric.persistentPulseColor ?? tc ?? fabUTokens.color.textSecondary, 0.34)}`,
+                  },
+                  '50%': {
+                    boxShadow: `${fabUTokens.shadow.card}, 0 0 0 3px ${alpha(metric.persistentPulseColor ?? tc ?? fabUTokens.color.textSecondary, 0.26)}, 0 0 22px ${alpha(metric.persistentPulseColor ?? tc ?? fabUTokens.color.textSecondary, 0.68)}`,
+                  },
+                },
                 position: 'relative',
                 ...(useGradientBorder
                   ? {
@@ -152,7 +162,14 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                 minHeight: 52,
                 cursor: metric.onManage ? 'pointer' : editable && !isEditing ? 'text' : 'default',
                 transition: 'border-color 150ms ease',
-                animation: metric.pulseKey ? 'fabuSummaryMetricPulse 820ms ease-out' : 'none',
+                animation: [
+                  metric.pulseKey ? 'fabuSummaryMetricPulse 820ms ease-out' : '',
+                  metric.persistentPulseColor
+                    ? 'fabuSummaryMetricPersistentPulse 1.45s ease-in-out infinite'
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(', ') || 'none',
                 overflow: 'visible',
               }}
             >

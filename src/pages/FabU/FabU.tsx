@@ -1357,6 +1357,17 @@ function FabU() {
     (DIE_VALUES[character.attributes.might.die] ?? 8) * 5 + character.level + hpModifier;
   const totalMP =
     (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + mpModifier;
+  const lowHpColor = '#b3261e';
+  const isLowHP = totalHP > 0 && character.currentHP <= totalHP / 2;
+  const hpPillWarningProps = isLowHP
+    ? {
+        toneColor: '#ffffff',
+        valueColor: '#ffffff',
+        borderColor: lowHpColor,
+        fillGradient: `linear-gradient(135deg, ${lowHpColor} 0%, #d94136 48%, #7f1712 100%)`,
+        persistentPulseColor: lowHpColor,
+      }
+    : {};
   const totalMaxIP = getFabUCharacterMaxIP(character, classResourceBonuses.ip);
   useEffect(() => {
     const currentIP = Number.isFinite(character.currentIP) ? character.currentIP : totalMaxIP;
@@ -1965,6 +1976,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
+              ...hpPillWarningProps,
               onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               pw: 'ov-hp',
@@ -2092,6 +2104,7 @@ function FabU() {
               valueSuffix: ` / ${totalHP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
+              ...hpPillWarningProps,
               onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               pw: 'cb-hp',
@@ -3072,6 +3085,7 @@ function FabU() {
               onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
               maxValue: totalHP,
               toneColor: fabUTokens.color.hp,
+              ...hpPillWarningProps,
             },
             {
               label: 'MP',
