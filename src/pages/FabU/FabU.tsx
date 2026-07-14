@@ -892,7 +892,7 @@ function BraveFabUTabMenu({ activeTab, onChange }: BraveFabUTabMenuProps) {
           endIcon={<ChevronDown size={14} />}
           sx={{
             minWidth: 96,
-            height: 30,
+            height: 36,
             borderRadius: '8px',
             px: 1.15,
             bgcolor: alpha('#ffffff', 0.16),
