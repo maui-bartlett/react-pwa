@@ -60,7 +60,10 @@ function NumberWheel({
   const fabUTokens = useFabUTokens();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const syncingScrollRef = useRef(false);
+  const userScrollIntentRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
+  const syncScrollTimerRef = useRef<number | null>(null);
+  const userScrollTimerRef = useRef<number | null>(null);
   const numbers = useMemo(() => Array.from({ length: maxValue + 1 }, (_, i) => i), [maxValue]);
 
   // Keep the wheel aligned to the current value when it changes from the text
@@ -71,10 +74,14 @@ function NumberWheel({
     const target = value * ROW_H;
     if (Math.abs(el.scrollTop - target) < 2) return;
     syncingScrollRef.current = true;
+    if (syncScrollTimerRef.current !== null) {
+      window.clearTimeout(syncScrollTimerRef.current);
+    }
     el.scrollTo({ top: target });
-    window.setTimeout(() => {
+    syncScrollTimerRef.current = window.setTimeout(() => {
       syncingScrollRef.current = false;
-    }, 80);
+      syncScrollTimerRef.current = null;
+    }, 220);
   }, [value]);
 
   useEffect(
@@ -82,13 +89,41 @@ function NumberWheel({
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
       }
+      if (syncScrollTimerRef.current !== null) {
+        window.clearTimeout(syncScrollTimerRef.current);
+      }
+      if (userScrollTimerRef.current !== null) {
+        window.clearTimeout(userScrollTimerRef.current);
+      }
     },
     [],
   );
 
+  function markUserScrollIntent() {
+    userScrollIntentRef.current = true;
+    if (userScrollTimerRef.current !== null) {
+      window.clearTimeout(userScrollTimerRef.current);
+    }
+    userScrollTimerRef.current = window.setTimeout(() => {
+      userScrollIntentRef.current = false;
+      userScrollTimerRef.current = null;
+    }, 220);
+  }
+
   function syncAmountFromScroll() {
     const el = scrollRef.current;
-    if (!el || syncingScrollRef.current) return;
+    if (!el) return;
+    if (syncingScrollRef.current) {
+      if (syncScrollTimerRef.current !== null) {
+        window.clearTimeout(syncScrollTimerRef.current);
+      }
+      syncScrollTimerRef.current = window.setTimeout(() => {
+        syncingScrollRef.current = false;
+        syncScrollTimerRef.current = null;
+      }, 120);
+      return;
+    }
+    if (!userScrollIntentRef.current) return;
     if (scrollFrameRef.current !== null) {
       window.cancelAnimationFrame(scrollFrameRef.current);
     }
@@ -104,6 +139,10 @@ function NumberWheel({
       ref={scrollRef}
       data-pw={testId}
       onScroll={syncAmountFromScroll}
+      onWheel={markUserScrollIntent}
+      onTouchStart={markUserScrollIntent}
+      onPointerDown={markUserScrollIntent}
+      onKeyDown={markUserScrollIntent}
       sx={{
         position: 'relative',
         height: WHEEL_HEIGHT,

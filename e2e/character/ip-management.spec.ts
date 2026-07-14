@@ -56,7 +56,10 @@ test.describe('IP management modal', () => {
 
     await page
       .locator('[data-pw="ip-management-number-wheel-scroll"]')
-      .evaluate((element) => element.scrollTo({ top: 4 * 32 }));
+      .evaluate((element) => {
+        element.dispatchEvent(new WheelEvent('wheel', { deltaY: 128, bubbles: true }));
+        element.scrollTo({ top: 4 * 32 });
+      });
 
     await expect(page.locator('[data-pw="ip-management-amount-input"]')).toHaveValue('4');
   });

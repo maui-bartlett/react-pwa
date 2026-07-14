@@ -13,33 +13,45 @@ test.describe('HP/MP/FP/IP cross-tab sync (mobile viewport)', () => {
   test('adjusting HP in Spells tab shows on Overview AttributesStatsCard', async ({ page }) => {
     await page.getByRole('button', { name: 'Spells' }).first().click();
 
-    // 58 - 18 = 40 via the HP management modal.
+    const startingHp = Number.parseInt(
+      (await page.locator('[data-pw="metric-hp"]').locator('p').first().textContent()) ?? '0',
+      10,
+    );
+    const damage = 18;
     await page.locator('[data-pw="metric-hp"]').click();
     const hpAmount = page.locator('[data-pw="hp-management-amount-input"]');
-    await hpAmount.fill('18');
-    await expect(hpAmount).toHaveValue('18');
+    await hpAmount.fill(String(damage));
+    await expect(hpAmount).toHaveValue(String(damage));
     await page.locator('[data-pw="hp-management-subtract"]').click();
     await page.locator('[data-pw="hp-management-close"]').click();
 
     await page.locator('[data-pw="app-footer"]').getByText('Character').click();
 
-    await expect(page.locator('[data-pw="statpill-ov-hp"]')).toContainText('40');
+    await expect(page.locator('[data-pw="statpill-ov-hp"]')).toContainText(
+      String(Math.max(0, startingHp - damage)),
+    );
   });
 
   test('adjusting MP in Combat tab shows on Spells SummaryStrip', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
 
-    // 58 - 36 = 22 via the MP management modal.
+    const startingMp = Number.parseInt(
+      (await page.locator('[data-pw="statpill-cb-mp"]').locator('h6').first().textContent()) ?? '0',
+      10,
+    );
+    const mpSpend = 36;
     await page.locator('[data-pw="statpill-cb-mp"]').click();
     const mpAmount = page.locator('[data-pw="mp-management-amount-input"]');
-    await mpAmount.fill('36');
-    await expect(mpAmount).toHaveValue('36');
+    await mpAmount.fill(String(mpSpend));
+    await expect(mpAmount).toHaveValue(String(mpSpend));
     await page.locator('[data-pw="mp-management-subtract"]').click();
     await page.locator('[data-pw="mp-management-close"]').click();
 
     await page.locator('[data-pw="app-footer"]').getByText('Spells').click();
 
-    await expect(page.locator('[data-pw="metric-mp"]')).toContainText('22');
+    await expect(page.locator('[data-pw="metric-mp"]')).toContainText(
+      String(Math.max(0, startingMp - mpSpend)),
+    );
   });
 
   test('editing FP in Skills tab reflects in Combat AttributesStatsCard', async ({ page }) => {

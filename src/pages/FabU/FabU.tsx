@@ -23,6 +23,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { detectBraveBrowser } from '@/browserEnvironment';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
@@ -413,6 +414,16 @@ const screenMeta: Record<Exclude<FabUTab, 'combat'>, { title: string; subtitle: 
 };
 
 const TRAIT_ACTION_WIDTH = 64;
+const TRAIT_ROW_PY = 1.3625;
+
+const fabUTabMenuOptions: Array<{ label: string; value: FabUTab }> = [
+  { label: 'Character', value: 'overview' },
+  { label: 'Combat', value: 'combat' },
+  { label: 'Skills', value: 'skills' },
+  { label: 'Spells', value: 'spells' },
+  { label: 'Gear', value: 'gear' },
+  { label: 'Notes', value: 'notes' },
+];
 
 type SwipeableTraitRowProps = {
   label: string;
@@ -543,7 +554,7 @@ function SwipeableTraitRow({ label, value, onEdit, trailingWidth }: SwipeableTra
             border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
             borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
             px: 1.25,
-            py: 1.05,
+            py: TRAIT_ROW_PY,
             bgcolor: fabUTokens.color.pillSurface,
             // Inset highlight + right-edge drop shadow. At rest the drop
             // shadow extends past the inner overflow:hidden boundary and is
@@ -750,7 +761,7 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
               border: `1px solid ${isEditing ? fabUTokens.color.textSecondary : fabUTokens.color.border}`,
               borderRadius: visualX < 0 ? '9px 0 0 9px' : '9px',
               px: 1.25,
-              py: 1.05,
+              py: TRAIT_ROW_PY,
               bgcolor: fabUTokens.color.pillSurface,
               // Inset highlight + right-edge drop shadow. The drop shadow is
               // clipped at rest by the outer overflow:hidden, then becomes
@@ -850,6 +861,122 @@ function IdentityAccordionRow({ identities, onUpdate }: IdentityAccordionRowProp
   );
 }
 
+type BraveFabUTabMenuProps = {
+  activeTab: FabUTab;
+  onChange: (tab: FabUTab) => void;
+};
+
+function BraveFabUTabMenu({ activeTab, onChange }: BraveFabUTabMenuProps) {
+  const fabUTokens = useFabUTokens();
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const open = Boolean(anchorEl);
+
+  function closeMenu() {
+    setAnchorEl(null);
+  }
+
+  function selectTab(tab: FabUTab) {
+    onChange(tab);
+    closeMenu();
+  }
+
+  return (
+    <ClickAwayListener onClickAway={closeMenu}>
+      <Box>
+        <Button
+          data-pw="fab-u-brave-tab-menu-button"
+          aria-label="Open Fabula Ultima tab menu"
+          aria-haspopup="menu"
+          aria-expanded={open ? 'true' : undefined}
+          onClick={(event) => setAnchorEl(open ? null : event.currentTarget)}
+          endIcon={<ChevronDown size={14} />}
+          sx={{
+            minWidth: 96,
+            height: 30,
+            borderRadius: '8px',
+            px: 1.15,
+            bgcolor: alpha('#ffffff', 0.16),
+            color: '#ffffff',
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            lineHeight: 1,
+            textTransform: 'uppercase',
+            '& .MuiButton-endIcon': {
+              ml: 0.55,
+              mr: -0.25,
+            },
+            '&:hover': {
+              bgcolor: alpha('#ffffff', 0.22),
+            },
+          }}
+        >
+          Tabs
+        </Button>
+        <Popper
+          open={open}
+          anchorEl={anchorEl}
+          placement="bottom-end"
+          sx={{ zIndex: 40 }}
+          modifiers={[
+            {
+              name: 'offset',
+              options: {
+                offset: [0, 6],
+              },
+            },
+          ]}
+        >
+          <Paper
+            data-pw="fab-u-brave-tab-menu"
+            role="menu"
+            elevation={8}
+            sx={{
+              width: 164,
+              borderRadius: '9px',
+              overflow: 'hidden',
+              bgcolor: fabUTokens.color.surface,
+              border: `1px solid ${fabUTokens.color.border}`,
+              boxShadow: fabUTokens.shadow.card,
+            }}
+          >
+            {fabUTabMenuOptions.map((option) => {
+              const active = option.value === activeTab;
+              return (
+                <Button
+                  key={option.value}
+                  data-pw={`fab-u-brave-tab-menu-${option.value}`}
+                  role="menuitem"
+                  fullWidth
+                  onClick={() => selectTab(option.value)}
+                  sx={{
+                    justifyContent: 'space-between',
+                    borderRadius: 0,
+                    px: 1.35,
+                    py: 0.95,
+                    color: active ? fabUTokens.color.highlight : fabUTokens.color.textPrimary,
+                    bgcolor: active ? alpha(fabUTokens.color.highlight, 0.12) : 'transparent',
+                    fontSize: '0.82rem',
+                    fontWeight: active ? 850 : 750,
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: active
+                        ? alpha(fabUTokens.color.highlight, 0.16)
+                        : alpha(fabUTokens.color.textSecondary, 0.08),
+                    },
+                  }}
+                >
+                  {option.label}
+                  {active ? <Check size={15} /> : null}
+                </Button>
+              );
+            })}
+          </Paper>
+        </Popper>
+      </Box>
+    </ClickAwayListener>
+  );
+}
+
 function FabU() {
   const convexAuth = useConvexAuth();
   const themeMode = useAtomValue(themeModeState);
@@ -860,6 +987,19 @@ function FabU() {
   // so FabU no longer needs its own toggle helper.
   const [activeTab, setActiveTab] = useAtom(activeTabState);
   const [activeCombatTab, setActiveCombatTab] = useAtom(activeCombatTabState);
+  const [isBraveBrowser, setIsBraveBrowser] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    detectBraveBrowser().then((brave) => {
+      if (active) setIsBraveBrowser(brave);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     persistAppView('fab-u', 'tab', activeTab);
@@ -3407,6 +3547,9 @@ function FabU() {
         localCharacters={localCharacters}
       />
     );
+    const braveTabMenuAction = isBraveBrowser ? (
+      <BraveFabUTabMenu activeTab={activeTab} onChange={setActiveTab} />
+    ) : null;
 
     if (activeTab === 'combat') {
       return (
@@ -3416,6 +3559,7 @@ function FabU() {
           subtitle="Stats, status effects, and battle actions"
           action={settingsAction}
           navigationAction={homeAction}
+          belowActions={braveTabMenuAction}
         />
       );
     }
@@ -3459,6 +3603,7 @@ function FabU() {
         subtitle={headerSubtitle}
         action={settingsAction}
         navigationAction={homeAction}
+        belowActions={braveTabMenuAction}
       />
     );
   })();
