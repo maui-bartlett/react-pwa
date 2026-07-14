@@ -1505,7 +1505,7 @@ function FabU() {
         valueColor: '#ffffff',
         valueSuffixColor: '#ffffff',
         borderColor: lowHpColor,
-        fillGradient: `linear-gradient(135deg, ${alpha(lowHpColor, 0.78)} 0%, ${alpha('#d94136', 0.72)} 48%, ${alpha('#7f1712', 0.78)} 100%)`,
+        fillGradient: `linear-gradient(135deg, ${alpha(lowHpColor, 0.22)} 0%, ${alpha('#d94136', 0.16)} 48%, ${alpha('#7f1712', 0.24)} 100%)`,
         persistentPulseColor: lowHpColor,
       }
     : {};
