@@ -1498,15 +1498,17 @@ function FabU() {
   const totalMP =
     (DIE_VALUES[character.attributes.willpower.die] ?? 8) * 5 + character.level + mpModifier;
   const lowHpColor = '#b3261e';
+  const crisisPulseColor = '#ff1f1f';
+  const crisisTextColor = fabUTokens.isDark ? '#ffffff' : '#2f3432';
   const isLowHP = totalHP > 0 && character.currentHP <= totalHP / 2;
   const hpPillWarningProps = isLowHP
     ? {
-        toneColor: '#ffffff',
-        valueColor: '#ffffff',
-        valueSuffixColor: '#ffffff',
+        toneColor: crisisTextColor,
+        valueColor: crisisTextColor,
+        valueSuffixColor: crisisTextColor,
         borderColor: lowHpColor,
         fillGradient: `linear-gradient(135deg, ${alpha(lowHpColor, 0.22)} 0%, ${alpha('#d94136', 0.16)} 48%, ${alpha('#7f1712', 0.24)} 100%)`,
-        persistentPulseColor: lowHpColor,
+        persistentPulseColor: crisisPulseColor,
       }
     : {};
   const totalMaxIP = getFabUCharacterMaxIP(character, classResourceBonuses.ip);

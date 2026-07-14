@@ -140,10 +140,10 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                     transform: 'translate(-50%, -50%) scale(0.12)',
                   },
                   '20%': {
-                    opacity: 0.72,
+                    opacity: 0.96,
                   },
                   '78%': {
-                    opacity: 0.18,
+                    opacity: 0.3,
                   },
                   '100%': {
                     opacity: 0,
@@ -185,8 +185,8 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                       borderRadius: '999px',
                       background: `radial-gradient(circle, ${alpha(
                         metric.persistentPulseColor,
-                        0.48,
-                      )} 0%, ${alpha(metric.persistentPulseColor, 0.3)} 42%, ${alpha(
+                        0.86,
+                      )} 0%, ${alpha(metric.persistentPulseColor, 0.56)} 42%, ${alpha(
                         metric.persistentPulseColor,
                         0,
                       )} 72%)`,
