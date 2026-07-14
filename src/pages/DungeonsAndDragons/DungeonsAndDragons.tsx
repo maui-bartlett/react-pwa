@@ -39,11 +39,14 @@ import { useQuery } from 'convex/react';
 import { atom, useAtom } from 'jotai';
 import { Backpack, ChevronDown, Grid3X3, House, Lightbulb, Search, Sword, X } from 'lucide-react';
 
+import { BRAVE_BROWSER_CLASS } from '@/browserEnvironment';
 import type { DieSize } from '@/components/DiceRoller/diceRollResults';
 import { dispatchTabletopDiceRoll } from '@/components/DiceRoller/rollEvents';
 import { SwipeableAction, SwipeableCard } from '@/components/SwipeableCard';
 import {
+  APP_SHELL_BRAVE_BOTTOM_NAV_INSET,
   APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
+  withBraveBottomNavInset,
   withFirefoxBottomNavInset,
 } from '@/components/appShell';
 import AccountSettings from '@/sections/AccountSettings';
@@ -1974,11 +1977,15 @@ function BottomNav({
 }) {
   return (
     <Box
+      data-pw="dnd-bottom-nav"
       sx={{
         position: 'absolute',
         left: 14,
         right: 14,
         bottom: 12,
+        [`body.${BRAVE_BROWSER_CLASS} &`]: {
+          bottom: `calc(12px + ${APP_SHELL_BRAVE_BOTTOM_NAV_INSET})`,
+        },
         zIndex: 10,
         borderRadius: '42px',
         bgcolor: alpha(dndColors.panelSoft, 0.92),
@@ -12080,6 +12087,9 @@ function DungeonsAndDragons() {
             WebkitOverflowScrolling: 'touch',
             boxSizing: 'border-box',
             pb: APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
+            [`body.${BRAVE_BROWSER_CLASS} &`]: {
+              pb: withBraveBottomNavInset(APP_SHELL_DICE_FAB_SCROLL_CLEARANCE),
+            },
             '@supports (-moz-appearance: none)': {
               pb: withFirefoxBottomNavInset(APP_SHELL_DICE_FAB_SCROLL_CLEARANCE),
             },

@@ -8,10 +8,16 @@ import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
+import { detectBraveBrowser, isStandalonePwa } from '@/browserEnvironment';
 import elementAir from '@/pages/AvatarLegends/assets/airbending-symbol.png';
 import elementEarth from '@/pages/AvatarLegends/assets/earthbending-symbol.png';
 import elementFire from '@/pages/AvatarLegends/assets/firebending-symbol.png';
 import elementWater from '@/pages/AvatarLegends/assets/waterbending-symbol.png';
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
 
 function AvatarLegendsAppIcon({ size = 'button' }: { size?: 'button' | 'card' }) {
   const dimensions = size === 'card' ? 132 : 42;
@@ -337,6 +343,59 @@ function SystemVisual({ visual }: { visual: (typeof systems)[number]['visual'] }
 }
 
 function Home() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installMessage, setInstallMessage] = useState('');
+  const [isBrave, setIsBrave] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() =>
+    typeof window === 'undefined' ? false : isStandalonePwa(),
+  );
+
+  useEffect(() => {
+    let active = true;
+    void detectBraveBrowser().then((detected) => {
+      if (active) setIsBrave(detected);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallMessage('');
+    };
+    const handleAppInstalled = () => {
+      setInstallPrompt(null);
+      setIsInstalled(true);
+      setInstallMessage('Installed.');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  async function handleInstallClick() {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      setInstallPrompt(null);
+      setInstallMessage(choice.outcome === 'accepted' ? 'Installing.' : 'Install canceled.');
+      return;
+    }
+
+    setInstallMessage(
+      isBrave
+        ? 'In Brave, use the address bar install icon or Brave menu to install.'
+        : 'Use your browser menu to install this app.',
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -512,6 +571,44 @@ function Home() {
             >
               Keep your characters, progress, combat options, and campaign notes close at hand.
             </Typography>
+            {!isInstalled ? (
+              <Stack spacing={0.8} alignItems="center">
+                <Button
+                  type="button"
+                  variant="contained"
+                  onClick={handleInstallClick}
+                  data-pw="home-install-pwa"
+                  sx={{
+                    minHeight: 44,
+                    borderRadius: 1.4,
+                    bgcolor: '#f8f4ec',
+                    color: '#182237',
+                    fontWeight: 850,
+                    px: 2.2,
+                    textTransform: 'none',
+                    boxShadow: '0 12px 28px rgba(0,0,0,0.24)',
+                    '&:hover': {
+                      bgcolor: '#fffaf0',
+                    },
+                  }}
+                >
+                  Install App
+                </Button>
+                {installMessage ? (
+                  <Typography
+                    data-pw="home-install-pwa-message"
+                    sx={{
+                      color: alpha('#f8f4ec', 0.82),
+                      fontSize: 13,
+                      fontWeight: 700,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {installMessage}
+                  </Typography>
+                ) : null}
+              </Stack>
+            ) : null}
           </Stack>
         </Box>
 

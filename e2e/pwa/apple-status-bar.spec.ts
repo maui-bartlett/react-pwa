@@ -1,4 +1,21 @@
-import { expect, test } from '@playwright/test';
+import { type Page, expect, test } from '@playwright/test';
+
+async function mockBraveBrowser(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'brave', {
+      configurable: true,
+      value: {
+        isBrave: () => Promise.resolve(true),
+      },
+    });
+  });
+}
+
+async function expectBraveBrowserClass(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => document.body.classList.contains('is-brave-browser')))
+    .toBe(true);
+}
 
 test('declares translucent iOS standalone status bar support', async ({ page }) => {
   await page.goto('/avatar-legends');
@@ -41,6 +58,93 @@ test('uses one root launch route across the site', async ({ page }) => {
     start_url: '/',
     scope: '/',
   });
+});
+
+test('keeps Brave on the static installable manifest URL', async ({ page }) => {
+  await mockBraveBrowser(page);
+
+  await page.goto('/avatar-legends');
+
+  await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
+    'href',
+    '/manifest.webmanifest',
+  );
+});
+
+test('lifts app footer navigation into the Brave safe area', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockBraveBrowser(page);
+
+  await page.goto('/avatar-legends');
+  await expectBraveBrowserClass(page);
+  await expect(page.locator('[data-pw="avatar-bottom-nav"]')).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-pw="avatar-bottom-nav"]')
+        .evaluate((element) => parseFloat(getComputedStyle(element).paddingBottom)),
+    )
+    .toBeGreaterThanOrEqual(60);
+
+  await page.goto('/dungeons-and-dragons');
+  await expectBraveBrowserClass(page);
+  await expect(page.locator('[data-pw="dnd-bottom-nav"]')).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-pw="dnd-bottom-nav"]')
+        .evaluate((element) => parseFloat(getComputedStyle(element).bottom)),
+    )
+    .toBeGreaterThanOrEqual(55);
+
+  await page.goto('/fab-u');
+  await expectBraveBrowserClass(page);
+  await expect(page.locator('[data-pw="app-footer"]')).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-pw="app-footer"]')
+        .evaluate((element) => parseFloat(getComputedStyle(element).paddingBottom)),
+    )
+    .toBeGreaterThanOrEqual(60);
+});
+
+test('home install button uses the browser install prompt when available', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('[data-pw="home-install-pwa"]')).toBeVisible();
+
+  await page.evaluate(() => {
+    const event = new Event('beforeinstallprompt') as Event & {
+      prompt: () => Promise<void>;
+      userChoice: Promise<{ outcome: 'accepted'; platform: string }>;
+    };
+    event.prompt = () => {
+      window.sessionStorage.setItem('pwa-install-prompt-called', '1');
+      return Promise.resolve();
+    };
+    event.userChoice = Promise.resolve({ outcome: 'accepted', platform: 'web' });
+    window.dispatchEvent(event);
+  });
+
+  await page.locator('[data-pw="home-install-pwa"]').click();
+
+  await expect
+    .poll(() => page.evaluate(() => window.sessionStorage.getItem('pwa-install-prompt-called')))
+    .toBe('1');
+  await expect(page.locator('[data-pw="home-install-pwa-message"]')).toHaveText('Installing.');
+});
+
+test('home install button gives Brave install guidance without a prompt event', async ({
+  page,
+}) => {
+  await mockBraveBrowser(page);
+
+  await page.goto('/');
+  await page.locator('[data-pw="home-install-pwa"]').click();
+
+  await expect(page.locator('[data-pw="home-install-pwa-message"]')).toHaveText(
+    'In Brave, use the address bar install icon or Brave menu to install.',
+  );
 });
 
 test('returns to the Table Top home from Avatar Legends', async ({ page }) => {

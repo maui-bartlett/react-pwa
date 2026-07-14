@@ -3,6 +3,9 @@ import { PropsWithChildren, ReactNode, useEffect, useRef, useState } from 'react
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 
+import { BRAVE_BROWSER_CLASS } from '@/browserEnvironment';
+import { APP_SHELL_BRAVE_BOTTOM_NAV_INSET } from '@/components/appShell';
+
 import { useFabUTokens } from '../ThemeContext';
 
 const FIREFOX_PWA_BOTTOM_NAV_INSET = '48px';
@@ -170,6 +173,12 @@ function MobileScreen({ header, footer, overlay, children, contentScrollRef }: M
           px: 1,
           pt: 0.85,
           pb: { xs: 'max(14px, env(safe-area-inset-bottom))', md: 0.85 },
+          [`body.${BRAVE_BROWSER_CLASS} &`]: {
+            pb: {
+              xs: `calc(max(14px, env(safe-area-inset-bottom, 0px)) + ${APP_SHELL_BRAVE_BOTTOM_NAV_INSET})`,
+              md: 0.85,
+            },
+          },
           '@supports (-moz-appearance: none)': {
             // Firefox installed PWAs can report no useful bottom safe-area inset,
             // so give the floating nav extra breathing room without changing Safari.

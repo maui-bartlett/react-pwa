@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
+import { detectBraveBrowser } from '@/browserEnvironment';
+
 import { readIndexedDbCharacter } from '../../state/indexedDbCharacterStorage';
 import { appChromeColorForRoute, applyRouteChrome } from '../../theme/appChrome';
 import { type AvatarTraining, toAvatarTraining } from '../../theme/avatarTrainingChrome';
@@ -68,6 +70,7 @@ function DynamicManifest() {
   const { pathname } = useLocation();
   const previousUrlRef = useRef<string | null>(null);
   const [avatarTraining, setAvatarTraining] = useState<AvatarTraining>('Waterbending');
+  const [isBrave, setIsBrave] = useState(false);
 
   useLayoutEffect(() => {
     applyRouteChrome(pathname, avatarTraining);
@@ -95,7 +98,7 @@ function DynamicManifest() {
       link.rel = 'manifest';
       document.head.appendChild(link);
     }
-    link.setAttribute('href', url);
+    link.setAttribute('href', isBrave ? '/manifest.webmanifest' : url);
 
     let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!favicon) {
@@ -117,9 +120,20 @@ function DynamicManifest() {
     // Revoke the previous URL after the new one is wired up so the
     // manifest link never points at a freed object.
     const previousUrl = previousUrlRef.current;
-    previousUrlRef.current = url;
+    previousUrlRef.current = isBrave ? null : url;
     if (previousUrl) URL.revokeObjectURL(previousUrl);
-  }, [pathname, avatarTraining]);
+    if (isBrave) URL.revokeObjectURL(url);
+  }, [pathname, avatarTraining, isBrave]);
+
+  useEffect(() => {
+    let active = true;
+    void detectBraveBrowser().then((detected) => {
+      if (active) setIsBrave(detected);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const refresh = (event?: Event) => {

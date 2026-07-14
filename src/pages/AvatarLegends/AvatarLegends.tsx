@@ -27,11 +27,14 @@ import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { Backpack, ChevronRight, HandFist, House, Info, Pencil, Trash2 } from 'lucide-react';
 
+import { BRAVE_BROWSER_CLASS } from '@/browserEnvironment';
 import { SwipeableCard } from '@/components/SwipeableCard';
 import {
   APP_SHELL_BOTTOM_SAFE_AREA_PADDING,
+  APP_SHELL_BRAVE_BOTTOM_NAV_INSET,
   APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
   APP_SHELL_FIREFOX_BOTTOM_NAV_INSET,
+  withBraveBottomNavInset,
   withFirefoxBottomNavInset,
 } from '@/components/appShell';
 import UndoSnackbar from '@/components/fab-u/atoms/UndoSnackbar';
@@ -8431,6 +8434,9 @@ function AvatarLegends() {
                 // (which sits ~128px above the nav) so the last content isn't
                 // hidden under it.
                 pb: APP_SHELL_DICE_FAB_SCROLL_CLEARANCE,
+                [`body.${BRAVE_BROWSER_CLASS} &`]: {
+                  pb: withBraveBottomNavInset(APP_SHELL_DICE_FAB_SCROLL_CLEARANCE),
+                },
                 '@supports (-moz-appearance: none)': {
                   pb: withFirefoxBottomNavInset(APP_SHELL_DICE_FAB_SCROLL_CLEARANCE),
                 },
@@ -8446,14 +8452,18 @@ function AvatarLegends() {
               the page content scrolls UNDER it. Absolute positioning takes
               the nav out of the flex flow so the scrollable area above can
               extend full-height. A high zIndex makes sure the nav stays
-              above any in-page content that scrolls past. */}
+            above any in-page content that scrolls past. */}
             <Box
+              data-pw="avatar-bottom-nav"
               sx={{
                 px: 1.75,
                 // ~12px of bottom padding to clear the iOS home
                 // indicator without making the footer feel oversized.
                 // (Was 28px — shrunk by 8px per spec.)
                 pb: bottomSafeAreaPadding,
+                [`body.${BRAVE_BROWSER_CLASS} &`]: {
+                  pb: `calc(${bottomSafeAreaPadding} + ${APP_SHELL_BRAVE_BOTTOM_NAV_INSET})`,
+                },
                 '@supports (-moz-appearance: none)': {
                   // Firefox installed PWAs need an extra bottom lift; Safari keeps using env().
                   pb: `calc(${bottomSafeAreaPadding} + ${APP_SHELL_FIREFOX_BOTTOM_NAV_INSET})`,
