@@ -164,7 +164,9 @@ test.describe('HP/MP management modal', () => {
     const overviewHpPill = page.locator('[data-pw="statpill-ov-hp"]');
     await expect(overviewHpPill.locator('h6').first()).toHaveText('29');
     await expect
-      .poll(() => overviewHpPill.evaluate((element) => getComputedStyle(element).animationName))
+      .poll(() =>
+        overviewHpPill.evaluate((element) => getComputedStyle(element, '::after').animationName),
+      )
       .toContain('fabuStatPillPersistentPulse');
     await expect
       .poll(() => overviewHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
@@ -178,7 +180,9 @@ test.describe('HP/MP management modal', () => {
     const stripHpPill = page.locator('[data-pw="metric-hp"]');
     await expect(stripHpPill).toContainText('29');
     await expect
-      .poll(() => stripHpPill.evaluate((element) => getComputedStyle(element).animationName))
+      .poll(() =>
+        stripHpPill.evaluate((element) => getComputedStyle(element, '::after').animationName),
+      )
       .toContain('fabuSummaryMetricPersistentPulse');
     await expect
       .poll(() => stripHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))

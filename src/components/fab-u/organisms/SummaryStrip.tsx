@@ -135,11 +135,19 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                   '100%': { opacity: 0, transform: 'translateY(-12px) scale(0.96)' },
                 },
                 '@keyframes fabuSummaryMetricPersistentPulse': {
-                  '0%, 100%': {
-                    boxShadow: `${fabUTokens.shadow.card}, 0 0 0 0 ${alpha(metric.persistentPulseColor ?? tc ?? fabUTokens.color.textSecondary, 0.34)}`,
+                  '0%': {
+                    opacity: 0,
+                    transform: 'translate(-50%, -50%) scale(0.12)',
                   },
-                  '50%': {
-                    boxShadow: `${fabUTokens.shadow.card}, 0 0 0 3px ${alpha(metric.persistentPulseColor ?? tc ?? fabUTokens.color.textSecondary, 0.26)}, 0 0 22px ${alpha(metric.persistentPulseColor ?? tc ?? fabUTokens.color.textSecondary, 0.68)}`,
+                  '20%': {
+                    opacity: 0.72,
+                  },
+                  '78%': {
+                    opacity: 0.18,
+                  },
+                  '100%': {
+                    opacity: 0,
+                    transform: 'translate(-50%, -50%) scale(9)',
                   },
                 },
                 position: 'relative',
@@ -164,15 +172,29 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                 minHeight: 52,
                 cursor: metric.onManage ? 'pointer' : editable && !isEditing ? 'text' : 'default',
                 transition: 'border-color 150ms ease',
-                animation: [
-                  metric.pulseKey ? 'fabuSummaryMetricPulse 820ms ease-out' : '',
-                  metric.persistentPulseColor
-                    ? 'fabuSummaryMetricPersistentPulse 1.45s ease-in-out infinite'
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(', ') || 'none',
-                overflow: 'visible',
+                animation: metric.pulseKey ? 'fabuSummaryMetricPulse 820ms ease-out' : 'none',
+                overflow: metric.persistentPulseColor ? 'hidden' : 'visible',
+                '&::after': metric.persistentPulseColor
+                  ? {
+                      content: '""',
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      width: 26,
+                      height: 26,
+                      borderRadius: '999px',
+                      background: `radial-gradient(circle, ${alpha(
+                        metric.persistentPulseColor,
+                        0.48,
+                      )} 0%, ${alpha(metric.persistentPulseColor, 0.3)} 42%, ${alpha(
+                        metric.persistentPulseColor,
+                        0,
+                      )} 72%)`,
+                      pointerEvents: 'none',
+                      zIndex: 0,
+                      animation: 'fabuSummaryMetricPersistentPulse 1.45s ease-out infinite',
+                    }
+                  : undefined,
               }}
             >
               {metric.pulseKey && metric.pulseLabel ? (
@@ -202,7 +224,10 @@ function SummaryStrip({ metrics, label, middleAction }: SummaryStripProps) {
                   {metric.pulseLabel}
                 </Box>
               ) : null}
-              <Stack spacing={0.08} sx={{ width: '100%', justifyContent: 'center' }}>
+              <Stack
+                spacing={0.08}
+                sx={{ width: '100%', justifyContent: 'center', position: 'relative', zIndex: 1 }}
+              >
                 <Stack
                   direction="column"
                   justifyContent="space-between"

@@ -220,11 +220,19 @@ function StatPill({
             '100%': { opacity: 0, transform: 'translateY(-12px) scale(0.96)' },
           },
           '@keyframes fabuStatPillPersistentPulse': {
-            '0%, 100%': {
-              boxShadow: `${fabUTokens.shadow.card}, 0 0 0 0 ${alpha(persistentPulseColor ?? toneStyles.color, 0.34)}`,
+            '0%': {
+              opacity: 0,
+              transform: 'translate(-50%, -50%) scale(0.12)',
             },
-            '50%': {
-              boxShadow: `${fabUTokens.shadow.card}, 0 0 0 3px ${alpha(persistentPulseColor ?? toneStyles.color, 0.26)}, 0 0 22px ${alpha(persistentPulseColor ?? toneStyles.color, 0.68)}`,
+            '20%': {
+              opacity: 0.72,
+            },
+            '78%': {
+              opacity: 0.18,
+            },
+            '100%': {
+              opacity: 0,
+              transform: 'translate(-50%, -50%) scale(9)',
             },
           },
           position: 'relative',
@@ -258,13 +266,29 @@ function StatPill({
                 : 'text'
               : 'default',
           transition: 'border-color 150ms ease',
-          animation: [
-            pulseKey ? 'fabuStatPillPulse 820ms ease-out' : '',
-            persistentPulseColor ? 'fabuStatPillPersistentPulse 1.45s ease-in-out infinite' : '',
-          ]
-            .filter(Boolean)
-            .join(', ') || 'none',
-          overflow: 'visible',
+          animation: pulseKey ? 'fabuStatPillPulse 820ms ease-out' : 'none',
+          overflow: persistentPulseColor ? 'hidden' : 'visible',
+          '&::after': persistentPulseColor
+            ? {
+                content: '""',
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                width: 26,
+                height: 26,
+                borderRadius: '999px',
+                background: `radial-gradient(circle, ${alpha(
+                  persistentPulseColor,
+                  0.48,
+                )} 0%, ${alpha(persistentPulseColor, 0.3)} 42%, ${alpha(
+                  persistentPulseColor,
+                  0,
+                )} 72%)`,
+                pointerEvents: 'none',
+                zIndex: 0,
+                animation: 'fabuStatPillPersistentPulse 1.45s ease-out infinite',
+              }
+            : undefined,
         }}
       >
         {pulseKey && pulseLabel ? (
@@ -294,7 +318,10 @@ function StatPill({
             {pulseLabel}
           </Box>
         ) : null}
-        <Stack spacing={inline ? 0.18 : 0.08} sx={{ width: '100%', justifyContent: 'center' }}>
+        <Stack
+          spacing={inline ? 0.18 : 0.08}
+          sx={{ width: '100%', justifyContent: 'center', position: 'relative', zIndex: 1 }}
+        >
           <Stack
             direction={inline ? 'row' : 'column'}
             justifyContent="space-between"
