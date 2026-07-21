@@ -48,7 +48,11 @@ function HeaderBar({
         px: compact ? 1.6 : 1.95,
         pt: compact ? 1.15 : 'max(22px, calc(env(safe-area-inset-top) + 10px))',
         pb: compact ? 1.15 : 2.25,
-        minHeight: compact ? undefined : belowActions ? 'max(132px, calc(env(safe-area-inset-top, 0px) + 98px))' : 101,
+        minHeight: compact
+          ? undefined
+          : belowActions
+            ? 'max(132px, calc(env(safe-area-inset-top, 0px) + 98px))'
+            : 101,
         boxSizing: 'border-box',
         boxShadow: '0 6px 14px rgba(30, 49, 40, 0.08)',
       }}
