@@ -631,6 +631,8 @@ function AccountMenu({
     gameSystem === 'dungeons-and-dragons' ? '#687782' : fabUTokens.color.brand;
   const activeCharacterCardBorder =
     gameSystem === 'dungeons-and-dragons' ? '#687782' : fabUTokens.color.highlight;
+  const activeCharacterCardText =
+    gameSystem === 'dungeons-and-dragons' ? '#ffffff' : fabUTokens.color.highlightFg;
   const accountBackdropBg = avatarBackdropOverride ?? accountActionBg;
   const accountModalBorder = themeMode === 'dark' ? '#ffffff' : '#d8dde3';
   const accountSectionHeadingSx = {
@@ -979,6 +981,8 @@ function AccountMenu({
                         }
                       >
                         <Button
+                          data-pw="account-local-character-card"
+                          aria-pressed={character.active}
                           onClick={() => localCharacters?.selectCharacter(character.id)}
                           disabled={!localCharacters}
                           sx={{
@@ -992,18 +996,26 @@ function AccountMenu({
                             }`,
                             borderRadius: '9px',
                             bgcolor: character.active
-                              ? fabUTokens.color.pillSurface
+                              ? activeCharacterCardBorder
                               : fabUTokens.color.surfaceMuted,
                             px: 1.2,
                             py: 0.95,
-                            color: fabUTokens.color.textPrimary,
-                            '&:hover': { bgcolor: fabUTokens.color.pillSurface },
+                            color: character.active
+                              ? activeCharacterCardText
+                              : fabUTokens.color.textPrimary,
+                            '&:hover': {
+                              bgcolor: character.active
+                                ? activeCharacterCardBorder
+                                : fabUTokens.color.pillSurface,
+                            },
                           }}
                         >
                           <Stack spacing={0.25}>
                             <Typography
                               sx={{
-                                color: fabUTokens.color.textSecondary,
+                                color: character.active
+                                  ? activeCharacterCardText
+                                  : fabUTokens.color.textSecondary,
                                 fontSize: '0.62rem',
                                 fontWeight: 800,
                                 letterSpacing: '0.06em',
@@ -1057,6 +1069,7 @@ function AccountMenu({
                 ) : user && characters && characters.length > 0 ? (
                   characters.map((character) => {
                     const displayName = getCharacterDisplayName(character);
+                    const isActiveCharacter = Boolean(character.meta?.activeForUserProfileId);
                     const characterGameSystem = character.meta?.gameSystem ?? gameSystem;
                     const isFabUCharacter = characterGameSystem === 'fabula-ultima';
                     const isEditing =
@@ -1258,6 +1271,8 @@ function AccountMenu({
                           </Stack>
                         ) : (
                           <Button
+                            data-pw="account-cloud-character-card"
+                            aria-pressed={isActiveCharacter}
                             onClick={() =>
                               void selectCharacter(character._id, character.characterState)
                             }
@@ -1267,13 +1282,25 @@ function AccountMenu({
                               textAlign: 'left',
                               textTransform: 'none',
                               minHeight: 54,
-                              border: `1px solid ${fabUTokens.color.border}`,
+                              border: `1px solid ${
+                                isActiveCharacter
+                                  ? activeCharacterCardBorder
+                                  : fabUTokens.color.border
+                              }`,
                               borderRadius: '9px',
-                              bgcolor: fabUTokens.color.surfaceMuted,
+                              bgcolor: isActiveCharacter
+                                ? activeCharacterCardBorder
+                                : fabUTokens.color.surfaceMuted,
                               px: 1.2,
                               py: 0.95,
-                              color: fabUTokens.color.textPrimary,
-                              '&:hover': { bgcolor: fabUTokens.color.pillSurface },
+                              color: isActiveCharacter
+                                ? activeCharacterCardText
+                                : fabUTokens.color.textPrimary,
+                              '&:hover': {
+                                bgcolor: isActiveCharacter
+                                  ? activeCharacterCardBorder
+                                  : fabUTokens.color.pillSurface,
+                              },
                             }}
                           >
                             <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>

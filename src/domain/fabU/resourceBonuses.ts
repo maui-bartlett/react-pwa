@@ -6,6 +6,13 @@ type FabUResourceBonuses = {
 
 const EMPTY_RESOURCE_BONUSES: FabUResourceBonuses = { hp: 0, mp: 0, ip: 0 };
 
+const FIXED_CLASS_IP_BONUSES: Readonly<Record<string, number>> = {
+  Gourmet: 2,
+  Merchant: 2,
+  Symbolist: 2,
+  Tinkerer: 2,
+};
+
 function parseFabUClassResourceBonuses(freeBenefits: readonly string[]): FabUResourceBonuses {
   return freeBenefits.reduce<FabUResourceBonuses>(
     (bonuses, benefit) => {
@@ -49,5 +56,17 @@ function calculateFabUClassResourceBonuses(
   );
 }
 
-export { EMPTY_RESOURCE_BONUSES, calculateFabUClassResourceBonuses, parseFabUClassResourceBonuses };
+function calculateFabUFixedClassIPBonus(classNames: readonly string[]): number {
+  return classNames.reduce(
+    (total, className) => total + (FIXED_CLASS_IP_BONUSES[className] ?? 0),
+    0,
+  );
+}
+
+export {
+  EMPTY_RESOURCE_BONUSES,
+  calculateFabUClassResourceBonuses,
+  calculateFabUFixedClassIPBonus,
+  parseFabUClassResourceBonuses,
+};
 export type { FabUResourceBonuses };

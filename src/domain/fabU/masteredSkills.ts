@@ -1,5 +1,7 @@
 import type { SkillRow, SpellRow } from '@/components/fab-u';
 
+import type { Character } from './characterTypes';
+
 type FabUMasteredSkillOption = SkillRow & {
   classRequirements: 'any' | readonly string[];
   minimumRequiredMasteredClasses?: number;
@@ -671,4 +673,50 @@ function getFabUMasteredSkillOptionsForClass(
   ).map(toSkillRow);
 }
 
-export { getFabUMasteredSkillOptionsForClass };
+function getFabUHeroicSpellForSkill(className: string, skillName: string): SpellRow | undefined {
+  const normalizedSkillName = skillName.trim().toLowerCase();
+  return MASTERED_SKILL_OPTIONS.find(
+    (option) =>
+      option.heroicSpell &&
+      option.name.trim().toLowerCase() === normalizedSkillName &&
+      option.classRequirements !== 'any' &&
+      option.classRequirements.includes(className),
+  )?.heroicSpell;
+}
+
+function repairFabUGrantedHeroicSpells(character: Character): Character {
+  let spellGroups = character.spellGroups;
+
+  character.skillGroups.forEach((skillGroup) => {
+    skillGroup.skills.forEach((skill) => {
+      const grantedSpell =
+        skill.heroicSpell ?? getFabUHeroicSpellForSkill(skillGroup.className, skill.name);
+      if (!grantedSpell) return;
+
+      const existingGroup = spellGroups.find((group) => group.className === skillGroup.className);
+      if (
+        existingGroup?.spells.some(
+          (spell) => spell.name.trim().toLowerCase() === grantedSpell.name.trim().toLowerCase(),
+        )
+      ) {
+        return;
+      }
+
+      spellGroups = existingGroup
+        ? spellGroups.map((group) =>
+            group.className === skillGroup.className
+              ? { ...group, spells: [...group.spells, grantedSpell] }
+              : group,
+          )
+        : [...spellGroups, { className: skillGroup.className, spells: [grantedSpell] }];
+    });
+  });
+
+  return spellGroups === character.spellGroups ? character : { ...character, spellGroups };
+}
+
+export {
+  getFabUHeroicSpellForSkill,
+  getFabUMasteredSkillOptionsForClass,
+  repairFabUGrantedHeroicSpells,
+};

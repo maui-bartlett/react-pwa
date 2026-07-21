@@ -23,7 +23,6 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { detectBraveBrowser } from '@/browserEnvironment';
 import { useConvexAuth, useQuery } from 'convex/react';
 import { useAtom, useAtomValue } from 'jotai';
 import {
@@ -41,6 +40,7 @@ import {
   Timer,
 } from 'lucide-react';
 
+import { detectBraveBrowser } from '@/browserEnvironment';
 import {
   AttributesStatsCard,
   BondType,
@@ -86,8 +86,14 @@ import {
   getFabUCharacterMaxIP,
   repairFabUCharacterResourceFields,
 } from '@/domain/fabU/characterMigration';
-import { getFabUMasteredSkillOptionsForClass } from '@/domain/fabU/masteredSkills';
-import { calculateFabUClassResourceBonuses } from '@/domain/fabU/resourceBonuses';
+import {
+  getFabUHeroicSpellForSkill,
+  getFabUMasteredSkillOptionsForClass,
+} from '@/domain/fabU/masteredSkills';
+import {
+  calculateFabUClassResourceBonuses,
+  calculateFabUFixedClassIPBonus,
+} from '@/domain/fabU/resourceBonuses';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
@@ -1453,11 +1459,15 @@ function FabU() {
       return [className, freeBenefits] as const;
     }),
   );
-  const classResourceBonuses = calculateFabUClassResourceBonuses(
+  const catalogClassResourceBonuses = calculateFabUClassResourceBonuses(
     character.classes.map((cls) => cls.name),
     freeBenefitsByClass,
   );
   const classNames = character.classes.map((cls) => cls.name);
+  const classResourceBonuses = {
+    ...catalogClassResourceBonuses,
+    ip: Math.max(catalogClassResourceBonuses.ip, calculateFabUFixedClassIPBonus(classNames)),
+  };
   const customResourceModifiers = Array.isArray(character.customResourceModifiers)
     ? character.customResourceModifiers
     : [];
@@ -1664,7 +1674,7 @@ function FabU() {
         ?.skills.some((existingSkill) => existingSkill.mastered);
       if (skill.mastered && hasHeroicSkill) return c;
 
-      const spellToAdd = skill.heroicSpell;
+      const spellToAdd = skill.heroicSpell ?? getFabUHeroicSpellForSkill(className, skill.name);
       const spellGroups = spellToAdd
         ? (() => {
             const existingSpells = getClassSpellRows(c, className) ?? [];

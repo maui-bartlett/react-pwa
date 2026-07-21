@@ -143,6 +143,39 @@ test.describe('HP/MP management modal', () => {
       .toEqual({ currentIP: 6, inventoryPoints: 6 });
   });
 
+  test('Tinkerer class benefit allows current IP to reach and remain at 8', async ({ page }) => {
+    await patchActiveFabUCharacter(page, {
+      currentIP: 6,
+      inventoryPoints: 6,
+      maxIP: 6,
+      ipBonus: 0,
+      classes: [{ name: 'Tinkerer', level: 1, subtitle: 'Emergency Item' }],
+    });
+    await page.reload();
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+
+    const ipPill = page.locator('[data-pw="statpill-ov-ip"]');
+    await expect(ipPill).toContainText('/ 8');
+    await ipPill.click();
+    const currentInput = page.locator('[data-pw="ip-management-current-input"]');
+    await currentInput.fill('8');
+    await currentInput.blur();
+    await expect(ipPill.locator('h6').first()).toHaveText('8');
+
+    await page.reload();
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first()).toHaveText('8');
+    await expect
+      .poll(async () => {
+        const character = await readActiveFabUCharacter(page);
+        return {
+          currentIP: character.currentIP,
+          inventoryPoints: character.inventoryPoints,
+        };
+      })
+      .toEqual({ currentIP: 8, inventoryPoints: 8 });
+  });
+
   test('HP pills fill red and pulse at half HP or less', async ({ page }) => {
     await patchActiveFabUCharacter(page, { currentHP: 30 });
     await page.reload();
@@ -197,12 +230,10 @@ test.describe('HP/MP management modal', () => {
     await page.locator('[data-pw="statpill-ov-hp"]').click();
     await expect(page.locator('[data-pw="hp-management-modal"]')).toBeVisible();
 
-    await page
-      .locator('[data-pw="hp-management-number-wheel-scroll"]')
-      .evaluate((element) => {
-        element.dispatchEvent(new WheelEvent('wheel', { deltaY: 160, bubbles: true }));
-        element.scrollTo({ top: 5 * 32 });
-      });
+    await page.locator('[data-pw="hp-management-number-wheel-scroll"]').evaluate((element) => {
+      element.dispatchEvent(new WheelEvent('wheel', { deltaY: 160, bubbles: true }));
+      element.scrollTo({ top: 5 * 32 });
+    });
 
     await expect(page.locator('[data-pw="hp-management-amount-input"]')).toHaveValue('5');
   });
@@ -211,12 +242,10 @@ test.describe('HP/MP management modal', () => {
     await page.locator('[data-pw="statpill-ov-mp"]').click();
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeVisible();
 
-    await page
-      .locator('[data-pw="mp-management-number-wheel-scroll"]')
-      .evaluate((element) => {
-        element.dispatchEvent(new WheelEvent('wheel', { deltaY: 192, bubbles: true }));
-        element.scrollTo({ top: 6 * 32 });
-      });
+    await page.locator('[data-pw="mp-management-number-wheel-scroll"]').evaluate((element) => {
+      element.dispatchEvent(new WheelEvent('wheel', { deltaY: 192, bubbles: true }));
+      element.scrollTo({ top: 6 * 32 });
+    });
 
     await expect(page.locator('[data-pw="mp-management-amount-input"]')).toHaveValue('6');
   });

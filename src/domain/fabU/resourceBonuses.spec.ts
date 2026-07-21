@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
   calculateFabUClassResourceBonuses,
+  calculateFabUFixedClassIPBonus,
   parseFabUClassResourceBonuses,
 } from './resourceBonuses';
 
@@ -34,5 +35,10 @@ describe('FabU class resource bonuses', () => {
         ]),
       ),
     ).toEqual({ hp: 5, mp: 0, ip: 2 });
+  });
+
+  test('provides fixed IP benefits when class catalog data is unavailable', () => {
+    expect(calculateFabUFixedClassIPBonus(['Entropist', 'Tinkerer'])).toBe(2);
+    expect(calculateFabUFixedClassIPBonus(['Gourmet', 'Merchant', 'Symbolist'])).toBe(6);
   });
 });

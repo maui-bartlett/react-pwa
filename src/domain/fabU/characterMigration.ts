@@ -29,6 +29,8 @@ import type {
   ResourceModifierKind,
   StatusEffects,
 } from './characterTypes';
+import { repairFabUGrantedHeroicSpells } from './masteredSkills';
+import { calculateFabUFixedClassIPBonus } from './resourceBonuses';
 
 type CharacterMigrationOptions = {
   oldBackstoryAnswers?: unknown;
@@ -430,7 +432,8 @@ function getFabUCharacterMaxIP(
 function repairFabUCharacterResourceFields(character: Character): Character {
   const maxIP = normalizeNumber(character.maxIP, 6);
   const ipBonus = normalizeNumber(character.ipBonus, 0);
-  const totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus });
+  const classIPBonus = calculateFabUFixedClassIPBonus(character.classes.map((entry) => entry.name));
+  const totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus);
   const currentIP = Math.min(
     totalMaxIP,
     normalizeNumber(character.currentIP, normalizeNumber(character.inventoryPoints, maxIP)),
@@ -499,49 +502,54 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
   delete withoutFlatName.firstName;
   delete withoutFlatName.lastName;
   delete withoutFlatName.nickName;
-  return repairFabUCharacterResourceFields({
-    ...initialValue,
-    ...withoutFlatName,
-    name: normalizeName(parsed, initialValue.name),
-    initiative: normalizeNumber(parsed.initiative, initialValue.initiative),
-    defense: normalizeNumber(parsed.defense, initialValue.defense),
-    defenseTemp: normalizeNullableNumber(parsed.defenseTemp, initialValue.defenseTemp),
-    magicDefense: normalizeNumber(parsed.magicDefense, initialValue.magicDefense),
-    magicDefenseTemp: normalizeNullableNumber(
-      parsed.magicDefenseTemp,
-      initialValue.magicDefenseTemp,
-    ),
-    fabulaPoints: normalizeNumber(parsed.fabulaPoints, initialValue.fabulaPoints),
-    currentIP: normalizeNumber(parsed.currentIP ?? parsed.inventoryPoints, initialValue.currentIP),
-    maxIP: normalizeNumber(parsed.maxIP, 6),
-    currentHP: normalizeNumber(parsed.currentHP, initialValue.currentHP),
-    currentMP: normalizeNumber(parsed.currentMP, initialValue.currentMP),
-    customResourceModifiers: normalizeResourceModifiers(parsed.customResourceModifiers),
-    currentXP: normalizeNumber(parsed.currentXP, initialValue.currentXP),
-    totalXP: normalizeNumber(parsed.totalXP, initialValue.totalXP),
-    level: normalizeNumber(parsed.level, initialValue.level),
-    zenit:
-      typeof parsed.zenit === 'number'
-        ? parsed.zenit
-        : typeof legacyZenit === 'number'
-          ? legacyZenit
-          : initialValue.zenit,
-    attributes: normalizeAttributes(parsed.attributes, initialValue.attributes),
-    bonds: normalizeBonds(parsed.bonds, initialValue.bonds),
-    classes: normalizeClasses(parsed.classes, initialValue.classes),
-    skillGroups: normalizeSkillGroups(parsed.skillGroups, initialValue),
-    spellGroups: normalizeSpellGroups(parsed.spellGroups, initialValue),
-    backstoryPrompts: normalizeBackstoryPrompts(
-      parsed.backstoryPrompts,
-      options.oldBackstoryAnswers,
-    ),
-    equipment: normalizeEquipment(parsed.equipment),
-    backpack: normalizeBackpack(parsed.backpack),
-    statusEffects: normalizeStatusEffects(parsed.statusEffects ?? options.oldStatusEffects),
-    traits: normalizeTraits(parsed.traits, initialValue.traits),
-    notes: normalizeString(parsed.notes, initialValue.notes),
-    ...normalizeHpMpBonus(parsed, initialValue),
-  });
+  return repairFabUCharacterResourceFields(
+    repairFabUGrantedHeroicSpells({
+      ...initialValue,
+      ...withoutFlatName,
+      name: normalizeName(parsed, initialValue.name),
+      initiative: normalizeNumber(parsed.initiative, initialValue.initiative),
+      defense: normalizeNumber(parsed.defense, initialValue.defense),
+      defenseTemp: normalizeNullableNumber(parsed.defenseTemp, initialValue.defenseTemp),
+      magicDefense: normalizeNumber(parsed.magicDefense, initialValue.magicDefense),
+      magicDefenseTemp: normalizeNullableNumber(
+        parsed.magicDefenseTemp,
+        initialValue.magicDefenseTemp,
+      ),
+      fabulaPoints: normalizeNumber(parsed.fabulaPoints, initialValue.fabulaPoints),
+      currentIP: normalizeNumber(
+        parsed.currentIP ?? parsed.inventoryPoints,
+        initialValue.currentIP,
+      ),
+      maxIP: normalizeNumber(parsed.maxIP, 6),
+      currentHP: normalizeNumber(parsed.currentHP, initialValue.currentHP),
+      currentMP: normalizeNumber(parsed.currentMP, initialValue.currentMP),
+      customResourceModifiers: normalizeResourceModifiers(parsed.customResourceModifiers),
+      currentXP: normalizeNumber(parsed.currentXP, initialValue.currentXP),
+      totalXP: normalizeNumber(parsed.totalXP, initialValue.totalXP),
+      level: normalizeNumber(parsed.level, initialValue.level),
+      zenit:
+        typeof parsed.zenit === 'number'
+          ? parsed.zenit
+          : typeof legacyZenit === 'number'
+            ? legacyZenit
+            : initialValue.zenit,
+      attributes: normalizeAttributes(parsed.attributes, initialValue.attributes),
+      bonds: normalizeBonds(parsed.bonds, initialValue.bonds),
+      classes: normalizeClasses(parsed.classes, initialValue.classes),
+      skillGroups: normalizeSkillGroups(parsed.skillGroups, initialValue),
+      spellGroups: normalizeSpellGroups(parsed.spellGroups, initialValue),
+      backstoryPrompts: normalizeBackstoryPrompts(
+        parsed.backstoryPrompts,
+        options.oldBackstoryAnswers,
+      ),
+      equipment: normalizeEquipment(parsed.equipment),
+      backpack: normalizeBackpack(parsed.backpack),
+      statusEffects: normalizeStatusEffects(parsed.statusEffects ?? options.oldStatusEffects),
+      traits: normalizeTraits(parsed.traits, initialValue.traits),
+      notes: normalizeString(parsed.notes, initialValue.notes),
+      ...normalizeHpMpBonus(parsed, initialValue),
+    }),
+  );
 }
 
 function migrateCharacter(

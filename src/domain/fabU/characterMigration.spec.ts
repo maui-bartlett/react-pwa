@@ -77,12 +77,53 @@ test('repairFabUCharacterResourceFields clamps current IP to max IP', () => {
     inventoryPoints: 12,
     maxIP: 6,
     ipBonus: 1,
+    classes: [],
   });
 
   expect(repaired.currentIP).toBe(7);
   expect(repaired.inventoryPoints).toBe(7);
   expect(repaired.maxIP).toBe(6);
   expect(repaired.ipBonus).toBe(1);
+});
+
+test('repairFabUCharacterResourceFields preserves IP granted by Tinkerer', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    currentIP: 8,
+    inventoryPoints: 8,
+    maxIP: 6,
+    ipBonus: 0,
+  });
+
+  expect(repaired.currentIP).toBe(8);
+  expect(repaired.inventoryPoints).toBe(8);
+});
+
+test('migrateCharacter adds Comet to Entropist spells when the skill already exists', () => {
+  const character = createDefaultCharacter();
+  const migrated = migrateCharacter({
+    ...character,
+    skillGroups: character.skillGroups.map((group) =>
+      group.className === 'Entropist'
+        ? {
+            ...group,
+            skills: [
+              ...group.skills,
+              { name: 'Comet', level: 'M', maxLevel: 1, mastered: true, effect: 'Learn Comet.' },
+            ],
+          }
+        : group,
+    ),
+    spellGroups: character.spellGroups.map((group) =>
+      group.className === 'Entropist' ? { ...group, spells: [] } : group,
+    ),
+  });
+
+  expect(
+    migrated.character.spellGroups
+      .find((group) => group.className === 'Entropist')
+      ?.spells.map((spell) => spell.name),
+  ).toContain('Comet');
 });
 
 test('migrateCharacter removes legacy starter max resource bonuses', () => {
