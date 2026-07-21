@@ -86,9 +86,10 @@ test('repairFabUCharacterResourceFields clamps current IP to max IP', () => {
   expect(repaired.ipBonus).toBe(1);
 });
 
-test('repairFabUCharacterResourceFields preserves IP granted by Tinkerer', () => {
+test('repairFabUCharacterResourceFields preserves class-granted IP for any character', () => {
   const repaired = repairFabUCharacterResourceFields({
     ...createDefaultCharacter(),
+    name: { firstName: 'Mira', lastName: 'Vale', nickName: undefined },
     currentIP: 8,
     inventoryPoints: 8,
     maxIP: 6,
@@ -97,6 +98,25 @@ test('repairFabUCharacterResourceFields preserves IP granted by Tinkerer', () =>
 
   expect(repaired.currentIP).toBe(8);
   expect(repaired.inventoryPoints).toBe(8);
+});
+
+test('backend character normalization preserves class and custom IP bonuses', () => {
+  const character = createDefaultCharacter();
+  const normalized = deserializeCharacterFromBackend({
+    schemaVersion: 1,
+    character: {
+      ...character,
+      name: { firstName: 'Sable', lastName: 'Reed', nickName: undefined },
+      classes: [{ name: 'Gourmet', level: 1, subtitle: 'Traveling cook' }],
+      currentIP: 9,
+      inventoryPoints: 9,
+      maxIP: 6,
+      ipBonus: 1,
+    },
+  });
+
+  expect(normalized.currentIP).toBe(9);
+  expect(normalized.inventoryPoints).toBe(9);
 });
 
 test('migrateCharacter adds Comet to Entropist spells when the skill already exists', () => {
