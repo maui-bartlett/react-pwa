@@ -203,7 +203,7 @@ test.describe('HP/MP management modal', () => {
       .toContain('fabuStatPillPersistentPulse');
     await expect
       .poll(() => overviewHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
-      .toContain('rgba(179, 38, 30, 0.78)');
+      .toContain('rgba(179, 38, 30, 0.22)');
     await expect(overviewHpPill.locator('[data-pw="statpill-ov-hp-suffix"]')).toHaveCSS(
       'color',
       'rgb(255, 255, 255)',
@@ -219,7 +219,7 @@ test.describe('HP/MP management modal', () => {
       .toContain('fabuSummaryMetricPersistentPulse');
     await expect
       .poll(() => stripHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
-      .toContain('rgba(179, 38, 30, 0.78)');
+      .toContain('rgba(179, 38, 30, 0.22)');
     await expect(stripHpPill.locator('[data-pw="metric-hp-suffix"]')).toHaveCSS(
       'color',
       'rgb(255, 255, 255)',
