@@ -486,6 +486,9 @@ function AccountMenu({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [avatarBackdropOverride, setAvatarBackdropOverride] = useState<string | null>(null);
+  const [optimisticLocalCharacterId, setOptimisticLocalCharacterId] = useState<string | null>(null);
+  const [optimisticCloudCharacterId, setOptimisticCloudCharacterId] =
+    useState<Id<'characters'> | null>(null);
   const canLoadCharacters = Boolean(user) && !convexAuth.isLoading && convexAuth.isAuthenticated;
   const gameSystem = useAtomValue(gameSystemAtom);
   const createCharacter = useMutation(api.characters.createFromLocalImport);
@@ -531,6 +534,22 @@ function AccountMenu({
     kind: 'character' | 'campaign';
     id: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (optimisticLocalCharacterId && localCharacters?.activeId === optimisticLocalCharacterId) {
+      setOptimisticLocalCharacterId(null);
+    }
+  }, [localCharacters?.activeId, optimisticLocalCharacterId]);
+
+  useEffect(() => {
+    if (!optimisticCloudCharacterId || !characters) return;
+    const optimisticCharacter = characters.find(
+      (character) => character._id === optimisticCloudCharacterId,
+    );
+    if (optimisticCharacter?.meta?.activeForUserProfileId) {
+      setOptimisticCloudCharacterId(null);
+    }
+  }, [characters, optimisticCloudCharacterId]);
 
   function beginEdit(
     kind: 'character' | 'campaign',
@@ -751,6 +770,8 @@ function AccountMenu({
   }
 
   async function selectCharacter(characterId: Id<'characters'>, characterState?: unknown) {
+    setOptimisticCloudCharacterId(characterId);
+    setError(null);
     const primaryTraining =
       gameSystem === 'avatar-legends' ? getAvatarPrimaryTraining(characterState) : null;
     if (characterState !== undefined) {
@@ -769,7 +790,16 @@ function AccountMenu({
         detail: { characterId, characterState },
       }),
     );
-    await setActiveCharacter({ characterId });
+    try {
+      await setActiveCharacter({ characterId });
+    } catch (selectionError) {
+      setOptimisticCloudCharacterId((current) => (current === characterId ? null : current));
+      setError(
+        selectionError instanceof Error
+          ? selectionError.message
+          : 'Unable to select that character. Please try again.',
+      );
+    }
   }
 
   async function addCampaign() {
@@ -951,86 +981,97 @@ function AccountMenu({
                       : localCharacterName
                         ? [{ id: 'current', name: localCharacterName, active: true }]
                         : []
-                    ).map((character) => (
-                      <SwipeableCard
-                        key={character.id}
-                        actions={
-                          localCharacters
-                            ? [
-                                onEditLocalCharacter
-                                  ? {
-                                      icon: <Pencil size={18} />,
-                                      color:
-                                        gameSystem === 'dungeons-and-dragons'
-                                          ? swipeEditActionBg
-                                          : fabUTokens.color.highlight,
-                                      ariaLabel: 'Edit local character',
-                                      onClick: () => onEditLocalCharacter(character.id),
-                                    }
-                                  : null,
-                                localCharacters.characters.length > 1
-                                  ? {
-                                      icon: <Trash2 size={18} />,
-                                      color: fabUTokens.color.danger,
-                                      ariaLabel: 'Delete local character',
-                                      onClick: () => localCharacters.deleteCharacter(character.id),
-                                    }
-                                  : null,
-                              ].filter((action) => action !== null)
-                            : []
-                        }
-                      >
-                        <Button
-                          data-pw="account-local-character-card"
-                          aria-pressed={character.active}
-                          onClick={() => localCharacters?.selectCharacter(character.id)}
-                          disabled={!localCharacters}
-                          sx={{
-                            width: '100%',
-                            justifyContent: 'flex-start',
-                            textAlign: 'left',
-                            textTransform: 'none',
-                            minHeight: 54,
-                            border: `1px solid ${
-                              character.active ? activeCharacterCardBorder : fabUTokens.color.border
-                            }`,
-                            borderRadius: '9px',
-                            bgcolor: character.active
-                              ? activeCharacterCardBorder
-                              : fabUTokens.color.surfaceMuted,
-                            px: 1.2,
-                            py: 0.95,
-                            color: character.active
-                              ? activeCharacterCardText
-                              : fabUTokens.color.textPrimary,
-                            '&:hover': {
-                              bgcolor: character.active
-                                ? activeCharacterCardBorder
-                                : fabUTokens.color.pillSurface,
-                            },
-                          }}
+                    ).map((character) => {
+                      const isActiveCharacter = optimisticLocalCharacterId
+                        ? character.id === optimisticLocalCharacterId
+                        : character.active;
+                      return (
+                        <SwipeableCard
+                          key={character.id}
+                          actions={
+                            localCharacters
+                              ? [
+                                  onEditLocalCharacter
+                                    ? {
+                                        icon: <Pencil size={18} />,
+                                        color:
+                                          gameSystem === 'dungeons-and-dragons'
+                                            ? swipeEditActionBg
+                                            : fabUTokens.color.highlight,
+                                        ariaLabel: 'Edit local character',
+                                        onClick: () => onEditLocalCharacter(character.id),
+                                      }
+                                    : null,
+                                  localCharacters.characters.length > 1
+                                    ? {
+                                        icon: <Trash2 size={18} />,
+                                        color: fabUTokens.color.danger,
+                                        ariaLabel: 'Delete local character',
+                                        onClick: () =>
+                                          localCharacters.deleteCharacter(character.id),
+                                      }
+                                    : null,
+                                ].filter((action) => action !== null)
+                              : []
+                          }
                         >
-                          <Stack spacing={0.25}>
-                            <Typography
-                              sx={{
-                                color: character.active
-                                  ? activeCharacterCardText
-                                  : fabUTokens.color.textSecondary,
-                                fontSize: '0.62rem',
-                                fontWeight: 800,
-                                letterSpacing: '0.06em',
-                                textTransform: 'uppercase',
-                              }}
-                            >
-                              {character.active ? 'Active Local Character' : 'Local Character'}
-                            </Typography>
-                            <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
-                              {character.name}
-                            </Typography>
-                          </Stack>
-                        </Button>
-                      </SwipeableCard>
-                    ))}
+                          <Button
+                            data-pw="account-local-character-card"
+                            aria-pressed={isActiveCharacter}
+                            onClick={() => {
+                              setOptimisticLocalCharacterId(character.id);
+                              localCharacters?.selectCharacter(character.id);
+                            }}
+                            disabled={!localCharacters}
+                            sx={{
+                              width: '100%',
+                              justifyContent: 'flex-start',
+                              textAlign: 'left',
+                              textTransform: 'none',
+                              minHeight: 54,
+                              border: `1px solid ${
+                                isActiveCharacter
+                                  ? activeCharacterCardBorder
+                                  : fabUTokens.color.border
+                              }`,
+                              borderRadius: '9px',
+                              bgcolor: isActiveCharacter
+                                ? activeCharacterCardBorder
+                                : fabUTokens.color.surfaceMuted,
+                              px: 1.2,
+                              py: 0.95,
+                              color: isActiveCharacter
+                                ? activeCharacterCardText
+                                : fabUTokens.color.textPrimary,
+                              '&:hover': {
+                                bgcolor: isActiveCharacter
+                                  ? activeCharacterCardBorder
+                                  : fabUTokens.color.pillSurface,
+                              },
+                            }}
+                          >
+                            <Stack spacing={0.25}>
+                              <Typography
+                                sx={{
+                                  color: isActiveCharacter
+                                    ? activeCharacterCardText
+                                    : fabUTokens.color.textSecondary,
+                                  fontSize: '0.62rem',
+                                  fontWeight: 800,
+                                  letterSpacing: '0.06em',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                {isActiveCharacter ? 'Active Local Character' : 'Local Character'}
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.86rem', fontWeight: 800 }}>
+                                {character.name}
+                              </Typography>
+                            </Stack>
+                          </Button>
+                        </SwipeableCard>
+                      );
+                    })}
                     {localCharacters && !localCharacters.canAdd ? (
                       <Typography
                         sx={{
@@ -1069,7 +1110,9 @@ function AccountMenu({
                 ) : user && characters && characters.length > 0 ? (
                   characters.map((character) => {
                     const displayName = getCharacterDisplayName(character);
-                    const isActiveCharacter = Boolean(character.meta?.activeForUserProfileId);
+                    const isActiveCharacter = optimisticCloudCharacterId
+                      ? character._id === optimisticCloudCharacterId
+                      : Boolean(character.meta?.activeForUserProfileId);
                     const characterGameSystem = character.meta?.gameSystem ?? gameSystem;
                     const isFabUCharacter = characterGameSystem === 'fabula-ultima';
                     const isEditing =
