@@ -58,8 +58,11 @@ test.describe('IP management modal', () => {
     await expect(page.locator('[data-pw="ip-management-modal"]')).toBeVisible();
 
     await page.locator('[data-pw="ip-management-number-wheel-scroll"]').evaluate((element) => {
+      element.scrollTo({ top: 1 * 32 });
+      element.dispatchEvent(new Event('scroll', { bubbles: true }));
       element.scrollTo({ top: 4 * 32 });
       element.dispatchEvent(new Event('scroll', { bubbles: true }));
+      element.dispatchEvent(new Event('scrollend', { bubbles: true }));
     });
 
     await expect(page.locator('[data-pw="ip-management-amount-input"]')).toHaveValue('4');

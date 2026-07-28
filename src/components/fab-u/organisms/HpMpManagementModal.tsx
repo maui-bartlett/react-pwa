@@ -66,37 +66,76 @@ function NumberWheel({
   const scrollFrameRef = useRef<number | null>(null);
   const syncScrollTimerRef = useRef<number | null>(null);
   const settleTimerRef = useRef<number | null>(null);
+  // When true, the upcoming `value` change came from this wheel's scroll/settle
+  // path. Skip programmatic scrollTo so we don't fight momentum / scroll-snap
+  // and accidentally suppress the final landed commit.
+  const wheelDrivenValueRef = useRef(false);
+  const pendingCommitAfterSyncRef = useRef(false);
   const valueRef = useRef(value);
   valueRef.current = value;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const maxValueRef = useRef(maxValue);
+  maxValueRef.current = maxValue;
   const numbers = useMemo(() => Array.from({ length: maxValue + 1 }, (_, i) => i), [maxValue]);
 
-  function readWheelValue(el: HTMLDivElement) {
-    return Math.max(0, Math.min(maxValue, Math.round(el.scrollTop / ROW_H)));
-  }
+  const commitWheelValueRef = useRef<(el: HTMLDivElement) => void>(() => undefined);
+  const endProgrammaticSyncRef = useRef<() => void>(() => undefined);
+  const scheduleSettleCommitRef = useRef<() => void>(() => undefined);
 
-  function commitWheelValue(el: HTMLDivElement) {
-    if (syncingScrollRef.current) return;
-    const next = readWheelValue(el);
-    if (next !== valueRef.current) onChangeRef.current(next);
-  }
+  commitWheelValueRef.current = (el: HTMLDivElement) => {
+    if (syncingScrollRef.current) {
+      // Programmatic alignment is in flight; retry once it clears so a swipe
+      // that overlapped a sync window still lands in the amount input.
+      pendingCommitAfterSyncRef.current = true;
+      return;
+    }
+    const next = Math.max(0, Math.min(maxValueRef.current, Math.round(el.scrollTop / ROW_H)));
+    if (next === valueRef.current) return;
+    wheelDrivenValueRef.current = true;
+    onChangeRef.current(next);
+  };
 
-  // Keep the wheel aligned to the current value when it changes from the text
-  // input or from a direct click on a wheel number.
+  endProgrammaticSyncRef.current = () => {
+    syncingScrollRef.current = false;
+    syncScrollTimerRef.current = null;
+    if (!pendingCommitAfterSyncRef.current) return;
+    pendingCommitAfterSyncRef.current = false;
+    const el = scrollRef.current;
+    if (el) commitWheelValueRef.current(el);
+  };
+
+  scheduleSettleCommitRef.current = () => {
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current);
+    }
+    settleTimerRef.current = window.setTimeout(() => {
+      settleTimerRef.current = null;
+      const el = scrollRef.current;
+      if (!el) return;
+      commitWheelValueRef.current(el);
+    }, 160);
+  };
+
+  // Keep the wheel aligned when value changes from the text input or a direct
+  // click on a wheel number — not when the wheel itself drove the change.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    if (wheelDrivenValueRef.current) {
+      wheelDrivenValueRef.current = false;
+      return;
+    }
     const target = value * ROW_H;
     if (Math.abs(el.scrollTop - target) < 2) return;
     syncingScrollRef.current = true;
+    pendingCommitAfterSyncRef.current = false;
     if (syncScrollTimerRef.current !== null) {
       window.clearTimeout(syncScrollTimerRef.current);
     }
     el.scrollTo({ top: target });
     syncScrollTimerRef.current = window.setTimeout(() => {
-      syncingScrollRef.current = false;
-      syncScrollTimerRef.current = null;
+      endProgrammaticSyncRef.current();
     }, 220);
   }, [value]);
 
@@ -105,15 +144,13 @@ function NumberWheel({
     if (!el) return undefined;
 
     const onScrollEnd = () => {
-      if (syncingScrollRef.current) return;
-      const next = Math.max(0, Math.min(maxValue, Math.round(el.scrollTop / ROW_H)));
-      if (next !== valueRef.current) onChangeRef.current(next);
+      commitWheelValueRef.current(el);
     };
     el.addEventListener('scrollend', onScrollEnd);
     return () => {
       el.removeEventListener('scrollend', onScrollEnd);
     };
-  }, [maxValue]);
+  }, []);
 
   useEffect(
     () => () => {
@@ -134,12 +171,12 @@ function NumberWheel({
     const el = scrollRef.current;
     if (!el) return;
     if (syncingScrollRef.current) {
+      pendingCommitAfterSyncRef.current = true;
       if (syncScrollTimerRef.current !== null) {
         window.clearTimeout(syncScrollTimerRef.current);
       }
       syncScrollTimerRef.current = window.setTimeout(() => {
-        syncingScrollRef.current = false;
-        syncScrollTimerRef.current = null;
+        endProgrammaticSyncRef.current();
       }, 120);
       return;
     }
@@ -149,18 +186,11 @@ function NumberWheel({
     }
     scrollFrameRef.current = window.requestAnimationFrame(() => {
       scrollFrameRef.current = null;
-      commitWheelValue(el);
+      commitWheelValueRef.current(el);
     });
 
     // Momentum + scroll-snap can finish after the last continuous scroll event.
-    // Debounce a settle commit so the landed number always fills the input.
-    if (settleTimerRef.current !== null) {
-      window.clearTimeout(settleTimerRef.current);
-    }
-    settleTimerRef.current = window.setTimeout(() => {
-      settleTimerRef.current = null;
-      commitWheelValue(el);
-    }, 140);
+    scheduleSettleCommitRef.current();
   }
 
   return (
@@ -168,12 +198,15 @@ function NumberWheel({
       ref={scrollRef}
       data-pw={testId}
       onScroll={syncAmountFromScroll}
+      onTouchEnd={() => scheduleSettleCommitRef.current()}
+      onPointerUp={() => scheduleSettleCommitRef.current()}
       sx={{
         position: 'relative',
         height: WHEEL_HEIGHT,
         overflowY: 'auto',
         scrollSnapType: 'y mandatory',
         WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y',
         scrollbarWidth: 'none',
         '&::-webkit-scrollbar': { display: 'none' },
         // Center highlight band.

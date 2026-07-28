@@ -234,9 +234,14 @@ test.describe('HP/MP management modal', () => {
     await page.locator('[data-pw="statpill-ov-hp"]').click();
     await expect(page.locator('[data-pw="hp-management-modal"]')).toBeVisible();
 
+    // Simulate a swipe with an intermediate stop then a final land — the amount
+    // must follow the landed number, not get stuck on the intermediate commit.
     await page.locator('[data-pw="hp-management-number-wheel-scroll"]').evaluate((element) => {
+      element.scrollTo({ top: 2 * 32 });
+      element.dispatchEvent(new Event('scroll', { bubbles: true }));
       element.scrollTo({ top: 5 * 32 });
       element.dispatchEvent(new Event('scroll', { bubbles: true }));
+      element.dispatchEvent(new Event('scrollend', { bubbles: true }));
     });
 
     await expect(page.locator('[data-pw="hp-management-amount-input"]')).toHaveValue('5');
@@ -247,8 +252,11 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeVisible();
 
     await page.locator('[data-pw="mp-management-number-wheel-scroll"]').evaluate((element) => {
+      element.scrollTo({ top: 3 * 32 });
+      element.dispatchEvent(new Event('scroll', { bubbles: true }));
       element.scrollTo({ top: 6 * 32 });
       element.dispatchEvent(new Event('scroll', { bubbles: true }));
+      element.dispatchEvent(new Event('scrollend', { bubbles: true }));
     });
 
     await expect(page.locator('[data-pw="mp-management-amount-input"]')).toHaveValue('6');
