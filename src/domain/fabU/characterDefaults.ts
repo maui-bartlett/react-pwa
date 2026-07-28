@@ -10,6 +10,7 @@ import type {
   ClassEntry,
   StatusEffects,
 } from './characterTypes';
+import { calculateFabUFixedClassIPBonus } from './resourceBonuses';
 
 const CHARACTER_SCHEMA_VERSION = 1;
 
@@ -297,7 +298,7 @@ function createDefaultCharacter(): Character {
     magicDefense: 8,
     magicDefenseTemp: 12,
     fabulaPoints: 4,
-    currentIP: 6,
+    currentIP: 6 + calculateFabUFixedClassIPBonus(CLASS_DEFAULTS.map((entry) => entry.name)),
     maxIP: 6,
     currentHP: 53,
     hpBonus: 0,
@@ -346,6 +347,8 @@ function createRandomFabUCharacter(): Character {
   const hpBonus = 0;
   const mpBonus = 0;
   const ipBonus = 0;
+  const maxIP = 6;
+  const currentIP = maxIP + calculateFabUFixedClassIPBonus(classes.map((entry) => entry.name));
   const maxHP = DIE_VALUES[attributes.might.die] * 5 + level + hpBonus;
   const maxMP = DIE_VALUES[attributes.willpower.die] * 5 + level + mpBonus;
   const identity = pickTwoDistinct(RANDOM_IDENTITIES);
@@ -369,8 +372,8 @@ function createRandomFabUCharacter(): Character {
     magicDefense: randomInt(8, 10),
     magicDefenseTemp: null,
     fabulaPoints: randomInt(3, 5),
-    currentIP: 6,
-    maxIP: 6,
+    currentIP,
+    maxIP,
     currentHP: maxHP,
     hpBonus,
     currentMP: maxMP,

@@ -1654,8 +1654,14 @@ function FabU() {
     classResourceBonuses.ip + skillResourceBonuses.ip,
   );
   useEffect(() => {
+    const baseMaxIP = Number.isFinite(character.maxIP) ? character.maxIP : 6;
     const currentIP = Number.isFinite(character.currentIP) ? character.currentIP : totalMaxIP;
-    const nextIP = Math.max(0, Math.min(totalMaxIP, currentIP));
+    // Characters previously stuck at the base max (usually 6) should receive permanent
+    // class/skill/custom IP grants instead of remaining capped there.
+    const nextIP =
+      currentIP === baseMaxIP && totalMaxIP > baseMaxIP
+        ? totalMaxIP
+        : Math.max(0, Math.min(totalMaxIP, currentIP));
     if (character.currentIP === nextIP && character.inventoryPoints === nextIP) {
       return;
     }
@@ -1665,7 +1671,7 @@ function FabU() {
       currentIP: nextIP,
       inventoryPoints: nextIP,
     }));
-  }, [character.currentIP, character.inventoryPoints, setCharacter, totalMaxIP]);
+  }, [character.currentIP, character.inventoryPoints, character.maxIP, setCharacter, totalMaxIP]);
   const classSkillGroups = character.classes.map((cls) => ({
     className: cls.name,
     skills:

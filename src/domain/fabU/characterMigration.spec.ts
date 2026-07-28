@@ -50,8 +50,9 @@ test('migrateCharacter repairs missing IP values from existing characters', () =
     maxIP: undefined,
   });
 
-  expect(migrated.character.currentIP).toBe(6);
-  expect(migrated.character.inventoryPoints).toBe(6);
+  // Default character includes Tinkerer (+2 IP), so missing IP fills to the full max.
+  expect(migrated.character.currentIP).toBe(8);
+  expect(migrated.character.inventoryPoints).toBe(8);
   expect(migrated.character.maxIP).toBe(6);
 });
 
@@ -64,13 +65,13 @@ test('repairFabUCharacterResourceFields repairs NaN IP values on existing local 
     ipBonus: Number.NaN,
   });
 
-  expect(repaired.currentIP).toBe(6);
-  expect(repaired.inventoryPoints).toBe(6);
+  expect(repaired.currentIP).toBe(8);
+  expect(repaired.inventoryPoints).toBe(8);
   expect(repaired.maxIP).toBe(6);
   expect(repaired.ipBonus).toBe(0);
 });
 
-test('repairFabUCharacterResourceFields clamps current IP to max IP', () => {
+test('repairFabUCharacterResourceFields preserves IP above computed max via ipBonus', () => {
   const repaired = repairFabUCharacterResourceFields({
     ...createDefaultCharacter(),
     currentIP: 12,
@@ -80,10 +81,10 @@ test('repairFabUCharacterResourceFields clamps current IP to max IP', () => {
     classes: [],
   });
 
-  expect(repaired.currentIP).toBe(7);
-  expect(repaired.inventoryPoints).toBe(7);
+  expect(repaired.currentIP).toBe(12);
+  expect(repaired.inventoryPoints).toBe(12);
   expect(repaired.maxIP).toBe(6);
-  expect(repaired.ipBonus).toBe(1);
+  expect(repaired.ipBonus).toBe(6);
 });
 
 test('repairFabUCharacterResourceFields preserves class-granted IP for any character', () => {
@@ -100,6 +101,37 @@ test('repairFabUCharacterResourceFields preserves class-granted IP for any chara
   expect(repaired.inventoryPoints).toBe(8);
 });
 
+test('repairFabUCharacterResourceFields tops up characters stuck at base 6 with class IP', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Mira', lastName: 'Vale', nickName: undefined },
+    currentIP: 6,
+    inventoryPoints: 6,
+    maxIP: 6,
+    ipBonus: 0,
+  });
+
+  expect(repaired.currentIP).toBe(8);
+  expect(repaired.inventoryPoints).toBe(8);
+});
+
+test('repairFabUCharacterResourceFields preserves legacy IP above 6 without recognized bonuses', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Legacy', lastName: 'Hero', nickName: undefined },
+    classes: [{ name: 'Guardian', level: 5, subtitle: 'Protector' }],
+    currentIP: 9,
+    inventoryPoints: 9,
+    maxIP: 6,
+    ipBonus: 0,
+    skillGroups: [],
+  });
+
+  expect(repaired.currentIP).toBe(9);
+  expect(repaired.inventoryPoints).toBe(9);
+  expect(repaired.ipBonus).toBe(3);
+});
+
 test('repairFabUCharacterResourceFields honors Extra IP skill bonus above base 6', () => {
   const repaired = repairFabUCharacterResourceFields({
     ...createDefaultCharacter(),
@@ -107,6 +139,27 @@ test('repairFabUCharacterResourceFields honors Extra IP skill bonus above base 6
     classes: [{ name: 'Guardian', level: 10, subtitle: 'Protector' }],
     currentIP: 10,
     inventoryPoints: 10,
+    maxIP: 6,
+    ipBonus: 0,
+    skillGroups: [
+      {
+        className: 'Guardian',
+        skills: [{ name: 'Extra IP', level: 'M', maxLevel: 1, mastered: true, effect: '+4 IP' }],
+      },
+    ],
+  });
+
+  expect(repaired.currentIP).toBe(10);
+  expect(repaired.inventoryPoints).toBe(10);
+});
+
+test('repairFabUCharacterResourceFields tops up Extra IP characters stuck at base 6', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Nox', lastName: 'Quill', nickName: undefined },
+    classes: [{ name: 'Guardian', level: 10, subtitle: 'Protector' }],
+    currentIP: 6,
+    inventoryPoints: 6,
     maxIP: 6,
     ipBonus: 0,
     skillGroups: [

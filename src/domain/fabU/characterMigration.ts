@@ -438,7 +438,7 @@ function getFabUCharacterMaxIP(
 
 function repairFabUCharacterResourceFields(character: Character): Character {
   const maxIP = normalizeNumber(character.maxIP, 6);
-  const ipBonus = normalizeNumber(character.ipBonus, 0);
+  let ipBonus = normalizeNumber(character.ipBonus, 0);
   const classNames = character.classes.map((entry) => entry.name);
   const classIPBonus = calculateFabUFixedClassIPBonus(classNames);
   const skillIPBonus = calculateFabUSkillResourceBonuses(
@@ -446,11 +446,32 @@ function repairFabUCharacterResourceFields(character: Character): Character {
     character.skillGroups,
     character.level,
   ).ip;
-  const totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus + skillIPBonus);
-  const currentIP = Math.min(
-    totalMaxIP,
-    normalizeNumber(character.currentIP, normalizeNumber(character.inventoryPoints, maxIP)),
+  const permanentIPBonus = classIPBonus + skillIPBonus + ipBonus;
+  let totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus + skillIPBonus);
+  const storedCurrentIP = normalizeNumber(
+    character.currentIP,
+    normalizeNumber(character.inventoryPoints, Number.NaN),
   );
+
+  // Existing saves from before IP max tracking often stored current IP above the base 6
+  // without a matching ipBonus. Fold that surplus into ipBonus so repair never caps them
+  // back down to 6.
+  if (Number.isFinite(storedCurrentIP) && storedCurrentIP > totalMaxIP) {
+    ipBonus += storedCurrentIP - totalMaxIP;
+    totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus + skillIPBonus);
+  }
+
+  let currentIP: number;
+  if (!Number.isFinite(storedCurrentIP)) {
+    // Missing/NaN current IP: start at the full computed max (including class/skill grants).
+    currentIP = totalMaxIP;
+  } else if (permanentIPBonus > 0 && storedCurrentIP === maxIP && totalMaxIP > maxIP) {
+    // Characters stuck at the base max never received permanent class/skill IP grants.
+    currentIP = totalMaxIP;
+  } else {
+    currentIP = Math.min(totalMaxIP, storedCurrentIP);
+  }
+
   const hpBonus = normalizeNumber(character.hpBonus, 0);
   const mpBonus = normalizeNumber(character.mpBonus, 0);
   const customResourceModifiers = Array.isArray(character.customResourceModifiers)
