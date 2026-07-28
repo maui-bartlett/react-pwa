@@ -97,6 +97,7 @@ import {
   calculateFabUSkillResourceBonuses,
   listFabUSkillResourceModifierSources,
 } from '@/domain/fabU/resourceBonuses';
+import { cleanFabUSkillText } from '@/domain/fabU/skillText';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
@@ -335,14 +336,17 @@ function mapFabulaUltimaSkillOption(
   const name = readString(skill.name);
   if (!name) return null;
   const catalogMaxLevel = typeof skill.maxLevel === 'number' ? skill.maxLevel : undefined;
-  const summary = readString(skill.summary) ?? readString(skill.description) ?? '';
+  const summary = cleanFabUSkillText(
+    readString(skill.summary) ?? readString(skill.description) ?? '',
+  );
+  const description = cleanFabUSkillText(readString(skill.description) ?? summary);
   return {
     name,
     level: '1',
     maxLevel: getFabulaUltimaSkillMaxLevel(className, name, catalogMaxLevel),
     effect: summary,
     summary,
-    description: readString(skill.description) ?? summary,
+    description,
   };
 }
 

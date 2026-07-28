@@ -34,6 +34,7 @@ import {
   calculateFabUFixedClassIPBonus,
   calculateFabUSkillResourceBonuses,
 } from './resourceBonuses';
+import { cleanFabUSkillText } from './skillText';
 
 type CharacterMigrationOptions = {
   oldBackstoryAnswers?: unknown;
@@ -322,20 +323,23 @@ function normalizeSkillRow(stored: unknown): SkillRow | null {
   const skill = stored as Record<string, unknown>;
   if (typeof skill.name !== 'string') return null;
   const heroicSpell = normalizeSpellRow(skill.heroicSpell);
+  const effect =
+    typeof skill.effect === 'string'
+      ? cleanFabUSkillText(skill.effect)
+      : typeof skill.description === 'string'
+        ? cleanFabUSkillText(skill.description)
+        : '';
   return {
     name: skill.name,
-    effect:
-      typeof skill.effect === 'string'
-        ? skill.effect
-        : typeof skill.description === 'string'
-          ? skill.description
-          : '',
+    effect,
     ...(typeof skill.level === 'string' ? { level: skill.level } : {}),
     ...(typeof skill.maxLevel === 'number' && Number.isFinite(skill.maxLevel)
       ? { maxLevel: skill.maxLevel }
       : {}),
-    ...(typeof skill.summary === 'string' ? { summary: skill.summary } : {}),
-    ...(typeof skill.description === 'string' ? { description: skill.description } : {}),
+    ...(typeof skill.summary === 'string' ? { summary: cleanFabUSkillText(skill.summary) } : {}),
+    ...(typeof skill.description === 'string'
+      ? { description: cleanFabUSkillText(skill.description) }
+      : {}),
     ...(typeof skill.mastered === 'boolean' ? { mastered: skill.mastered } : {}),
     ...(skill.heroicScope === 'class' || skill.heroicScope === 'standard'
       ? { heroicScope: skill.heroicScope }

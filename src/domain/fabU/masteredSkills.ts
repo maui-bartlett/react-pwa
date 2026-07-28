@@ -1,6 +1,7 @@
 import type { SkillRow, SpellRow } from '@/components/fab-u';
 
 import type { Character } from './characterTypes';
+import { cleanFabUSkillText } from './skillText';
 
 type FabUMasteredSkillOption = SkillRow & {
   classRequirements: 'any' | readonly string[];
@@ -292,7 +293,7 @@ const CORE_HEROIC_SKILLS: FabUMasteredSkillOption[] = [
   heroicSkill({
     name: 'Unbreakable',
     classRequirements: ['Guardian'],
-    summary: 'Once per scene, remain at 1 HP instead of dropping to 0.',
+    summary: 'Once per scene, remain at 1 HP instead of dropping to 0 HP.',
     description:
       'Requirements: you must have mastered the Guardian Class. Once per scene when you are about to be reduced to 0 Hit Points, you may instead choose to withstand the pain and be reduced to exactly 1 Hit Point.',
   }),
@@ -681,9 +682,9 @@ function toSkillRow(option: FabUMasteredSkillOption): SkillRow {
     level: option.level,
     maxLevel: option.maxLevel,
     mastered: option.mastered,
-    effect: option.effect,
-    summary: option.summary ?? option.effect,
-    description: option.description,
+    effect: cleanFabUSkillText(option.effect),
+    summary: cleanFabUSkillText(option.summary ?? option.effect),
+    description: cleanFabUSkillText(option.description),
     heroicScope: option.classRequirements === 'any' ? 'standard' : 'class',
     heroicSpell: option.heroicSpell,
   };

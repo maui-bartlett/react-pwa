@@ -210,7 +210,7 @@ const FABULA_ULTIMA_MISSING_CLASSES: FabulaUltimaClass[] = [
       [
         'Vibrato',
         undefined,
-        'After a low or medium frequency verse, perform a free weapon attack with HR treated as 0.',
+        'After a low or medium frequency verse, perform a free weapon attack with HR treated as zero.',
       ],
     ],
   }),
@@ -368,7 +368,7 @@ const FABULA_ULTIMA_MISSING_CLASSES: FabulaUltimaClass[] = [
       [
         'Knife and Fork',
         undefined,
-        'Your Cooking-granted free attack may deal damage as normal with HR treated as 0.',
+        'Your Cooking-granted free attack may deal damage as normal with HR treated as zero.',
       ],
       [
         'Made with Love',
