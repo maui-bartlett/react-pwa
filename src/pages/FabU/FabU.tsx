@@ -1063,9 +1063,7 @@ function FabU() {
     return () => window.clearTimeout(timeout);
   }, [absorbMpPulse.key]);
   // HP/MP management popover: which kind, and the pill it anchors to.
-  const [hpMpModal, setHpMpModal] = useState<{ kind: HpMpKind; anchorEl: HTMLElement } | null>(
-    null,
-  );
+  const [hpMpModal, setHpMpModal] = useState<{ kind: HpMpKind } | null>(null);
   useEffect(() => {
     if (!notEnoughMpToastOpen) return;
     const t = setTimeout(() => setNotEnoughMpToastOpen(false), 2400);
@@ -1669,9 +1667,15 @@ function FabU() {
   useEffect(() => {
     // Clamp current IP down to the latest max only. Do not top up here — that raced
     // with custom-modifier deletes and could restore a cleared max bonus via repair.
+    // Compute max from `current` so a same-tick resource repair that folds surplus
+    // into ipBonus is honored instead of clamping with a stale pre-repair max.
     setCharacter((current) => {
-      const currentIP = Number.isFinite(current.currentIP) ? current.currentIP : totalMaxIP;
-      const nextIP = Math.max(0, Math.min(totalMaxIP, currentIP));
+      const nextMaxIP = getFabUCharacterMaxIP(
+        current,
+        classResourceBonuses.ip + skillResourceBonuses.ip,
+      );
+      const currentIP = Number.isFinite(current.currentIP) ? current.currentIP : nextMaxIP;
+      const nextIP = Math.max(0, Math.min(nextMaxIP, currentIP));
       if (current.currentIP === nextIP && current.inventoryPoints === nextIP) {
         return current;
       }
@@ -1681,7 +1685,15 @@ function FabU() {
         inventoryPoints: nextIP,
       };
     });
-  }, [character.currentIP, character.inventoryPoints, setCharacter, totalMaxIP]);
+  }, [
+    character.currentIP,
+    character.inventoryPoints,
+    character.ipBonus,
+    character.maxIP,
+    classResourceBonuses.ip,
+    setCharacter,
+    skillResourceBonuses.ip,
+  ]);
   const classSkillGroups = character.classes.map((cls) => ({
     className: cls.name,
     skills:
@@ -2277,7 +2289,7 @@ function FabU() {
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
               ...hpPillWarningProps,
-              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'hp' }),
               maxValue: totalHP,
               pw: 'ov-hp',
             },
@@ -2287,7 +2299,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'mp' }),
               maxValue: totalMP,
               pw: 'ov-mp',
               pulseKey: absorbMpPulse.key,
@@ -2298,7 +2310,7 @@ function FabU() {
               value: String(character.currentIP),
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'ip' }),
               maxValue: totalMaxIP,
               pw: 'ov-ip',
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
@@ -2393,7 +2405,7 @@ function FabU() {
               value: String(character.currentIP),
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'ip' }),
               maxValue: totalMaxIP,
               pw: 'cb-ip',
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
@@ -2405,7 +2417,7 @@ function FabU() {
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
               ...hpPillWarningProps,
-              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'hp' }),
               maxValue: totalHP,
               pw: 'cb-hp',
             },
@@ -2415,7 +2427,7 @@ function FabU() {
               valueSuffix: ` / ${totalMP}`,
               valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
-              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'mp' }),
               maxValue: totalMP,
               pw: 'cb-mp',
               pulseKey: absorbMpPulse.key,
@@ -3377,7 +3389,7 @@ function FabU() {
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
               pw: 'ip',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'ip' }),
               maxValue: totalMaxIP,
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
@@ -3386,7 +3398,7 @@ function FabU() {
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
               pw: 'hp',
-              onManage: (el) => setHpMpModal({ kind: 'hp', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'hp' }),
               maxValue: totalHP,
               toneColor: fabUTokens.color.hp,
               ...hpPillWarningProps,
@@ -3396,7 +3408,7 @@ function FabU() {
               value: String(character.currentMP),
               valueSuffix: ` / ${totalMP}`,
               pw: 'mp',
-              onManage: (el) => setHpMpModal({ kind: 'mp', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'mp' }),
               maxValue: totalMP,
               toneColor: fabUTokens.color.mp,
               pulseKey: absorbMpPulse.key,
@@ -3453,7 +3465,7 @@ function FabU() {
               valueSuffix: ` / ${totalMaxIP}`,
               valueGroupMinWidth: '7ch',
               pw: 'ip',
-              onManage: (el) => setHpMpModal({ kind: 'ip', anchorEl: el }),
+              onManage: () => setHpMpModal({ kind: 'ip' }),
               maxValue: totalMaxIP,
               toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
               trailingIcon: (
@@ -3970,7 +3982,7 @@ function FabU() {
       />
       {hpMpModal ? (
         <HpMpManagementModal
-          anchorEl={hpMpModal.anchorEl}
+          open
           kind={hpMpModal.kind}
           current={
             hpMpModal.kind === 'hp'

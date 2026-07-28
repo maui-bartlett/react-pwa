@@ -2,11 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import ClickAwayListener from '@mui/material/ClickAwayListener';
+import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
-import Paper from '@mui/material/Paper';
-import Popper from '@mui/material/Popper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
@@ -15,8 +13,8 @@ import { Pencil, Trash2, X } from 'lucide-react';
 
 import { SwipeableCard } from '@/components/SwipeableCard';
 
+import { useHideDiceRollerWhileOpen } from '../../DiceRoller/visibilityEvents';
 import { useFabUTokens } from '../ThemeContext';
-import useFabUPopperScrollLock from '../useFabUPopperScrollLock';
 
 const ROW_H = 32;
 const WHEEL_HEIGHT = 114;
@@ -36,8 +34,7 @@ type ResourceModifierSource = {
 };
 
 type HpMpManagementModalProps = {
-  /** The pill the popover anchors to; null keeps it closed. */
-  anchorEl: HTMLElement | null;
+  open: boolean;
   kind: HpMpKind;
   current: number;
   max: number;
@@ -203,7 +200,7 @@ function NumberWheel({
 }
 
 function HpMpManagementModal({
-  anchorEl,
+  open,
   kind,
   current,
   max,
@@ -215,7 +212,6 @@ function HpMpManagementModal({
   onClose,
 }: HpMpManagementModalProps) {
   const fabUTokens = useFabUTokens();
-  const open = Boolean(anchorEl);
   const accent =
     kind === 'hp'
       ? fabUTokens.color.hp
@@ -251,7 +247,7 @@ function HpMpManagementModal({
   const [editingModifierId, setEditingModifierId] = useState<string | null>(null);
   const [modifierLabelDraft, setModifierLabelDraft] = useState('');
   const [modifierValueDraft, setModifierValueDraft] = useState('');
-  useFabUPopperScrollLock(open);
+  useHideDiceRollerWhileOpen(`fab-u-${kind}-management`, open);
 
   // Reset the working amount only when the modal opens (so stale state from a
   // prior session doesn't linger) — not when the modifier is committed.
@@ -319,554 +315,556 @@ function HpMpManagementModal({
   }
 
   return (
-    <Popper
+    <Dialog
       open={open}
-      anchorEl={anchorEl}
-      placement="bottom"
-      modifiers={[
-        { name: 'offset', options: { offset: [0, 6] } },
-        { name: 'flip', options: { padding: 12 } },
-        { name: 'preventOverflow', options: { padding: 12 } },
-      ]}
-      sx={{ zIndex: (theme) => theme.zIndex.modal }}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        'data-pw': `${kind}-management-modal`,
+        sx: {
+          p: 1.4,
+          width: 'min(90vw, 300px)',
+          maxWidth: 'min(90vw, 300px)',
+          bgcolor: fabUTokens.color.surface,
+          backgroundImage: 'none',
+          border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
+          borderRadius: '14px',
+          boxShadow: fabUTokens.shadow.soft,
+          m: 2,
+        },
+      }}
+      // Tint the backdrop with the active palette's brand color so the
+      // top-of-viewport color stays steady on iOS standalone PWA (the
+      // status bar reads the top pixel and shifts in two steps if the
+      // backdrop fades in from black).
+      slotProps={{
+        backdrop: {
+          sx: { backgroundColor: alpha(fabUTokens.color.brand, 0.92) },
+        },
+      }}
     >
-      <ClickAwayListener onClickAway={onClose}>
-        <Paper
-          data-pw={`${kind}-management-modal`}
+      {/* Header */}
+      <Box sx={{ position: 'relative', minHeight: 30, mb: 1 }}>
+        <Typography
           sx={{
-            p: 1.4,
-            width: 'min(90vw, 300px)',
-            maxWidth: 'min(90vw, 300px)',
-            bgcolor: fabUTokens.color.surface,
-            backgroundImage: 'none',
-            border: `1px solid ${fabUTokens.isDark ? '#ffffff' : '#000000'}`,
-            borderRadius: '14px',
-            boxShadow: fabUTokens.shadow.soft,
+            minHeight: 30,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            px: '34px',
+            textAlign: 'center',
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            color: fabUTokens.color.textPrimary,
           }}
         >
-          {/* Header */}
-          <Box sx={{ position: 'relative', minHeight: 30, mb: 1 }}>
+          {title}
+        </Typography>
+        <IconButton
+          onClick={onClose}
+          data-pw={`${kind}-management-close`}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            color: fabUTokens.color.textPrimary,
+            border: `1px solid ${fabUTokens.color.border}`,
+            width: 30,
+            height: 30,
+          }}
+        >
+          <X size={16} />
+        </IconButton>
+      </Box>
+
+      {/* Current readout */}
+      <Stack alignItems="flex-start" sx={{ mb: 1 }}>
+        <Box
+          sx={{
+            position: 'relative',
+            width: '100%',
+            minHeight: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+          }}
+        >
+          <Stack
+            spacing={0.45}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 'calc((100% - 8px) / 2)',
+              minWidth: 0,
+              alignItems: 'center',
+            }}
+          >
             <Typography
+              data-pw={`${kind}-management-points-label`}
               sx={{
-                minHeight: 30,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                px: '34px',
-                textAlign: 'center',
-                fontWeight: 800,
-                fontSize: '0.95rem',
-                color: fabUTokens.color.textPrimary,
+                ...fieldLabelSx,
+                fontWeight: FIELD_LABEL_FONT_WEIGHT,
               }}
             >
-              {title}
+              {pointsLabel}
             </Typography>
-            <IconButton
-              onClick={onClose}
-              data-pw={`${kind}-management-close`}
-              sx={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                color: fabUTokens.color.textPrimary,
-                border: `1px solid ${fabUTokens.color.border}`,
-                width: 30,
-                height: 30,
-              }}
-            >
-              <X size={16} />
-            </IconButton>
-          </Box>
-
-          {/* Current readout */}
-          <Stack alignItems="flex-start" sx={{ mb: 1 }}>
-            <Box
-              sx={{
-                position: 'relative',
-                width: '100%',
-                minHeight: 50,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-              }}
-            >
-              <Stack
-                spacing={0.45}
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: 'calc((100% - 8px) / 2)',
-                  minWidth: 0,
-                  alignItems: 'center',
+            <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.55}>
+              <InputBase
+                data-pw={`${kind}-management-current-control`}
+                value={currentDraft}
+                inputProps={{
+                  inputMode: 'numeric',
+                  'aria-label': `Current ${pointsLabel}`,
+                  'data-pw': `${kind}-management-current-input`,
+                  style: {
+                    textAlign: 'center',
+                    fontWeight: 800,
+                    fontSize: '1.12rem',
+                    lineHeight: 1,
+                    padding: 0,
+                  },
                 }}
-              >
-                <Typography
-                  data-pw={`${kind}-management-points-label`}
-                  sx={{
-                    ...fieldLabelSx,
-                    fontWeight: FIELD_LABEL_FONT_WEIGHT,
-                  }}
-                >
-                  {pointsLabel}
-                </Typography>
-                <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.55}>
-                  <InputBase
-                    data-pw={`${kind}-management-current-control`}
-                    value={currentDraft}
-                    inputProps={{
-                      inputMode: 'numeric',
-                      'aria-label': `Current ${pointsLabel}`,
-                      'data-pw': `${kind}-management-current-input`,
-                      style: {
-                        textAlign: 'center',
-                        fontWeight: 800,
-                        fontSize: '1.12rem',
-                        lineHeight: 1,
-                        padding: 0,
-                      },
-                    }}
-                    onChange={(e) => setCurrentDraft(e.target.value.replace(/[^0-9]/g, ''))}
-                    onBlur={(e) => commitCurrent(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                      if (e.key === 'Escape') setCurrentDraft(String(current));
-                    }}
-                    sx={{
-                      width: 56,
-                      minWidth: 56,
-                      height: 27,
-                      border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
-                      borderRadius: FIELD_RADIUS,
-                      bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
-                      px: 0.55,
-                      boxSizing: 'border-box',
-                      color: accent,
-                      '& .MuiInputBase-input': {
-                        textAlign: 'center',
-                      },
-                      '& input': {
-                        height: 27,
-                        color: accent,
-                      },
-                    }}
-                  />
-                  <Typography
-                    component="span"
-                    sx={{
-                      fontSize: '1.08rem',
-                      fontWeight: 800,
-                      color: fabUTokens.color.textSecondary,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    / {max}
-                  </Typography>
-                </Stack>
-              </Stack>
-              <Stack
-                spacing={0.45}
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  width: 'calc((100% - 8px) / 2)',
-                  minWidth: 0,
-                  alignItems: 'center',
+                onChange={(e) => setCurrentDraft(e.target.value.replace(/[^0-9]/g, ''))}
+                onBlur={(e) => commitCurrent(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  if (e.key === 'Escape') setCurrentDraft(String(current));
                 }}
-              >
-                <Typography data-pw={`${kind}-management-modifier-label`} sx={fieldLabelSx}>
-                  {modifierLabel}
-                </Typography>
-                <Button
-                  data-pw={`${kind}-management-show-modifiers`}
-                  onClick={() => setShowModifiers((visible) => !visible)}
-                  variant="outlined"
-                  sx={{
-                    width: '100%',
-                    minWidth: 0,
+                sx={{
+                  width: 56,
+                  minWidth: 56,
+                  height: 27,
+                  border: `1px solid ${alpha(accent, fabUTokens.isDark ? 0.72 : 0.46)}`,
+                  borderRadius: FIELD_RADIUS,
+                  bgcolor: alpha(accent, fabUTokens.isDark ? 0.11 : 0.08),
+                  px: 0.55,
+                  boxSizing: 'border-box',
+                  color: accent,
+                  '& .MuiInputBase-input': {
+                    textAlign: 'center',
+                  },
+                  '& input': {
                     height: 27,
-                    border: `1px solid ${fabUTokens.color.border}`,
-                    borderRadius: FIELD_RADIUS,
-                    bgcolor: fabUTokens.color.pillSurface,
-                    px: 0.6,
-                    color: fabUTokens.color.textPrimary,
-                    fontSize: '0.62rem',
-                    fontWeight: 850,
-                    lineHeight: 1.05,
-                    textTransform: 'none',
-                    whiteSpace: 'nowrap',
-                    '&:hover': {
-                      borderColor: fabUTokens.color.textSecondary,
-                      bgcolor: fabUTokens.color.pillSurface,
-                    },
-                  }}
-                >
-                  Show Modifiers
-                </Button>
-              </Stack>
-            </Box>
+                    color: accent,
+                  },
+                }}
+              />
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: '1.08rem',
+                  fontWeight: 800,
+                  color: fabUTokens.color.textSecondary,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                / {max}
+              </Typography>
+            </Stack>
           </Stack>
-
-          {showModifiers ? (
-            <Stack
-              data-pw={`${kind}-management-modifier-list`}
-              spacing={0.75}
+          <Stack
+            spacing={0.45}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 'calc((100% - 8px) / 2)',
+              minWidth: 0,
+              alignItems: 'center',
+            }}
+          >
+            <Typography data-pw={`${kind}-management-modifier-label`} sx={fieldLabelSx}>
+              {modifierLabel}
+            </Typography>
+            <Button
+              data-pw={`${kind}-management-show-modifiers`}
+              onClick={() => setShowModifiers((visible) => !visible)}
+              variant="outlined"
               sx={{
-                mb: 1,
-                p: 0.85,
+                width: '100%',
+                minWidth: 0,
+                height: 27,
                 border: `1px solid ${fabUTokens.color.border}`,
                 borderRadius: FIELD_RADIUS,
-                bgcolor: alpha(fabUTokens.color.pillSurface, fabUTokens.isDark ? 0.65 : 0.9),
+                bgcolor: fabUTokens.color.pillSurface,
+                px: 0.6,
+                color: fabUTokens.color.textPrimary,
+                fontSize: '0.62rem',
+                fontWeight: 850,
+                lineHeight: 1.05,
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  borderColor: fabUTokens.color.textSecondary,
+                  bgcolor: fabUTokens.color.pillSurface,
+                },
               }}
             >
-              <Button
-                data-pw={`${kind}-management-add-custom-modifier`}
-                onClick={() => {
-                  setEditingModifierId(null);
-                  setModifierLabelDraft('');
-                  setModifierValueDraft('');
-                  setAddingModifier(true);
-                }}
-                variant="outlined"
-                disabled={addingModifier || editingModifierId !== null}
+              Show Modifiers
+            </Button>
+          </Stack>
+        </Box>
+      </Stack>
+
+      {showModifiers ? (
+        <Stack
+          data-pw={`${kind}-management-modifier-list`}
+          spacing={0.75}
+          sx={{
+            mb: 1,
+            p: 0.85,
+            border: `1px solid ${fabUTokens.color.border}`,
+            borderRadius: FIELD_RADIUS,
+            bgcolor: alpha(fabUTokens.color.pillSurface, fabUTokens.isDark ? 0.65 : 0.9),
+          }}
+        >
+          <Button
+            data-pw={`${kind}-management-add-custom-modifier`}
+            onClick={() => {
+              setEditingModifierId(null);
+              setModifierLabelDraft('');
+              setModifierValueDraft('');
+              setAddingModifier(true);
+            }}
+            variant="outlined"
+            disabled={addingModifier || editingModifierId !== null}
+            sx={{
+              alignSelf: 'stretch',
+              minHeight: 30,
+              borderColor: alpha(accent, fabUTokens.isDark ? 0.65 : 0.5),
+              color: accent,
+              fontSize: '0.74rem',
+              fontWeight: 850,
+              textTransform: 'none',
+            }}
+          >
+            + Custom Modifier
+          </Button>
+
+          {addingModifier || editingModifierId ? (
+            <Stack
+              data-pw={`${kind}-management-custom-modifier-form`}
+              spacing={0.65}
+              sx={{
+                p: 0.75,
+                border: `1px solid ${alpha(accent, 0.4)}`,
+                borderRadius: FIELD_RADIUS,
+              }}
+            >
+              <InputBase
+                placeholder="Modifier label"
+                value={modifierLabelDraft}
+                inputProps={{ 'data-pw': `${kind}-management-custom-modifier-label` }}
+                onChange={(e) => setModifierLabelDraft(e.target.value)}
                 sx={{
-                  alignSelf: 'stretch',
-                  minHeight: 30,
-                  borderColor: alpha(accent, fabUTokens.isDark ? 0.65 : 0.5),
-                  color: accent,
-                  fontSize: '0.74rem',
-                  fontWeight: 850,
-                  textTransform: 'none',
+                  height: 30,
+                  px: 0.8,
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: FIELD_RADIUS,
+                  bgcolor: fabUTokens.color.surface,
+                  color: fabUTokens.color.textPrimary,
+                  fontSize: '0.82rem',
                 }}
-              >
-                + Custom Modifier
-              </Button>
-
-              {addingModifier || editingModifierId ? (
-                <Stack
-                  data-pw={`${kind}-management-custom-modifier-form`}
-                  spacing={0.65}
-                  sx={{
-                    p: 0.75,
-                    border: `1px solid ${alpha(accent, 0.4)}`,
-                    borderRadius: FIELD_RADIUS,
-                  }}
-                >
-                  <InputBase
-                    placeholder="Modifier label"
-                    value={modifierLabelDraft}
-                    inputProps={{ 'data-pw': `${kind}-management-custom-modifier-label` }}
-                    onChange={(e) => setModifierLabelDraft(e.target.value)}
-                    sx={{
-                      height: 30,
-                      px: 0.8,
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      borderRadius: FIELD_RADIUS,
-                      bgcolor: fabUTokens.color.surface,
-                      color: fabUTokens.color.textPrimary,
-                      fontSize: '0.82rem',
-                    }}
-                  />
-                  <InputBase
-                    placeholder="Value"
-                    value={modifierValueDraft}
-                    inputProps={{
-                      inputMode: 'numeric',
-                      'data-pw': `${kind}-management-custom-modifier-value`,
-                    }}
-                    onChange={(e) => setModifierValueDraft(e.target.value.replace(/[^0-9-]/g, ''))}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitCustomModifier();
-                    }}
-                    sx={{
-                      height: 30,
-                      px: 0.8,
-                      border: `1px solid ${fabUTokens.color.border}`,
-                      borderRadius: FIELD_RADIUS,
-                      bgcolor: fabUTokens.color.surface,
-                      color: fabUTokens.color.textPrimary,
-                      fontSize: '0.82rem',
-                    }}
-                  />
-                  <Stack direction="row" spacing={0.7}>
-                    <Button
-                      data-pw={`${kind}-management-confirm-custom-modifier`}
-                      onClick={commitCustomModifier}
-                      variant="contained"
-                      disableElevation
-                      sx={{
-                        flex: 1,
-                        minHeight: 30,
-                        bgcolor: accent,
-                        color: '#ffffff',
-                        fontSize: '0.74rem',
-                        fontWeight: 850,
-                        textTransform: 'none',
-                        '&:hover': { bgcolor: accent },
-                      }}
-                    >
-                      {editingModifierId ? 'Save' : 'Confirm'}
-                    </Button>
-                    <Button
-                      data-pw={`${kind}-management-cancel-custom-modifier`}
-                      onClick={resetModifierForm}
-                      variant="outlined"
-                      sx={{
-                        flex: 1,
-                        minHeight: 30,
-                        borderColor: fabUTokens.color.border,
-                        color: fabUTokens.color.textPrimary,
-                        fontSize: '0.74rem',
-                        fontWeight: 850,
-                        textTransform: 'none',
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </Stack>
-                </Stack>
-              ) : null}
-
-              <Stack spacing={0.55}>
-                {modifierSources.length > 0 ? (
-                  modifierSources.map((source) => {
-                    const cardBody = (
-                      <Box
-                        data-pw={`${kind}-management-modifier-source`}
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr auto',
-                          columnGap: 0.8,
-                          alignItems: 'center',
-                          p: 0.65,
-                          borderRadius: FIELD_RADIUS,
-                          bgcolor: alpha(fabUTokens.color.surface, fabUTokens.isDark ? 0.4 : 0.8),
-                          border: `1px solid ${alpha(fabUTokens.color.border, 0.55)}`,
-                        }}
-                      >
-                        <Box sx={{ minWidth: 0 }}>
-                          <Typography
-                            sx={{
-                              color: fabUTokens.color.textPrimary,
-                              fontSize: '0.75rem',
-                              fontWeight: 800,
-                              lineHeight: 1.15,
-                              mb: '2px',
-                            }}
-                          >
-                            {source.label}
-                          </Typography>
-                          <Typography
-                            sx={{
-                              color: fabUTokens.color.textSecondary,
-                              fontSize: '0.63rem',
-                              fontWeight: 650,
-                              lineHeight: 1.15,
-                            }}
-                          >
-                            {source.source}
-                          </Typography>
-                        </Box>
-                        <Typography
-                          sx={{
-                            color: source.value >= 0 ? accent : fabUTokens.color.danger,
-                            fontSize: '0.82rem',
-                            fontWeight: 900,
-                            lineHeight: 1,
-                          }}
-                        >
-                          {source.value >= 0 ? '+' : ''}
-                          {source.value}
-                        </Typography>
-                      </Box>
-                    );
-
-                    if (!source.editable || (!onUpdateModifier && !onDeleteModifier)) {
-                      return <Box key={source.id}>{cardBody}</Box>;
-                    }
-
-                    return (
-                      <SwipeableCard
-                        key={source.id}
-                        borderRadius={FIELD_RADIUS}
-                        actions={[
-                          onDeleteModifier
-                            ? {
-                                icon: <Trash2 size={16} />,
-                                color: fabUTokens.color.danger,
-                                ariaLabel: `Delete ${source.label}`,
-                                onClick: () => onDeleteModifier(source.id),
-                              }
-                            : null,
-                          onUpdateModifier
-                            ? {
-                                icon: <Pencil size={16} />,
-                                color: fabUTokens.color.highlight,
-                                ariaLabel: `Edit ${source.label}`,
-                                onClick: () => startEditModifier(source),
-                              }
-                            : null,
-                        ]}
-                      >
-                        {cardBody}
-                      </SwipeableCard>
-                    );
-                  })
-                ) : (
-                  <Typography
-                    data-pw={`${kind}-management-no-modifiers`}
-                    sx={{
-                      color: fabUTokens.color.textSecondary,
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      textAlign: 'center',
-                    }}
-                  >
-                    No max modifiers applied.
-                  </Typography>
-                )}
-              </Stack>
-
-              <Box
+              />
+              <InputBase
+                placeholder="Value"
+                value={modifierValueDraft}
+                inputProps={{
+                  inputMode: 'numeric',
+                  'data-pw': `${kind}-management-custom-modifier-value`,
+                }}
+                onChange={(e) => setModifierValueDraft(e.target.value.replace(/[^0-9-]/g, ''))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitCustomModifier();
+                }}
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto',
-                  columnGap: 0.8,
-                  alignItems: 'center',
-                  px: 0.65,
-                  pt: 0.55,
-                  borderTop: `1px solid ${alpha(fabUTokens.color.border, 0.65)}`,
+                  height: 30,
+                  px: 0.8,
+                  border: `1px solid ${fabUTokens.color.border}`,
+                  borderRadius: FIELD_RADIUS,
+                  bgcolor: fabUTokens.color.surface,
+                  color: fabUTokens.color.textPrimary,
+                  fontSize: '0.82rem',
                 }}
-              >
-                <Typography
+              />
+              <Stack direction="row" spacing={0.7}>
+                <Button
+                  data-pw={`${kind}-management-confirm-custom-modifier`}
+                  onClick={commitCustomModifier}
+                  variant="contained"
+                  disableElevation
                   sx={{
-                    color: fabUTokens.color.textSecondary,
-                    fontSize: '0.65rem',
+                    flex: 1,
+                    minHeight: 30,
+                    bgcolor: accent,
+                    color: '#ffffff',
+                    fontSize: '0.74rem',
                     fontWeight: 850,
-                    textTransform: 'uppercase',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: accent },
                   }}
                 >
-                  Total
-                </Typography>
-                <Typography
-                  data-pw={`${kind}-management-modifier-total`}
+                  {editingModifierId ? 'Save' : 'Confirm'}
+                </Button>
+                <Button
+                  data-pw={`${kind}-management-cancel-custom-modifier`}
+                  onClick={resetModifierForm}
+                  variant="outlined"
                   sx={{
-                    color: accent,
-                    fontSize: '0.78rem',
-                    fontWeight: 900,
-                    lineHeight: 1,
-                    textAlign: 'right',
+                    flex: 1,
+                    minHeight: 30,
+                    borderColor: fabUTokens.color.border,
+                    color: fabUTokens.color.textPrimary,
+                    fontSize: '0.74rem',
+                    fontWeight: 850,
+                    textTransform: 'none',
                   }}
                 >
-                  {totalModifier >= 0 ? '+' : ''}
-                  {totalModifier}
-                </Typography>
-              </Box>
+                  Cancel
+                </Button>
+              </Stack>
             </Stack>
           ) : null}
 
-          {/* Compact controls: actions left, number wheel right. */}
+          <Stack spacing={0.55}>
+            {modifierSources.length > 0 ? (
+              modifierSources.map((source) => {
+                const cardBody = (
+                  <Box
+                    data-pw={`${kind}-management-modifier-source`}
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto',
+                      columnGap: 0.8,
+                      alignItems: 'center',
+                      p: 0.65,
+                      borderRadius: FIELD_RADIUS,
+                      bgcolor: alpha(fabUTokens.color.surface, fabUTokens.isDark ? 0.4 : 0.8),
+                      border: `1px solid ${alpha(fabUTokens.color.border, 0.55)}`,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          color: fabUTokens.color.textPrimary,
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          lineHeight: 1.15,
+                          mb: '2px',
+                        }}
+                      >
+                        {source.label}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          color: fabUTokens.color.textSecondary,
+                          fontSize: '0.63rem',
+                          fontWeight: 650,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        {source.source}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      sx={{
+                        color: source.value >= 0 ? accent : fabUTokens.color.danger,
+                        fontSize: '0.82rem',
+                        fontWeight: 900,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {source.value >= 0 ? '+' : ''}
+                      {source.value}
+                    </Typography>
+                  </Box>
+                );
+
+                if (!source.editable || (!onUpdateModifier && !onDeleteModifier)) {
+                  return <Box key={source.id}>{cardBody}</Box>;
+                }
+
+                return (
+                  <SwipeableCard
+                    key={source.id}
+                    borderRadius={FIELD_RADIUS}
+                    actions={[
+                      onDeleteModifier
+                        ? {
+                            icon: <Trash2 size={16} />,
+                            color: fabUTokens.color.danger,
+                            ariaLabel: `Delete ${source.label}`,
+                            onClick: () => onDeleteModifier(source.id),
+                          }
+                        : null,
+                      onUpdateModifier
+                        ? {
+                            icon: <Pencil size={16} />,
+                            color: fabUTokens.color.highlight,
+                            ariaLabel: `Edit ${source.label}`,
+                            onClick: () => startEditModifier(source),
+                          }
+                        : null,
+                    ]}
+                  >
+                    {cardBody}
+                  </SwipeableCard>
+                );
+              })
+            ) : (
+              <Typography
+                data-pw={`${kind}-management-no-modifiers`}
+                sx={{
+                  color: fabUTokens.color.textSecondary,
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                }}
+              >
+                No max modifiers applied.
+              </Typography>
+            )}
+          </Stack>
+
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gridTemplateRows: '32px 38px 32px',
-              columnGap: 1,
-              rowGap: 0.7,
-              alignItems: 'stretch',
+              gridTemplateColumns: '1fr auto',
+              columnGap: 0.8,
+              alignItems: 'center',
+              px: 0.65,
+              pt: 0.55,
+              borderTop: `1px solid ${alpha(fabUTokens.color.border, 0.65)}`,
             }}
           >
-            <Button
-              onClick={() => applyDelta(1)}
-              data-pw={`${kind}-management-add`}
-              variant="contained"
-              disableElevation
+            <Typography
               sx={{
-                gridColumn: 1,
-                gridRow: 1,
-                bgcolor: addColor,
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                textTransform: 'none',
-                py: 0.55,
-                minWidth: 0,
-                '&:hover': { bgcolor: addColor },
+                color: fabUTokens.color.textSecondary,
+                fontSize: '0.65rem',
+                fontWeight: 850,
+                textTransform: 'uppercase',
               }}
             >
-              {addLabel}
-            </Button>
-            <InputBase
-              data-pw={`${kind}-management-amount-control`}
-              value={String(amount)}
-              inputProps={{
-                inputMode: 'numeric',
-                'data-pw': `${kind}-management-amount-input`,
-                style: { textAlign: 'center', fontWeight: 800, fontSize: '1rem', padding: 0 },
-              }}
-              onChange={(e) => {
-                const cleaned = e.target.value.replace(/[^0-9]/g, '');
-                const parsed = Number.parseInt(cleaned, 10);
-                setAmount(Number.isNaN(parsed) ? 0 : Math.min(wheelMax, parsed));
-              }}
+              Total
+            </Typography>
+            <Typography
+              data-pw={`${kind}-management-modifier-total`}
               sx={{
-                gridColumn: 1,
-                gridRow: 2,
-                border: `1px solid ${fabUTokens.color.border}`,
-                borderRadius: '4px',
-                bgcolor: fabUTokens.color.pillSurface,
-                height: 38,
-                minHeight: 38,
-                alignSelf: 'stretch',
-                boxSizing: 'border-box',
-                color: fabUTokens.color.textPrimary,
-              }}
-            />
-            <Button
-              onClick={() => applyDelta(-1)}
-              data-pw={`${kind}-management-subtract`}
-              variant="contained"
-              disableElevation
-              sx={{
-                gridColumn: 1,
-                gridRow: 3,
-                bgcolor: fabUTokens.color.danger,
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                textTransform: 'none',
-                py: 0.55,
-                minWidth: 0,
-                '&:hover': { bgcolor: fabUTokens.color.danger },
+                color: accent,
+                fontSize: '0.78rem',
+                fontWeight: 900,
+                lineHeight: 1,
+                textAlign: 'right',
               }}
             >
-              {subtractLabel}
-            </Button>
-            <Box
-              data-pw={`${kind}-management-number-wheel`}
-              sx={{
-                gridColumn: 2,
-                gridRow: '1 / 4',
-                alignSelf: 'stretch',
-                border: `1px solid ${fabUTokens.color.border}`,
-                borderRadius: FIELD_RADIUS,
-                bgcolor: fabUTokens.color.pillSurface,
-                overflow: 'hidden',
-              }}
-            >
-              <NumberWheel
-                value={amount}
-                maxValue={wheelMax}
-                accent={accent}
-                testId={`${kind}-management-number-wheel-scroll`}
-                onChange={setAmount}
-              />
-            </Box>
+              {totalModifier >= 0 ? '+' : ''}
+              {totalModifier}
+            </Typography>
           </Box>
-        </Paper>
-      </ClickAwayListener>
-    </Popper>
+        </Stack>
+      ) : null}
+
+      {/* Compact controls: actions left, number wheel right. */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gridTemplateRows: '32px 38px 32px',
+          columnGap: 1,
+          rowGap: 0.7,
+          alignItems: 'stretch',
+        }}
+      >
+        <Button
+          onClick={() => applyDelta(1)}
+          data-pw={`${kind}-management-add`}
+          variant="contained"
+          disableElevation
+          sx={{
+            gridColumn: 1,
+            gridRow: 1,
+            bgcolor: addColor,
+            color: '#ffffff',
+            fontWeight: 800,
+            fontSize: '0.82rem',
+            textTransform: 'none',
+            py: 0.55,
+            minWidth: 0,
+            '&:hover': { bgcolor: addColor },
+          }}
+        >
+          {addLabel}
+        </Button>
+        <InputBase
+          data-pw={`${kind}-management-amount-control`}
+          value={String(amount)}
+          inputProps={{
+            inputMode: 'numeric',
+            'data-pw': `${kind}-management-amount-input`,
+            style: { textAlign: 'center', fontWeight: 800, fontSize: '1rem', padding: 0 },
+          }}
+          onChange={(e) => {
+            const cleaned = e.target.value.replace(/[^0-9]/g, '');
+            const parsed = Number.parseInt(cleaned, 10);
+            setAmount(Number.isNaN(parsed) ? 0 : Math.min(wheelMax, parsed));
+          }}
+          sx={{
+            gridColumn: 1,
+            gridRow: 2,
+            border: `1px solid ${fabUTokens.color.border}`,
+            borderRadius: '4px',
+            bgcolor: fabUTokens.color.pillSurface,
+            height: 38,
+            minHeight: 38,
+            alignSelf: 'stretch',
+            boxSizing: 'border-box',
+            color: fabUTokens.color.textPrimary,
+          }}
+        />
+        <Button
+          onClick={() => applyDelta(-1)}
+          data-pw={`${kind}-management-subtract`}
+          variant="contained"
+          disableElevation
+          sx={{
+            gridColumn: 1,
+            gridRow: 3,
+            bgcolor: fabUTokens.color.danger,
+            color: '#ffffff',
+            fontWeight: 800,
+            fontSize: '0.82rem',
+            textTransform: 'none',
+            py: 0.55,
+            minWidth: 0,
+            '&:hover': { bgcolor: fabUTokens.color.danger },
+          }}
+        >
+          {subtractLabel}
+        </Button>
+        <Box
+          data-pw={`${kind}-management-number-wheel`}
+          sx={{
+            gridColumn: 2,
+            gridRow: '1 / 4',
+            alignSelf: 'stretch',
+            border: `1px solid ${fabUTokens.color.border}`,
+            borderRadius: FIELD_RADIUS,
+            bgcolor: fabUTokens.color.pillSurface,
+            overflow: 'hidden',
+          }}
+        >
+          <NumberWheel
+            value={amount}
+            maxValue={wheelMax}
+            accent={accent}
+            testId={`${kind}-management-number-wheel-scroll`}
+            onChange={setAmount}
+          />
+        </Box>
+      </Box>
+    </Dialog>
   );
 }
 

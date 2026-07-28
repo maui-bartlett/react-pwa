@@ -28,14 +28,17 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="hp-management-modal"]')).toBeHidden();
   });
 
-  test('HP management uses a compact aligned non-modal popper', async ({ page }) => {
+  test('HP management opens as a centered modal with faded backdrop', async ({ page }) => {
     await page.locator('[data-pw="statpill-ov-hp"]').click();
-    const popper = page.locator('[data-pw="hp-management-modal"]');
-    await expect(popper).toBeVisible();
-    await expect(page.locator('[data-pw="mobile-screen"]')).not.toHaveAttribute(
-      'aria-hidden',
-      'true',
+    const modal = page.locator('[data-pw="hp-management-modal"]');
+    await expect(modal).toBeVisible();
+    const backdrop = page.locator('.MuiDialog-root .MuiBackdrop-root');
+    await expect(backdrop).toBeVisible();
+    const backdropColor = await backdrop.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
     );
+    expect(backdropColor).not.toBe('rgba(0, 0, 0, 0)');
+    expect(backdropColor).not.toBe('transparent');
 
     const modifierButton = await page
       .locator('[data-pw="hp-management-show-modifiers"]')
@@ -48,7 +51,7 @@ test.describe('HP/MP management modal', () => {
     const amount = await page.locator('[data-pw="hp-management-amount-control"]').boundingBox();
     const damage = await page.locator('[data-pw="hp-management-subtract"]').boundingBox();
     const wheel = await page.locator('[data-pw="hp-management-number-wheel"]').boundingBox();
-    const paper = await popper.boundingBox();
+    const paper = await modal.boundingBox();
     if (
       !modifierButton ||
       !pointsLabel ||
@@ -72,7 +75,6 @@ test.describe('HP/MP management modal', () => {
     expect(
       paper.y + paper.height - Math.max(wheel.y + wheel.height, damage.y + damage.height),
     ).toBeLessThan(16);
-    await expect(page.locator('[data-pw="content-area"]')).toHaveCSS('overflow-y', 'hidden');
     const damageRadius = await page
       .locator('[data-pw="hp-management-subtract"]')
       .evaluate((element) => getComputedStyle(element).borderRadius);
@@ -85,8 +87,8 @@ test.describe('HP/MP management modal', () => {
       damageRadius,
     );
 
-    await page.mouse.click(12, 12);
-    await expect(popper).toBeHidden();
+    await backdrop.click({ position: { x: 8, y: 8 }, force: true });
+    await expect(modal).toBeHidden();
   });
 
   test('modifier list shows sources and adds a custom max modifier', async ({ page }) => {
@@ -118,19 +120,20 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeHidden();
   });
 
-  test('existing characters with too much IP are clamped to max IP', async ({ page }) => {
+  test('existing characters with IP above base max keep that IP', async ({ page }) => {
     await patchActiveFabUCharacter(page, {
       currentIP: 12,
       inventoryPoints: 12,
       maxIP: 6,
       ipBonus: 0,
       customResourceModifiers: [],
+      classes: [{ name: 'Guardian', level: 5, subtitle: 'Protector' }],
     });
     await page.reload();
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
-    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first()).toHaveText('6');
-    await expect(page.locator('[data-pw="statpill-ov-ip"]')).toContainText('/ 6');
+    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first()).toHaveText('12');
+    await expect(page.locator('[data-pw="statpill-ov-ip"]')).toContainText('/ 12');
 
     await expect
       .poll(async () => {
@@ -138,9 +141,10 @@ test.describe('HP/MP management modal', () => {
         return {
           currentIP: character.currentIP,
           inventoryPoints: character.inventoryPoints,
+          ipBonus: character.ipBonus,
         };
       })
-      .toEqual({ currentIP: 6, inventoryPoints: 6 });
+      .toEqual({ currentIP: 12, inventoryPoints: 12, ipBonus: 6 });
   });
 
   test('Tinkerer class benefit allows current IP to reach and remain at 8', async ({ page }) => {
