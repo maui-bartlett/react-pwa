@@ -17,8 +17,12 @@ import { useHideDiceRollerWhileOpen } from '../../DiceRoller/visibilityEvents';
 import { useFabUTokens } from '../ThemeContext';
 
 const ROW_H = 32;
-const WHEEL_HEIGHT = 114;
+const WHEEL_HEIGHT = 144;
 const WHEEL_PADDING = (WHEEL_HEIGHT - ROW_H) / 2;
+/** Gaps between Heal/amount/Damage — keep left column total equal to the wheel. */
+const CONTROL_ROW_GAP = 6;
+const CONTROL_BUTTON_HEIGHT = 42;
+const CONTROL_INPUT_HEIGHT = WHEEL_HEIGHT - 2 * CONTROL_ROW_GAP - 2 * CONTROL_BUTTON_HEIGHT;
 const FIELD_RADIUS = '4px';
 const FIELD_LABEL_FONT_WEIGHT = 800;
 
@@ -826,9 +830,9 @@ function HpMpManagementModal({
         sx={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
-          gridTemplateRows: '32px 38px 32px',
+          gridTemplateRows: `${CONTROL_BUTTON_HEIGHT}px ${CONTROL_INPUT_HEIGHT}px ${CONTROL_BUTTON_HEIGHT}px`,
           columnGap: 1,
-          rowGap: 0.7,
+          rowGap: `${CONTROL_ROW_GAP}px`,
           alignItems: 'stretch',
         }}
       >
@@ -847,6 +851,8 @@ function HpMpManagementModal({
             textTransform: 'none',
             py: 0.55,
             minWidth: 0,
+            height: CONTROL_BUTTON_HEIGHT,
+            minHeight: CONTROL_BUTTON_HEIGHT,
             '&:hover': { bgcolor: addColor },
           }}
         >
@@ -871,8 +877,8 @@ function HpMpManagementModal({
             border: `1px solid ${fabUTokens.color.border}`,
             borderRadius: '4px',
             bgcolor: fabUTokens.color.pillSurface,
-            height: 38,
-            minHeight: 38,
+            height: CONTROL_INPUT_HEIGHT,
+            minHeight: CONTROL_INPUT_HEIGHT,
             alignSelf: 'stretch',
             boxSizing: 'border-box',
             color: fabUTokens.color.textPrimary,
@@ -893,6 +899,8 @@ function HpMpManagementModal({
             textTransform: 'none',
             py: 0.55,
             minWidth: 0,
+            height: CONTROL_BUTTON_HEIGHT,
+            minHeight: CONTROL_BUTTON_HEIGHT,
             '&:hover': { bgcolor: fabUTokens.color.danger },
           }}
         >
