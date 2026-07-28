@@ -235,8 +235,8 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="hp-management-modal"]')).toBeVisible();
 
     await page.locator('[data-pw="hp-management-number-wheel-scroll"]').evaluate((element) => {
-      element.dispatchEvent(new WheelEvent('wheel', { deltaY: 160, bubbles: true }));
       element.scrollTo({ top: 5 * 32 });
+      element.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
     await expect(page.locator('[data-pw="hp-management-amount-input"]')).toHaveValue('5');
@@ -247,8 +247,8 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeVisible();
 
     await page.locator('[data-pw="mp-management-number-wheel-scroll"]').evaluate((element) => {
-      element.dispatchEvent(new WheelEvent('wheel', { deltaY: 192, bubbles: true }));
       element.scrollTo({ top: 6 * 32 });
+      element.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
     await expect(page.locator('[data-pw="mp-management-amount-input"]')).toHaveValue('6');

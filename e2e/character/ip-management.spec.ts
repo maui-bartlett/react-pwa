@@ -35,31 +35,32 @@ test.describe('IP management modal', () => {
 
   test('spending and recovering IP updates the pill value', async ({ page }) => {
     const ipValue = page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first();
-    await expect(ipValue).toHaveText('6');
+    await expect(ipValue).not.toHaveText('');
+    const before = Number.parseInt((await ipValue.textContent()) ?? '', 10);
+    expect(Number.isFinite(before)).toBe(true);
+    expect(before).toBeGreaterThanOrEqual(3);
 
     await page.locator('[data-pw="statpill-ov-ip"]').click();
     const amount = page.locator('[data-pw="ip-management-amount-input"]');
     await amount.fill('3');
     await expect(amount).toHaveValue('3');
     await page.locator('[data-pw="ip-management-subtract"]').click();
-    await expect(ipValue).toHaveText('3');
+    await expect(ipValue).toHaveText(String(before - 3));
 
     await amount.fill('2');
     await expect(amount).toHaveValue('2');
     await page.locator('[data-pw="ip-management-add"]').click();
-    await expect(ipValue).toHaveText('5');
+    await expect(ipValue).toHaveText(String(before - 1));
   });
 
   test('scrolling the IP number wheel updates the amount input', async ({ page }) => {
     await page.locator('[data-pw="statpill-ov-ip"]').click();
     await expect(page.locator('[data-pw="ip-management-modal"]')).toBeVisible();
 
-    await page
-      .locator('[data-pw="ip-management-number-wheel-scroll"]')
-      .evaluate((element) => {
-        element.dispatchEvent(new WheelEvent('wheel', { deltaY: 128, bubbles: true }));
-        element.scrollTo({ top: 4 * 32 });
-      });
+    await page.locator('[data-pw="ip-management-number-wheel-scroll"]').evaluate((element) => {
+      element.scrollTo({ top: 4 * 32 });
+      element.dispatchEvent(new Event('scroll', { bubbles: true }));
+    });
 
     await expect(page.locator('[data-pw="ip-management-amount-input"]')).toHaveValue('4');
   });

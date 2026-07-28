@@ -63,11 +63,24 @@ function NumberWheel({
   const fabUTokens = useFabUTokens();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const syncingScrollRef = useRef(false);
-  const userScrollIntentRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
   const syncScrollTimerRef = useRef<number | null>(null);
-  const userScrollTimerRef = useRef<number | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const numbers = useMemo(() => Array.from({ length: maxValue + 1 }, (_, i) => i), [maxValue]);
+
+  function readWheelValue(el: HTMLDivElement) {
+    return Math.max(0, Math.min(maxValue, Math.round(el.scrollTop / ROW_H)));
+  }
+
+  function commitWheelValue(el: HTMLDivElement) {
+    if (syncingScrollRef.current) return;
+    const next = readWheelValue(el);
+    if (next !== valueRef.current) onChangeRef.current(next);
+  }
 
   // Keep the wheel aligned to the current value when it changes from the text
   // input or from a direct click on a wheel number.
@@ -87,6 +100,21 @@ function NumberWheel({
     }, 220);
   }, [value]);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return undefined;
+
+    const onScrollEnd = () => {
+      if (syncingScrollRef.current) return;
+      const next = Math.max(0, Math.min(maxValue, Math.round(el.scrollTop / ROW_H)));
+      if (next !== valueRef.current) onChangeRef.current(next);
+    };
+    el.addEventListener('scrollend', onScrollEnd);
+    return () => {
+      el.removeEventListener('scrollend', onScrollEnd);
+    };
+  }, [maxValue]);
+
   useEffect(
     () => () => {
       if (scrollFrameRef.current !== null) {
@@ -95,23 +123,12 @@ function NumberWheel({
       if (syncScrollTimerRef.current !== null) {
         window.clearTimeout(syncScrollTimerRef.current);
       }
-      if (userScrollTimerRef.current !== null) {
-        window.clearTimeout(userScrollTimerRef.current);
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current);
       }
     },
     [],
   );
-
-  function markUserScrollIntent() {
-    userScrollIntentRef.current = true;
-    if (userScrollTimerRef.current !== null) {
-      window.clearTimeout(userScrollTimerRef.current);
-    }
-    userScrollTimerRef.current = window.setTimeout(() => {
-      userScrollIntentRef.current = false;
-      userScrollTimerRef.current = null;
-    }, 220);
-  }
 
   function syncAmountFromScroll() {
     const el = scrollRef.current;
@@ -126,15 +143,24 @@ function NumberWheel({
       }, 120);
       return;
     }
-    if (!userScrollIntentRef.current) return;
+
     if (scrollFrameRef.current !== null) {
       window.cancelAnimationFrame(scrollFrameRef.current);
     }
     scrollFrameRef.current = window.requestAnimationFrame(() => {
       scrollFrameRef.current = null;
-      const next = Math.max(0, Math.min(maxValue, Math.round(el.scrollTop / ROW_H)));
-      if (next !== value) onChange(next);
+      commitWheelValue(el);
     });
+
+    // Momentum + scroll-snap can finish after the last continuous scroll event.
+    // Debounce a settle commit so the landed number always fills the input.
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current);
+    }
+    settleTimerRef.current = window.setTimeout(() => {
+      settleTimerRef.current = null;
+      commitWheelValue(el);
+    }, 140);
   }
 
   return (
@@ -142,10 +168,6 @@ function NumberWheel({
       ref={scrollRef}
       data-pw={testId}
       onScroll={syncAmountFromScroll}
-      onWheel={markUserScrollIntent}
-      onTouchStart={markUserScrollIntent}
-      onPointerDown={markUserScrollIntent}
-      onKeyDown={markUserScrollIntent}
       sx={{
         position: 'relative',
         height: WHEEL_HEIGHT,
