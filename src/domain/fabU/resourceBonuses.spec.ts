@@ -95,4 +95,31 @@ describe('FabU skill resource bonuses', () => {
       },
     ]);
   });
+
+  test('applies Extra HP, Extra MP, and Extra IP Heroic Skill bonuses', () => {
+    expect(
+      calculateFabUSkillResourceBonuses(
+        ['Guardian'],
+        [
+          {
+            className: 'Guardian',
+            skills: [
+              { name: 'Extra HP', level: 'M' },
+              { name: 'Extra MP', level: 'M' },
+              { name: 'Extra IP', level: 'M' },
+            ],
+          },
+        ],
+        20,
+      ),
+    ).toEqual({ hp: 10, mp: 10, ip: 4 });
+
+    expect(
+      calculateFabUSkillResourceBonuses(
+        ['Guardian'],
+        [{ className: 'Guardian', skills: [{ name: 'Extra HP', level: 'M' }] }],
+        40,
+      ),
+    ).toEqual({ hp: 20, mp: 0, ip: 0 });
+  });
 });

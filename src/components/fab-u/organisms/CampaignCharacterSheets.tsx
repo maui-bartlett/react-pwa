@@ -254,6 +254,7 @@ function FabUSummary({ state }: { state: unknown }) {
   const skillResourceBonuses = calculateFabUSkillResourceBonuses(
     character.classes.map((entry) => entry.name),
     character.skillGroups,
+    character.level,
   );
   const maxHP = mightNum * 5 + character.level + character.hpBonus + skillResourceBonuses.hp;
   const maxMP = willNum * 5 + character.level + character.mpBonus + skillResourceBonuses.mp;

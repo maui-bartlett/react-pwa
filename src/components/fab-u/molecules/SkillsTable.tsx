@@ -41,6 +41,7 @@ type SkillsTableProps = {
   skillOptions?: SkillRow[];
   masteredSkillOptions?: SkillRow[];
   selectedMasteredSkillNames?: readonly string[];
+  getMasteredSkillMaxAcquisitions?: (skillName: string) => number;
   /** When provided, a "+ Skill" button appears if this table's total levels < 10 */
   onAddSkill?: (skill: SkillRow) => void;
   /** When provided, a mastered-class button appears in place of "+ Skill". */
@@ -634,6 +635,7 @@ function SkillsTable({
   skillOptions = [],
   masteredSkillOptions = [],
   selectedMasteredSkillNames = [],
+  getMasteredSkillMaxAcquisitions,
   freeSkillLevels = 0,
   onAddSkillLevels,
   classMastered = false,
@@ -685,14 +687,22 @@ function SkillsTable({
   const availableSkillOptions = skillOptions.filter(
     (option) => !rows.some((row) => row.name === option.name),
   );
-  const selectedMasteredSkillNameSet = new Set(
-    selectedMasteredSkillNames.map((name) => name.trim().toLowerCase()),
+  const selectedMasteredSkillCounts = selectedMasteredSkillNames.reduce<Record<string, number>>(
+    (counts, name) => {
+      const key = name.trim().toLowerCase();
+      counts[key] = (counts[key] ?? 0) + 1;
+      return counts;
+    },
+    {},
   );
-  const availableMasteredSkillOptions = masteredSkillOptions.filter(
-    (option) =>
-      !rows.some((row) => row.name === option.name) &&
-      !selectedMasteredSkillNameSet.has(option.name.trim().toLowerCase()),
-  );
+  const availableMasteredSkillOptions = masteredSkillOptions.filter((option) => {
+    const key = option.name.trim().toLowerCase();
+    const selectedCount = selectedMasteredSkillCounts[key] ?? 0;
+    const maxAcquisitions = getMasteredSkillMaxAcquisitions?.(option.name) ?? option.maxLevel ?? 1;
+    return (
+      !rows.some((row) => row.name === option.name) && selectedCount < Math.max(1, maxAcquisitions)
+    );
+  });
   const activeSkill = menuState ? rows.find((row) => row.name === menuState.skillName) : null;
   const activeSkillLevel =
     menuState?.mode === 'edit' && editingSkill

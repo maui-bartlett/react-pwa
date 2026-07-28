@@ -88,6 +88,7 @@ import {
 } from '@/domain/fabU/characterMigration';
 import {
   getFabUHeroicSpellForSkill,
+  getFabUMasteredSkillMaxAcquisitions,
   getFabUMasteredSkillOptionsForClass,
 } from '@/domain/fabU/masteredSkills';
 import {
@@ -1407,6 +1408,9 @@ function FabU() {
   const selectedMasteredSkillNames = character.skillGroups.flatMap((group) =>
     group.skills.filter((skill) => skill.mastered).map((skill) => skill.name),
   );
+  const ownedSkillNames = character.skillGroups.flatMap((group) =>
+    group.skills.map((skill) => skill.name),
+  );
   const canAddClass = canAddMoreSkills && unmasteredClassCount < 3;
   const selectedClassNames = new Set(character.classes.map((cls) => cls.name));
   const convexClassByName = new Map(
@@ -1466,7 +1470,11 @@ function FabU() {
     freeBenefitsByClass,
   );
   const classNames = character.classes.map((cls) => cls.name);
-  const skillResourceBonuses = calculateFabUSkillResourceBonuses(classNames, character.skillGroups);
+  const skillResourceBonuses = calculateFabUSkillResourceBonuses(
+    classNames,
+    character.skillGroups,
+    character.level,
+  );
   const classResourceBonuses = {
     ...catalogClassResourceBonuses,
     ip: Math.max(catalogClassResourceBonuses.ip, calculateFabUFixedClassIPBonus(classNames)),
@@ -1484,7 +1492,7 @@ function FabU() {
     const legacyCustomTotal = resourceBonus(kind) - customModifierTotal(kind);
     return [
       ...buildClassResourceModifierSources(kind, classNames, freeBenefitsByClass),
-      ...listFabUSkillResourceModifierSources(classNames, character.skillGroups)
+      ...listFabUSkillResourceModifierSources(classNames, character.skillGroups, character.level)
         .filter((source) => source.resource === kind)
         .map(({ id, label, source, value }) => ({ id, label, source, value })),
       ...(legacyCustomTotal !== 0
@@ -2986,8 +2994,10 @@ function FabU() {
                   masteredSkillOptions={getFabUMasteredSkillOptionsForClass(
                     group.className,
                     masteredClassNames,
+                    ownedSkillNames,
                   )}
                   selectedMasteredSkillNames={selectedMasteredSkillNames}
+                  getMasteredSkillMaxAcquisitions={getFabUMasteredSkillMaxAcquisitions}
                   onAddSkill={
                     canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                   }
@@ -3092,8 +3102,10 @@ function FabU() {
                 masteredSkillOptions={getFabUMasteredSkillOptionsForClass(
                   group.className,
                   masteredClassNames,
+                  ownedSkillNames,
                 )}
                 selectedMasteredSkillNames={selectedMasteredSkillNames}
+                getMasteredSkillMaxAcquisitions={getFabUMasteredSkillMaxAcquisitions}
                 onAddSkill={
                   canAddMoreSkills ? (skill) => handleAddSkill(group.className, skill) : undefined
                 }

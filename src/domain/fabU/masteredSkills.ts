@@ -4,20 +4,38 @@ import type { Character } from './characterTypes';
 
 type FabUMasteredSkillOption = SkillRow & {
   classRequirements: 'any' | readonly string[];
+  /** Class skills the character must already have (e.g. Warning Shot). */
+  skillRequirements?: readonly string[];
   minimumRequiredMasteredClasses?: number;
+  /** How many times this Heroic Skill may be acquired (default 1). */
+  maxAcquisitions?: number;
   heroicSpell?: SpellRow;
 };
 
 const GENERIC_MASTERED_SKILLS: FabUMasteredSkillOption[] = [
+  {
+    name: 'Ambidextrous',
+    level: 'M',
+    maxLevel: 1,
+    mastered: true,
+    classRequirements: 'any',
+    effect:
+      'Apply two-weapon fighting benefits to weapons from different categories, including melee and ranged.',
+    summary:
+      'Apply two-weapon fighting benefits to weapons from different categories, including melee and ranged.',
+    description:
+      'You may apply the benefits of two-weapon fighting to weapons belonging to different categories, even if one is a melee weapon and the other is a ranged weapon (such as a dagger and a firearm).',
+  },
   {
     name: 'Extra HP',
     level: 'M',
     maxLevel: 1,
     mastered: true,
     classRequirements: 'any',
-    effect: 'Permanently increase your maximum Hit Points.',
+    effect: 'Permanently increase your maximum Hit Points by 10 (20 at level 40+).',
+    summary: 'Permanently increase your maximum Hit Points by 10 (20 at level 40+).',
     description:
-      'Choose this Heroic Skill to make the character noticeably harder to defeat. Record the maximum Hit Point increase in your HP modifiers and keep it as a permanent benefit.',
+      'Permanently increase your maximum Hit Points by 10. This amount increases to 20 if you are level 40 or higher.',
   },
   {
     name: 'Extra MP',
@@ -25,9 +43,10 @@ const GENERIC_MASTERED_SKILLS: FabUMasteredSkillOption[] = [
     maxLevel: 1,
     mastered: true,
     classRequirements: 'any',
-    effect: 'Permanently increase your maximum Mind Points.',
+    effect: 'Permanently increase your maximum Mind Points by 10 (20 at level 40+).',
+    summary: 'Permanently increase your maximum Mind Points by 10 (20 at level 40+).',
     description:
-      "Choose this Heroic Skill to expand the character's pool for spells, techniques, and other Mind Point costs. Record the maximum Mind Point increase in your MP modifiers and keep it as a permanent benefit.",
+      'Permanently increase your maximum Mind Points by 10. This amount increases to 20 if you are level 40 or higher.',
   },
   {
     name: 'Extra IP',
@@ -35,19 +54,20 @@ const GENERIC_MASTERED_SKILLS: FabUMasteredSkillOption[] = [
     maxLevel: 1,
     mastered: true,
     classRequirements: 'any',
-    effect: 'Permanently increase your maximum Inventory Points.',
-    description:
-      'Choose this Heroic Skill to carry more usable supplies into scenes and conflicts. Record the maximum Inventory Point increase in your IP modifiers and keep it as a permanent benefit.',
+    effect: 'Permanently increase your maximum Inventory Points by 4.',
+    summary: 'Permanently increase your maximum Inventory Points by 4.',
+    description: 'Permanently increase your maximum Inventory Points by 4.',
   },
   {
-    name: 'Extra Spell',
+    name: 'Extra Spells',
     level: 'M',
     maxLevel: 1,
     mastered: true,
     classRequirements: 'any',
-    effect: 'Expand your magical options with one additional spell choice.',
+    effect: 'Learn any two spells from Elementalist, Entropist, or Spiritist (same list).',
+    summary: 'Learn any two spells from Elementalist, Entropist, or Spiritist (same list).',
     description:
-      'Choose this Heroic Skill when a mastered character should broaden their spell access instead of gaining a resource increase. Add the extra spell to an appropriate class spell list and follow the normal spell restrictions for your table.',
+      'When you acquire this Skill, learn any two spells from one of the following lists: Elementalist, Entropist, or Spiritist. Both spells chosen this way must come from the same list, and they follow the standard rules for casting spells of that Class.',
   },
 ];
 
@@ -56,23 +76,29 @@ function heroicSkill({
   classRequirements,
   summary,
   description,
+  skillRequirements,
   minimumRequiredMasteredClasses,
+  maxAcquisitions,
   heroicSpell,
 }: {
   name: string;
   classRequirements: 'any' | readonly string[];
   summary: string;
   description: string;
+  skillRequirements?: readonly string[];
   minimumRequiredMasteredClasses?: number;
+  maxAcquisitions?: number;
   heroicSpell?: SpellRow;
 }): FabUMasteredSkillOption {
   return {
     name,
     level: 'M',
-    maxLevel: 1,
+    maxLevel: maxAcquisitions ?? 1,
     mastered: true,
     classRequirements,
+    skillRequirements,
     minimumRequiredMasteredClasses,
+    maxAcquisitions,
     effect: summary,
     summary,
     description,
@@ -82,201 +108,214 @@ function heroicSkill({
 
 const CORE_HEROIC_SKILLS: FabUMasteredSkillOption[] = [
   heroicSkill({
+    name: 'Adversity',
+    classRequirements: ['Darkblade'],
+    summary: 'Gain Check bonuses and extra damage for each status effect you suffer.',
+    description:
+      'Requirements: you must have mastered the Darkblade Class. As long as you are suffering from one or more status effects, you gain a +1 bonus on all Checks for every status effect you are suffering from, and you deal 2 extra damage for every status effect you are suffering from (be it with attacks, spells, Arcana, items or any other method).',
+  }),
+  heroicSkill({
     name: 'Arcane Echoes',
     classRequirements: ['Arcanist'],
-    summary: 'Use your Arcana to influence Clocks with supernatural momentum.',
+    summary: 'Fill or erase an extra Clock section when an Arcanum domain applies.',
     description:
-      'Requirements: you must have mastered the Arcanist Class. Your Arcana resonate through a scene instead of fading after a single flourish. When an Arcanum you have summoned or dismissed would logically help with a Clock, you may draw on that Arcanum as part of the action and let its nature influence the Clock in a meaningful way.',
+      'Requirements: you must have mastered the Arcanist Class. When you successfully perform a Check to fill or erase one or more sections of a Clock, if the domains of one or more Arcana you have bound are applicable to the Check in question, you may fill or erase an additional section of that Clock. The Game Master has final say on whether a given domain applies or not.',
   }),
   heroicSkill({
     name: 'Revelation',
     classRequirements: ['Arcanist'],
-    summary: 'Design a unique Arcanum and trigger its dismiss effect without dismissing it.',
+    summary: 'Bind a unique Arcanum and trigger its dismiss effect without dismissing it.',
     description:
-      'Requirements: you must have mastered the Arcanist Class. Work with your group to design an unknown Arcanum tied to your story. Once per scene, while merged with that Arcanum, you may spend an action and 2 Fabula Points to trigger its dismiss effect without actually dismissing it; this does not benefit from Arcane Circle.',
+      'Requirements: you must have mastered the Arcanist Class. You make contact with an unknown Arcanum and bind it to your soul. This Arcanum must be something you design together with the rest of the group; as long as you live, no one else in your world will be able to bind that Arcanum. Once per scene while you are merged with an Arcanum, you may use an action and spend 2 Fabula Points to trigger that Arcanum’s dismiss effect (if any) without dismissing them. Doing so does not trigger the Arcane Circle Skill.',
   }),
   heroicSkill({
     name: 'Chimeric Mastery',
     classRequirements: ['Chimerist'],
-    summary: 'Learn spells from additional Species and increase your spell limit.',
+    maxAcquisitions: 2,
+    summary: 'Learn Spell Mimic spells from more Species and raise your spell limit by 2.',
     description:
-      'Requirements: you must have mastered the Chimerist Class. Your magic adapts to a wider range of creatures. You may learn Chimerist spells from new Species beyond your usual limits, and your maximum number of Chimerist spells increases, making Spell Mimic characters feel more like true living archives of monster magic.',
+      'Requirements: you must have mastered the Chimerist Class. Choose two creature Species among construct, demon, elemental, and undead. You can now use Spell Mimic to learn spells from creatures of the chosen Species. This Heroic Skill may be acquired up to twice, each time selecting two Species from the list above. Whenever you acquire this Skill, you also increase your upper limit for memorized Chimerist spells by 2.',
   }),
   heroicSkill({
     name: 'Comet',
     classRequirements: ['Entropist'],
     summary: 'Learn Comet, the ultimate Entropist spell for untyped enemy-wide damage.',
     description:
-      'Requirements: you must have mastered the Entropist Class. You learn the ultimate Entropist spell: Comet. Comet costs 50 MP, has Target: Special, and Duration: Instantaneous. Choose one option: deal 60 damage to one enemy you can see; or deal 40 damage to every enemy you can see. This damage increases by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell has no type and ignores damage Affinities.',
+      'Requirements: you must have mastered the Entropist Class. You learn the ultimate Entropist spell: Comet. Comet costs 50 MP, has Target: Special, and Duration: Instantaneous. Choose one option: one creature you can see suffers 60 damage; or you choose any number of creatures you can see, and each of them suffers 40 damage. These amounts increase by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell has no type (and thus is not affected by damage Affinities).',
     heroicSpell: {
       name: 'Comet',
       cost: '50 MP',
       target: 'Special',
       duration: 'Instant',
       effect:
-        'Choose one visible enemy for 60 untyped damage, or every visible enemy for 40 untyped damage.',
+        'Choose one visible creature for 60 untyped damage, or any number of visible creatures for 40 untyped damage.',
       summary:
-        'Choose one visible enemy for 60 untyped damage, or every visible enemy for 40 untyped damage.',
+        'Choose one visible creature for 60 untyped damage, or any number of visible creatures for 40 untyped damage.',
       description:
-        'Comet costs 50 MP, has Target: Special, and Duration: Instantaneous. Choose one option: deal 60 damage to one enemy you can see; or deal 40 damage to every enemy you can see. This damage increases by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell has no type and ignores damage Affinities.',
+        'Comet costs 50 MP, has Target: Special, and Duration: Instantaneous. Choose one option: one creature you can see suffers 60 damage; or you choose any number of creatures you can see, and each of them suffers 40 damage. These amounts increase by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell has no type (and thus is not affected by damage Affinities).',
     },
   }),
   heroicSkill({
     name: 'Deep Pockets',
     classRequirements: ['Tinkerer'],
-    summary: 'Reduce Inventory Point costs for your improvised tools and supplies.',
+    summary: 'Spend 1 less Inventory Point whenever you spend IP (minimum 1).',
     description:
-      'Requirements: you must have mastered the Tinkerer Class. Your preparation is almost impossible to exhaust. When you spend Inventory Points on Tinkerer options or comparable crafted resources, reduce the pressure of that cost as appropriate for the Skill at your table, letting you keep gadgets, mixtures, and emergency tools flowing longer.',
+      'Requirements: you must have mastered the Tinkerer Class. When you spend Inventory Points, you spend 1 less Inventory Point (to a minimum of 1 Inventory Point).',
   }),
   heroicSkill({
     name: 'Disarming Rhetoric',
     classRequirements: ['Orator'],
-    summary: 'Use words to persuade enemies to back down or retreat.',
+    summary: 'Spend MP to make a shaken or Crisis soldier-rank foe leave conflict peacefully.',
     description:
-      'Requirements: you must have mastered the Orator Class. Your words can make violence feel foolish, costly, or unnecessary. When the fiction supports it, you may use your social authority to convince enemies to withdraw, surrender, or abandon a hostile plan instead of simply applying a combat penalty.',
+      'Requirements: you must have mastered the Orator Class. During a conflict scene, you may use an action and choose a soldier-rank creature that can hear and understand you. If that creature is shaken or in Crisis, you may spend an amount of Mind Points equal to [20 + half that creature’s level] to have them peacefully leave the conflict. The Game Master will tell you which creatures are soldiers.',
   }),
   heroicSkill({
     name: 'Heartbreaker',
     classRequirements: ['Darkblade'],
-    summary: 'Sacrifice HP to empower a devastating attack.',
+    summary: 'Spend half your current HP to deal Bond-scaled extra damage once per turn.',
     description:
-      'Requirements: you must have mastered the Darkblade Class. Your pain becomes a blade. When you strike with the force of your anguish, you may sacrifice your own Hit Points to dramatically increase the damage of the attack, turning personal suffering into a finishing blow.',
+      'Requirements: you must have mastered the Darkblade Class. When you hit a creature with an attack, if that attack only targeted that creature and you have a Bond towards them, you may choose to spend half of your current Hit Points, rounded down. If you do, the attack deals extra damage equal to [10 multiplied by the strength of your Bond towards the target]. You may use this Skill only on your turn during a conflict, and only once per turn.',
   }),
   heroicSkill({
     name: 'Hope',
     classRequirements: ['Spiritist'],
-    summary: 'Learn Hope, the ultimate Spiritist spell.',
+    summary: 'Learn Hope, the ultimate Spiritist spell that revives a surrendered PC.',
     description:
-      'Requirements: you must have mastered the Spiritist Class. You learn the ultimate Spiritist spell: Hope. Use it as a major restorative miracle for scenes where faith, resolve, and protection should turn the tide for the group.',
+      'Requirements: you must have mastered the Spiritist Class. You learn the ultimate Spiritist spell: Hope. Hope costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose a Player Character who surrendered but is still present on the scene; that Player Character immediately regains consciousness and recovers an amount of Hit Points equal to their Crisis score. This spell does not undo the consequences of their surrender and cannot help characters who left the scene. A Player Character can only be affected by this spell once per scene.',
     heroicSpell: {
       name: 'Hope',
       cost: '40 MP',
       target: 'Special',
       duration: 'Instant',
-      effect: 'A major restorative miracle that turns the tide for the group.',
-      summary: 'A major restorative miracle that turns the tide for the group.',
+      effect:
+        'Revive a surrendered Player Character still on the scene, restoring HP equal to their Crisis score.',
+      summary:
+        'Revive a surrendered Player Character still on the scene, restoring HP equal to their Crisis score.',
       description:
-        'Hope is the ultimate Spiritist spell. Use it as a major restorative miracle for scenes where faith, resolve, and protection should turn the tide for the group.',
+        'Hope costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose a Player Character who surrendered but is still present on the scene; that Player Character immediately regains consciousness and recovers an amount of Hit Points equal to their Crisis score. This spell does not undo the consequences of their surrender and cannot help characters who left the scene. A Player Character can only be affected by this spell once per scene.',
     },
   }),
   heroicSkill({
     name: 'Heroic Companion',
     classRequirements: ['Wayfarer', 'Tamer'],
-    summary: 'Let your companion grow into a stronger heroic presence.',
+    skillRequirements: ['Faithful Companion'],
+    summary: 'Strengthen your companion’s HP, an Attribute die, and Skills.',
     description:
-      'Requirements: you must have mastered the Wayfarer Class, or have a companion-focused mastered Class. Your companion becomes more than a helper. Improve the companion as a heroic ally, increasing its reliability and scene impact so it can stand beside the party during major conflicts and journeys.',
+      'Requirements: you must have mastered the Wayfarer Class, and must have acquired the Faithful Companion Skill. Your companion’s maximum Hit Points increase by 10. Choose one of your companion’s Attributes among Dexterity, Insight, Might, and Willpower; the chosen Attribute is permanently increased by one die size (up to a maximum size of d12). Your companion gains an additional Skill; when you reach level 40, or if you have already reached it, your companion gains an additional Skill.',
   }),
   heroicSkill({
     name: 'Mathemagic',
     classRequirements: ['Loremaster'],
-    summary: 'Extend spells that normally affect only a single target.',
+    summary: 'Double a single-target spell’s MP cost to hit matching Attribute die sizes.',
     description:
-      'Requirements: you must have mastered the Loremaster Class. Your calculations reshape magic with terrifying elegance. When a spell normally affects a single target and your formulas can justify the extension, you may broaden that spell according to the Skill rules, turning precise theory into practical battlefield control.',
+      'Requirements: you must have mastered the Loremaster Class. When you cast a spell with a target of “One creature”, you may double the spell’s total MP cost. If you do, choose an Attribute (Dexterity, Insight, Might, or Willpower) and a die size (d6, d8, d10, or d12). The spell will now target all creatures present on the scene whose current Attribute die size matches your choice, regardless of whether they are friends or foes (including you). The effects of the spell are fully applied to every target; if the spell is an offensive spell, you perform a single Magic Check and compare it against the Magic Defense of each target.',
   }),
   heroicSkill({
     name: 'Monkey Grip',
     classRequirements: ['Fury'],
-    summary: 'Wield certain two-handed weapons in one hand.',
+    summary: 'Equip two-handed flail, heavy, spear, or sword weapons in one hand.',
     description:
-      'Requirements: you must have mastered the Fury Class. Choose one weapon Category among flail, heavy, spear, or sword. You may equip two-handed weapons of the chosen Category in a single hand, allowing shield, dual-wielding, or other one-hand synergies while still carrying oversized force.',
+      'Requirements: you must have mastered the Fury Class. You may equip two-handed weapons belonging to the flail, heavy, spear, or sword Categories in a single hand slot. This allows you to use two-weapon fighting with two two-handed weapons, or to equip a two-handed weapon in your main hand slot and a shield in your off-hand slot.',
   }),
   heroicSkill({
     name: 'Perfect Aim',
     classRequirements: ['Sharpshooter'],
+    skillRequirements: ['Warning Shot'],
     summary: 'Choose two Warning Shot options instead of one.',
     description:
-      'Requirements: you must have mastered the Sharpshooter Class and have the Warning Shot Skill. When your ranged attack hits and deals no damage because of Warning Shot, you may choose two Warning Shot options instead of one.',
+      'Requirements: you must have mastered the Sharpshooter Class and must have acquired the Warning Shot Skill. When you hit one or more creatures with a ranged attack and choose to deal no damage in order to gain the benefits of the Warning Shot Skill, you may choose two options instead of one.',
   }),
   heroicSkill({
     name: 'Pillage',
     classRequirements: ['Rogue'],
-    summary: 'Use Soul Steal against multiple creatures at once.',
+    skillRequirements: ['Soul Steal'],
+    summary: 'Use Soul Steal against any number of creatures at once.',
     description:
-      'Requirements: you must have mastered the Rogue Class and have the Soul Steal Skill. When you use Soul Steal, you may target any number of creatures you can affect, making one Check against each target’s Magic Defense.',
+      'Requirements: you must have mastered the Rogue Class and must have acquired the Soul Steal Skill. When you use the Soul Steal Skill, you may target any number of creatures at the same time. You perform a single Check and compare it against the Magic Defense of each creature you are targeting.',
   }),
   heroicSkill({
     name: 'Powerful Shot',
     classRequirements: ['Sharpshooter'],
-    summary: 'Add extra damage to ranged attacks.',
+    summary: 'Add extra damage to ranged attacks (5, or 10 at level 40+).',
     description:
-      'Requirements: you must have mastered the Sharpshooter Class. Your ranged attacks deal 5 extra damage. If you are level 40 or higher, they deal 10 extra damage instead.',
+      'Requirements: you must have mastered the Sharpshooter Class. When you hit one or more creatures with a ranged attack, that attack deals 5 extra damage to each creature. This amount increases to 10 if you are level 40 or higher.',
   }),
   heroicSkill({
     name: 'Powerful Spell',
     classRequirements: ['Chimerist', 'Elementalist', 'Entropist', 'Spiritist'],
-    summary: 'Add extra damage to offensive spells.',
+    summary: 'Add extra damage to damaging spells (5, or 10 at level 40+).',
     description:
-      'Requirements: you must have mastered Chimerist, Elementalist, Entropist, or Spiritist. When one of your spells deals damage to one or more targets, that spell deals 5 extra damage to each target. If you are level 40 or higher, it deals 10 extra damage to each target instead.',
+      'Requirements: you must have mastered one or more Classes among Chimerist, Elementalist, Entropist, or Spiritist. When you cast a spell that deals damage to one or more creatures, that spell deals 5 extra damage to each creature. This amount increases to 10 if you are level 40 or higher.',
   }),
   heroicSkill({
     name: 'Powerful Strike',
     classRequirements: ['Fury', 'Weaponmaster'],
-    summary: 'Add extra damage to melee attacks.',
+    summary: 'Add extra damage to melee attacks (5, or 10 at level 40+).',
     description:
-      'Requirements: you must have mastered Fury or Weaponmaster. Your melee attacks deal 5 extra damage to each target. If you are level 40 or higher, they deal 10 extra damage to each target instead.',
+      'Requirements: you must have mastered one or more Classes among Fury or Weaponmaster. When you hit one or more creatures with a melee attack, that attack deals 5 extra damage to each creature. This amount increases to 10 if you are level 40 or higher.',
   }),
   heroicSkill({
     name: 'Predictable!',
     classRequirements: ['Loremaster'],
-    summary: 'Read a foe and tax a chosen action type with MP.',
+    summary: 'Spend 20 MP to tax a chosen action type when you know two Traits.',
     description:
-      'Requirements: you must have mastered the Loremaster Class. As an action, spend 20 MP and choose a creature you can analyze. If you know at least two of that creature’s Traits, choose a type of action. Until the start of your next turn, that creature must spend 20 MP to perform that action or choose a different action.',
+      'Requirements: you must have mastered the Loremaster Class. During a conflict, you may use an action and spend 20 Mind Points to anticipate the upcoming moves of a creature you can see, as long as you know two or more of that creature’s Traits. If you do so, choose one type of action among Attack, Guard, Objective, Spell, or Skill. Until the start of your next turn, the creature must spend 20 Mind Points whenever they wish to perform that action; if they can’t, they must perform a different action.',
   }),
   heroicSkill({
     name: 'Rampart',
     classRequirements: ['Guardian'],
-    summary: 'Begin conflicts with broad resistance and status protection.',
+    summary: 'In round one of conflict, resist all damage and ignore new statuses.',
     description:
-      'Requirements: you must have mastered the Guardian Class. During the first round of a conflict, you have Resistance to all damage and cannot suffer new status effects. This does not clear statuses you were already suffering.',
+      'Requirements: you must have mastered the Guardian Class. During the first round of each conflict scene, you have Resistance to all damage types and cannot suffer status effects (you do not recover from preexisting status effects, however). These benefits last until the end of the first round.',
   }),
   heroicSkill({
     name: 'Repetition',
     classRequirements: ['Orator'],
-    summary: 'Repeat Condemn or Encourage once per turn by paying MP.',
+    summary: 'Once per turn, immediately repeat Condemn or Encourage by paying MP.',
     description:
-      'Requirements: you must have mastered the Orator Class. Once per turn, immediately after you use Condemn or Encourage, you may pay the required MP to use that same Skill again.',
+      'Requirements: you must have mastered the Orator Class. Once per turn during a conflict, after you use the Condemn Skill or the Encourage Skill, you may immediately perform that same Skill again (on the same target or a different one). You must still pay the Mind Point cost for the second use of the Skill.',
   }),
   heroicSkill({
     name: 'Status Immunity',
     classRequirements: ['Wayfarer'],
-    summary: 'Become immune to one chosen status effect.',
+    summary: 'Become completely immune to one status effect of your choice.',
     description:
-      'Requirements: you must have mastered the Wayfarer Class. Choose one status effect. You are immune to that status, representing the hardiness and lived experience of a legendary traveler.',
+      'Requirements: you must have mastered the Wayfarer Class. You become completely immune to a single status effect of your choice.',
   }),
   heroicSkill({
     name: 'Tempest Strike',
     classRequirements: ['Weaponmaster'],
-    summary: 'Concentrate multi-attacks on one creature for bonus damage.',
+    summary: 'Concentrate a multi melee attack on one foe for bonus damage.',
     description:
-      'Requirements: you must have mastered the Weaponmaster Class. When you perform a melee multi-attack and choose only one creature as the target, deal 5 extra damage if the attack has multi (2), or 10 extra damage if it has multi (3 or higher).',
+      'Requirements: you must have mastered the Weaponmaster Class. When you perform a melee attack with the multi property, if you choose to target only one creature, the attack deals 5 extra damage if the attack had multi (2), or 10 extra damage if the attack had multi (3 or higher).',
   }),
   heroicSkill({
     name: 'Unbreakable',
     classRequirements: ['Guardian'],
-    summary: 'Once per scene, remain standing at 1 HP instead of dropping to 0.',
+    summary: 'Once per scene, remain at 1 HP instead of dropping to 0.',
     description:
-      'Requirements: you must have mastered the Guardian Class. Once per scene, when you would be reduced to 0 Hit Points, you are reduced to exactly 1 Hit Point instead.',
+      'Requirements: you must have mastered the Guardian Class. Once per scene when you are about to be reduced to 0 Hit Points, you may instead choose to withstand the pain and be reduced to exactly 1 Hit Point.',
   }),
   heroicSkill({
     name: 'Upgrade',
     classRequirements: ['Tinkerer'],
-    summary: 'Add or replace a Quality on equipment during a rest.',
+    summary: 'Once per rest, add or replace a Quality on a weapon, armor, or shield.',
     description:
-      'Requirements: you must have mastered the Tinkerer Class. Once per rest, choose a weapon, armor, or shield and add or replace one Quality following the normal Quality limits and cost modifier. Spend twice the Quality’s cost modifier; the item is ready at the end of the rest.',
+      'Requirements: you must have mastered the Tinkerer Class. Once per rest, you may choose a weapon, armor, or shield that has no Quality or replace a current Quality with a different one from the default lists for that item type. The cost modifier of the chosen Quality cannot be higher than +1000 zenit, and you must spend an amount of zenit equal to twice the cost modifier of the chosen Quality. The item will be ready at the end of the rest, and you may only modify one item per rest.',
   }),
   heroicSkill({
     name: 'Vanish',
     classRequirements: ['Rogue'],
-    summary: 'After hitting enemies, spend FP to disappear from their sight.',
+    summary: 'After hitting foes, spend 1 FP so they cannot see you until your next turn.',
     description:
-      'Requirements: you must have mastered the Rogue Class. After you hit one or more creatures with an attack, you may spend 1 Fabula Point. Those creatures cannot perform actions that require seeing you until the start of your next turn.',
+      'Requirements: you must have mastered the Rogue Class. When you hit one or more creatures with an attack, you may spend 1 Fabula Point. If you do so, each creature hit by the attack becomes unable to perform any action that requires them to see you until the start of your next turn.',
   }),
   heroicSkill({
     name: 'Volcano',
     classRequirements: ['Elementalist'],
-    summary: 'Learn Volcano, the ultimate Elementalist spell.',
+    summary: 'Learn Volcano, the ultimate Elementalist fire spell.',
     description:
-      'Requirements: you must have mastered the Elementalist Class. You learn the ultimate Elementalist spell: Volcano. Volcano costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose one visible creature to take 50 fire damage, or any number of visible creatures to each take 30 fire damage. This damage ignores Resistance and Immunity.',
+      'Requirements: you must have mastered the Elementalist Class. You learn the ultimate Elementalist spell: Volcano. Volcano costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose one option: one creature you can see suffers 50 fire damage; or you choose any number of creatures you can see, and each of them suffers 30 fire damage. These amounts increase by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell ignores Resistances and Immunities.',
     heroicSpell: {
       name: 'Volcano',
       cost: '40 MP',
@@ -287,7 +326,7 @@ const CORE_HEROIC_SKILLS: FabUMasteredSkillOption[] = [
       summary:
         'Choose one visible creature for 50 fire damage, or any number of visible creatures for 30 fire damage.',
       description:
-        'Volcano costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose one visible creature to take 50 fire damage, or any number of visible creatures to each take 30 fire damage. This damage ignores Resistance and Immunity.',
+        'Volcano costs 40 MP, has Target: Special, and Duration: Instantaneous. Choose one option: one creature you can see suffers 50 fire damage; or you choose any number of creatures you can see, and each of them suffers 30 fire damage. These amounts increase by 5 if you are level 20 or higher, or by 10 if you are level 40 or higher. Damage dealt by this spell ignores Resistances and Immunities.',
     },
   }),
 ];
@@ -650,13 +689,26 @@ function toSkillRow(option: FabUMasteredSkillOption): SkillRow {
   };
 }
 
+function hasRequiredSkills(
+  option: FabUMasteredSkillOption,
+  ownedSkillNames: readonly string[],
+): boolean {
+  if (!option.skillRequirements?.length) return true;
+  const owned = new Set(ownedSkillNames.map((name) => name.trim().toLowerCase()));
+  return option.skillRequirements.every((required) => owned.has(required.trim().toLowerCase()));
+}
+
 function isMasteredSkillAvailableForClass(
   option: FabUMasteredSkillOption,
   className: string,
   masteredClassNames: readonly string[],
+  ownedSkillNames: readonly string[] = [],
 ) {
+  if (!hasRequiredSkills(option, ownedSkillNames)) return false;
+  // Heroic Skills are chosen when mastering a Class; only offer them on mastered classes.
+  if (!masteredClassNames.includes(className)) return false;
+
   if (option.classRequirements === 'any') return true;
-  if (!option.classRequirements.includes(className)) return false;
 
   const matchingMasteredClassCount = option.classRequirements.filter((requiredClass) =>
     masteredClassNames.includes(requiredClass),
@@ -664,12 +716,20 @@ function isMasteredSkillAvailableForClass(
   return matchingMasteredClassCount >= (option.minimumRequiredMasteredClasses ?? 1);
 }
 
+function getFabUMasteredSkillMaxAcquisitions(skillName: string): number {
+  const option = MASTERED_SKILL_OPTIONS.find(
+    (entry) => entry.name.trim().toLowerCase() === skillName.trim().toLowerCase(),
+  );
+  return option?.maxAcquisitions ?? option?.maxLevel ?? 1;
+}
+
 function getFabUMasteredSkillOptionsForClass(
   className: string,
   masteredClassNames: readonly string[],
+  ownedSkillNames: readonly string[] = [],
 ): SkillRow[] {
   return MASTERED_SKILL_OPTIONS.filter((option) =>
-    isMasteredSkillAvailableForClass(option, className, masteredClassNames),
+    isMasteredSkillAvailableForClass(option, className, masteredClassNames, ownedSkillNames),
   ).map(toSkillRow);
 }
 
@@ -717,6 +777,7 @@ function repairFabUGrantedHeroicSpells(character: Character): Character {
 
 export {
   getFabUHeroicSpellForSkill,
+  getFabUMasteredSkillMaxAcquisitions,
   getFabUMasteredSkillOptionsForClass,
   repairFabUGrantedHeroicSpells,
 };

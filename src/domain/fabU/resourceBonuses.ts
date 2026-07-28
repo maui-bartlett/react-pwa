@@ -108,10 +108,14 @@ function calculateFabUFixedClassIPBonus(classNames: readonly string[]): number {
 function listFabUSkillResourceModifierSources(
   classNames: readonly string[],
   skillGroups: readonly FabUSkillGroupLike[],
+  characterLevel = 0,
 ): FabUSkillResourceModifierSource[] {
   const ownedClasses = new Set(classNames.map((name) => name.trim().toLowerCase()));
+  const ownedSkills = new Set(
+    skillGroups.flatMap((group) => group.skills.map((skill) => skill.name.trim().toLowerCase())),
+  );
 
-  return SKILL_RESOURCE_BONUSES.flatMap((rule) => {
+  const classSkillSources = SKILL_RESOURCE_BONUSES.flatMap((rule) => {
     if (!ownedClasses.has(rule.className.trim().toLowerCase())) return [];
 
     const skillLevel = getFabUSkillLevel(skillGroups, rule.className, rule.skillName);
@@ -130,13 +134,51 @@ function listFabUSkillResourceModifierSources(
       },
     ];
   });
+
+  const heroicSources: FabUSkillResourceModifierSource[] = [];
+  if (ownedSkills.has('extra hp')) {
+    const value = characterLevel >= 40 ? 20 : 10;
+    heroicSources.push({
+      id: 'skill-hp-heroic-Extra HP',
+      label: 'Extra HP',
+      source: 'Heroic Skill · Permanently increase your maximum Hit Points.',
+      value,
+      resource: 'hp',
+    });
+  }
+  if (ownedSkills.has('extra mp')) {
+    const value = characterLevel >= 40 ? 20 : 10;
+    heroicSources.push({
+      id: 'skill-mp-heroic-Extra MP',
+      label: 'Extra MP',
+      source: 'Heroic Skill · Permanently increase your maximum Mind Points.',
+      value,
+      resource: 'mp',
+    });
+  }
+  if (ownedSkills.has('extra ip')) {
+    heroicSources.push({
+      id: 'skill-ip-heroic-Extra IP',
+      label: 'Extra IP',
+      source: 'Heroic Skill · Permanently increase your maximum Inventory Points by 4.',
+      value: 4,
+      resource: 'ip',
+    });
+  }
+
+  return [...classSkillSources, ...heroicSources];
 }
 
 function calculateFabUSkillResourceBonuses(
   classNames: readonly string[],
   skillGroups: readonly FabUSkillGroupLike[],
+  characterLevel = 0,
 ): FabUResourceBonuses {
-  return listFabUSkillResourceModifierSources(classNames, skillGroups).reduce<FabUResourceBonuses>(
+  return listFabUSkillResourceModifierSources(
+    classNames,
+    skillGroups,
+    characterLevel,
+  ).reduce<FabUResourceBonuses>(
     (totals, source) => ({
       ...totals,
       [source.resource]: totals[source.resource] + source.value,
