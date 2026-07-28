@@ -4,6 +4,19 @@ type FabUResourceBonuses = {
   ip: number;
 };
 
+type FabUSkillResourceModifierSource = {
+  id: string;
+  label: string;
+  source: string;
+  value: number;
+  resource: keyof FabUResourceBonuses;
+};
+
+type FabUSkillGroupLike = {
+  className: string;
+  skills: readonly { name: string; level?: string }[];
+};
+
 const EMPTY_RESOURCE_BONUSES: FabUResourceBonuses = { hp: 0, mp: 0, ip: 0 };
 
 const FIXED_CLASS_IP_BONUSES: Readonly<Record<string, number>> = {
@@ -12,6 +25,35 @@ const FIXED_CLASS_IP_BONUSES: Readonly<Record<string, number>> = {
   Symbolist: 2,
   Tinkerer: 2,
 };
+
+/** Permanent max-resource bonuses granted by specific class skills (SL × amount). */
+const SKILL_RESOURCE_BONUSES: ReadonlyArray<{
+  className: string;
+  skillName: string;
+  resource: keyof FabUResourceBonuses;
+  amountPerLevel: number;
+  source: string;
+}> = [
+  {
+    className: 'Loremaster',
+    skillName: 'Focused',
+    resource: 'mp',
+    amountPerLevel: 3,
+    source: 'Permanently increase your maximum Mind Points by 【SL × 3】.',
+  },
+];
+
+function getFabUSkillLevel(
+  skillGroups: readonly FabUSkillGroupLike[],
+  className: string,
+  skillName: string,
+): number {
+  const skill = skillGroups
+    .find((group) => group.className.trim().toLowerCase() === className.trim().toLowerCase())
+    ?.skills.find((entry) => entry.name.trim().toLowerCase() === skillName.trim().toLowerCase());
+  const level = Number.parseInt(skill?.level ?? '0', 10);
+  return Number.isFinite(level) ? Math.max(0, level) : 0;
+}
 
 function parseFabUClassResourceBonuses(freeBenefits: readonly string[]): FabUResourceBonuses {
   return freeBenefits.reduce<FabUResourceBonuses>(
@@ -63,10 +105,53 @@ function calculateFabUFixedClassIPBonus(classNames: readonly string[]): number {
   );
 }
 
+function listFabUSkillResourceModifierSources(
+  classNames: readonly string[],
+  skillGroups: readonly FabUSkillGroupLike[],
+): FabUSkillResourceModifierSource[] {
+  const ownedClasses = new Set(classNames.map((name) => name.trim().toLowerCase()));
+
+  return SKILL_RESOURCE_BONUSES.flatMap((rule) => {
+    if (!ownedClasses.has(rule.className.trim().toLowerCase())) return [];
+
+    const skillLevel = getFabUSkillLevel(skillGroups, rule.className, rule.skillName);
+    if (skillLevel <= 0) return [];
+
+    const value = skillLevel * rule.amountPerLevel;
+    if (value === 0) return [];
+
+    return [
+      {
+        id: `skill-${rule.resource}-${rule.className}-${rule.skillName}`,
+        label: rule.skillName,
+        source: `${rule.className} · ${rule.source}`,
+        value,
+        resource: rule.resource,
+      },
+    ];
+  });
+}
+
+function calculateFabUSkillResourceBonuses(
+  classNames: readonly string[],
+  skillGroups: readonly FabUSkillGroupLike[],
+): FabUResourceBonuses {
+  return listFabUSkillResourceModifierSources(classNames, skillGroups).reduce<FabUResourceBonuses>(
+    (totals, source) => ({
+      ...totals,
+      [source.resource]: totals[source.resource] + source.value,
+    }),
+    { ...EMPTY_RESOURCE_BONUSES },
+  );
+}
+
 export {
   EMPTY_RESOURCE_BONUSES,
   calculateFabUClassResourceBonuses,
   calculateFabUFixedClassIPBonus,
+  calculateFabUSkillResourceBonuses,
+  getFabUSkillLevel,
+  listFabUSkillResourceModifierSources,
   parseFabUClassResourceBonuses,
 };
-export type { FabUResourceBonuses };
+export type { FabUResourceBonuses, FabUSkillGroupLike, FabUSkillResourceModifierSource };

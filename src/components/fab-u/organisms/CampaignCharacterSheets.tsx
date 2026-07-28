@@ -11,6 +11,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { ChevronLeft, Minus, Plus, TimerReset, Trash2, UserRound } from 'lucide-react';
 
 import { deserializeCharacterFromBackend } from '@/domain/fabU/characterMigration';
+import { calculateFabUSkillResourceBonuses } from '@/domain/fabU/resourceBonuses';
 
 import { api } from '../../../../convex/_generated/api';
 import type { Id } from '../../../../convex/_generated/dataModel';
@@ -250,9 +251,13 @@ function FabUSummary({ state }: { state: unknown }) {
 
   const mightNum = DIE_TO_NUMBER[character.attributes.might.die] ?? 6;
   const willNum = DIE_TO_NUMBER[character.attributes.willpower.die] ?? 6;
-  const maxHP = mightNum * 5 + character.level + character.hpBonus;
-  const maxMP = willNum * 5 + character.level + character.mpBonus;
-  const maxIP = character.maxIP + character.ipBonus;
+  const skillResourceBonuses = calculateFabUSkillResourceBonuses(
+    character.classes.map((entry) => entry.name),
+    character.skillGroups,
+  );
+  const maxHP = mightNum * 5 + character.level + character.hpBonus + skillResourceBonuses.hp;
+  const maxMP = willNum * 5 + character.level + character.mpBonus + skillResourceBonuses.mp;
+  const maxIP = character.maxIP + character.ipBonus + skillResourceBonuses.ip;
   const classes = character.classes
     .filter((entry) => entry.name.trim())
     .map((entry) => `${entry.name} ${entry.level}`)

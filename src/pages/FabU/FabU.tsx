@@ -93,6 +93,8 @@ import {
 import {
   calculateFabUClassResourceBonuses,
   calculateFabUFixedClassIPBonus,
+  calculateFabUSkillResourceBonuses,
+  listFabUSkillResourceModifierSources,
 } from '@/domain/fabU/resourceBonuses';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
@@ -1250,7 +1252,7 @@ function FabU() {
       if (kind !== 'ip') return nextCharacter;
       const nextIP = Math.min(
         nextCharacter.currentIP,
-        getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip),
+        getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
       );
       return {
         ...nextCharacter,
@@ -1464,6 +1466,7 @@ function FabU() {
     freeBenefitsByClass,
   );
   const classNames = character.classes.map((cls) => cls.name);
+  const skillResourceBonuses = calculateFabUSkillResourceBonuses(classNames, character.skillGroups);
   const classResourceBonuses = {
     ...catalogClassResourceBonuses,
     ip: Math.max(catalogClassResourceBonuses.ip, calculateFabUFixedClassIPBonus(classNames)),
@@ -1481,6 +1484,9 @@ function FabU() {
     const legacyCustomTotal = resourceBonus(kind) - customModifierTotal(kind);
     return [
       ...buildClassResourceModifierSources(kind, classNames, freeBenefitsByClass),
+      ...listFabUSkillResourceModifierSources(classNames, character.skillGroups)
+        .filter((source) => source.resource === kind)
+        .map(({ id, label, source, value }) => ({ id, label, source, value })),
       ...(legacyCustomTotal !== 0
         ? [
             {
@@ -1501,8 +1507,8 @@ function FabU() {
         })),
     ];
   };
-  const hpModifier = character.hpBonus + classResourceBonuses.hp;
-  const mpModifier = character.mpBonus + classResourceBonuses.mp;
+  const hpModifier = character.hpBonus + classResourceBonuses.hp + skillResourceBonuses.hp;
+  const mpModifier = character.mpBonus + classResourceBonuses.mp + skillResourceBonuses.mp;
   const totalHP =
     (DIE_VALUES[character.attributes.might.die] ?? 8) * 5 + character.level + hpModifier;
   const totalMP =
@@ -1521,7 +1527,10 @@ function FabU() {
         persistentPulseColor: crisisPulseColor,
       }
     : {};
-  const totalMaxIP = getFabUCharacterMaxIP(character, classResourceBonuses.ip);
+  const totalMaxIP = getFabUCharacterMaxIP(
+    character,
+    classResourceBonuses.ip + skillResourceBonuses.ip,
+  );
   useEffect(() => {
     const currentIP = Number.isFinite(character.currentIP) ? character.currentIP : totalMaxIP;
     const nextIP = Math.max(0, Math.min(totalMaxIP, currentIP));
