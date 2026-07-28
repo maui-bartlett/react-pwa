@@ -3992,7 +3992,7 @@ function FabU() {
       >
         <DialogTitle
           sx={{
-            pb: 0.6,
+            pb: 1.5,
             color: fabUTokens.color.textPrimary,
             fontSize: '1rem',
             fontWeight: 900,
@@ -4001,7 +4001,12 @@ function FabU() {
           Edit Character Name
         </DialogTitle>
         <DialogContent
-          sx={{ pt: 1.2, bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : 'transparent' }}
+          sx={{
+            // MUI collapses padding-top when DialogContent follows DialogTitle;
+            // keep an explicit gap under the header before First Name.
+            pt: '12px !important',
+            bgcolor: fabUTokens.isDark ? fabUTokens.color.canvas : 'transparent',
+          }}
         >
           <Stack spacing={0.85}>
             {(
