@@ -120,20 +120,28 @@ test.describe('HP/MP management modal', () => {
     await expect(page.locator('[data-pw="mp-management-modal"]')).toBeHidden();
   });
 
-  test('existing characters with IP above base max keep that IP', async ({ page }) => {
+  test('Extra IP skill preserves high current IP without inventing a custom modifier', async ({
+    page,
+  }) => {
     await patchActiveFabUCharacter(page, {
-      currentIP: 12,
-      inventoryPoints: 12,
+      currentIP: 10,
+      inventoryPoints: 10,
       maxIP: 6,
-      ipBonus: 0,
+      ipBonus: 4,
       customResourceModifiers: [],
-      classes: [{ name: 'Guardian', level: 5, subtitle: 'Protector' }],
+      classes: [{ name: 'Guardian', level: 10, subtitle: 'Protector' }],
+      skillGroups: [
+        {
+          className: 'Guardian',
+          skills: [{ name: 'Extra IP', level: 'M', maxLevel: 1, mastered: true, effect: '+4 IP' }],
+        },
+      ],
     });
     await page.reload();
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
-    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('p').first()).toHaveText('12');
-    await expect(page.locator('[data-pw="statpill-ov-ip"]')).toContainText('/ 12');
+    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('p').first()).toHaveText('10');
+    await expect(page.locator('[data-pw="statpill-ov-ip"]')).toContainText('/ 10');
 
     await expect
       .poll(async () => {
@@ -144,9 +152,54 @@ test.describe('HP/MP management modal', () => {
           ipBonus: character.ipBonus,
         };
       })
-      .toEqual({ currentIP: 12, inventoryPoints: 12, ipBonus: 6 });
+      .toEqual({ currentIP: 10, inventoryPoints: 10, ipBonus: 0 });
+
+    await page.locator('[data-pw="statpill-ov-ip"]').click();
+    await page.locator('[data-pw="ip-management-show-modifiers"]').click();
+    await expect(
+      page.locator('[data-pw="ip-management-modifier-source"]').filter({ hasText: 'Extra IP' }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator('[data-pw="ip-management-modifier-source"]')
+        .filter({ hasText: 'Saved max modifier' }),
+    ).toHaveCount(0);
+    await page.locator('[data-pw="ip-management-close"]').click();
   });
 
+  test('deleted IP custom modifiers are not revived by resource repair', async ({ page }) => {
+    await patchActiveFabUCharacter(page, {
+      currentIP: 6,
+      inventoryPoints: 6,
+      maxIP: 6,
+      ipBonus: 0,
+      customResourceModifiers: [],
+      classes: [{ name: 'Guardian', level: 5, subtitle: 'Protector' }],
+      skillGroups: [],
+    });
+    await page.reload();
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+
+    await expect
+      .poll(async () => {
+        const character = await readActiveFabUCharacter(page);
+        return {
+          ipBonus: character.ipBonus,
+          customCount: character.customResourceModifiers?.length ?? 0,
+          currentIP: character.currentIP,
+        };
+      })
+      .toEqual({ ipBonus: 0, customCount: 0, currentIP: 6 });
+
+    await page.locator('[data-pw="statpill-ov-ip"]').click();
+    await page.locator('[data-pw="ip-management-show-modifiers"]').click();
+    await expect(
+      page
+        .locator('[data-pw="ip-management-modifier-source"]')
+        .filter({ hasText: 'Saved max modifier' }),
+    ).toHaveCount(0);
+    await expect(page.locator('[data-pw="ip-management-no-modifiers"]')).toBeVisible();
+  });
   test('Tinkerer class benefit allows current IP to reach and remain at 8', async ({ page }) => {
     await patchActiveFabUCharacter(page, {
       currentIP: 6,

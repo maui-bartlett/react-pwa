@@ -71,20 +71,25 @@ test('repairFabUCharacterResourceFields repairs NaN IP values on existing local 
   expect(repaired.ipBonus).toBe(0);
 });
 
-test('repairFabUCharacterResourceFields preserves IP above computed max via ipBonus', () => {
+test('repairFabUCharacterResourceFields drops orphan ipBonus and clamps current to computed max', () => {
+  // Orphan ipBonus (no matching customResourceModifiers) used to be inflated from a high
+  // currentIP and surfaced as a sticky "+N Custom Modifier". IP now matches HP/MP: only
+  // explicit custom modifiers count toward ipBonus.
   const repaired = repairFabUCharacterResourceFields({
     ...createDefaultCharacter(),
     currentIP: 12,
     inventoryPoints: 12,
     maxIP: 6,
-    ipBonus: 1,
+    ipBonus: 6,
     classes: [],
+    customResourceModifiers: [],
+    skillGroups: [],
   });
 
-  expect(repaired.currentIP).toBe(12);
-  expect(repaired.inventoryPoints).toBe(12);
+  expect(repaired.currentIP).toBe(6);
+  expect(repaired.inventoryPoints).toBe(6);
   expect(repaired.maxIP).toBe(6);
-  expect(repaired.ipBonus).toBe(6);
+  expect(repaired.ipBonus).toBe(0);
 });
 
 test('repairFabUCharacterResourceFields preserves class-granted IP for any character', () => {
@@ -115,7 +120,7 @@ test('repairFabUCharacterResourceFields tops up characters stuck at base 6 with 
   expect(repaired.inventoryPoints).toBe(8);
 });
 
-test('repairFabUCharacterResourceFields preserves legacy IP above 6 without recognized bonuses', () => {
+test('repairFabUCharacterResourceFields does not invent a custom IP bonus for high current IP', () => {
   const repaired = repairFabUCharacterResourceFields({
     ...createDefaultCharacter(),
     name: { firstName: 'Legacy', lastName: 'Hero', nickName: undefined },
@@ -125,11 +130,64 @@ test('repairFabUCharacterResourceFields preserves legacy IP above 6 without reco
     maxIP: 6,
     ipBonus: 0,
     skillGroups: [],
+    customResourceModifiers: [],
   });
 
-  expect(repaired.currentIP).toBe(9);
-  expect(repaired.inventoryPoints).toBe(9);
-  expect(repaired.ipBonus).toBe(3);
+  expect(repaired.currentIP).toBe(6);
+  expect(repaired.inventoryPoints).toBe(6);
+  expect(repaired.ipBonus).toBe(0);
+  expect(repaired.customResourceModifiers).toEqual([]);
+});
+
+test('repairFabUCharacterResourceFields clears Extra IP double-counted as custom ipBonus', () => {
+  // Before Extra IP was tracked as a skill bonus, repair folded +4 into ipBonus. With Extra
+  // IP recognized, that orphan ipBonus showed up as a duplicate "+4 Custom Modifier".
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Nox', lastName: 'Quill', nickName: undefined },
+    classes: [{ name: 'Guardian', level: 10, subtitle: 'Protector' }],
+    currentIP: 10,
+    inventoryPoints: 10,
+    maxIP: 6,
+    ipBonus: 4,
+    customResourceModifiers: [],
+    skillGroups: [
+      {
+        className: 'Guardian',
+        skills: [{ name: 'Extra IP', level: 'M', maxLevel: 1, mastered: true, effect: '+4 IP' }],
+      },
+    ],
+  });
+
+  expect(repaired.ipBonus).toBe(0);
+  expect(repaired.customResourceModifiers).toEqual([]);
+  expect(repaired.currentIP).toBe(10);
+  expect(repaired.inventoryPoints).toBe(10);
+});
+
+test('repairFabUCharacterResourceFields keeps explicit custom IP modifiers', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Nox', lastName: 'Quill', nickName: undefined },
+    classes: [{ name: 'Guardian', level: 10, subtitle: 'Protector' }],
+    currentIP: 10,
+    inventoryPoints: 10,
+    maxIP: 6,
+    ipBonus: 4,
+    customResourceModifiers: [
+      {
+        id: 'ip-modifier-1',
+        resource: 'ip',
+        label: 'Belt Pouches',
+        value: 4,
+      },
+    ],
+    skillGroups: [],
+  });
+
+  expect(repaired.ipBonus).toBe(4);
+  expect(repaired.currentIP).toBe(10);
+  expect(repaired.customResourceModifiers).toHaveLength(1);
 });
 
 test('repairFabUCharacterResourceFields honors Extra IP skill bonus above base 6', () => {
@@ -226,11 +284,20 @@ test('backend character normalization preserves class and custom IP bonuses', ()
       inventoryPoints: 9,
       maxIP: 6,
       ipBonus: 1,
+      customResourceModifiers: [
+        {
+          id: 'ip-modifier-1',
+          resource: 'ip',
+          label: 'Travel Pack',
+          value: 1,
+        },
+      ],
     },
   });
 
   expect(normalized.currentIP).toBe(9);
   expect(normalized.inventoryPoints).toBe(9);
+  expect(normalized.ipBonus).toBe(1);
 });
 
 test('migrateCharacter adds Comet to Entropist spells when the skill already exists', () => {

@@ -438,7 +438,16 @@ function getFabUCharacterMaxIP(
 
 function repairFabUCharacterResourceFields(character: Character): Character {
   const maxIP = normalizeNumber(character.maxIP, 6);
-  let ipBonus = normalizeNumber(character.ipBonus, 0);
+  const customResourceModifiers = Array.isArray(character.customResourceModifiers)
+    ? character.customResourceModifiers
+    : [];
+  // Match HP/MP: ipBonus tracks explicit custom modifiers only. Never invent an
+  // ipBonus from a high currentIP — that showed up as a sticky "+N Custom Modifier"
+  // that came back after delete/reload via the old surplus-fold path.
+  const customIPTotal = customResourceModifiers
+    .filter((modifier) => modifier.resource === 'ip')
+    .reduce((sum, modifier) => sum + modifier.value, 0);
+  const ipBonus = customIPTotal;
   const classNames = character.classes.map((entry) => entry.name);
   const classIPBonus = calculateFabUFixedClassIPBonus(classNames);
   const skillIPBonus = calculateFabUSkillResourceBonuses(
@@ -447,19 +456,11 @@ function repairFabUCharacterResourceFields(character: Character): Character {
     character.level,
   ).ip;
   const permanentIPBonus = classIPBonus + skillIPBonus + ipBonus;
-  let totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus + skillIPBonus);
+  const totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus + skillIPBonus);
   const storedCurrentIP = normalizeNumber(
     character.currentIP,
     normalizeNumber(character.inventoryPoints, Number.NaN),
   );
-
-  // Existing saves from before IP max tracking often stored current IP above the base 6
-  // without a matching ipBonus. Fold that surplus into ipBonus so repair never caps them
-  // back down to 6.
-  if (Number.isFinite(storedCurrentIP) && storedCurrentIP > totalMaxIP) {
-    ipBonus += storedCurrentIP - totalMaxIP;
-    totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus + skillIPBonus);
-  }
 
   let currentIP: number;
   if (!Number.isFinite(storedCurrentIP)) {
@@ -469,14 +470,11 @@ function repairFabUCharacterResourceFields(character: Character): Character {
     // Characters stuck at the base max never received permanent class/skill IP grants.
     currentIP = totalMaxIP;
   } else {
-    currentIP = Math.min(totalMaxIP, storedCurrentIP);
+    currentIP = Math.max(0, Math.min(totalMaxIP, storedCurrentIP));
   }
 
   const hpBonus = normalizeNumber(character.hpBonus, 0);
   const mpBonus = normalizeNumber(character.mpBonus, 0);
-  const customResourceModifiers = Array.isArray(character.customResourceModifiers)
-    ? character.customResourceModifiers
-    : [];
 
   const resourceSafeCharacter = {
     ...character,
