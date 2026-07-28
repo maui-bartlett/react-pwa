@@ -2284,6 +2284,16 @@ function FabU() {
         <AttributesStatsCard
           middleRow={[
             {
+              label: 'IP',
+              value: String(character.currentIP),
+              valueSuffix: ` / ${totalMaxIP}`,
+              valueGroupMinWidth: '7ch',
+              onManage: () => setHpMpModal({ kind: 'ip' }),
+              maxValue: totalMaxIP,
+              pw: 'ov-ip',
+              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
+            },
+            {
               label: 'HP',
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
@@ -2305,16 +2315,6 @@ function FabU() {
               pw: 'ov-mp',
               pulseKey: absorbMpPulse.key,
               pulseLabel: absorbMpPulse.label,
-            },
-            {
-              label: 'IP',
-              value: String(character.currentIP),
-              valueSuffix: ` / ${totalMaxIP}`,
-              valueGroupMinWidth: '7ch',
-              onManage: () => setHpMpModal({ kind: 'ip' }),
-              maxValue: totalMaxIP,
-              pw: 'ov-ip',
-              toneColor: fabUTokens.isDark ? '#a0a5a0' : '#1e2422',
             },
           ]}
           bottomRow={makeAttrRows()}
