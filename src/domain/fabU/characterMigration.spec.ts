@@ -100,6 +100,27 @@ test('repairFabUCharacterResourceFields preserves class-granted IP for any chara
   expect(repaired.inventoryPoints).toBe(8);
 });
 
+test('repairFabUCharacterResourceFields honors Extra IP skill bonus above base 6', () => {
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Nox', lastName: 'Quill', nickName: undefined },
+    classes: [{ name: 'Guardian', level: 10, subtitle: 'Protector' }],
+    currentIP: 10,
+    inventoryPoints: 10,
+    maxIP: 6,
+    ipBonus: 0,
+    skillGroups: [
+      {
+        className: 'Guardian',
+        skills: [{ name: 'Extra IP', level: 'M', maxLevel: 1, mastered: true, effect: '+4 IP' }],
+      },
+    ],
+  });
+
+  expect(repaired.currentIP).toBe(10);
+  expect(repaired.inventoryPoints).toBe(10);
+});
+
 test('backend character normalization preserves class and custom IP bonuses', () => {
   const character = createDefaultCharacter();
   const normalized = deserializeCharacterFromBackend({

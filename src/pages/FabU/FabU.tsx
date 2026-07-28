@@ -1261,6 +1261,114 @@ function FabU() {
         inventoryPoints: nextIP,
       };
     });
+  const updateCustomResourceModifier = (id: string, label: string, value: number) =>
+    setCharacter((c) => {
+      const customResourceModifiers = Array.isArray(c.customResourceModifiers)
+        ? c.customResourceModifiers
+        : [];
+
+      if (id.startsWith('legacy-custom-')) {
+        const kind = id.slice('legacy-custom-'.length) as HpMpKind;
+        if (kind !== 'hp' && kind !== 'mp' && kind !== 'ip') return c;
+        const customTotal = customResourceModifiers
+          .filter((modifier) => modifier.resource === kind)
+          .reduce((sum, modifier) => sum + modifier.value, 0);
+        const nextBonus = customTotal + value;
+        const nextCharacter = {
+          ...c,
+          hpBonus: kind === 'hp' ? nextBonus : c.hpBonus,
+          mpBonus: kind === 'mp' ? nextBonus : c.mpBonus,
+          ipBonus: kind === 'ip' ? nextBonus : c.ipBonus,
+          customResourceModifiers: [
+            ...customResourceModifiers,
+            {
+              id: `${kind}-modifier-${Date.now()}-${customResourceModifiers.length}`,
+              resource: kind,
+              label,
+              value,
+            },
+          ],
+        };
+        if (kind !== 'ip') return nextCharacter;
+        const nextIP = Math.min(
+          nextCharacter.currentIP,
+          getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
+        );
+        return { ...nextCharacter, currentIP: nextIP, inventoryPoints: nextIP };
+      }
+
+      const existing = customResourceModifiers.find((modifier) => modifier.id === id);
+      if (!existing) return c;
+      const delta = value - existing.value;
+      const nextCharacter = {
+        ...c,
+        hpBonus: existing.resource === 'hp' ? c.hpBonus + delta : c.hpBonus,
+        mpBonus: existing.resource === 'mp' ? c.mpBonus + delta : c.mpBonus,
+        ipBonus: existing.resource === 'ip' ? c.ipBonus + delta : c.ipBonus,
+        customResourceModifiers: customResourceModifiers.map((modifier) =>
+          modifier.id === id ? { ...modifier, label, value } : modifier,
+        ),
+      };
+      if (existing.resource !== 'ip') return nextCharacter;
+      const nextIP = Math.min(
+        nextCharacter.currentIP,
+        getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
+      );
+      return {
+        ...nextCharacter,
+        currentIP: nextIP,
+        inventoryPoints: nextIP,
+      };
+    });
+  const deleteCustomResourceModifier = (id: string) =>
+    setCharacter((c) => {
+      const customResourceModifiers = Array.isArray(c.customResourceModifiers)
+        ? c.customResourceModifiers
+        : [];
+      if (id.startsWith('legacy-custom-')) {
+        const kind = id.slice('legacy-custom-'.length) as HpMpKind;
+        if (kind !== 'hp' && kind !== 'mp' && kind !== 'ip') return c;
+        const customTotal = customResourceModifiers
+          .filter((modifier) => modifier.resource === kind)
+          .reduce((sum, modifier) => sum + modifier.value, 0);
+        const nextCharacter = {
+          ...c,
+          hpBonus: kind === 'hp' ? customTotal : c.hpBonus,
+          mpBonus: kind === 'mp' ? customTotal : c.mpBonus,
+          ipBonus: kind === 'ip' ? customTotal : c.ipBonus,
+        };
+        if (kind !== 'ip') return nextCharacter;
+        const nextIP = Math.min(
+          nextCharacter.currentIP,
+          getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
+        );
+        return {
+          ...nextCharacter,
+          currentIP: nextIP,
+          inventoryPoints: nextIP,
+        };
+      }
+
+      const existing = customResourceModifiers.find((modifier) => modifier.id === id);
+      if (!existing) return c;
+      const nextCharacter = {
+        ...c,
+        hpBonus: existing.resource === 'hp' ? c.hpBonus - existing.value : c.hpBonus,
+        mpBonus: existing.resource === 'mp' ? c.mpBonus - existing.value : c.mpBonus,
+        ipBonus: existing.resource === 'ip' ? c.ipBonus - existing.value : c.ipBonus,
+        customResourceModifiers: customResourceModifiers.filter((modifier) => modifier.id !== id),
+      };
+      if (existing.resource !== 'ip') return nextCharacter;
+      const nextIP = Math.min(
+        nextCharacter.currentIP,
+        getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
+      );
+      return {
+        ...nextCharacter,
+        currentIP: nextIP,
+        inventoryPoints: nextIP,
+      };
+    });
   const setCurrentXP = (v: number) =>
     setCharacter((c) => {
       if (v <= c.totalXP) return { ...c, currentXP: v };
@@ -1502,6 +1610,7 @@ function FabU() {
               label: 'Custom Modifier',
               source: 'Saved max modifier',
               value: legacyCustomTotal,
+              editable: true,
             },
           ]
         : []),
@@ -1512,6 +1621,7 @@ function FabU() {
           label: modifier.label,
           source: 'Custom Modifier',
           value: modifier.value,
+          editable: true,
         })),
     ];
   };
@@ -3859,6 +3969,8 @@ function FabU() {
                 : setCurrentIP
           }
           onAddModifier={(label, value) => addCustomResourceModifier(hpMpModal.kind, label, value)}
+          onUpdateModifier={updateCustomResourceModifier}
+          onDeleteModifier={deleteCustomResourceModifier}
           onClose={() => setHpMpModal(null)}
         />
       ) : null}

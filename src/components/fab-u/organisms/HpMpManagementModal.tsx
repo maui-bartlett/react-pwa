@@ -11,7 +11,9 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { X } from 'lucide-react';
+import { Pencil, Trash2, X } from 'lucide-react';
+
+import { SwipeableCard } from '@/components/SwipeableCard';
 
 import { useFabUTokens } from '../ThemeContext';
 import useFabUPopperScrollLock from '../useFabUPopperScrollLock';
@@ -29,6 +31,8 @@ type ResourceModifierSource = {
   label: string;
   source: string;
   value: number;
+  /** When true, this modifier can be edited/deleted via swipe actions. */
+  editable?: boolean;
 };
 
 type HpMpManagementModalProps = {
@@ -40,6 +44,8 @@ type HpMpManagementModalProps = {
   modifierSources: ResourceModifierSource[];
   onApply: (nextCurrent: number) => void;
   onAddModifier: (label: string, value: number) => void;
+  onUpdateModifier?: (id: string, label: string, value: number) => void;
+  onDeleteModifier?: (id: string) => void;
   onClose: () => void;
 };
 
@@ -204,6 +210,8 @@ function HpMpManagementModal({
   modifierSources,
   onApply,
   onAddModifier,
+  onUpdateModifier,
+  onDeleteModifier,
   onClose,
 }: HpMpManagementModalProps) {
   const fabUTokens = useFabUTokens();
@@ -240,6 +248,7 @@ function HpMpManagementModal({
   const [currentDraft, setCurrentDraft] = useState(String(current));
   const [showModifiers, setShowModifiers] = useState(false);
   const [addingModifier, setAddingModifier] = useState(false);
+  const [editingModifierId, setEditingModifierId] = useState<string | null>(null);
   const [modifierLabelDraft, setModifierLabelDraft] = useState('');
   const [modifierValueDraft, setModifierValueDraft] = useState('');
   useFabUPopperScrollLock(open);
@@ -254,6 +263,7 @@ function HpMpManagementModal({
     if (!open) {
       setShowModifiers(false);
       setAddingModifier(false);
+      setEditingModifierId(null);
       setModifierLabelDraft('');
       setModifierValueDraft('');
     }
@@ -267,16 +277,32 @@ function HpMpManagementModal({
   const wheelMax = Math.max(max, 30);
   const totalModifier = modifierSources.reduce((sum, source) => sum + source.value, 0);
 
+  function resetModifierForm() {
+    setAddingModifier(false);
+    setEditingModifierId(null);
+    setModifierLabelDraft('');
+    setModifierValueDraft('');
+  }
+
+  function startEditModifier(source: ResourceModifierSource) {
+    setAddingModifier(false);
+    setEditingModifierId(source.id);
+    setModifierLabelDraft(source.label);
+    setModifierValueDraft(String(source.value));
+  }
+
   function commitCustomModifier() {
     const label = modifierLabelDraft.trim();
     if (!label) return;
     const cleaned = modifierValueDraft.replace(/[^0-9-]/g, '');
     const parsed = Number.parseInt(cleaned, 10);
     if (Number.isNaN(parsed)) return;
-    onAddModifier(label, parsed);
-    setModifierLabelDraft('');
-    setModifierValueDraft('');
-    setAddingModifier(false);
+    if (editingModifierId) {
+      onUpdateModifier?.(editingModifierId, label, parsed);
+    } else {
+      onAddModifier(label, parsed);
+    }
+    resetModifierForm();
   }
 
   function commitCurrent(raw: string) {
@@ -496,9 +522,14 @@ function HpMpManagementModal({
             >
               <Button
                 data-pw={`${kind}-management-add-custom-modifier`}
-                onClick={() => setAddingModifier(true)}
+                onClick={() => {
+                  setEditingModifierId(null);
+                  setModifierLabelDraft('');
+                  setModifierValueDraft('');
+                  setAddingModifier(true);
+                }}
                 variant="outlined"
-                disabled={addingModifier}
+                disabled={addingModifier || editingModifierId !== null}
                 sx={{
                   alignSelf: 'stretch',
                   minHeight: 30,
@@ -512,7 +543,7 @@ function HpMpManagementModal({
                 + Custom Modifier
               </Button>
 
-              {addingModifier ? (
+              {addingModifier || editingModifierId ? (
                 <Stack
                   data-pw={`${kind}-management-custom-modifier-form`}
                   spacing={0.65}
@@ -575,15 +606,11 @@ function HpMpManagementModal({
                         '&:hover': { bgcolor: accent },
                       }}
                     >
-                      Confirm
+                      {editingModifierId ? 'Save' : 'Confirm'}
                     </Button>
                     <Button
                       data-pw={`${kind}-management-cancel-custom-modifier`}
-                      onClick={() => {
-                        setAddingModifier(false);
-                        setModifierLabelDraft('');
-                        setModifierValueDraft('');
-                      }}
+                      onClick={resetModifierForm}
                       variant="outlined"
                       sx={{
                         flex: 1,
@@ -601,58 +628,91 @@ function HpMpManagementModal({
                 </Stack>
               ) : null}
 
-              <Stack spacing={0.45}>
+              <Stack spacing={0.55}>
                 {modifierSources.length > 0 ? (
-                  modifierSources.map((source) => (
-                    <Box
-                      key={source.id}
-                      data-pw={`${kind}-management-modifier-source`}
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr auto',
-                        columnGap: 0.8,
-                        alignItems: 'center',
-                        p: 0.65,
-                        borderRadius: FIELD_RADIUS,
-                        bgcolor: alpha(fabUTokens.color.surface, fabUTokens.isDark ? 0.4 : 0.8),
-                      }}
-                    >
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography
-                          sx={{
-                            color: fabUTokens.color.textPrimary,
-                            fontSize: '0.75rem',
-                            fontWeight: 800,
-                            lineHeight: 1.15,
-                            mb: '2px',
-                          }}
-                        >
-                          {source.label}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            color: fabUTokens.color.textSecondary,
-                            fontSize: '0.63rem',
-                            fontWeight: 650,
-                            lineHeight: 1.15,
-                          }}
-                        >
-                          {source.source}
-                        </Typography>
-                      </Box>
-                      <Typography
+                  modifierSources.map((source) => {
+                    const cardBody = (
+                      <Box
+                        data-pw={`${kind}-management-modifier-source`}
                         sx={{
-                          color: source.value >= 0 ? accent : fabUTokens.color.danger,
-                          fontSize: '0.82rem',
-                          fontWeight: 900,
-                          lineHeight: 1,
+                          display: 'grid',
+                          gridTemplateColumns: '1fr auto',
+                          columnGap: 0.8,
+                          alignItems: 'center',
+                          p: 0.65,
+                          borderRadius: FIELD_RADIUS,
+                          bgcolor: alpha(fabUTokens.color.surface, fabUTokens.isDark ? 0.4 : 0.8),
+                          border: `1px solid ${alpha(fabUTokens.color.border, 0.55)}`,
                         }}
                       >
-                        {source.value >= 0 ? '+' : ''}
-                        {source.value}
-                      </Typography>
-                    </Box>
-                  ))
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            sx={{
+                              color: fabUTokens.color.textPrimary,
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              lineHeight: 1.15,
+                              mb: '2px',
+                            }}
+                          >
+                            {source.label}
+                          </Typography>
+                          <Typography
+                            sx={{
+                              color: fabUTokens.color.textSecondary,
+                              fontSize: '0.63rem',
+                              fontWeight: 650,
+                              lineHeight: 1.15,
+                            }}
+                          >
+                            {source.source}
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            color: source.value >= 0 ? accent : fabUTokens.color.danger,
+                            fontSize: '0.82rem',
+                            fontWeight: 900,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {source.value >= 0 ? '+' : ''}
+                          {source.value}
+                        </Typography>
+                      </Box>
+                    );
+
+                    if (!source.editable || (!onUpdateModifier && !onDeleteModifier)) {
+                      return <Box key={source.id}>{cardBody}</Box>;
+                    }
+
+                    return (
+                      <SwipeableCard
+                        key={source.id}
+                        borderRadius={FIELD_RADIUS}
+                        actions={[
+                          onDeleteModifier
+                            ? {
+                                icon: <Trash2 size={16} />,
+                                color: fabUTokens.color.danger,
+                                ariaLabel: `Delete ${source.label}`,
+                                onClick: () => onDeleteModifier(source.id),
+                              }
+                            : null,
+                          onUpdateModifier
+                            ? {
+                                icon: <Pencil size={16} />,
+                                color: fabUTokens.color.highlight,
+                                ariaLabel: `Edit ${source.label}`,
+                                onClick: () => startEditModifier(source),
+                              }
+                            : null,
+                        ]}
+                      >
+                        {cardBody}
+                      </SwipeableCard>
+                    );
+                  })
                 ) : (
                   <Typography
                     data-pw={`${kind}-management-no-modifiers`}

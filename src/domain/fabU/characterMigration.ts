@@ -30,7 +30,10 @@ import type {
   StatusEffects,
 } from './characterTypes';
 import { repairFabUGrantedHeroicSpells } from './masteredSkills';
-import { calculateFabUFixedClassIPBonus } from './resourceBonuses';
+import {
+  calculateFabUFixedClassIPBonus,
+  calculateFabUSkillResourceBonuses,
+} from './resourceBonuses';
 
 type CharacterMigrationOptions = {
   oldBackstoryAnswers?: unknown;
@@ -432,8 +435,14 @@ function getFabUCharacterMaxIP(
 function repairFabUCharacterResourceFields(character: Character): Character {
   const maxIP = normalizeNumber(character.maxIP, 6);
   const ipBonus = normalizeNumber(character.ipBonus, 0);
-  const classIPBonus = calculateFabUFixedClassIPBonus(character.classes.map((entry) => entry.name));
-  const totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus);
+  const classNames = character.classes.map((entry) => entry.name);
+  const classIPBonus = calculateFabUFixedClassIPBonus(classNames);
+  const skillIPBonus = calculateFabUSkillResourceBonuses(
+    classNames,
+    character.skillGroups,
+    character.level,
+  ).ip;
+  const totalMaxIP = getFabUCharacterMaxIP({ maxIP, ipBonus }, classIPBonus + skillIPBonus);
   const currentIP = Math.min(
     totalMaxIP,
     normalizeNumber(character.currentIP, normalizeNumber(character.inventoryPoints, maxIP)),
