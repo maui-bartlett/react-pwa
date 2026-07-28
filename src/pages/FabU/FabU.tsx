@@ -1102,9 +1102,8 @@ function FabU() {
   useEffect(() => {
     if (!localCharacters.hydrated || didRepairResourcesRef.current) return;
     didRepairResourcesRef.current = true;
-    // One-time migration repair only. Re-running on every character change races with
-    // IP custom-modifier edits/deletes and can recreate cleared ipBonus from a stale
-    // high currentIP.
+    // One-time migration repair only. Re-running on every character change previously
+    // raced with IP custom-modifier edits/deletes.
     setCharacter(repairFabUCharacterResourceFields);
   }, [localCharacters.hydrated, setCharacter]);
   const statusEffects = character.statusEffects;
@@ -1667,9 +1666,8 @@ function FabU() {
   );
   useEffect(() => {
     // Clamp current IP down to the latest max only. Do not top up here — that raced
-    // with custom-modifier deletes and could restore a cleared max bonus via repair.
-    // Compute max from `current` so a same-tick resource repair that folds surplus
-    // into ipBonus is honored instead of clamping with a stale pre-repair max.
+    // with custom-modifier deletes. Compute max from `current` so same-tick repairs
+    // are honored instead of clamping with a stale pre-repair max.
     setCharacter((current) => {
       const nextMaxIP = getFabUCharacterMaxIP(
         current,
