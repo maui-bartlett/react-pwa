@@ -1099,10 +1099,15 @@ function FabU() {
     describeCharacter: describeFabULocalCharacter,
     migrate: migrateFabULocalCharacter,
   });
+  const didRepairResourcesRef = useRef(false);
   useEffect(() => {
-    if (!localCharacters.hydrated) return;
+    if (!localCharacters.hydrated || didRepairResourcesRef.current) return;
+    didRepairResourcesRef.current = true;
+    // One-time migration repair only. Re-running on every character change races with
+    // IP custom-modifier edits/deletes and can recreate cleared ipBonus from a stale
+    // high currentIP.
     setCharacter(repairFabUCharacterResourceFields);
-  }, [character, localCharacters.hydrated, setCharacter]);
+  }, [localCharacters.hydrated, setCharacter]);
   const statusEffects = character.statusEffects;
   useFabUPopperScrollLock(Boolean(battleActionPopover));
   const openNameEdit = () => {
@@ -1255,10 +1260,12 @@ function FabU() {
         ],
       };
       if (kind !== 'ip') return nextCharacter;
-      const nextIP = Math.min(
-        nextCharacter.currentIP,
-        getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
+      const nextMaxIP = getFabUCharacterMaxIP(
+        nextCharacter,
+        classResourceBonuses.ip + skillResourceBonuses.ip,
       );
+      // Permanent IP gains increase current IP as well; never raise above the new max.
+      const nextIP = Math.max(0, Math.min(nextMaxIP, nextCharacter.currentIP + Math.max(0, value)));
       return {
         ...nextCharacter,
         currentIP: nextIP,
@@ -1294,9 +1301,14 @@ function FabU() {
           ],
         };
         if (kind !== 'ip') return nextCharacter;
-        const nextIP = Math.min(
-          nextCharacter.currentIP,
-          getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
+        const legacyDelta = value - (c.ipBonus - customTotal);
+        const nextMaxIP = getFabUCharacterMaxIP(
+          nextCharacter,
+          classResourceBonuses.ip + skillResourceBonuses.ip,
+        );
+        const nextIP = Math.max(
+          0,
+          Math.min(nextMaxIP, nextCharacter.currentIP + Math.max(0, legacyDelta)),
         );
         return { ...nextCharacter, currentIP: nextIP, inventoryPoints: nextIP };
       }
@@ -1314,10 +1326,11 @@ function FabU() {
         ),
       };
       if (existing.resource !== 'ip') return nextCharacter;
-      const nextIP = Math.min(
-        nextCharacter.currentIP,
-        getFabUCharacterMaxIP(nextCharacter, classResourceBonuses.ip + skillResourceBonuses.ip),
+      const nextMaxIP = getFabUCharacterMaxIP(
+        nextCharacter,
+        classResourceBonuses.ip + skillResourceBonuses.ip,
       );
+      const nextIP = Math.max(0, Math.min(nextMaxIP, nextCharacter.currentIP + Math.max(0, delta)));
       return {
         ...nextCharacter,
         currentIP: nextIP,
@@ -1654,24 +1667,21 @@ function FabU() {
     classResourceBonuses.ip + skillResourceBonuses.ip,
   );
   useEffect(() => {
-    const baseMaxIP = Number.isFinite(character.maxIP) ? character.maxIP : 6;
-    const currentIP = Number.isFinite(character.currentIP) ? character.currentIP : totalMaxIP;
-    // Characters previously stuck at the base max (usually 6) should receive permanent
-    // class/skill/custom IP grants instead of remaining capped there.
-    const nextIP =
-      currentIP === baseMaxIP && totalMaxIP > baseMaxIP
-        ? totalMaxIP
-        : Math.max(0, Math.min(totalMaxIP, currentIP));
-    if (character.currentIP === nextIP && character.inventoryPoints === nextIP) {
-      return;
-    }
-
-    setCharacter((current) => ({
-      ...current,
-      currentIP: nextIP,
-      inventoryPoints: nextIP,
-    }));
-  }, [character.currentIP, character.inventoryPoints, character.maxIP, setCharacter, totalMaxIP]);
+    // Clamp current IP down to the latest max only. Do not top up here — that raced
+    // with custom-modifier deletes and could restore a cleared max bonus via repair.
+    setCharacter((current) => {
+      const currentIP = Number.isFinite(current.currentIP) ? current.currentIP : totalMaxIP;
+      const nextIP = Math.max(0, Math.min(totalMaxIP, currentIP));
+      if (current.currentIP === nextIP && current.inventoryPoints === nextIP) {
+        return current;
+      }
+      return {
+        ...current,
+        currentIP: nextIP,
+        inventoryPoints: nextIP,
+      };
+    });
+  }, [character.currentIP, character.inventoryPoints, setCharacter, totalMaxIP]);
   const classSkillGroups = character.classes.map((cls) => ({
     className: cls.name,
     skills:

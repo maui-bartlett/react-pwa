@@ -174,6 +174,46 @@ test('repairFabUCharacterResourceFields tops up Extra IP characters stuck at bas
   expect(repaired.inventoryPoints).toBe(10);
 });
 
+test('repairFabUCharacterResourceFields keeps a clamped custom IP delete from coming back', () => {
+  // After deleting a +2 custom IP modifier, current IP is clamped to the new max and
+  // ipBonus is cleared. Repair must not fold a surplus back into ipBonus.
+  const repaired = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Mira', lastName: 'Vale', nickName: undefined },
+    classes: [{ name: 'Guardian', level: 5, subtitle: 'Protector' }],
+    currentIP: 6,
+    inventoryPoints: 6,
+    maxIP: 6,
+    ipBonus: 0,
+    customResourceModifiers: [],
+    skillGroups: [],
+  });
+
+  expect(repaired.currentIP).toBe(6);
+  expect(repaired.inventoryPoints).toBe(6);
+  expect(repaired.ipBonus).toBe(0);
+  expect(repaired.customResourceModifiers).toEqual([]);
+});
+
+test('repairFabUCharacterResourceFields does not revive IP bonus when current already matches max', () => {
+  const deleted = repairFabUCharacterResourceFields({
+    ...createDefaultCharacter(),
+    name: { firstName: 'Sable', lastName: 'Reed', nickName: undefined },
+    classes: [{ name: 'Tinkerer', level: 1, subtitle: 'Gadgeteer' }],
+    currentIP: 8,
+    inventoryPoints: 8,
+    maxIP: 6,
+    ipBonus: 0,
+    customResourceModifiers: [],
+    skillGroups: [],
+  });
+
+  // Class grant alone accounts for 8; no custom bonus should be invented.
+  expect(deleted.currentIP).toBe(8);
+  expect(deleted.ipBonus).toBe(0);
+  expect(deleted.customResourceModifiers).toEqual([]);
+});
+
 test('backend character normalization preserves class and custom IP bonuses', () => {
   const character = createDefaultCharacter();
   const normalized = deserializeCharacterFromBackend({
