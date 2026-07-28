@@ -36,7 +36,7 @@ test.describe('HP/MP/FP/IP cross-tab sync (mobile viewport)', () => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
 
     const startingMp = Number.parseInt(
-      (await page.locator('[data-pw="statpill-cb-mp"]').locator('h6').first().textContent()) ?? '0',
+      (await page.locator('[data-pw="statpill-cb-mp"]').locator('p').first().textContent()) ?? '0',
       10,
     );
     const mpSpend = 36;

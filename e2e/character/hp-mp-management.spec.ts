@@ -132,7 +132,7 @@ test.describe('HP/MP management modal', () => {
     await page.reload();
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
-    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first()).toHaveText('12');
+    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('p').first()).toHaveText('12');
     await expect(page.locator('[data-pw="statpill-ov-ip"]')).toContainText('/ 12');
 
     await expect
@@ -164,11 +164,11 @@ test.describe('HP/MP management modal', () => {
     const currentInput = page.locator('[data-pw="ip-management-current-input"]');
     await currentInput.fill('8');
     await currentInput.blur();
-    await expect(ipPill.locator('h6').first()).toHaveText('8');
+    await expect(ipPill.locator('p').first()).toHaveText('8');
 
     await page.reload();
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
-    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first()).toHaveText('8');
+    await expect(page.locator('[data-pw="statpill-ov-ip"]').locator('p').first()).toHaveText('8');
     await expect
       .poll(async () => {
         const character = await readActiveFabUCharacter(page);
@@ -185,7 +185,7 @@ test.describe('HP/MP management modal', () => {
     await page.reload();
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
-    await expect(page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first()).toHaveText('30');
+    await expect(page.locator('[data-pw="statpill-ov-hp"]').locator('p').first()).toHaveText('30');
     await expect
       .poll(() =>
         page
@@ -199,12 +199,12 @@ test.describe('HP/MP management modal', () => {
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
 
     const overviewHpPill = page.locator('[data-pw="statpill-ov-hp"]');
-    await expect(overviewHpPill.locator('h6').first()).toHaveText('29');
+    await expect(overviewHpPill.locator('p').first()).toHaveText('29');
     await expect
       .poll(() =>
         overviewHpPill.evaluate((element) => getComputedStyle(element, '::after').animationName),
       )
-      .toContain('fabuStatPillPersistentPulse');
+      .toContain('fabuSummaryMetricPersistentPulse');
     await expect
       .poll(() => overviewHpPill.evaluate((element) => getComputedStyle(element).backgroundImage))
       .toContain('rgba(179, 38, 30, 0.22)');
@@ -255,7 +255,7 @@ test.describe('HP/MP management modal', () => {
   });
 
   test('damage reduces current HP by the entered amount', async ({ page }) => {
-    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first();
+    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('p').first();
     await expect(hpValue).toHaveText('58'); // seeded at full HP; wait for hydration
     const before = 58;
 
@@ -271,7 +271,7 @@ test.describe('HP/MP management modal', () => {
   });
 
   test('repeated damage clamps HP to 0 (never negative)', async ({ page }) => {
-    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first();
+    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('p').first();
     await expect(hpValue).toHaveText('58'); // seeded at full HP; wait for hydration
     const max = 58;
 
@@ -287,7 +287,7 @@ test.describe('HP/MP management modal', () => {
   });
 
   test('healing past max clamps HP to its maximum', async ({ page }) => {
-    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('h6').first();
+    const hpValue = page.locator('[data-pw="statpill-ov-hp"]').locator('p').first();
     await expect(hpValue).toHaveText('58'); // seeded at full HP; wait for hydration
     const max = 58;
 

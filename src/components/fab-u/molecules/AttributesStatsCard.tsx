@@ -4,10 +4,12 @@ import Box from '@mui/material/Box';
 
 import { AttributePill, StatPill, SurfaceCard } from '../atoms';
 import { AttributeRow, StatPillData } from '../types';
+import { SummaryMetricsRow } from './SummaryMetricsRow';
+import type { SummaryMetric } from './SummaryMetricsRow';
 
 type AttributesStatsCardProps = {
   topRow?: StatPillData[];
-  middleRow?: StatPillData[];
+  middleRow?: SummaryMetric[];
   bottomRow: AttributeRow[];
   topRowTemplate?: string;
   middleRowTemplate?: string;
@@ -51,7 +53,13 @@ function AttributesStatsCard({
     <SurfaceCard label="Attributes & Stats">
       {topRow.length ? renderStatRow(topRow, topRowTemplate) : null}
 
-      {middleRow.length ? renderStatRow(middleRow, middleRowTemplate) : null}
+      {middleRow.length ? (
+        <SummaryMetricsRow
+          metrics={middleRow}
+          columnsTemplate={middleRowTemplate}
+          pwPrefix="statpill"
+        />
+      ) : null}
 
       <Box
         sx={{

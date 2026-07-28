@@ -34,7 +34,7 @@ test.describe('IP management modal', () => {
   });
 
   test('spending and recovering IP updates the pill value', async ({ page }) => {
-    const ipValue = page.locator('[data-pw="statpill-ov-ip"]').locator('h6').first();
+    const ipValue = page.locator('[data-pw="statpill-ov-ip"]').locator('p').first();
     await expect(ipValue).not.toHaveText('');
     const before = Number.parseInt((await ipValue.textContent()) ?? '', 10);
     expect(Number.isFinite(before)).toBe(true);

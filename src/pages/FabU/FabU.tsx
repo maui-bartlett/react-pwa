@@ -61,6 +61,7 @@ import {
   MobileScreen,
   ObjectiveClock,
   PrimaryNavBar,
+  RESOURCE_METRICS_COLUMNS,
   type ResourceModifierSource,
   SegmentedTabs,
   SkillCrystalIcon,
@@ -2414,7 +2415,6 @@ function FabU() {
               label: 'HP',
               value: String(character.currentHP),
               valueSuffix: ` / ${totalHP}`,
-              valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.hp,
               ...hpPillWarningProps,
               onManage: () => setHpMpModal({ kind: 'hp' }),
@@ -2425,7 +2425,6 @@ function FabU() {
               label: 'MP',
               value: String(character.currentMP),
               valueSuffix: ` / ${totalMP}`,
-              valueGroupMinWidth: '7ch',
               toneColor: fabUTokens.color.mp,
               onManage: () => setHpMpModal({ kind: 'mp' }),
               maxValue: totalMP,
@@ -2435,7 +2434,7 @@ function FabU() {
             },
           ]}
           topRowTemplate="1.1fr 1fr 0.9fr"
-          middleRowTemplate="0.56fr 0.92fr 0.96fr 0.96fr"
+          middleRowTemplate={RESOURCE_METRICS_COLUMNS}
           bottomRow={makeAttrRows()}
           bottomRowTemplate="repeat(4, minmax(0, 1fr))"
         >
@@ -3372,6 +3371,7 @@ function FabU() {
       <>
         <SummaryStrip
           label="Resources"
+          columnsTemplate={RESOURCE_METRICS_COLUMNS}
           metrics={[
             {
               label: 'FP',

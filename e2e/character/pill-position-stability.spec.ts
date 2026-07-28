@@ -33,10 +33,10 @@ test.describe('Pill value position stability on edit toggle (mobile viewport)', 
   // HP/MP/IP pills now open the resource management modal instead of inline
   // editing, so they no longer have position-stability cases here.
 
-  test('Combat FP (StatPill inline, no suffix) — x stable within 2px', async ({ page }) => {
+  test('Combat FP (resource metrics row, no suffix) — x stable within 2px', async ({ page }) => {
     await page.getByRole('button', { name: 'Combat' }).first().click();
     const pill = page.locator('[data-pw="statpill-cb-fp"]');
-    const valueEl = pill.locator('h6').first();
+    const valueEl = pill.locator('p').first();
     const input = page.locator('[data-pw="statpill-cb-fp-input"]');
     const { delta } = await measureShift(page, pill, valueEl, input);
     expect(delta).toBeLessThanOrEqual(POSITION_TOLERANCE);

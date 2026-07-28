@@ -8,3 +8,6 @@ export { default as SkillsTable } from './SkillsTable';
 export { default as SpellCastOverlay } from './SpellCastOverlay';
 export { default as SpellsTable } from './SpellsTable';
 export { default as StatusEffectsDiagram } from './StatusEffectsDiagram';
+export { RESOURCE_METRICS_COLUMNS } from './resourceMetricsColumns';
+export { SummaryMetricsRow } from './SummaryMetricsRow';
+export type { SummaryMetric, SummaryMetricsRowProps } from './SummaryMetricsRow';
