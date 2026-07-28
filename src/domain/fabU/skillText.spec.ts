@@ -20,5 +20,6 @@ describe('cleanFabUSkillText', () => {
       'Permanently increase your maximum Hit Points by 10.',
     );
     expect(cleanFabUSkillText('HR treated as zero.')).toBe('HR treated as zero.');
+    expect(cleanFabUSkillText(undefined)).toBe('');
   });
 });
