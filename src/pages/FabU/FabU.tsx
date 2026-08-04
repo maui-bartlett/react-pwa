@@ -1568,8 +1568,8 @@ function FabU() {
       .map((classInfo) => [readString(classInfo.name), classInfo] as const)
       .filter((entry): entry is [string, FabulaUltimaClassInfo] => !!entry[0]),
   );
-  const skillOptionsByClass = new Map(
-    [...convexClassByName.entries()].map(([className, classInfo]) => {
+  const skillOptionsByClass = new Map<string, SkillRow[]>(
+    [...convexClassByName.entries()].map(([className, classInfo]): [string, SkillRow[]] => {
       const skills = Array.isArray(classInfo.skillsExpanded)
         ? classInfo.skillsExpanded
             .map((skill) => mapFabulaUltimaSkillOption(className, skill as FabulaUltimaSkillInfo))
@@ -1580,7 +1580,7 @@ function FabU() {
           (skill) => skill.name.trim().toLowerCase() === GADGETS_SKILL_NAME.toLowerCase(),
         );
         if (!hasGadgets) {
-          return [className, [...skills, TINKERER_GADGETS_SKILL_OPTION]] as const;
+          return [className, [...skills, TINKERER_GADGETS_SKILL_OPTION]];
         }
         return [
           className,
@@ -1595,9 +1595,9 @@ function FabU() {
                 }
               : skill,
           ),
-        ] as const;
+        ];
       }
-      return [className, skills] as const;
+      return [className, skills];
     }),
   );
   if (![...skillOptionsByClass.keys()].some((name) => name === TINKERER_CLASS)) {

@@ -39,7 +39,7 @@ describe('tinkererGadgets', () => {
   test('tracks pending selections from Gadgets skill level', () => {
     const character = {
       ...createDefaultCharacter(),
-      gadgets: { alchemy: 'basic' },
+      gadgets: { alchemy: 'basic' as const },
       skillGroups: [
         {
           className: 'Tinkerer',
@@ -64,9 +64,9 @@ describe('tinkererGadgets', () => {
     expect(getMagisphereCapacity({ ...base, level: 5 })).toBe(3);
     expect(getMagisphereCapacity({ ...base, level: 20 })).toBe(5);
     expect(getMagisphereCapacity({ ...base, level: 40 })).toBe(7);
-    expect(getMagisphereCapacity({ ...base, gadgets: { magitech: 'advanced' }, level: 40 })).toBe(
-      0,
-    );
+    expect(
+      getMagisphereCapacity({ ...base, gadgets: { magitech: 'advanced' as const }, level: 40 }),
+    ).toBe(0);
   });
 
   test('normalizes stored gadgets state', () => {
