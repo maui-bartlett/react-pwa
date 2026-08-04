@@ -10,6 +10,47 @@ test.describe('Tinkerer Gadgets skill', () => {
     await page.locator('[data-pw="metric-ov-xp"]').waitFor();
   });
 
+  test('first Gadgets level shows only Choose an Upgrade, not locked invention ranks', async ({
+    page,
+  }) => {
+    await patchActiveFabUCharacter(page, {
+      level: 5,
+      classes: [{ name: 'Tinkerer', level: 5, subtitle: 'Gadgets' }],
+      skillGroups: [
+        {
+          className: 'Tinkerer',
+          skills: [
+            {
+              name: 'Gadgets',
+              level: '1',
+              maxLevel: 5,
+              effect: 'Choose gadget invention types.',
+            },
+          ],
+        },
+      ],
+      gadgets: {},
+      spellGroups: [],
+    });
+    await page.reload();
+    await page.locator('[data-pw="metric-ov-xp"]').waitFor();
+
+    await page.getByRole('button', { name: 'Skills' }).first().click();
+    await page.getByText('Gadgets', { exact: true }).first().click();
+    await expect(page.locator('[data-pw="gadgets-skill-panel"]')).toBeVisible();
+    await expect(page.locator('[data-pw="gadgets-pending-upgrades"]')).toBeVisible();
+    await expect(page.getByText('Choose an upgrade')).toBeVisible();
+    await expect(page.locator('[data-pw="gadgets-invention-ranks"]')).toHaveCount(0);
+    await expect(page.locator('[data-pw="gadgets-type-alchemy"]')).toHaveCount(0);
+    await expect(page.locator('[data-pw="gadgets-type-infusions"]')).toHaveCount(0);
+    await expect(page.locator('[data-pw="gadgets-type-magitech"]')).toHaveCount(0);
+
+    await page.locator('[data-pw="gadgets-upgrade-alchemy-basic"]').click();
+    await expect(page.locator('[data-pw="gadgets-invention-ranks"]')).toBeVisible();
+    await expect(page.locator('[data-pw="gadgets-type-alchemy"]')).toBeVisible();
+    await expect(page.locator('[data-pw="gadgets-type-alchemy"]')).toContainText('Basic');
+  });
+
   test('Gadgets accordion shows invention upgrades and Magisphere spells after Superior Magitech', async ({
     page,
   }) => {

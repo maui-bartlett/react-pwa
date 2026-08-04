@@ -49,97 +49,104 @@ function GadgetsSkillPanel({
     onChange({ ...gadgets, magicannonDamageType: damageType });
   }
 
+  // Before the first invention pick, only show the upgrade chooser — not three Locked rows.
+  const showInventionRanks = spent > 0;
+
   return (
     <Stack spacing={1.1} data-pw="gadgets-skill-panel" sx={{ width: '100%', pt: 0.5 }}>
-      <Typography
-        sx={{
-          color: fabUTokens.color.textSecondary,
-          fontSize: '0.68rem',
-          fontWeight: 750,
-          lineHeight: 1.35,
-        }}
-      >
-        Gadgets SL {gadgetsSkillLevel} · {spent}/{gadgetsSkillLevel} invention ranks spent
-        {pendingSelections > 0
-          ? ` · ${pendingSelections} selection${pendingSelections === 1 ? '' : 's'} available`
-          : ''}
-      </Typography>
+      {showInventionRanks ? (
+        <Typography
+          sx={{
+            color: fabUTokens.color.textSecondary,
+            fontSize: '0.68rem',
+            fontWeight: 750,
+            lineHeight: 1.35,
+          }}
+        >
+          Gadgets SL {gadgetsSkillLevel} · {spent}/{gadgetsSkillLevel} invention ranks spent
+          {pendingSelections > 0
+            ? ` · ${pendingSelections} selection${pendingSelections === 1 ? '' : 's'} available`
+            : ''}
+        </Typography>
+      ) : null}
 
-      <Stack spacing={0.7}>
-        {GADGET_TYPES.map((type) => {
-          const tier = gadgets[type];
-          return (
-            <Box
-              key={type}
-              data-pw={`gadgets-type-${type}`}
-              sx={{
-                border: `1px solid ${alpha(fabUTokens.color.border, 0.7)}`,
-                borderRadius: '8px',
-                px: 1,
-                py: 0.75,
-                bgcolor: alpha(fabUTokens.color.pillSurface, fabUTokens.isDark ? 0.55 : 0.9),
-              }}
-            >
-              <Stack direction="row" justifyContent="space-between" alignItems="baseline" gap={1}>
-                <Typography
-                  sx={{
-                    color: fabUTokens.color.textPrimary,
-                    fontSize: '0.78rem',
-                    fontWeight: 850,
-                  }}
-                >
-                  {GADGET_TYPE_LABELS[type]}
-                </Typography>
-                <Typography
-                  sx={{
-                    color: tier ? fabUTokens.color.brandText : fabUTokens.color.textSecondary,
-                    fontSize: '0.68rem',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {tier ? GADGET_TIER_LABELS[tier] : 'Locked'}
-                </Typography>
-              </Stack>
-              {tier ? (
-                <Stack spacing={0.35} sx={{ mt: 0.45 }}>
-                  {(['basic', 'advanced', 'superior'] as const)
-                    .filter((entry) => {
-                      const rank = { basic: 1, advanced: 2, superior: 3 }[entry];
-                      const current = { basic: 1, advanced: 2, superior: 3 }[tier];
-                      return rank <= current;
-                    })
-                    .map((entry) => (
-                      <Typography
-                        key={entry}
-                        sx={{
-                          color: fabUTokens.color.textSecondary,
-                          fontSize: '0.66rem',
-                          fontWeight: 650,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {GADGET_TIER_LABELS[entry]}: {GADGET_TIER_SUMMARIES[type][entry]}
-                      </Typography>
-                    ))}
+      {showInventionRanks ? (
+        <Stack spacing={0.7} data-pw="gadgets-invention-ranks">
+          {GADGET_TYPES.map((type) => {
+            const tier = gadgets[type];
+            return (
+              <Box
+                key={type}
+                data-pw={`gadgets-type-${type}`}
+                sx={{
+                  border: `1px solid ${alpha(fabUTokens.color.border, 0.7)}`,
+                  borderRadius: '8px',
+                  px: 1,
+                  py: 0.75,
+                  bgcolor: alpha(fabUTokens.color.pillSurface, fabUTokens.isDark ? 0.55 : 0.9),
+                }}
+              >
+                <Stack direction="row" justifyContent="space-between" alignItems="baseline" gap={1}>
+                  <Typography
+                    sx={{
+                      color: fabUTokens.color.textPrimary,
+                      fontSize: '0.78rem',
+                      fontWeight: 850,
+                    }}
+                  >
+                    {GADGET_TYPE_LABELS[type]}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      color: tier ? fabUTokens.color.brandText : fabUTokens.color.textSecondary,
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {tier ? GADGET_TIER_LABELS[tier] : 'Locked'}
+                  </Typography>
                 </Stack>
-              ) : (
-                <Typography
-                  sx={{
-                    mt: 0.35,
-                    color: fabUTokens.color.textSecondary,
-                    fontSize: '0.66rem',
-                    fontWeight: 650,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  Spend a Gadgets skill level to unlock Basic benefits.
-                </Typography>
-              )}
-            </Box>
-          );
-        })}
-      </Stack>
+                {tier ? (
+                  <Stack spacing={0.35} sx={{ mt: 0.45 }}>
+                    {(['basic', 'advanced', 'superior'] as const)
+                      .filter((entry) => {
+                        const rank = { basic: 1, advanced: 2, superior: 3 }[entry];
+                        const current = { basic: 1, advanced: 2, superior: 3 }[tier];
+                        return rank <= current;
+                      })
+                      .map((entry) => (
+                        <Typography
+                          key={entry}
+                          sx={{
+                            color: fabUTokens.color.textSecondary,
+                            fontSize: '0.66rem',
+                            fontWeight: 650,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {GADGET_TIER_LABELS[entry]}: {GADGET_TIER_SUMMARIES[type][entry]}
+                        </Typography>
+                      ))}
+                  </Stack>
+                ) : (
+                  <Typography
+                    sx={{
+                      mt: 0.35,
+                      color: fabUTokens.color.textSecondary,
+                      fontSize: '0.66rem',
+                      fontWeight: 650,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    Spend a Gadgets skill level to unlock Basic benefits.
+                  </Typography>
+                )}
+              </Box>
+            );
+          })}
+        </Stack>
+      ) : null}
 
       {gadgets.magitech === 'advanced' || gadgets.magitech === 'superior' ? (
         <Box
