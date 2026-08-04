@@ -1,5 +1,6 @@
 export { default as AttributesStatsCard } from './AttributesStatsCard';
 export { default as EquipmentCard } from './EquipmentCard';
+export { default as GadgetsSkillPanel } from './GadgetsSkillPanel';
 export { default as HeaderBar } from './HeaderBar';
 export { default as ObjectiveClock } from './ObjectiveClock';
 export { default as NoteCard } from './NoteCard';

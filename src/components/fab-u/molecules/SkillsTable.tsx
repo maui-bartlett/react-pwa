@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -54,6 +54,8 @@ type SkillsTableProps = {
   onEditSkill?: (oldName: string, updatedSkill: SkillRow) => void;
   /** Called when the user edits the full description in the accordion panel */
   onUpdateSkillDescription?: (skillName: string, description: string) => void;
+  /** Optional extra UI rendered under the description when a skill accordion is open. */
+  renderSkillExtra?: (row: SkillRow) => ReactNode;
 };
 
 type EditingSkillState = {
@@ -86,6 +88,7 @@ type SwipeableSkillRowProps = {
   editLevelOptions: number[];
   onOpenLevelMenu: (e: React.MouseEvent<HTMLElement>) => void;
   onUpdateSkillDescription?: (skillName: string, description: string) => void;
+  skillExtra?: ReactNode;
 };
 
 function SwipeableSkillRow({
@@ -105,6 +108,7 @@ function SwipeableSkillRow({
   editLevelOptions,
   onOpenLevelMenu,
   onUpdateSkillDescription,
+  skillExtra,
 }: SwipeableSkillRowProps) {
   const fabUTokens = useFabUTokens();
   const deleteColor = fabUTokens.isDark ? DELETE_RED : '#c05c57';
@@ -572,7 +576,9 @@ function SwipeableSkillRow({
                 bgcolor: fabUTokens.color.surface,
                 minHeight: 42,
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                justifyContent: 'center',
               }}
             >
               {descEditActive ? (
@@ -616,6 +622,11 @@ function SwipeableSkillRow({
                     'Swipe left to add description'}
                 </Typography>
               )}
+              {!descEditActive && skillExtra ? (
+                <Box sx={{ width: '100%', mt: 0.85 }} onClick={(e) => e.stopPropagation()}>
+                  {skillExtra}
+                </Box>
+              ) : null}
             </Box>
           </Box>
         </Collapse>
@@ -642,6 +653,7 @@ function SkillsTable({
   onDeleteSkill,
   onEditSkill,
   onUpdateSkillDescription,
+  renderSkillExtra,
 }: SkillsTableProps) {
   const fabUTokens = useFabUTokens();
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -962,6 +974,7 @@ function SkillsTable({
                 editLevelOptions={editLevelOptions}
                 onOpenLevelMenu={(e) => openLevelMenu(e, row.name)}
                 onUpdateSkillDescription={onUpdateSkillDescription}
+                skillExtra={renderSkillExtra?.(row)}
               />
             );
           })}

@@ -35,6 +35,7 @@ import {
   calculateFabUSkillResourceBonuses,
 } from './resourceBonuses';
 import { cleanFabUSkillText } from './skillText';
+import { normalizeGadgetsState } from './tinkererGadgets';
 
 type CharacterMigrationOptions = {
   oldBackstoryAnswers?: unknown;
@@ -556,6 +557,7 @@ function normalizeCharacter(raw: unknown, options: CharacterMigrationOptions = {
       currentHP: normalizeNumber(parsed.currentHP, initialValue.currentHP),
       currentMP: normalizeNumber(parsed.currentMP, initialValue.currentMP),
       customResourceModifiers: normalizeResourceModifiers(parsed.customResourceModifiers),
+      gadgets: normalizeGadgetsState(parsed.gadgets),
       currentXP: normalizeNumber(parsed.currentXP, initialValue.currentXP),
       totalXP: normalizeNumber(parsed.totalXP, initialValue.totalXP),
       level: normalizeNumber(parsed.level, initialValue.level),

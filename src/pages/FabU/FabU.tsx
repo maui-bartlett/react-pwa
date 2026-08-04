@@ -54,6 +54,7 @@ import {
   FabUCatalogPickerDialog,
   FabUTab,
   FabUThemeProvider,
+  GadgetsSkillPanel,
   HeaderBar,
   type HpMpKind,
   HpMpManagementModal,
@@ -100,6 +101,20 @@ import {
 } from '@/domain/fabU/resourceBonuses';
 import { cleanFabUSkillText } from '@/domain/fabU/skillText';
 import { getFabUClassSpellCapacity, hasChimeristSpellMimic } from '@/domain/fabU/spellCapacity';
+import {
+  GADGETS_SKILL_DESCRIPTION,
+  GADGETS_SKILL_NAME,
+  GADGETS_SKILL_SUMMARY,
+  type GadgetsState,
+  MAGISPHERE_SPELL_SOURCES,
+  TINKERER_CLASS,
+  emptyGadgetsState,
+  getGadgetsSkillLevel,
+  getGadgetsState,
+  getMagisphereCapacity,
+  getPendingGadgetsSelections,
+  hasMagitechSuperior,
+} from '@/domain/fabU/tinkererGadgets';
 import { useProfileThemeSync } from '@/lib/useProfileThemeSync';
 import AccountSettings from '@/sections/AccountSettings';
 import { persistAppView } from '@/state/persistentAppLocation';
@@ -327,8 +342,18 @@ function getFabulaUltimaSkillMaxLevel(
   catalogMaxLevel?: number,
 ) {
   if (className === 'Spiritist' && skillName === 'Spiritual Magic') return 8;
+  if (className === TINKERER_CLASS && skillName === GADGETS_SKILL_NAME) return 5;
   return catalogMaxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
 }
+
+const TINKERER_GADGETS_SKILL_OPTION: SkillRow = {
+  name: GADGETS_SKILL_NAME,
+  level: '1',
+  maxLevel: 5,
+  effect: GADGETS_SKILL_SUMMARY,
+  summary: GADGETS_SKILL_SUMMARY,
+  description: GADGETS_SKILL_DESCRIPTION,
+};
 
 function mapFabulaUltimaSkillOption(
   className: string,
@@ -1550,9 +1575,34 @@ function FabU() {
             .map((skill) => mapFabulaUltimaSkillOption(className, skill as FabulaUltimaSkillInfo))
             .filter((skill): skill is SkillRow => !!skill)
         : [];
+      if (className === TINKERER_CLASS) {
+        const hasGadgets = skills.some(
+          (skill) => skill.name.trim().toLowerCase() === GADGETS_SKILL_NAME.toLowerCase(),
+        );
+        if (!hasGadgets) {
+          return [className, [...skills, TINKERER_GADGETS_SKILL_OPTION]] as const;
+        }
+        return [
+          className,
+          skills.map((skill) =>
+            skill.name.trim().toLowerCase() === GADGETS_SKILL_NAME.toLowerCase()
+              ? {
+                  ...skill,
+                  maxLevel: 5,
+                  effect: skill.effect || GADGETS_SKILL_SUMMARY,
+                  summary: skill.summary || GADGETS_SKILL_SUMMARY,
+                  description: skill.description || GADGETS_SKILL_DESCRIPTION,
+                }
+              : skill,
+          ),
+        ] as const;
+      }
       return [className, skills] as const;
     }),
   );
+  if (![...skillOptionsByClass.keys()].some((name) => name === TINKERER_CLASS)) {
+    skillOptionsByClass.set(TINKERER_CLASS, [TINKERER_GADGETS_SKILL_OPTION]);
+  }
   const spellOptionsByClass = new Map(
     [...convexClassByName.entries()].map(([className, classInfo]) => {
       const spells = Array.isArray(classInfo.spellsExpanded)
@@ -1698,13 +1748,41 @@ function FabU() {
     skills:
       character.skillGroups
         .find((group) => group.className === cls.name)
-        ?.skills.map((skill) => ({
-          ...skill,
-          maxLevel: getFabulaUltimaSkillMaxLevel(cls.name, skill.name, skill.maxLevel),
-        })) ?? [],
+        ?.skills.map((skill) => {
+          const withMax = {
+            ...skill,
+            maxLevel: getFabulaUltimaSkillMaxLevel(cls.name, skill.name, skill.maxLevel),
+          };
+          if (
+            cls.name === TINKERER_CLASS &&
+            skill.name.trim().toLowerCase() === GADGETS_SKILL_NAME.toLowerCase()
+          ) {
+            return {
+              ...withMax,
+              effect: withMax.effect || GADGETS_SKILL_SUMMARY,
+              summary: withMax.summary || GADGETS_SKILL_SUMMARY,
+              description: withMax.description || GADGETS_SKILL_DESCRIPTION,
+            };
+          }
+          return withMax;
+        }) ?? [],
   }));
   const hasDanceSkill = hasDancerDanceSkill(character);
   const dancerDanceSkillLevel = getDancerDanceSkillLevel(character);
+  const gadgetsState = getGadgetsState(character);
+  const gadgetsSkillLevel = getGadgetsSkillLevel(character);
+  const pendingGadgetsSelections = getPendingGadgetsSelections(character);
+  const magisphereCapacity = getMagisphereCapacity(character);
+  const magisphereSpellOptions = MAGISPHERE_SPELL_SOURCES.flatMap(
+    (sourceClass) => spellOptionsByClass.get(sourceClass) ?? [],
+  );
+  // Deduplicate magisphere options by spell name (case-insensitive).
+  const uniqueMagisphereSpellOptions = magisphereSpellOptions.filter(
+    (spell, index, all) =>
+      all.findIndex(
+        (entry) => entry.name.trim().toLowerCase() === spell.name.trim().toLowerCase(),
+      ) === index,
+  );
   const classSpellGroups = character.classes.flatMap((cls) => {
     if (cls.name === DANCER_CLASS && hasDanceSkill) {
       return [
@@ -1715,6 +1793,26 @@ function FabU() {
           spellOptions: DANCER_DANCES,
           spellCapacity: dancerDanceSkillLevel,
           isDancerDances: true,
+          isMagisphereSpells: false,
+          generated: false,
+        },
+      ];
+    }
+
+    if (cls.name === TINKERER_CLASS && hasMagitechSuperior(character)) {
+      const selected = (getClassSpellRows(character, TINKERER_CLASS) ?? []).slice(
+        0,
+        magisphereCapacity,
+      );
+      return [
+        {
+          className: TINKERER_CLASS,
+          tableLabel: 'Tinkerer Spells',
+          spells: selected,
+          spellOptions: uniqueMagisphereSpellOptions,
+          spellCapacity: magisphereCapacity,
+          isDancerDances: false,
+          isMagisphereSpells: true,
           generated: false,
         },
       ];
@@ -1735,6 +1833,7 @@ function FabU() {
             spellOptions,
             spellCapacity: getSpellCapacity(cls.name),
             isDancerDances: false,
+            isMagisphereSpells: false,
             generated: false,
           },
         ]
@@ -1875,17 +1974,48 @@ function FabU() {
   ) =>
     confirmDelete(
       () =>
-        setCharacter((c) => ({
-          ...c,
-          skillGroups: c.skillGroups.map((g) =>
+        setCharacter((c) => {
+          const nextSkillGroups = c.skillGroups.map((g) =>
             g.className === className
               ? { ...g, skills: g.skills.filter((s) => s.name !== skillName) }
               : g,
-          ),
-        })),
+          );
+          const deletingGadgets =
+            className === TINKERER_CLASS &&
+            skillName.trim().toLowerCase() === GADGETS_SKILL_NAME.toLowerCase();
+          if (!deletingGadgets) {
+            return { ...c, skillGroups: nextSkillGroups };
+          }
+          return {
+            ...c,
+            skillGroups: nextSkillGroups,
+            gadgets: emptyGadgetsState(),
+            spellGroups: c.spellGroups.filter((group) => group.className !== TINKERER_CLASS),
+          };
+        }),
       onCancel,
       onBeforeConfirm,
     );
+
+  const handleGadgetsChange = (next: GadgetsState) =>
+    setCharacter((c) => {
+      const nextCharacter = { ...c, gadgets: next };
+      const capacity = getMagisphereCapacity(nextCharacter);
+      if (next.magitech === 'superior') {
+        return {
+          ...nextCharacter,
+          spellGroups: c.spellGroups.map((group) =>
+            group.className === TINKERER_CLASS
+              ? { ...group, spells: group.spells.slice(0, capacity) }
+              : group,
+          ),
+        };
+      }
+      return {
+        ...nextCharacter,
+        spellGroups: c.spellGroups.filter((group) => group.className !== TINKERER_CLASS),
+      };
+    });
 
   const handleEditSkill = (
     className: string,
@@ -3155,6 +3285,23 @@ function FabU() {
                   onUpdateSkillDescription={(skillName, description) =>
                     handleUpdateSkillDescription(group.className, skillName, description)
                   }
+                  renderSkillExtra={(row) => {
+                    if (
+                      group.className !== TINKERER_CLASS ||
+                      row.name.trim().toLowerCase() !== GADGETS_SKILL_NAME.toLowerCase()
+                    ) {
+                      return null;
+                    }
+                    return (
+                      <GadgetsSkillPanel
+                        gadgets={gadgetsState}
+                        gadgetsSkillLevel={gadgetsSkillLevel}
+                        pendingSelections={pendingGadgetsSelections}
+                        magisphereCapacity={magisphereCapacity}
+                        onChange={handleGadgetsChange}
+                      />
+                    );
+                  }}
                 />
               );
             })}
@@ -3165,15 +3312,17 @@ function FabU() {
           <Stack data-section="combat-spells" spacing={2.775}>
             {classSpellGroups.map((group) => (
               <SpellsTable
-                key={group.className}
+                key={`${group.className}-${group.tableLabel}`}
                 label={group.tableLabel}
                 title={group.tableLabel}
                 rows={group.spells}
                 spellOptions={group.spellOptions}
                 onCastSpell={handleCastSpell}
                 totalMagicLevels={group.spellCapacity}
-                entryLabel={group.isDancerDances ? 'Dance' : 'Spell'}
-                allowCustomSpell={!group.isDancerDances}
+                entryLabel={
+                  group.isDancerDances ? 'Dance' : group.isMagisphereSpells ? 'Magisphere' : 'Spell'
+                }
+                allowCustomSpell={!group.isDancerDances && !group.isMagisphereSpells}
                 onAddSpell={(spell) => handleAddSpell(group.className, spell)}
                 onUpdateSpellEffect={
                   group.isDancerDances
@@ -3185,7 +3334,7 @@ function FabU() {
                   handleDeleteSpell(group.className, spellName, oc, obc)
                 }
                 onEditSpell={
-                  group.isDancerDances
+                  group.isDancerDances || group.isMagisphereSpells
                     ? undefined
                     : (oldName, updatedSpell) =>
                         handleEditSpell(group.className, oldName, updatedSpell)
@@ -3261,6 +3410,23 @@ function FabU() {
                 onUpdateSkillDescription={(skillName, description) =>
                   handleUpdateSkillDescription(group.className, skillName, description)
                 }
+                renderSkillExtra={(row) => {
+                  if (
+                    group.className !== TINKERER_CLASS ||
+                    row.name.trim().toLowerCase() !== GADGETS_SKILL_NAME.toLowerCase()
+                  ) {
+                    return null;
+                  }
+                  return (
+                    <GadgetsSkillPanel
+                      gadgets={gadgetsState}
+                      gadgetsSkillLevel={gadgetsSkillLevel}
+                      pendingSelections={pendingGadgetsSelections}
+                      magisphereCapacity={magisphereCapacity}
+                      onChange={handleGadgetsChange}
+                    />
+                  );
+                }}
               />
             </Box>
           );
@@ -3416,15 +3582,17 @@ function FabU() {
         />
         {classSpellGroups.map((group) => (
           <SpellsTable
-            key={group.className}
+            key={`${group.className}-${group.tableLabel}`}
             label={group.tableLabel}
             title={group.tableLabel}
             rows={group.spells}
             spellOptions={group.spellOptions}
             onCastSpell={handleCastSpell}
             totalMagicLevels={group.spellCapacity}
-            entryLabel={group.isDancerDances ? 'Dance' : 'Spell'}
-            allowCustomSpell={!group.isDancerDances}
+            entryLabel={
+              group.isDancerDances ? 'Dance' : group.isMagisphereSpells ? 'Magisphere' : 'Spell'
+            }
+            allowCustomSpell={!group.isDancerDances && !group.isMagisphereSpells}
             onAddSpell={(spell) => handleAddSpell(group.className, spell)}
             onUpdateSpellEffect={
               group.isDancerDances
@@ -3433,7 +3601,7 @@ function FabU() {
             }
             onDeleteSpell={(spellName) => handleDeleteSpell(group.className, spellName)}
             onEditSpell={
-              group.isDancerDances
+              group.isDancerDances || group.isMagisphereSpells
                 ? undefined
                 : (oldName, updatedSpell) => handleEditSpell(group.className, oldName, updatedSpell)
             }

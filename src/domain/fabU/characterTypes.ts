@@ -2,6 +2,8 @@ import type { Attribute, Bond, EquipmentItem } from '@/components/fab-u';
 import type { SkillGroup } from '@/pages/FabU/skills';
 import type { SpellGroup } from '@/pages/FabU/spells';
 
+import type { GadgetsState } from './tinkererGadgets';
+
 type ClassEntry = {
   name: string;
   level: number;
@@ -56,6 +58,8 @@ type Character = {
   /** Bonus added on top of the base Inventory Points maximum. */
   ipBonus: number;
   customResourceModifiers: ResourceModifier[];
+  /** Tinkerer Gadgets invention unlocks and Magitech options. */
+  gadgets: GadgetsState;
   currentXP: number;
   totalXP: number;
   level: number;
