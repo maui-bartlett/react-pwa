@@ -343,6 +343,7 @@ function getFabulaUltimaSkillMaxLevel(
 ) {
   if (className === 'Spiritist' && skillName === 'Spiritual Magic') return 8;
   if (className === TINKERER_CLASS && skillName === GADGETS_SKILL_NAME) return 5;
+  if (className === TINKERER_CLASS && skillName === 'Emergency Item') return 1;
   return catalogMaxLevel ?? DEFAULT_SKILL_MAX_LEVEL;
 }
 

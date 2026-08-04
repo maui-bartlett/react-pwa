@@ -52,7 +52,7 @@ export const skillGroups: SkillGroup[] = [
       {
         name: 'Emergency Item',
         level: '1',
-        maxLevel: 5,
+        maxLevel: 1,
         effect: 'Once per conflict, create a useful item or tool.',
       },
     ],
