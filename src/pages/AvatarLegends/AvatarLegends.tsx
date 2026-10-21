@@ -13,6 +13,7 @@ import { Link } from 'react-router';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
+import MuiCheckbox from '@mui/material/Checkbox';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
 import Dialog from '@mui/material/Dialog';
 import InputBase from '@mui/material/InputBase';
@@ -25,7 +26,16 @@ import { alpha } from '@mui/material/styles';
 
 import { useQuery } from 'convex/react';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { Backpack, ChevronRight, HandFist, House, Info, Pencil, Trash2 } from 'lucide-react';
+import {
+  Backpack,
+  ChevronRight,
+  HandFist,
+  House,
+  Info,
+  ListChecks,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 
 import { BRAVE_BROWSER_CLASS } from '@/browserEnvironment';
 import { SwipeableCard } from '@/components/SwipeableCard';
@@ -61,6 +71,11 @@ import principleFg from './assets/principle-fg.png';
 import elementTech from './assets/technology-symbol.png';
 import elementWater from './assets/waterbending-symbol.png';
 import elementWeapons from './assets/weapons-symbol.png';
+import {
+  CLASS_MOVE_LIMIT,
+  getClassMoveKey,
+  normalizeClassMoveSelections,
+} from './classMoveSelection';
 import {
   type TechniqueFatigue,
   deriveTechniqueFatigue,
@@ -797,6 +812,7 @@ type CharacterState = {
   classTrait: Record<string, ClassTraitData>;
   connections: Connection[];
   classMoves: MoveEntry[];
+  selectedClassMoveKeys: Record<string, string[]>;
   techniques: Technique[];
   deletedTechniqueKeys: string[];
   inventory: JournalEntry[];
@@ -908,6 +924,7 @@ const defaultCharacter: CharacterState = {
   classTrait: {},
   connections: [],
   classMoves: [],
+  selectedClassMoveKeys: {},
   techniques: defaultBasicTechniques,
   deletedTechniqueKeys: [],
   inventory: [
@@ -1389,6 +1406,7 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     balance: normalizeBalanceState(innerCandidate.balance),
     historyAnswers,
     classTrait,
+    selectedClassMoveKeys: normalizeClassMoveSelections(innerCandidate.selectedClassMoveKeys),
     techniques,
     deletedTechniqueKeys,
     inventory,
@@ -5500,6 +5518,7 @@ function MoveAccordion({
             setOpen((value) => !value);
           }}
           aria-expanded={open}
+          aria-label={entry.title}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -5717,6 +5736,119 @@ function MoveAccordion({
   );
 }
 
+function ClassMovePickerDialog({
+  open,
+  moves,
+  selectedKeys,
+  onToggle,
+  onSave,
+  onClose,
+}: {
+  open: boolean;
+  moves: MoveEntry[];
+  selectedKeys: string[];
+  onToggle: (key: string) => void;
+  onSave: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      aria-labelledby="class-move-picker-title"
+      sx={{ zIndex: (theme) => theme.zIndex.tooltip + 30 }}
+      PaperProps={{ sx: { bgcolor: parchment, color: ink, borderRadius: '6px', m: 1.5 } }}
+    >
+      <Stack sx={{ maxHeight: 'min(80vh, 720px)', minHeight: 0 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ p: 1.5 }}>
+          <Typography id="class-move-picker-title" sx={{ fontWeight: 900 }}>
+            Choose Class Moves
+          </Typography>
+          <Typography sx={{ fontWeight: 700 }}>
+            {selectedKeys.length}/{CLASS_MOVE_LIMIT}
+          </Typography>
+        </Stack>
+        <Stack spacing={1} sx={{ px: 1.5, pb: 1.5, overflowY: 'auto', minHeight: 0 }}>
+          {moves.map((move) => {
+            const key = getClassMoveKey(move);
+            const selected = selectedKeys.includes(key);
+            const disabled = !selected && selectedKeys.length >= CLASS_MOVE_LIMIT;
+            return (
+              <Box
+                component="label"
+                key={key}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  p: 1,
+                  gap: 0.5,
+                  border: `1px solid ${selected ? bookAccent : border}`,
+                  borderRadius: '4px',
+                  bgcolor: selected ? alpha(bookAccent, 0.18) : parchmentLight,
+                  cursor: disabled ? 'default' : 'pointer',
+                }}
+              >
+                <MuiCheckbox
+                  checked={selected}
+                  disabled={disabled}
+                  onChange={() => onToggle(key)}
+                  inputProps={{ 'aria-label': move.title }}
+                  sx={{ p: 0.5, color: brown, '&.Mui-checked': { color: bookAccent } }}
+                />
+                <Stack spacing={0.6} sx={{ minWidth: 0, pt: 0.5 }}>
+                  <Typography sx={{ fontWeight: 900, color: ink }}>{move.title}</Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: 'Georgia, serif',
+                      fontSize: '0.86rem',
+                      whiteSpace: 'pre-line',
+                      color: brown,
+                    }}
+                  >
+                    {move.body}
+                  </Typography>
+                  {move.bullets?.length ? (
+                    <Box component="ul" sx={{ m: 0, pl: 2, color: brown }}>
+                      {move.bullets.map((bullet, index) => (
+                        <li key={index}>{bullet}</li>
+                      ))}
+                    </Box>
+                  ) : null}
+                  {move.trailing ? (
+                    <Typography sx={{ fontSize: '0.86rem', color: brown }}>
+                      {move.trailing}
+                    </Typography>
+                  ) : null}
+                </Stack>
+              </Box>
+            );
+          })}
+          {moves.length === 0 ? <Typography>No class moves available.</Typography> : null}
+        </Stack>
+        <Stack direction="row" gap={1} sx={{ p: 1.5, borderTop: `1px solid ${border}` }}>
+          <Button onClick={onClose} sx={{ flex: 1, color: brown, textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={onSave}
+            sx={{
+              flex: 1,
+              bgcolor: ink,
+              color: parchment,
+              textTransform: 'none',
+              '&:hover': { bgcolor: deepInk },
+            }}
+          >
+            Save Moves
+          </Button>
+        </Stack>
+      </Stack>
+    </Dialog>
+  );
+}
+
 function MovesPane() {
   const [subTab, setSubTab] = useAtom(movesSubTabAtom);
   const activeConditions = useAtomValue(activeConditionsAtom);
@@ -5725,14 +5857,31 @@ function MovesPane() {
   // moves come from the active character record so each character
   // can carry their own class-specific moves.
   const [character, setCharacter] = useAtom(characterStateAtom);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [draftKeys, setDraftKeys] = useState<string[]>([]);
+  const avatarClass = useQuery(api.classes.getAvatarLegendsClassByName, {
+    className: character.className,
+  }) as AvatarClassData | null | undefined;
+  const availableMoves = avatarClass
+    ? [...coerceClassMoves(avatarClass), ...character.classMoves.filter((move) => move.custom)]
+    : character.classMoves;
+  const selectedKeys = character.selectedClassMoveKeys?.[character.className] ?? [];
+  const selectedMoves = availableMoves
+    .filter((move) => selectedKeys.includes(getClassMoveKey(move)))
+    .slice(0, CLASS_MOVE_LIMIT);
+
+  function openPicker() {
+    setDraftKeys(selectedMoves.map(getClassMoveKey));
+    setPickerOpen(true);
+  }
   const visibleMoves: MoveEntry[] =
     subTab === 0
-      ? [...movesByCategory.basic, ...movesByCategory.balance, ...character.classMoves]
+      ? [...movesByCategory.basic, ...movesByCategory.balance, ...selectedMoves]
       : subTab === 1
         ? movesByCategory.basic
         : subTab === 2
           ? movesByCategory.balance
-          : character.classMoves;
+          : selectedMoves;
   return (
     <Stack spacing={1} sx={{ mt: '-20px' }}>
       {/* Stats stay pinned at the top of the Moves tab while the list scrolls. */}
@@ -5742,6 +5891,15 @@ function MovesPane() {
         activeIndex={subTab}
         onChange={setSubTab}
       />
+      {subTab === 0 || subTab === 3 ? (
+        <Button
+          onClick={openPicker}
+          startIcon={<ListChecks size={18} />}
+          sx={{ color: ink, border: `1px solid ${border}`, textTransform: 'none', fontWeight: 800 }}
+        >
+          Class Moves {selectedMoves.length}/{CLASS_MOVE_LIMIT}
+        </Button>
+      ) : null}
       {visibleMoves.map((entry, index) => (
         <MoveAccordion
           key={entry.id ?? `${subTab}-${entry.custom ? 'custom' : 'move'}-${entry.title}-${index}`}
@@ -5776,22 +5934,58 @@ function MovesPane() {
       {subTab === 3 ? (
         <AddListCard
           label="Add custom move"
-          onClick={() =>
+          onClick={() => {
+            const move: MoveEntry = {
+              id: createLocalId('move'),
+              title: 'Custom Move',
+              body: 'Describe this custom move.',
+              custom: true,
+            };
             setCharacter((prev) => ({
               ...prev,
-              classMoves: [
-                ...prev.classMoves,
-                {
-                  id: createLocalId('move'),
-                  title: 'Custom Move',
-                  body: 'Describe this custom move.',
-                  custom: true,
-                },
-              ],
-            }))
-          }
+              classMoves: [...prev.classMoves, move],
+              selectedClassMoveKeys: {
+                ...prev.selectedClassMoveKeys,
+                [prev.className]: [
+                  ...selectedMoves.map(getClassMoveKey),
+                  getClassMoveKey(move),
+                ].slice(0, CLASS_MOVE_LIMIT),
+              },
+            }));
+            if (selectedMoves.length >= CLASS_MOVE_LIMIT) {
+              setDraftKeys(selectedMoves.map(getClassMoveKey));
+              setPickerOpen(true);
+            }
+          }}
         />
       ) : null}
+      <ClassMovePickerDialog
+        key={character.className}
+        open={pickerOpen}
+        moves={availableMoves}
+        selectedKeys={draftKeys}
+        onToggle={(key) =>
+          setDraftKeys((keys) =>
+            keys.includes(key)
+              ? keys.filter((item) => item !== key)
+              : keys.length < CLASS_MOVE_LIMIT
+                ? [...keys, key]
+                : keys,
+          )
+        }
+        onClose={() => setPickerOpen(false)}
+        onSave={() => {
+          setCharacter((prev) => ({
+            ...prev,
+            classMoves: availableMoves,
+            selectedClassMoveKeys: {
+              ...prev.selectedClassMoveKeys,
+              [prev.className]: draftKeys.slice(0, CLASS_MOVE_LIMIT),
+            },
+          }));
+          setPickerOpen(false);
+        }}
+      />
     </Stack>
   );
 }
