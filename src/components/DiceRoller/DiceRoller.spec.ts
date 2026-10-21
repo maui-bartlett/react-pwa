@@ -33,16 +33,36 @@ describe('DiceRoller results', () => {
     expect(isValidRollResult(result, [{ id: 1, sides: 20 }])).toBe(false);
   });
 
-  it('uses zero through nine for d10 results', () => {
-    const zero = toRollResult([{ dieType: 'd10', sides: 10, value: 10 }]);
+  it.each([0, 10])('counts a d10 result of %i as ten', (value) => {
+    const ten = toRollResult([{ dieType: 'd10', sides: 10, value }]);
     const nine = toRollResult([{ dieType: 'd10', sides: 10, value: 9 }]);
 
-    expect(zero.rolls).toEqual([{ sides: 10, value: 0 }]);
-    expect(zero.total).toBe(0);
-    expect(isValidRollResult(zero, [{ id: 1, sides: 10 }])).toBe(true);
+    expect(ten.rolls).toEqual([{ sides: 10, value: 10 }]);
+    expect(ten.total).toBe(10);
+    expect(isValidRollResult(ten, [{ id: 1, sides: 10 }])).toBe(true);
     expect(nine.rolls).toEqual([{ sides: 10, value: 9 }]);
     expect(nine.total).toBe(9);
     expect(isValidRollResult(nine, [{ id: 1, sides: 10 }])).toBe(true);
+  });
+
+  it('counts grouped d10 zero faces as ten in mixed rolls with modifiers', () => {
+    const result = withRollMetadata(
+      toRollResult([
+        { sides: 10, rolls: [{ value: 0 }, { result: 10 }, { value: 3 }] },
+        { sides: 6, value: 4 },
+      ]),
+      { modifier: 2 },
+    );
+
+    expect(result.rolls.map((roll) => roll.value)).toEqual([10, 10, 3, 4]);
+    expect(result.total).toBe(29);
+  });
+
+  it.each([0, 11])('rejects an unnormalized or invalid d10 value of %i', (value) => {
+    const result = toRollResult([{ sides: 10, value: 1 }]);
+    result.rolls[0].value = value;
+
+    expect(isValidRollResult(result, [{ id: 1, sides: 10 }])).toBe(false);
   });
 
   it('interprets percentile rolls using a zero-through-nine ones die', () => {
@@ -101,7 +121,7 @@ describe('DiceRoller results', () => {
     expect(isValidRollResult(result, dice)).toBe(true);
   });
 
-  it('creates fallback d10 results from zero through nine', () => {
+  it('creates fallback d10 results from one through ten', () => {
     const dice = [
       { id: 1, sides: 10 as const },
       { id: 2, sides: 10 as const },
@@ -110,10 +130,10 @@ describe('DiceRoller results', () => {
     const result = createRandomRollResult(dice, () => values.shift() ?? 0);
 
     expect(result.rolls).toEqual([
-      { sides: 10, value: 0 },
-      { sides: 10, value: 9 },
+      { sides: 10, value: 1 },
+      { sides: 10, value: 10 },
     ]);
-    expect(result.total).toBe(9);
+    expect(result.total).toBe(11);
     expect(isValidRollResult(result, dice)).toBe(true);
   });
 

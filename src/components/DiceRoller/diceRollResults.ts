@@ -43,7 +43,7 @@ function getRollValue(...values: Array<number | undefined>) {
 }
 
 function normalizeRollValue(sides: DieSize, value: number) {
-  if (sides === 10 && value === 10) return 0;
+  if (sides === 10 && value === 0) return 10;
   if (sides === 100 && value === 0) return 100;
   return value;
 }
@@ -126,9 +126,7 @@ function isValidRollResult(result: RollResult, selectedDice: RollDie[]) {
   });
 
   for (const roll of result.rolls) {
-    const minimum = roll.sides === 10 ? 0 : 1;
-    const maximum = roll.sides === 10 ? 9 : roll.sides;
-    if (!Number.isInteger(roll.value) || roll.value < minimum || roll.value > maximum) return false;
+    if (!Number.isInteger(roll.value) || roll.value < 1 || roll.value > roll.sides) return false;
     actualCounts.set(roll.sides, (actualCounts.get(roll.sides) ?? 0) + 1);
   }
 
@@ -139,7 +137,7 @@ function createRandomRollResult(dice: RollDie[], random: () => number = Math.ran
   return toRollResult(
     dice.map(({ sides }) => ({
       sides,
-      value: sides === 10 ? Math.floor(random() * 10) : Math.floor(random() * sides) + 1,
+      value: Math.floor(random() * sides) + 1,
     })),
   );
 }
