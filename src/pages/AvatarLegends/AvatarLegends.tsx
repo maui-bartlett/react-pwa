@@ -29,11 +29,14 @@ import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   Backpack,
   ChevronRight,
+  Cog,
   HandFist,
   House,
   Info,
   ListChecks,
+  Minus,
   Pencil,
+  Plus,
   Trash2,
 } from 'lucide-react';
 
@@ -76,6 +79,7 @@ import {
   getClassMoveKey,
   normalizeClassMoveSelections,
 } from './classMoveSelection';
+import { canSpendGears, getAvatarGears, normalizeGears } from './gears';
 import {
   type TechniqueFatigue,
   deriveTechniqueFatigue,
@@ -804,6 +808,7 @@ type CharacterState = {
   conditions: Record<string, boolean>;
   statuses: Record<string, boolean>;
   fatigue: boolean[];
+  gears: number;
   tempFatigue: boolean[];
   backgrounds: Record<string, boolean>;
   historyAnswers: Record<string, string>;
@@ -918,6 +923,7 @@ const defaultCharacter: CharacterState = {
   conditions: {},
   statuses: {},
   fatigue: [false, false, false, false, false],
+  gears: 0,
   tempFatigue: [],
   backgrounds: { Urban: true, Privileged: true },
   historyAnswers: {},
@@ -1403,6 +1409,11 @@ function deserializeAvatarLegendsCharacter(raw: unknown): CharacterState {
     ...rest,
     age,
     primaryTraining,
+    gears: getAvatarGears({
+      name: typeof innerCandidate.name === 'string' ? innerCandidate.name : defaultCharacter.name,
+      primaryTraining,
+      gears: innerCandidate.gears,
+    }),
     balance: normalizeBalanceState(innerCandidate.balance),
     historyAnswers,
     classTrait,
@@ -6120,6 +6131,8 @@ function TechniqueAccordion({
   onUpdate,
   onLevelChange,
   onEndEditing,
+  onSpendGear,
+  gearsAvailable = 0,
 }: {
   approach: TechniqueCategory;
   name: string;
@@ -6146,6 +6159,8 @@ function TechniqueAccordion({
   /** Called when the card leaves edit mode (Save or Cancel) so the parent
    *  can clear its "which card is editing" state. */
   onEndEditing?: () => void;
+  onSpendGear?: () => void;
+  gearsAvailable?: number;
 }) {
   const { isDarkMode } = useThemeMode();
   const [open, setOpen] = useState(false);
@@ -6467,6 +6482,29 @@ function TechniqueAccordion({
                 {description}
               </Typography>
             )}
+            {!editing && onSpendGear ? (
+              <Stack spacing={0.5} sx={{ px: 2, pb: 2 }}>
+                <Button
+                  startIcon={<Cog size={16} />}
+                  disabled={gearsAvailable < 1}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSpendGear();
+                  }}
+                  sx={{
+                    alignSelf: 'flex-start',
+                    color: bookAccent,
+                    textTransform: 'none',
+                    fontWeight: 800,
+                  }}
+                >
+                  Spend 1 Gear
+                </Button>
+                <Typography sx={{ color: brownSoft, fontSize: '0.78rem' }}>
+                  Replaces 1 fatigue.
+                </Typography>
+              </Stack>
+            ) : null}
           </>
         ) : null}
         {editing ? (
@@ -6763,6 +6801,14 @@ function CombatPane() {
           tempFatigue={tempFatigue}
           onUpdate={updateFatigueCapacity}
         />
+        {character.primaryTraining === 'Technology' ? (
+          <GearsCard
+            gears={getAvatarGears(character)}
+            onChange={(gears) =>
+              setCharacterState((prev) => ({ ...prev, gears: normalizeGears(gears) }))
+            }
+          />
+        ) : null}
 
         {/* Interactive combat sub-tabs — taller chips than the rest of the
           app to give the four primary combat surfaces more tap area. */}
@@ -6828,6 +6874,17 @@ function CombatPane() {
                     summary={tech.summary}
                     description={tech.description}
                     fatigue={tech.fatigue}
+                    gearsAvailable={getAvatarGears(character)}
+                    onSpendGear={
+                      canSpendGears(character.primaryTraining, tech.type) &&
+                      tech.fatigue.self.mark > 0
+                        ? () =>
+                            setCharacterState((prev) => ({
+                              ...prev,
+                              gears: Math.max(0, getAvatarGears(prev) - 1),
+                            }))
+                        : undefined
+                    }
                     level={tech.level}
                     editing={editingTechniqueIndices.includes(techniqueIndex)}
                     onUpdate={
@@ -7643,6 +7700,48 @@ function BackpackCard({
   );
 }
 
+function GearsCard({ gears, onChange }: { gears: number; onChange: (gears: number) => void }) {
+  return (
+    <Panel noNotch>
+      <Stack spacing={1}>
+        <SectionTitle>Gears</SectionTitle>
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+          <Button
+            aria-label="Decrease gears"
+            disabled={gears === 0}
+            onClick={() => onChange(gears - 1)}
+            sx={{ minWidth: 44, height: 44, color: bookAccent }}
+          >
+            <Minus size={20} />
+          </Button>
+          <Cog size={22} color={bookAccent} aria-hidden="true" />
+          <InputBase
+            type="number"
+            value={gears}
+            onChange={(event) => onChange(normalizeGears(Number(event.target.value)))}
+            inputProps={{ 'aria-label': 'Current gears', min: 0, step: 1 }}
+            sx={{
+              width: 90,
+              color: ink,
+              '& input': { textAlign: 'center', fontSize: '1.3rem', fontWeight: 900 },
+            }}
+          />
+          <Button
+            aria-label="Increase gears"
+            onClick={() => onChange(gears + 1)}
+            sx={{ minWidth: 44, height: 44, color: bookAccent }}
+          >
+            <Plus size={20} />
+          </Button>
+        </Stack>
+        <Typography sx={{ color: brownSoft, fontSize: '0.78rem', textAlign: 'center' }}>
+          1 Gear replaces 1 fatigue for Technology or Basic techniques.
+        </Typography>
+      </Stack>
+    </Panel>
+  );
+}
+
 /**
  * Swipeable fatigue card with modal editor for base and temp capacities.
  * Base fatigue tracks mandatory damage; temp fatigue tracks additional
@@ -8231,6 +8330,13 @@ function AvatarLegends() {
     describeCharacter: describeAvatarLegendsCharacter,
     migrate: migrateAvatarLegendsLocalCharacter,
   });
+  useEffect(() => {
+    if (!localCharacters.hydrated) return;
+    const gears = getAvatarGears(character);
+    if (character.gears !== gears) {
+      setCharacter((prev) => ({ ...prev, gears: getAvatarGears(prev) }));
+    }
+  }, [character, localCharacters.hydrated, setCharacter]);
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent('avatar-legends-primary-training-change', {
