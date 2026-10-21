@@ -13,10 +13,13 @@ import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import InputBase from '@mui/material/InputBase';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 
-import { Pencil, Trash2, X } from 'lucide-react';
+import { Pencil, Trash2, X, Zap } from 'lucide-react';
+
+import { isOffensiveEntropistSpell } from '@/domain/fabU/entropistSpells';
 
 import { useFabUTokens } from '../ThemeContext';
 import { SurfaceCard } from '../atoms';
@@ -61,6 +64,7 @@ type CustomSpellDraft = {
 
 type SpellsTableProps = {
   rows: SpellRow[];
+  spellClassName?: string;
   title?: string;
   label?: string;
   showTitle?: boolean;
@@ -78,6 +82,7 @@ type SpellsTableProps = {
 
 type SwipeableSpellRowProps = {
   row: SpellRow;
+  isOffensive: boolean;
   isStriped: boolean;
   isOpen: boolean;
   onToggle: () => void;
@@ -94,6 +99,7 @@ type SwipeableSpellRowProps = {
 
 function SwipeableSpellRow({
   row,
+  isOffensive,
   isStriped,
   isOpen,
   onToggle,
@@ -533,6 +539,18 @@ function SwipeableSpellRow({
               >
                 {row.name}
               </Typography>
+              {isOffensive ? (
+                <Tooltip title="Offensive spell: INS + WIL Magic Check" describeChild>
+                  <Box
+                    component="span"
+                    role="img"
+                    aria-label="Offensive spell: INS + WIL Magic Check"
+                    sx={{ display: 'inline-flex', flexShrink: 0, color: '#ef2424' }}
+                  >
+                    <Zap size={14} fill="currentColor" aria-hidden="true" />
+                  </Box>
+                </Tooltip>
+              ) : null}
             </Box>
             <Box
               sx={{
@@ -739,6 +757,7 @@ function SwipeableSpellRow({
 
 function SpellsTable({
   rows,
+  spellClassName,
   title = 'Prepared spells',
   label,
   showTitle = false,
@@ -976,6 +995,7 @@ function SpellsTable({
             <Fragment key={row.name}>
               <SwipeableSpellRow
                 row={row}
+                isOffensive={isOffensiveEntropistSpell(spellClassName, row.name)}
                 isStriped={index % 2 === 0}
                 isOpen={expandedRow === row.name}
                 onToggle={() => toggleRow(row.name)}

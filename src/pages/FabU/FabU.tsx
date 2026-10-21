@@ -3317,6 +3317,7 @@ function FabU() {
                 label={group.tableLabel}
                 title={group.tableLabel}
                 rows={group.spells}
+                spellClassName={group.className}
                 spellOptions={group.spellOptions}
                 onCastSpell={handleCastSpell}
                 totalMagicLevels={group.spellCapacity}
@@ -3587,6 +3588,7 @@ function FabU() {
             label={group.tableLabel}
             title={group.tableLabel}
             rows={group.spells}
+            spellClassName={group.className}
             spellOptions={group.spellOptions}
             onCastSpell={handleCastSpell}
             totalMagicLevels={group.spellCapacity}
